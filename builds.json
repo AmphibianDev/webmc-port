@@ -1,0 +1,434 @@
+{
+  "note": "Every browser build this project catalogs, all of them from GitHub: EaglerPorts releases for the classic eras, the RN-LAUNCH mirror and the 3kh0 archive for the 1.5 and 1.8 lines and for 1.12.2 (including the one build with a runtime JS mod API), and community ports for the modern versions. Versions with no verifiable GitHub build - 1.18.2 (the only repository is empty) and 1.21.5 / 1.21.11 (no single-file client published on GitHub that could be checked) - are deliberately absent rather than listed as if they worked. tools/fetch_builds.py downloads these into work/builds/, which is git-ignored: the repository keeps the list, never the clients.",
+  "verified_note": "verified means: fetched over the network, sniffed for the shape of a browser client, and recorded with a size and a sha256 in work/builds/manifest.json.",
+  "versions": [
+    {
+      "version": "in-20100223",
+      "label": "Indev 2010-02-23",
+      "era": "classic",
+      "folder": "in-20100223",
+      "source_repo": "EaglerPorts/in-20100223",
+      "notes": "official EaglerPorts release for this version",
+      "files": [
+        {
+          "name": "Eaglercraft_Offline_WASM.html",
+          "url": "https://github.com/EaglerPorts/in-20100223/releases/latest/download/Eaglercraft_Offline_WASM.html",
+          "role": "client"
+        }
+      ]
+    },
+    {
+      "version": "a1.0.16_02",
+      "label": "Alpha 1.0.16_02",
+      "era": "classic",
+      "folder": "a1.0.16_02",
+      "source_repo": "EaglerPorts/a1.0.16_02",
+      "notes": "official EaglerPorts release for this version",
+      "files": [
+        {
+          "name": "Eaglercraft_Offline_WASM.html",
+          "url": "https://github.com/EaglerPorts/a1.0.16_02/releases/latest/download/Eaglercraft_Offline_WASM.html",
+          "role": "client"
+        }
+      ]
+    },
+    {
+      "version": "a1.2.6",
+      "label": "Alpha 1.2.6",
+      "era": "classic",
+      "folder": "a1.2.6",
+      "source_repo": "EaglerPorts/a1.2.6",
+      "notes": "official EaglerPorts release for this version",
+      "files": [
+        {
+          "name": "Eaglercraft_Offline_WASM.html",
+          "url": "https://github.com/EaglerPorts/a1.2.6/releases/latest/download/Eaglercraft_Offline_WASM.html",
+          "role": "client"
+        }
+      ]
+    },
+    {
+      "version": "b1.3_01",
+      "label": "Beta 1.3_01",
+      "era": "classic",
+      "folder": "b1.3_01",
+      "source_repo": "EaglerPorts/b1.3_01",
+      "notes": "official EaglerPorts release for this version",
+      "files": [
+        {
+          "name": "Eaglercraft_Offline_WASM.html",
+          "url": "https://github.com/EaglerPorts/b1.3_01/releases/latest/download/Eaglercraft_Offline_WASM.html",
+          "role": "client"
+        }
+      ]
+    },
+    {
+      "version": "b1.6-tb3",
+      "label": "Beta 1.6 tb3",
+      "era": "classic",
+      "folder": "b1.6-tb3",
+      "source_repo": "EaglerPorts/b1.6-tb3",
+      "notes": "official EaglerPorts release for this version",
+      "files": [
+        {
+          "name": "Eaglercraft_Offline_WASM.html",
+          "url": "https://github.com/EaglerPorts/b1.6-tb3/releases/latest/download/Eaglercraft_Offline_WASM.html",
+          "role": "client"
+        }
+      ]
+    },
+    {
+      "version": "b1.8.1",
+      "label": "Beta 1.8.1",
+      "era": "classic",
+      "folder": "b1.8.1",
+      "source_repo": "EaglerPorts/b1.8.1",
+      "notes": "official EaglerPorts release for this version",
+      "files": [
+        {
+          "name": "Eaglercraft_Offline_WASM.html",
+          "url": "https://github.com/EaglerPorts/b1.8.1/releases/latest/download/Eaglercraft_Offline_WASM.html",
+          "role": "client"
+        }
+      ]
+    },
+    {
+      "version": "1.2.5",
+      "label": "Release 1.2.5",
+      "era": "classic",
+      "folder": "1.2.5",
+      "source_repo": "EaglerPorts/1.2.5",
+      "notes": "official EaglerPorts release for this version",
+      "files": [
+        {
+          "name": "Eaglercraft_Offline_WASM.html",
+          "url": "https://github.com/EaglerPorts/1.2.5/releases/latest/download/Eaglercraft_Offline_WASM.html",
+          "role": "client"
+        }
+      ]
+    },
+    {
+      "version": "beta-1.0.2",
+      "label": "Beta 1.0.2",
+      "era": "classic",
+      "folder": "beta-1.0.2",
+      "source_repo": "Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions",
+      "notes": "small classic build from the mirror",
+      "files": [
+        {
+          "name": "beta-1.0.2.html",
+          "url": "https://github.com/Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions/raw/HEAD/beta-1.0.2.html",
+          "role": "client",
+          "bytes": 2065182
+        }
+      ]
+    },
+    {
+      "version": "beta-1.3",
+      "label": "Beta 1.3 (3kh0)",
+      "era": "classic",
+      "folder": "beta-1.3",
+      "source_repo": "3kh0/eaglercraft-builds",
+      "notes": "the Eaglercraft beta archive",
+      "files": [
+        {
+          "name": "Eaglercraft_b1.3_Offline_Download.html",
+          "url": "https://github.com/3kh0/eaglercraft-builds/raw/HEAD/Eaglercraft_b1.3_Offline_Download.html",
+          "role": "client",
+          "bytes": 4534321
+        }
+      ]
+    },
+    {
+      "version": "indev-rn",
+      "label": "Infdev (mirror)",
+      "era": "classic",
+      "folder": "infdev",
+      "source_repo": "Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions",
+      "notes": "Infdev build",
+      "files": [
+        {
+          "name": "Eaglercraft Infdev (WASM-GC).html",
+          "url": "https://github.com/Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions/raw/HEAD/Eaglercraft%20Infdev%20%28WASM-GC%29.html",
+          "role": "client",
+          "bytes": 1421180
+        }
+      ]
+    },
+    {
+      "version": "1.5.2",
+      "label": "1.5.2",
+      "era": "legacy",
+      "folder": "1.5.2",
+      "source_repo": "Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions",
+      "files": [
+        {
+          "name": "Eaglercraft 1.5.2 (JS).html",
+          "url": "https://github.com/Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions/raw/HEAD/Eaglercraft%201.5.2%20%28JS%29.html",
+          "role": "client",
+          "bytes": 23536015
+        }
+      ]
+    },
+    {
+      "version": "1.8.8",
+      "label": "1.8.8 (WASM-GC)",
+      "era": "legacy",
+      "folder": "1.8.8",
+      "source_repo": "Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions",
+      "notes": "the plain 1.8.8 build; the variants below are the popular clients on top of it",
+      "files": [
+        {
+          "name": "Eaglercraft 1.8.8 (WASM-GC).html",
+          "url": "https://github.com/Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions/raw/HEAD/Eaglercraft%201.8.8%20%28WASM-GC%29.html",
+          "role": "client",
+          "bytes": 15133433
+        }
+      ]
+    },
+    {
+      "version": "1.8.8-astra",
+      "label": "1.8.8 Astra",
+      "era": "legacy",
+      "folder": "1.8.8-astra",
+      "source_repo": "Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions",
+      "notes": "1.8.8 client variant",
+      "files": [
+        {
+          "name": "Eaglercraft 1.8.8 Astra (WASM-GC).html",
+          "url": "https://github.com/Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions/raw/HEAD/Eaglercraft%201.8.8%20Astra%20%28WASM-GC%29.html",
+          "role": "client",
+          "bytes": 59215090
+        }
+      ]
+    },
+    {
+      "version": "1.8.8-wurstx",
+      "label": "1.8.8 WurstX",
+      "era": "legacy",
+      "folder": "1.8.8-wurstx",
+      "source_repo": "Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions",
+      "notes": "1.8.8 client variant",
+      "files": [
+        {
+          "name": "Eaglercraft 1.8.8 WurstX (WASM-GC).html",
+          "url": "https://github.com/Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions/raw/HEAD/Eaglercraft%201.8.8%20WurstX%20%28WASM-GC%29.html",
+          "role": "client",
+          "bytes": 27847113
+        }
+      ]
+    },
+    {
+      "version": "1.8.8-resent",
+      "label": "1.8.8 Resent",
+      "era": "legacy",
+      "folder": "1.8.8-resent",
+      "source_repo": "Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions",
+      "notes": "1.8.8 client variant",
+      "files": [
+        {
+          "name": "Eaglercraft 1.8.8 Resent Client (WASM-GC).html",
+          "url": "https://github.com/Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions/raw/HEAD/Eaglercraft%201.8.8%20Resent%20Client%20%28WASM-GC%29.html",
+          "role": "client",
+          "bytes": 18836996
+        }
+      ]
+    },
+    {
+      "version": "1.8.8-signed",
+      "label": "1.8.8 Signed (JS)",
+      "era": "legacy",
+      "folder": "1.8.8-signed",
+      "source_repo": "Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions",
+      "notes": "1.8.8 client variant",
+      "files": [
+        {
+          "name": "Eaglercraft 1.8.8 Signed (JS).html",
+          "url": "https://github.com/Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions/raw/HEAD/Eaglercraft%201.8.8%20Signed%20%28JS%29.html",
+          "role": "client",
+          "bytes": 18002822
+        }
+      ]
+    },
+    {
+      "version": "1.8.8-dragonx",
+      "label": "EaglercraftX 1.8 DragonX",
+      "era": "legacy",
+      "folder": "1.8.8-dragonx",
+      "source_repo": "Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions",
+      "notes": "1.8.8 client variant",
+      "files": [
+        {
+          "name": "EaglercraftX 1.8 DragonX.html",
+          "url": "https://github.com/Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions/raw/HEAD/EaglercraftX%201.8%20DragonX.html",
+          "role": "client",
+          "bytes": 22111873
+        }
+      ]
+    },
+    {
+      "version": "1.12.2",
+      "label": "1.12.2 (WASM-GC)",
+      "era": "legacy",
+      "folder": "1.12.2",
+      "source_repo": "Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions",
+      "files": [
+        {
+          "name": "Eaglercraft 1.12.2 (WASM-GC).html",
+          "url": "https://github.com/Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions/raw/HEAD/Eaglercraft%201.12.2%20%28WASM-GC%29.html",
+          "role": "client",
+          "bytes": 20103718
+        }
+      ]
+    },
+    {
+      "version": "1.12.2-eaglerforge",
+      "label": "1.12.2 + EaglerForge",
+      "era": "legacy",
+      "folder": "1.12.2-eaglerforge",
+      "source_repo": "Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions",
+      "notes": "the one prebuilt build with a runtime JavaScript mod API",
+      "files": [
+        {
+          "name": "EaglerForge 1.12.2.html",
+          "url": "https://github.com/Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions/raw/HEAD/EaglerForge%201.12.2.html",
+          "role": "client",
+          "bytes": 85514220
+        }
+      ]
+    },
+    {
+      "version": "1.13.1",
+      "label": "1.13.1",
+      "era": "legacy",
+      "folder": "1.13.1",
+      "source_repo": "UserArham/1.13.1-Eaglercraft-UNFORKED",
+      "notes": "a bundle: an entry script, the client classes and the asset pack",
+      "files": [
+        {
+          "name": "bootstrap.js",
+          "url": "https://github.com/UserArham/1.13.1-Eaglercraft-UNFORKED/raw/HEAD/bootstrap.js",
+          "role": "entry",
+          "bytes": 14656278
+        },
+        {
+          "name": "classes.js",
+          "url": "https://github.com/UserArham/1.13.1-Eaglercraft-UNFORKED/raw/HEAD/classes.js",
+          "role": "client",
+          "bytes": 14656279
+        },
+        {
+          "name": "assets.epk",
+          "url": "https://github.com/UserArham/1.13.1-Eaglercraft-UNFORKED/raw/HEAD/assets.epk",
+          "role": "assets",
+          "bytes": 18087886
+        }
+      ]
+    },
+    {
+      "version": "1.14.4",
+      "label": "1.14.4",
+      "era": "modern",
+      "folder": "1.14.4",
+      "source_repo": "Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions",
+      "files": [
+        {
+          "name": "Eaglercraft 1.14.4 (WASM-GC).html",
+          "url": "https://github.com/Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions/raw/HEAD/Eaglercraft%201.14.4%20%28WASM-GC%29.html",
+          "role": "client",
+          "bytes": 35209046
+        }
+      ]
+    },
+    {
+      "version": "1.16.5",
+      "label": "1.16.5",
+      "era": "modern",
+      "folder": "1.16.5",
+      "source_repo": "Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions",
+      "files": [
+        {
+          "name": "Eaglercraft 1.16.5 (WASM-GC).html",
+          "url": "https://github.com/Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions/raw/HEAD/Eaglercraft%201.16.5%20%28WASM-GC%29.html",
+          "role": "client",
+          "bytes": 53134128
+        }
+      ]
+    },
+    {
+      "version": "1.20.6",
+      "label": "1.20.6",
+      "era": "modern",
+      "folder": "1.20.6",
+      "source_repo": "Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions",
+      "files": [
+        {
+          "name": "Eaglercraft 1.20.6 (WASM-GC).html",
+          "url": "https://github.com/Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions/raw/HEAD/Eaglercraft%201.20.6%20%28WASM-GC%29.html",
+          "role": "client",
+          "bytes": 55586148
+        }
+      ]
+    },
+    {
+      "version": "26.2",
+      "label": "26.2 (Zeus)",
+      "era": "newest",
+      "folder": "26.2",
+      "source_repo": "Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions",
+      "files": [
+        {
+          "name": "Eaglercraft 26.2 Zeus (WASM-GC).html",
+          "url": "https://github.com/Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions/raw/HEAD/Eaglercraft%2026.2%20Zeus%20%28WASM-GC%29.html",
+          "role": "client",
+          "bytes": 75596271
+        }
+      ]
+    },
+    {
+      "version": "26.2-alt",
+      "label": "26.2 (single file, other port)",
+      "era": "newest",
+      "folder": "26.2-alt",
+      "source_repo": "3lit3-Pl4y3r/eaglercraft-26.2",
+      "files": [
+        {
+          "name": "index.html",
+          "url": "https://github.com/3lit3-Pl4y3r/eaglercraft-26.2/raw/HEAD/index.html",
+          "role": "client",
+          "bytes": 75576620
+        }
+      ]
+    },
+    {
+      "version": "26.3",
+      "label": "26.3",
+      "era": "newest",
+      "folder": "26.3",
+      "source_repo": "Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions",
+      "files": [
+        {
+          "name": "26.3-wasm.html",
+          "url": "https://github.com/Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions/raw/HEAD/26.3-wasm.html",
+          "role": "client",
+          "bytes": 90804846
+        }
+      ]
+    },
+    {
+      "version": "26.3-alt",
+      "label": "26.3 (other port)",
+      "era": "newest",
+      "folder": "26.3-alt",
+      "source_repo": "DhyeyBG/Eaglercraft-26.3",
+      "files": [
+        {
+          "name": "index.html",
+          "url": "https://github.com/DhyeyBG/Eaglercraft-26.3/raw/HEAD/index.html",
+          "role": "client",
+          "bytes": 77863500
+        }
+      ]
+    }
+  ]
+}

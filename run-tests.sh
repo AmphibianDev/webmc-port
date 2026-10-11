@@ -5,6 +5,8 @@ cd "$(dirname "$0")"
 failed=0
 echo "== version pipeline"; python3 tests/test_pipeline.py || failed=1
 echo; echo "== launcher page"; node tests/test_site.mjs || failed=1
+echo; echo "== the build downloader (GitHub only, verified on arrival)"
+python3 tests/test_fetch_builds.py || failed=1
 echo; echo "== the mod loader (build-time Fabric, for workspaces)"
 python3 mods/tests/test_workspace_loader.py || failed=1
 echo; echo "== the mod planner (jar in, build plan out)"

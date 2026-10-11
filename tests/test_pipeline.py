@@ -201,20 +201,24 @@ def main() -> int:
           "32-bit" in roadmap["cheerpj-java21"]["blocked_by"], roadmap["cheerpj-java21"]["blocked_by"][:90])
 
     print("\nthe build list")
-    builds = ports.get("builds", {}).get("versions", {})
-    check("every target version family has at least one build or workspace",
-          all(group in builds for group in ("26.3", "26.2", "1.21.11", "1.21.5", "1.18.2", "1.16.5",
-                                           "1.12.2", "1.8.9", "1.5.2", "classic (Indev - 1.2.5)")),
-          str(sorted(builds)))
+    builds_doc = _json.loads((ROOT / "builds.json").read_text())
+    builds = {group["version"]: group["files"] for group in builds_doc["versions"]}
+    wanted_versions = ("26.3", "26.2", "1.20.6", "1.16.5", "1.14.4", "1.13.1", "1.12.2", "1.12.2-eaglerforge",
+                       "1.8.8", "1.5.2", "1.2.5", "b1.8.1", "a1.2.6", "in-20100223")
+    check("every version with a build on GitHub is listed",
+          all(version in builds for version in wanted_versions),
+          str([v for v in wanted_versions if v not in builds]))
+    check("the versions with no verifiable build are absent, not pretended",
+          not {"1.18.2", "1.21.5", "1.21.11"} & set(builds), str(sorted(builds)))
     entries = [entry for group in builds.values() for entry in group]
-    check("each entry names a repository", all(entry.get("repo") for entry in entries))
-    check("each entry says how to get it", all(entry.get("how") for entry in entries))
-    check("each group marks what to use", all(any(e.get("recommended") for e in group) for group in builds.values()),
-          str([k for k, v in builds.items() if not any(e.get("recommended") for e in v)]))
-    check("a release-asset entry names the asset", all(entry.get("asset") for entry in entries
-                                                       if entry.get("how") == "release asset"))
-    check("a repository-file entry names the path", all(entry.get("path") for entry in entries
-                                                        if entry.get("how") == "repository file"))
+    check("every entry is a GitHub address", all("github.com" in entry["url"] for entry in entries))
+    check("every file says what it is for", all(entry.get("role") for entry in entries))
+    check("sizes are known for everything the mirror hosts",
+          sum(1 for entry in entries if entry.get("bytes")) >= 22, str(len(entries)))
+    check("the fruit of the run is a manifest with hashes",
+          (ROOT / "work" / "builds" / "manifest.json").is_file()
+          and all(e.get("sha256") for v in _json.loads((ROOT / "work" / "builds" / "manifest.json").read_text())["versions"].values()
+                  for e in v["files"] if e.get("state") != "failed"))
 
     print("\nthe target list")
     code, output = run("tools/targets.py", "--manifest", str(FIXTURE), "--json")
