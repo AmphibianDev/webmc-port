@@ -8751,7 +8751,7 @@
       "minutes": 0,
       "mods": "runtime - real .jar mods for these versions load with no rebuild, because this is a real JVM",
       "kind": "launch",
-      "jar_url": "https://piston-data.mojang.com/v1/objects/example-1.8.9/client.jar",
+      "jar_url": null,
       "main_class": "net.minecraft.client.Minecraft",
       "caveat": "cheerpj-natives' LWJGL is described as partial: geometry, textures and input work (browsercraft), and Forge 1.6.4 loads (WebForge), but treat any version beyond the two proven ones as something to test before advertising it.",
       "url": null

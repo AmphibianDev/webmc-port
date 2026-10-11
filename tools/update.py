@@ -100,6 +100,9 @@ def catalog_entry(row: dict, engines: list[dict], links: dict, client_urls: dict
         # The catalog is a cache: a refresh that could not reach Mojang must keep the url it
         # already knows, not erase it (which is what an offline refresh used to do).
         known = (previous or {}).get("jar_url")
+        if known and ("example" in known or "invalid" in known):
+            print(f"  ! dropping a leftover test url for {row['id']}: {known[:60]}")
+            known = None
         entry["kind"] = "launch"
         entry["jar_url"] = resolved.get("jar_url") or known
         entry["main_class"] = resolved.get("main_class") or "net.minecraft.client.Minecraft"

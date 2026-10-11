@@ -227,6 +227,15 @@ def main() -> int:
     else:
         print("  SKIP  every fetched build has a size and a hash — nothing fetched on this machine")
 
+    print("\nfixture hygiene")
+    guard_src = (ROOT / "tools" / "update.py").read_text()
+    check("the catalog refuses to keep a test url", '"example" in known' in guard_src
+          or "'example' in known" in guard_src, "no guard found in update.py")
+    live_state = _json.loads((ROOT / "state.json").read_text()) if (ROOT / "state.json").is_file() else {}
+    bad = [e["id"] for e in live_state.get("catalog", [])
+           if e.get("jar_url") and ("example" in e["jar_url"] or "invalid" in e["jar_url"])]
+    check("and no test url is left in the committed state", not bad, str(bad))
+
     print("\nthe target list")
     code, output = run("tools/targets.py", "--manifest", str(FIXTURE), "--json")
     check("targets.py answers for the project's versions", code == 0, output[-160:])
