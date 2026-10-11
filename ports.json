@@ -1,0 +1,60 @@
+{
+  "note": "Where a browser client for a version can come from. An engine is a project that compiles (or reimplements) a Minecraft client for the web; this repository orchestrates them: it discovers versions, decides which engine can build one, and publishes what comes out. Adding an engine here is how a new version family becomes buildable.",
+  "engines": [
+    {
+      "id": "gaius",
+      "name": "Gaius (TeaVM, official client bytecode)",
+      "repo": "TypeThe0ry/Gaius",
+      "kind": "real-client",
+      "note": "Compiles the official client jar to WebAssembly; one profile per version in port/versions/<version>.json. This is the engine for modern releases.",
+      "profiles": ["26.3", "26.2", "1.21.11"],
+      "java": 25,
+      "ram_gb": 24,
+      "build": {
+        "clone": "git clone --depth 1 --lfs https://github.com/{repo} engine",
+        "acquire": "GAIUS_VERSION_PROFILE_PATH=versions/{version}.json bash port/scripts/fetch-version.sh",
+        "remap": "GAIUS_VERSION_PROFILE_PATH=versions/{version}.json bash port/scripts/remap-client.sh",
+        "compile": "GAIUS_VERSION_PROFILE_PATH=versions/{version}.json bash port/scripts/build-version-release.sh {version}",
+        "output": "port/web/dist/{version}/Gaius.html"
+      }
+    },
+    {
+      "id": "eagler-ports",
+      "name": "EaglerPorts (TeaVM, classic versions)",
+      "repo": "EaglerPorts/{slug}",
+      "kind": "reimplementation",
+      "note": "One repository per old version, each with its own offline WASM build. No compile step here: the release asset is the client.",
+      "versions": {
+        "in-20100223": "in-20100223",
+        "a1.0.16_02": "a1.0.16_02",
+        "a1.2.6": "a1.2.6",
+        "b1.3_01": "b1.3_01",
+        "b1.6-tb3": "b1.6-tb3",
+        "b1.8.1": "b1.8.1",
+        "1.2.5": "1.2.5"
+      },
+      "release": {
+        "asset": "Eaglercraft_Offline_WASM.html",
+        "tag": "latest"
+      }
+    },
+    {
+      "id": "webforge",
+      "name": "WebForge (CheerpJ, real JVM, real jars)",
+      "repo": "Cucuzacu/WebForge",
+      "kind": "real-jvm",
+      "note": "A JVM in the page, so Forge jars load at runtime. Old versions only (Java 8-class library), but it is the one place where a .jar loads without a rebuild.",
+      "versions": { "1.6.4-forge": "1.6.4" },
+      "release": {
+        "asset": "webforge_offline.html",
+        "tag": "latest"
+      }
+    }
+  ],
+  "rules": {
+    "release": "Releases and snapshots are real client jars: buildable with an engine whose profile matches, otherwise they need a port.",
+    "snapshot": "Snapshots move weekly. A port needs its platform layer re-checked per snapshot, so they are catalogued and queued rather than built blindly.",
+    "old_beta": "Old versions have a different asset layout; use a classic engine.",
+    "old_alpha": "Same as old_beta."
+  }
+}

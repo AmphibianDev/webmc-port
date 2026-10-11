@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>WebMC Port — Minecraft, compiled for the browser</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #101113; --panel: #1c1d20; --panel-2: #24262a; --line: #34373c;
+    --text: #e9ecef; --muted: #9aa3ad;
+    --green: #3c8527; --green-lit: #57a83b; --gold: #ffd479; --blue: #7cc4ff; --red: #d4564b;
+    --dirt-a: #4a3524; --dirt-b: #3b2a1c;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  a { color: var(--blue); }
+  code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .app { display: grid; grid-template-columns: 292px 1fr; min-height: 100vh; }
+  .rail { display: flex; flex-direction: column; gap: 14px; padding: 16px;
+    background: linear-gradient(180deg, #191a1d, #141518 40%, #101113); border-right: 1px solid var(--line); }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .logo { width: 46px; height: 46px; display: grid; place-items: center; font-size: 24px;
+    border-radius: 8px; border: 1px solid #57402a;
+    background: repeating-linear-gradient(45deg, var(--dirt-a) 0 6px, var(--dirt-b) 6px 12px);
+    box-shadow: inset 0 0 0 2px rgba(0,0,0,.35); }
+  .brand b { font-family: ui-monospace, Menlo, monospace; font-size: 18px; letter-spacing: .06em;
+    text-transform: uppercase; }
+  .brand small { color: var(--muted); font-size: 11.5px; }
+  .tabs { display: flex; flex-direction: column; gap: 6px; }
+  .tab { text-align: left; padding: 11px 13px; border-radius: 7px; cursor: pointer; font: inherit;
+    color: var(--text); background: var(--panel); border: 1px solid var(--line); }
+  .tab:hover { background: var(--panel-2); }
+  .tab.on { background: linear-gradient(180deg, #2f3a2c, #262d24); border-color: #46603c; }
+  .rail-foot { margin-top: auto; display: flex; flex-direction: column; gap: 9px; }
+  .state-line { color: var(--muted); font-size: 12.5px; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 11px 13px; border-radius: 7px; border: 1px solid var(--line); background: var(--panel);
+    color: var(--text); cursor: pointer; font: inherit; text-decoration: none; font-weight: 600; }
+  .btn:hover { background: var(--panel-2); }
+  .btn.play { background: linear-gradient(180deg, var(--green-lit), var(--green));
+    border-color: #2c6419; color: #f3fff0; letter-spacing: .06em; text-transform: uppercase; }
+  .btn.play:hover { background: linear-gradient(180deg, #63bb44, #418f2b); }
+  .btn.small { font-size: 12.5px; padding: 7px 11px; font-weight: 500; }
+  .content { padding: 22px 26px 40px; display: flex; flex-direction: column; gap: 16px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .grow { flex: 1; }
+  h1, h2, h3 { margin: 0; }
+  h2 { font-size: 17px; }
+  h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .muted { color: var(--muted); }
+  .small { font-size: 12.5px; }
+  .grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+  .v { border: 1px solid var(--line); border-radius: 10px; padding: 12px; background: var(--panel-2); }
+  .v b { font-size: 15px; }
+  .v .meta { color: var(--muted); font-size: 12px; margin-top: 3px; }
+  .pill { display: inline-block; font-size: 11px; padding: 3px 8px; border-radius: 999px;
+    border: 1px solid var(--line); color: var(--muted); }
+  .pill.build { color: var(--green-lit); border-color: #3d6330; }
+  .pill.reuse { color: var(--blue); border-color: #35506b; }
+  .pill.queued { color: var(--gold); border-color: #6b5a2d; }
+  pre { background: #0f1620; border: 1px solid var(--line); border-radius: 10px; padding: 12px;
+    overflow: auto; font-size: 12.5px; }
+  .hide { display: none !important; }
+  ul { margin: 8px 0 0; padding-left: 20px; }
+  @media (max-width: 820px) { .app { grid-template-columns: 1fr; } .rail { border-right: 0; border-bottom: 1px solid var(--line); } }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="rail">
+    <div class="brand">
+      <div class="logo">⛏</div>
+      <div><b>WebMC Port</b><br /><small>Minecraft, compiled for the browser</small></div>
+    </div>
+
+    <nav class="tabs">
+      <button class="tab on" data-tab="play">▶ Play</button>
+      <button class="tab" data-tab="versions">🗂 Versions</button>
+      <button class="tab" data-tab="port">🧱 Port a version</button>
+      <button class="tab" data-tab="help">❓ How it works</button>
+    </nav>
+
+    <div class="rail-foot">
+      <div class="state-line" id="catalogState">reading the catalog…</div>
+      <a class="btn" id="repoLink" target="_blank" rel="noopener">Repository ↗</a>
+    </div>
+  </aside>
+
+  <main class="content">
+    <section class="pane" data-pane="play">
+      <div class="card">
+        <div class="row">
+          <h2 class="grow">Ready to play</h2>
+          <span class="small muted" id="playCount"></span>
+        </div>
+        <p class="small muted" style="margin: 8px 0 12px">
+          These run <b>in your tab</b>: the client is compiled to WebAssembly and your own machine
+          renders it, so there is nothing streamed and nothing to install. Clients that this site
+          does not host are fetched once from the project that builds them.
+        </p>
+        <div class="grid" id="playList"></div>
+      </div>
+    </section>
+
+    <section class="pane hide" data-pane="versions">
+      <div class="card">
+        <div class="row">
+          <h2 class="grow">Every version the catalog knows</h2>
+          <span class="small muted" id="versionCount"></span>
+        </div>
+        <div class="row" style="margin: 10px 0 12px">
+          <input id="search" type="text" placeholder="filter: 26.2, 1.21, snapshot, beta…"
+                 style="flex: 1; min-width: 220px; background: #14161a; color: var(--text);
+                        border: 1px solid var(--line); border-radius: 6px; padding: 9px 10px; font: inherit" />
+        </div>
+        <div class="grid" id="versionList"></div>
+      </div>
+    </section>
+
+    <section class="pane hide" data-pane="port">
+      <div class="card">
+        <h2>Porting is the bottleneck, and here is exactly what it takes</h2>
+        <p class="small muted" style="margin: 8px 0">
+          A browser client is the real game with the parts a browser does not have replaced:
+          windowing, OpenGL, audio, networking and the filesystem. That replacement layer is
+          per-version work — it is why this catalog marks most versions <span class="pill queued">queued</span>
+          instead of pretending they build. The pipeline around it is done: discovery, verdicts,
+          acquisition, build orchestration, catalog and this page.
+        </p>
+        <h3 style="margin-top: 14px">What a new version needs</h3>
+        <ul class="small muted">
+          <li>a version profile in the engine (which classes to replace, which lists they belong in)</li>
+          <li>the client jar and asset index, fetched at build time into <code>work/</code> — never committed</li>
+          <li>a TeaVM compile of the whole client, then a single-file package</li>
+          <li>the platform checks: WebGL 2 present, audio context, worker messaging, pointer lock</li>
+        </ul>
+        <h3 style="margin-top: 14px">The commands, as the updater prints them</h3>
+        <pre id="portCommands">python3 tools/update.py --write
+python3 tools/plan.py --kinds release,snapshot</pre>
+        <p class="small muted" style="margin: 10px 0 0">
+          Everything is fetched into <code>work/</code> and built into <code>dist/</code>; neither is
+          committed, and this repository contains no game files at all.
+        </p>
+      </div>
+    </section>
+
+    <section class="pane hide" data-pane="help">
+      <div class="card">
+        <h2>How this works</h2>
+        <ul class="small muted">
+          <li><b>Discovery</b> — <code>tools/versions.py</code> reads Mojang's version list and classifies
+            every version (release, snapshot, old beta/alpha).</li>
+          <li><b>Verdict</b> — <code>tools/plan.py</code> asks <code>ports.json</code> which engine can
+            handle it: <span class="pill build">build</span> (an engine has a profile),
+            <span class="pill reuse">reuse</span> (an engine publishes a client), or
+            <span class="pill queued">needs-port</span> (nobody has written that version's browser layer).</li>
+          <li><b>Acquire</b> — <code>tools/acquire.py</code> fetches the client jar and asset index into
+            <code>work/</code>, verifying checksums.</li>
+          <li><b>Build</b> — the engine compiles it (for the modern releases: Gaius, official client
+            bytecode → WebAssembly).</li>
+          <li><b>Catalog</b> — <code>tools/update.py</code> writes the state and this page's manifest, and
+            queues the versions that need a port.</li>
+        </ul>
+        <p class="small muted" style="margin: 10px 0 0">
+          This repository hosts no Minecraft files: it holds code, and the page links clients where
+          their own projects publish them. Builds fetch the game at build time and keep it in
+          <code>work/</code>.
+        </p>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+  const el = (id) => document.getElementById(id);
+  let catalog = { versions: [], queued: [] };
+
+  function showTab(name) {
+    for (const button of document.querySelectorAll("[data-tab]")) {
+      button.classList.toggle("on", button.dataset.tab === name);
+    }
+    for (const pane of document.querySelectorAll("[data-pane]")) {
+      pane.classList.toggle("hide", pane.dataset.pane !== name);
+    }
+  }
+  for (const button of document.querySelectorAll("[data-tab]")) {
+    button.addEventListener("click", () => showTab(button.dataset.tab));
+  }
+
+  const verdictLabel = (v) => ({
+    build: "ported — build available",
+    reuse: "prebuilt client",
+    "needs-port": "queued, needs a port",
+  }[v] || v);
+
+  function versionCard(entry) {
+    const node = document.createElement("div");
+    node.className = "v";
+    const state = entry.url ? (entry.kind === "built" ? "build" : "reuse") : "queued";
+    node.innerHTML = `
+      <div class="row"><b class="grow">${entry.id}</b>
+        <span class="pill ${state}">${verdictLabel(entry.verdict)}</span></div>
+      <div class="meta">${entry.type}${entry.released ? " · " + entry.released.slice(0, 10) : ""}${
+        entry.engine ? " · " + entry.engine : ""}</div>
+      <div class="actions" style="margin-top: 8px"></div>`;
+    const actions = node.querySelector(".actions");
+    if (entry.url) {
+      const play = document.createElement("a");
+      play.className = "btn play small";
+      play.target = "_blank";
+      play.rel = "noopener";
+      play.href = entry.url;
+      play.textContent = "▶ Play";
+      actions.append(play);
+    } else {
+      const why = document.createElement("span");
+      why.className = "small muted";
+      why.textContent = "no browser client for this version yet";
+      actions.append(why);
+    }
+    return node;
+  }
+
+  function render(filter = "") {
+    const needle = filter.trim().toLowerCase();
+    const all = (catalog.versions || []).filter((entry) =>
+      !needle || entry.id.toLowerCase().includes(needle) || (entry.type || "").includes(needle));
+    const playable = all.filter((entry) => entry.url);
+
+    const playList = el("playList");
+    const versionList = el("versionList");
+    playList.innerHTML = "";
+    versionList.innerHTML = "";
+    playable.forEach((entry) => playList.append(versionCard(entry)));
+    all.forEach((entry) => versionList.append(versionCard(entry)));
+
+    el("playCount").textContent = playable.length ? `${playable.length} playable` : "nothing playable yet";
+    el("versionCount").textContent = `${all.length} version${all.length === 1 ? "" : "s"}`;
+  }
+
+  async function load() {
+    try {
+      const response = await fetch("manifest.json", { cache: "no-store" });
+      if (!response.ok) throw new Error(`manifest.json: ${response.status}`);
+      catalog = await response.json();
+      const queued = (catalog.queued || []).length;
+      el("catalogState").textContent =
+        `catalog updated ${catalog.updated ? catalog.updated : "never"}` +
+        (queued ? ` · ${queued} version(s) queued for a port` : "");
+      render();
+    } catch (error) {
+      el("catalogState").textContent = "no catalog yet — run tools/update.py --write";
+      el("playList").innerHTML =
+        `<div class="v small muted">The catalog has not been generated yet. In the repository:<br />
+         <code>python3 tools/update.py --manifest fixtures/manifest.json --state work/state.json --write</code></div>`;
+    }
+  }
+
+  el("search").addEventListener("input", (event) => render(event.target.value));
+  showTab("play");
+  load();
+</script>
+</body>
+</html>

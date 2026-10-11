@@ -1,0 +1,92 @@
+{
+  "seen": [
+    "1.21.11",
+    "1.21.4",
+    "1.8.9",
+    "26.2",
+    "26.3",
+    "26.3-snapshot-7",
+    "a1.2.6",
+    "b1.8.1"
+  ],
+  "catalog": [
+    {
+      "id": "26.3-snapshot-7",
+      "type": "snapshot",
+      "released": "2026-10-08T10:00:00+00:00",
+      "verdict": "needs-port",
+      "engine": null,
+      "url": null,
+      "kind": "queued"
+    },
+    {
+      "id": "26.3",
+      "type": "release",
+      "released": "2026-10-02T10:00:00+00:00",
+      "verdict": "build",
+      "engine": "gaius",
+      "url": "clients/26.3.html",
+      "kind": "built"
+    },
+    {
+      "id": "26.2",
+      "type": "release",
+      "released": "2026-09-19T10:00:00+00:00",
+      "verdict": "build",
+      "engine": "gaius",
+      "url": "clients/26.2.html",
+      "kind": "built"
+    },
+    {
+      "id": "1.21.11",
+      "type": "release",
+      "released": "2026-06-01T10:00:00+00:00",
+      "verdict": "build",
+      "engine": "gaius",
+      "url": "clients/1.21.11.html",
+      "kind": "built"
+    },
+    {
+      "id": "1.21.4",
+      "type": "release",
+      "released": "2024-12-03T10:00:00+00:00",
+      "verdict": "needs-port",
+      "engine": null,
+      "url": null,
+      "kind": "queued"
+    },
+    {
+      "id": "1.8.9",
+      "type": "release",
+      "released": "2015-12-09T10:00:00+00:00",
+      "verdict": "needs-port",
+      "engine": null,
+      "url": null,
+      "kind": "queued"
+    }
+  ],
+  "queued": [
+    {
+      "id": "26.3-snapshot-7",
+      "type": "snapshot",
+      "released": "2026-10-08T10:00:00+00:00",
+      "why": "no engine has a browser platform layer for this version yet",
+      "queued": "2026-10-11T10:42:03Z"
+    },
+    {
+      "id": "1.21.4",
+      "type": "release",
+      "released": "2024-12-03T10:00:00+00:00",
+      "why": "no engine has a browser platform layer for this version yet",
+      "queued": "2026-10-11T10:42:03Z"
+    },
+    {
+      "id": "1.8.9",
+      "type": "release",
+      "released": "2015-12-09T10:00:00+00:00",
+      "why": "no engine has a browser platform layer for this version yet",
+      "queued": "2026-10-11T10:42:03Z"
+    }
+  ],
+  "updated": "2026-10-11T10:42:03Z"
+}

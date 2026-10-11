@@ -1,0 +1,140 @@
+#!/usr/bin/env python3
+"""Tests for the version pipeline: discovery, verdicts, the updater and acquisition.
+
+    python3 tests/test_pipeline.py
+
+Runs offline on fixtures/manifest.json, so it proves the logic without talking to Mojang and
+without touching a client jar.
+"""
+
+from __future__ import annotations
+
+import json
+import pathlib
+import subprocess
+import sys
+import tempfile
+
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "tools"))
+
+import plan as planner  # noqa: E402
+import update as updater  # noqa: E402
+import versions as version_tools  # noqa: E402
+
+FAILURES = 0
+FIXTURE = ROOT / "fixtures" / "manifest.json"
+
+
+def check(label: str, condition: bool, detail: str = "") -> None:
+    global FAILURES
+    print(f"  {'PASS' if condition else 'FAIL'}  {label}" + ("" if condition or not detail else f" — {detail}"))
+    if not condition:
+        FAILURES += 1
+
+
+def run(*args: str) -> tuple[int, str]:
+    finished = subprocess.run([sys.executable, *args], capture_output=True, text=True, cwd=ROOT)
+    return finished.returncode, finished.stdout + finished.stderr
+
+
+def main() -> int:
+    manifest = version_tools.load_manifest(FIXTURE)
+    engines = planner.load_engines()
+
+    print("version discovery")
+    check("the fixture lists versions", len(version_tools.versions(manifest)) == 8)
+    check("releases are found newest first",
+          [v["id"] for v in version_tools.newest(manifest, ("release",), 3)] == ["26.3", "26.2", "1.21.11"])
+    check("old versions are a different kind",
+          version_tools.kind_of(next(v for v in version_tools.versions(manifest) if v["id"] == "b1.8.1")) == "old_beta")
+    check("kinds can be combined",
+          len(version_tools.newest(manifest, ("release", "snapshot"), 2)) == 2)
+    check("a version can be resolved to its own document",
+          version_tools.resolve(manifest, "26.2")["url"].endswith("26.2.json"))
+    try:
+        version_tools.resolve(manifest, "nope")
+        check("an unknown version is an error", False)
+    except LookupError:
+        check("an unknown version is an error", True)
+
+    print("\nverdicts")
+    rows = {row["id"]: row for row in
+            planner.plan(manifest, engines, ("release", "snapshot", "old_beta", "old_alpha"), None, None)}
+    check("a version with an engine profile is buildable", rows["26.2"]["verdict"] == "build", rows["26.2"]["why"])
+    check("and names the engine", rows["26.2"]["engine"] == "gaius")
+    check("a real version with no profile needs a port", rows["1.21.4"]["verdict"] == "needs-port",
+          rows["1.21.4"]["why"])
+    check("a fresh snapshot needs a port too", rows["26.3-snapshot-7"]["verdict"] == "needs-port")
+    check("an old version with a prebuilt client is reused", rows["b1.8.1"]["verdict"] == "reuse",
+          rows["b1.8.1"]["why"])
+    check("and points at that client", "Eaglercraft_Offline_WASM.html" in (planner.engine_links(engines).get("b1.8.1") or ""))
+
+    print("\nprebuilt links are never hosted by us")
+    links = planner.engine_links(engines)
+    check("every reuse version has a link", all(links.get(v) for v in ("b1.8.1", "1.2.5", "1.6.4-forge")),
+          str(sorted(links)))
+    check("links point at the project that builds them",
+          all(link.startswith("https://github.com/") for link in links.values()))
+    check("no link is a local path", not any(link.startswith("/") or "webmc-port" in link for link in links.values()))
+
+    print("\nthe updater")
+    with tempfile.TemporaryDirectory() as tmp:
+        state = pathlib.Path(tmp) / "state.json"
+        code, output = run("tools/update.py", "--manifest", str(FIXTURE), "--state", str(state),
+                           "--kinds", "release,snapshot", "--write")
+        check("it runs against the fixture", code == 0, output[-200:])
+        check("it wrote a state file", state.is_file())
+        check("it wrote the page's manifest", (ROOT / "site" / "manifest.json").is_file())
+        saved = json.loads(state.read_text())
+        check("it recorded every version it saw", len(saved["seen"]) == 8)
+        check("it queued the versions that need a port",
+              {entry["id"] for entry in saved["queued"]} >= {"1.21.4", "26.3-snapshot-7"}, str(saved["queued"]))
+        check("it catalogued the buildable ones",
+              any(entry["id"] == "26.2" and entry["verdict"] == "build" for entry in saved["catalog"]))
+        check("queued entries say why", all(entry.get("why") for entry in saved["queued"]))
+
+        # a second run with nothing new must not add anything
+        before = json.loads(state.read_text())
+        code, output = run("tools/update.py", "--manifest", str(FIXTURE), "--state", str(state),
+                           "--kinds", "release", "--write")
+        after = json.loads(state.read_text())
+        check("a second run finds nothing new", "nothing new" in output or len(after["queued"]) == len(before["queued"]))
+
+        # a brand new version shows up as new
+        extra = json.loads(FIXTURE.read_text())
+        extra["versions"].insert(0, {"id": "27.0", "type": "release",
+                                     "url": "https://example.invalid/27.0.json",
+                                     "releaseTime": "2026-11-01T10:00:00+00:00"})
+        newer = pathlib.Path(tmp) / "manifest-next.json"
+        newer.write_text(json.dumps(extra))
+        code, output = run("tools/update.py", "--manifest", str(newer), "--state", str(state), "--write")
+        check("a new release is noticed", "27.0" in output and code == 0)
+        final = json.loads(state.read_text())
+        check("and queued for a port", any(entry["id"] == "27.0" for entry in final["queued"]))
+
+    print("\nacquisition")
+    code, output = run("tools/acquire.py", "--version", "26.2", "--manifest", str(FIXTURE), "--dry-run")
+    check("a dry run reports the targets", code == 0 and "client:" in output and "java:" in output, output[-200:])
+    check("a dry run downloads nothing", "nothing downloaded" in output)
+    check("it refuses an unknown version", run("tools/acquire.py", "--version", "9.9.9",
+                                               "--manifest", str(FIXTURE), "--dry-run")[0] != 0)
+    check("no jar is ever committed", "work/" in (ROOT / ".gitignore").read_text()
+          and "dist/" in (ROOT / ".gitignore").read_text())
+
+    print("\nthe map of the idea")
+    code, output = run("tools/plan.py", "--manifest", str(FIXTURE), "--kinds", "release,snapshot,old_beta",
+                       "--limit", "20")
+    check("plan.py renders a table", code == 0 and "verdict" in output and "🧱" in output, output[-200:])
+    check("the report counts the verdicts", "needs-port:" in output, output[-200:])
+
+    print()
+    if FAILURES == 0:
+        print("version pipeline tests passed")
+    else:
+        print(f"{FAILURES} pipeline test(s) FAILED")
+    return 0 if FAILURES == 0 else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
