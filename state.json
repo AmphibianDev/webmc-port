@@ -921,33 +921,9 @@
   ],
   "catalog": [
     {
-      "id": "26.3-snapshot-7",
-      "type": "snapshot",
-      "released": "2026-10-08T10:00:00+00:00",
-      "verdict": "needs-port",
-      "engine": null,
-      "engine_name": null,
-      "minutes": null,
-      "mods": null,
-      "url": null,
-      "kind": "queued"
-    },
-    {
       "id": "26.4-snapshot-3",
       "type": "snapshot",
       "released": "2026-10-06T12:54:26+00:00",
-      "verdict": "needs-port",
-      "engine": null,
-      "engine_name": null,
-      "minutes": null,
-      "mods": null,
-      "url": null,
-      "kind": "queued"
-    },
-    {
-      "id": "26.3",
-      "type": "release",
-      "released": "2026-10-02T10:00:00+00:00",
       "verdict": "needs-port",
       "engine": null,
       "engine_name": null,
@@ -981,16 +957,16 @@
       "kind": "queued"
     },
     {
-      "id": "26.2",
+      "id": "26.3",
       "type": "release",
-      "released": "2026-09-19T10:00:00+00:00",
-      "verdict": "build",
-      "engine": "eagler-workspace-26.2",
-      "engine_name": "Eaglercraft 26.2 workspace (TeaVM + WASM-GC toolchain)",
-      "minutes": 42,
-      "mods": "yes - source hooks (see ../webmc-browser/modded/loader.py, which plans and prunes a Fabric mod set before the build)",
-      "url": "clients/26.2.html",
-      "kind": "built"
+      "released": "2026-09-15T11:23:02+00:00",
+      "verdict": "needs-port",
+      "engine": null,
+      "engine_name": null,
+      "minutes": null,
+      "mods": null,
+      "url": null,
+      "kind": "queued"
     },
     {
       "id": "26.3-rc-3",
@@ -1101,6 +1077,18 @@
       "kind": "queued"
     },
     {
+      "id": "26.3-snapshot-7",
+      "type": "snapshot",
+      "released": "2026-08-04T11:49:07+00:00",
+      "verdict": "needs-port",
+      "engine": null,
+      "engine_name": null,
+      "minutes": null,
+      "mods": null,
+      "url": null,
+      "kind": "queued"
+    },
+    {
       "id": "26.3-snapshot-6",
       "type": "snapshot",
       "released": "2026-07-28T12:25:51+00:00",
@@ -1173,6 +1161,18 @@
       "kind": "queued"
     },
     {
+      "id": "26.2",
+      "type": "release",
+      "released": "2026-06-16T12:03:33+00:00",
+      "verdict": "build",
+      "engine": "eagler-workspace-26.2",
+      "engine_name": "Eaglercraft 26.2 workspace (TeaVM + WASM-GC toolchain)",
+      "minutes": 42,
+      "mods": "yes - source hooks (see ../webmc-browser/modded/loader.py, which plans and prunes a Fabric mod set before the build)",
+      "url": "clients/26.2.html",
+      "kind": "built"
+    },
+    {
       "id": "26.2-rc-2",
       "type": "snapshot",
       "released": "2026-06-12T11:32:28+00:00",
@@ -1236,18 +1236,6 @@
       "id": "26.2-pre-3",
       "type": "snapshot",
       "released": "2026-06-02T11:48:29+00:00",
-      "verdict": "needs-port",
-      "engine": null,
-      "engine_name": null,
-      "minutes": null,
-      "mods": null,
-      "url": null,
-      "kind": "queued"
-    },
-    {
-      "id": "1.21.11",
-      "type": "release",
-      "released": "2026-06-01T10:00:00+00:00",
       "verdict": "needs-port",
       "engine": null,
       "engine_name": null,
@@ -1644,6 +1632,18 @@
       "id": "26.1-snapshot-1",
       "type": "snapshot",
       "released": "2025-12-16T12:42:29+00:00",
+      "verdict": "needs-port",
+      "engine": null,
+      "engine_name": null,
+      "minutes": null,
+      "mods": null,
+      "url": null,
+      "kind": "queued"
+    },
+    {
+      "id": "1.21.11",
+      "type": "release",
+      "released": "2025-12-09T12:23:30+00:00",
       "verdict": "needs-port",
       "engine": null,
       "engine_name": null,
@@ -2447,7 +2447,7 @@
     {
       "id": "1.21.4",
       "type": "release",
-      "released": "2024-12-03T10:00:00+00:00",
+      "released": "2024-12-03T10:12:57+00:00",
       "verdict": "needs-port",
       "engine": null,
       "engine_name": null,
@@ -7759,6 +7759,7 @@
       "mods": "runtime - real .jar mods for these versions load with no rebuild, because this is a real JVM",
       "kind": "launch",
       "jar_url": "https://piston-data.mojang.com/v1/objects/0f275bc1547d01fa5f56ba34bdc87d981ee12daf/client.jar",
+      "jar_url_source": "mojang",
       "main_class": "net.minecraft.client.Minecraft",
       "caveat": "LWJGL in JavaScript is described by its authors as partial. Browsercraft proves 1.2.5 and WebForge proves 1.6.4 with Forge; the Alpha/Beta/Indev ones use the same runtime path and older assets, so treat them as 'should work, test before advertising'.",
       "url": null
@@ -8062,6 +8063,7 @@
       "mods": "runtime - real .jar mods for these versions load with no rebuild, because this is a real JVM",
       "kind": "launch",
       "jar_url": "https://piston-data.mojang.com/v1/objects/db5aa600f0b0bf508aaf579509b345c4e34087be/client.jar",
+      "jar_url_source": "mojang",
       "main_class": "net.minecraft.client.Minecraft",
       "caveat": "LWJGL in JavaScript is described by its authors as partial. Browsercraft proves 1.2.5 and WebForge proves 1.6.4 with Forge; the Alpha/Beta/Indev ones use the same runtime path and older assets, so treat them as 'should work, test before advertising'.",
       "url": null
@@ -8293,6 +8295,7 @@
       "mods": "runtime - real .jar mods for these versions load with no rebuild, because this is a real JVM",
       "kind": "launch",
       "jar_url": "https://piston-data.mojang.com/v1/objects/dc8e75ac7274ff6af462b0dcec43c307de668e40/client.jar",
+      "jar_url_source": "mojang",
       "main_class": "net.minecraft.client.Minecraft",
       "caveat": "LWJGL in JavaScript is described by its authors as partial. Browsercraft proves 1.2.5 and WebForge proves 1.6.4 with Forge; the Alpha/Beta/Indev ones use the same runtime path and older assets, so treat them as 'should work, test before advertising'.",
       "url": null
@@ -8742,21 +8745,6 @@
       "kind": "queued"
     },
     {
-      "id": "1.8.9",
-      "type": "release",
-      "released": "2015-12-09T10:00:00+00:00",
-      "verdict": "launch",
-      "engine": "cheerpj-unmodified",
-      "engine_name": "CheerpJ + cheerpj-natives: the official client, unmodified",
-      "minutes": 0,
-      "mods": "runtime - real .jar mods for these versions load with no rebuild, because this is a real JVM",
-      "kind": "launch",
-      "jar_url": null,
-      "main_class": "net.minecraft.client.Minecraft",
-      "caveat": "cheerpj-natives' LWJGL is described as partial: geometry, textures and input work (browsercraft), and Forge 1.6.4 loads (WebForge), but treat any version beyond the two proven ones as something to test before advertising it.",
-      "url": null
-    },
-    {
       "id": "15w49b",
       "type": "snapshot",
       "released": "2015-12-03T15:23:22+00:00",
@@ -8767,6 +8755,22 @@
       "mods": null,
       "url": null,
       "kind": "queued"
+    },
+    {
+      "id": "1.8.9",
+      "type": "release",
+      "released": "2015-12-03T09:24:39+00:00",
+      "verdict": "launch",
+      "engine": "cheerpj-unmodified",
+      "engine_name": "CheerpJ + cheerpj-natives: the official client, unmodified",
+      "minutes": 0,
+      "mods": "runtime - real .jar mods for these versions load with no rebuild, because this is a real JVM",
+      "kind": "launch",
+      "jar_url": "https://launcher.mojang.com/v1/objects/3870888a6c3d349d3771a3e9d16c9bf5e076b908/client.jar",
+      "jar_url_source": "mojang",
+      "main_class": "net.minecraft.client.Minecraft",
+      "caveat": "LWJGL in JavaScript is described by its authors as partial. Browsercraft proves 1.2.5 and WebForge proves 1.6.4 with Forge; the Alpha/Beta/Indev ones use the same runtime path and older assets, so treat them as 'should work, test before advertising'.",
+      "url": null
     },
     {
       "id": "15w49a",
@@ -9967,6 +9971,7 @@
       "mods": "runtime - real .jar mods for these versions load with no rebuild, because this is a real JVM",
       "kind": "launch",
       "jar_url": "https://launcher.mojang.com/v1/objects/e80d9b3bf5085002218d4be59e668bac718abbc6/client.jar",
+      "jar_url_source": "mojang",
       "main_class": "net.minecraft.client.Minecraft",
       "caveat": "LWJGL in JavaScript is described by its authors as partial. Browsercraft proves 1.2.5 and WebForge proves 1.6.4 with Forge; the Alpha/Beta/Indev ones use the same runtime path and older assets, so treat them as 'should work, test before advertising'.",
       "url": null
@@ -10654,6 +10659,7 @@
       "mods": "runtime - real .jar mods for these versions load with no rebuild, because this is a real JVM",
       "kind": "launch",
       "jar_url": "https://launcher.mojang.com/v1/objects/1703704407101cf72bd88e68579e3696ce733ecd/client.jar",
+      "jar_url_source": "mojang",
       "main_class": "net.minecraft.client.Minecraft",
       "caveat": "LWJGL in JavaScript is described by its authors as partial. Browsercraft proves 1.2.5 and WebForge proves 1.6.4 with Forge; the Alpha/Beta/Indev ones use the same runtime path and older assets, so treat them as 'should work, test before advertising'.",
       "url": null
@@ -10957,6 +10963,7 @@
       "mods": "runtime - real .jar mods for these versions load with no rebuild, because this is a real JVM",
       "kind": "launch",
       "jar_url": "https://launcher.mojang.com/v1/objects/465378c9dc2f779ae1d6e8046ebc46fb53a57968/client.jar",
+      "jar_url_source": "mojang",
       "main_class": "net.minecraft.client.Minecraft",
       "caveat": "LWJGL in JavaScript is described by its authors as partial. Browsercraft proves 1.2.5 and WebForge proves 1.6.4 with Forge; the Alpha/Beta/Indev ones use the same runtime path and older assets, so treat them as 'should work, test before advertising'.",
       "url": null
@@ -11152,6 +11159,7 @@
       "mods": "runtime - real .jar mods for these versions load with no rebuild, because this is a real JVM",
       "kind": "launch",
       "jar_url": "https://launcher.mojang.com/v1/objects/4a2fac7504182a97dcbcd7560c6392d7c8139928/client.jar",
+      "jar_url_source": "mojang",
       "main_class": "net.minecraft.client.Minecraft",
       "caveat": "LWJGL in JavaScript is described by its authors as partial. Browsercraft proves 1.2.5 and WebForge proves 1.6.4 with Forge; the Alpha/Beta/Indev ones use the same runtime path and older assets, so treat them as 'should work, test before advertising'.",
       "url": null
@@ -11227,6 +11235,7 @@
       "mods": "runtime - real .jar mods for these versions load with no rebuild, because this is a real JVM",
       "kind": "launch",
       "jar_url": "https://launcher.mojang.com/v1/objects/b679fea27f2284836202e9365e13a82552092e5d/client.jar",
+      "jar_url_source": "mojang",
       "main_class": "net.minecraft.client.Minecraft",
       "caveat": "LWJGL in JavaScript is described by its authors as partial. Browsercraft proves 1.2.5 and WebForge proves 1.6.4 with Forge; the Alpha/Beta/Indev ones use the same runtime path and older assets, so treat them as 'should work, test before advertising'.",
       "url": null
@@ -17163,5 +17172,5 @@
       "queued": "2026-10-11T12:55:14Z"
     }
   ],
-  "updated": "2026-10-11T12:55:14Z"
+  "updated": "2026-10-11T12:58:54Z"
 }
