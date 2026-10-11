@@ -62,7 +62,9 @@ def queue_needs_port(queued: list[dict], rows: list[dict]) -> list[dict]:
 def catalog_entry(row: dict, engines: list[dict], links: dict) -> dict:
     """One catalog row: what the launcher page needs to offer this version."""
     entry = {"id": row["id"], "type": row["type"], "released": row["released"],
-             "verdict": row["verdict"], "engine": row["engine"]}
+             "verdict": row["verdict"], "engine": row["engine"],
+             "engine_name": row.get("engine_name"), "minutes": row.get("minutes"),
+             "mods": row.get("mods")}
     if row["verdict"] == "reuse":
         entry["url"] = links.get(row["id"])
         entry["kind"] = "prebuilt"

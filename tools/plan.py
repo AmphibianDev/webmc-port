@@ -29,9 +29,11 @@ sys.path.insert(0, str(HERE))
 import versions as version_tools  # noqa: E402
 
 
-def load_engines(path: pathlib.Path | None = None) -> list[dict]:
+def load_engines(path: pathlib.Path | None = None, include_disabled: bool = False) -> list[dict]:
+    """The engines that may be used. A disabled one is documentation, not a candidate."""
     document = json.loads((path or (ROOT / "ports.json")).read_text())
-    return list(document.get("engines") or [])
+    engines = list(document.get("engines") or [])
+    return engines if include_disabled else [e for e in engines if e.get("enabled", True)]
 
 
 def engine_links(engines: list[dict]) -> dict:
@@ -55,13 +57,16 @@ def verdict_for(version_id: str, kind: str, engines: list[dict]) -> dict:
     """Which engine handles this version, and how."""
     for engine in engines:
         if version_id in (engine.get("profiles") or []):
+            requires = engine.get("requires") or {}
             return {
                 "verdict": "build",
                 "engine": engine["id"],
                 "engine_name": engine.get("name", engine["id"]),
                 "why": f"{engine['id']} has a profile for {version_id}",
-                "java": engine.get("java"),
-                "ram_gb": engine.get("ram_gb"),
+                "java": requires.get("java_compile") or requires.get("java"),
+                "ram_gb": requires.get("ram_gb"),
+                "minutes": requires.get("minutes"),
+                "mods": engine.get("mods"),
                 "build": engine.get("build"),
             }
         if version_id in (engine.get("versions") or {}):

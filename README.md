@@ -37,6 +37,52 @@ python3 tools/update.py --write                                  # refresh the c
 python3 tools/acquire.py --version 26.2 --dry-run                # what a build would fetch
 ```
 
+## Engines
+
+An engine compiles (or reimplements) a client for the web. This is the list `ports.json` carries,
+and the reason the project does not depend on any single one:
+
+| Engine | Versions | How it builds | Cost | Mods |
+| --- | --- | --- | --- | --- |
+| **eagler-workspace-26.2** — Eaglercraft 26.2 workspace | 26.2 | Gradle compiles the patched source, `wasm-toolchain/link-web-target-standalone.js` links it, `build-single-html.js` packages one HTML | Java 25, ~10 GiB heap, 16 GiB RAM, ~40 min | ✅ compiled in through source hooks |
+| **eaglercraftx** — the original lineage | 1.5.2, 1.8.8, 1.12.2 | release assets are the clients | — | JS mod API only |
+| **eagler-ports** — classic ports | Indev → 1.2.5 | release assets are the clients | — | — |
+| **webforge** — CheerpJ (a real JVM) | 1.6.4 + Forge | release asset | — | ✅ real `.jar`s, at runtime |
+| ~~gaius~~ (disabled) | 1.21.11, 26.2, 26.3 | headless CLI, official client bytecode | 24 GiB RAM, ~55 min | ✅ compiled in |
+
+The first one is the interesting one: it is the **Eaglercraft lineage for 26.x**. The official
+client's source, patched with the browser platform layer, plus a real build system — and because
+the patched tree is the repository, the CLI steps above are the entire build (the author's
+patcher kit only matters if you start from your own jar, in which case it extracts with Java 17
+and the same commands follow).
+
+Gaius is left in the file, disabled, as a record of the headless alternative; the catalog will
+never pick it while `"enabled": false` stands. One line turns it back on.
+
+### Adding an engine
+
+```json
+{
+  "id": "my-engine",
+  "repo": "owner/project",
+  "kind": "eagler-workspace",
+  "enabled": true,
+  "profiles": ["1.21.4"],
+  "requires": {"java_compile": 21, "heap_gb": 10, "ram_gb": 16, "minutes": 40},
+  "mods": "yes - source hooks",
+  "build": {
+    "clone": "git clone --depth 1 https://github.com/{repo} engine",
+    "compile": "cd engine && ./gradlew :game:compileJava --console=plain --no-daemon",
+    "package": "cd engine && node wasm-toolchain/build-single-html.js --output dist/{version}.html",
+    "output": "engine/dist/{version}.html"
+  }
+}
+```
+
+`{version}` and `{repo}` are substituted. `profiles` makes a version buildable; `versions`
+(a version → repo-slug map) makes a prebuilt client appear as a link; `enabled: false` documents
+an engine without ever using it.
+
 ## The honest bottleneck
 
 A browser client is the real client with the parts a browser does not have replaced: windowing,

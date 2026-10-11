@@ -62,7 +62,29 @@ def main() -> int:
     rows = {row["id"]: row for row in
             planner.plan(manifest, engines, ("release", "snapshot", "old_beta", "old_alpha"), None, None)}
     check("a version with an engine profile is buildable", rows["26.2"]["verdict"] == "build", rows["26.2"]["why"])
-    check("and names the engine", rows["26.2"]["engine"] == "gaius")
+    check("and names the Eaglercraft workspace engine", rows["26.2"]["engine"] == "eagler-workspace-26.2",
+          str(rows["26.2"]["engine"]))
+    check("a buildable entry says what it costs",
+          rows["26.2"]["minutes"] and rows["26.2"]["ram_gb"] and rows["26.2"]["mods"],
+          str({k: rows["26.2"][k] for k in ("minutes", "ram_gb", "mods")}))
+    check("a version whose only engine is disabled needs a port", rows["26.3"]["verdict"] == "needs-port",
+          rows["26.3"]["why"] + " (engine " + str(rows["26.3"]["engine"]) + ")")
+    check("a classic version with an EaglercraftX client is reused", rows["1.8.9"]["verdict"] == "reuse")
+    check("and says which engine publishes it", rows["1.8.9"]["engine"] == "eaglercraftx")
+
+    print("\nengines")
+    enabled = planner.load_engines()
+    every = planner.load_engines(include_disabled=True)
+    check("disabled engines are not candidates", {e["id"] for e in enabled} < {e["id"] for e in every})
+    check("the disabled one is still documented", any(e["id"] == "gaius" and e.get("disabled_why")
+                                                      for e in every))
+    for engine in enabled:
+        has_build = bool((engine.get("build") or {}).get("output")) and bool((engine.get("build") or {}).get("compile"))
+        has_release = bool((engine.get("release") or {}).get("asset"))
+        check(f"engine {engine['id']} knows how to produce a client", has_build or has_release,
+              str(engine.get("build"))[:80])
+    check("every enabled engine covers at least one version",
+          all(engine.get("profiles") or engine.get("versions") for engine in enabled))
     check("a real version with no profile needs a port", rows["1.21.4"]["verdict"] == "needs-port",
           rows["1.21.4"]["why"])
     check("a fresh snapshot needs a port too", rows["26.3-snapshot-7"]["verdict"] == "needs-port")
