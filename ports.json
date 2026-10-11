@@ -200,8 +200,11 @@
         "to": "1.20.4"
       },
       "blocked_by": "LWJGL 3 has no JavaScript native layer (LWJGL 2 has one; Java is fine, CheerpJ runs Java 8 and 17)",
-      "work": "implement LWJGL 3's native methods in JavaScript - GLFW, OpenGL core, OpenAL, STB - or adapt cheerpj-natives' LWJGL 2 layer; the surface for a given client is measurable with tools/lwjgl_surface.py",
-      "unlocks": "unmodified official clients from 1.13 to 1.20.4, with real .jar mods and Mojang's own textures"
+      "work": "implement LWJGL 3's native methods in JavaScript. Measured on LWJGL 3 itself: the GL core classes Minecraft uses (GL11C, GL15C, GL20C, GL30C, GL32C) declare one native per entry point, about 270 in total, each a thin mapping onto a WebGL 2 call; GLFW is dispatched by function address (apiGetFunctionAddress + JNI.call*), so it needs a dozen dispatcher natives plus a name-to-JavaScript table for roughly 120 window/input functions; OpenAL is about 70 natives; STB about 15. tools/lwjgl_surface.py measures the subset a given client actually uses, which is smaller than the declared total.",
+      "unlocks": "unmodified official clients from 1.13 to 1.20.4, with real .jar mods and Mojang's own textures",
+      "effort": "bounded and mechanical: WebForge already did the equivalent for LWJGL 2 in about 2,200 lines of JavaScript, and this is the same kind of work for a larger API",
+      "why_not_install": "the LWJGL 3 jars are not the problem - they come from Maven like any library. The natives are: on a desktop they are .dll/.so/.dylib files that talk to the OS GL driver, and in a browser the only thing that can answer a native method is JavaScript.",
+      "alternative": "versions in this range can also be served ahead-of-time by a TeaVM workspace, which needs no JS natives at all because the platform layer is Java. That trades runtime mod loading for per-version build work."
     },
     {
       "id": "cheerpj-java21",
