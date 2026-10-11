@@ -79,9 +79,16 @@ def main() -> int:
             entry = next(v for v in version_tools.versions(manifest) if v["id"] == version_id)
             detail = planner.verdict_for(version_id, version_tools.kind_of(entry), engines, roadmap)
             state, why = real_java_verdict(version_id, detail)
-            rows.append({"group": group["name"], "id": version_id, "type": version_tools.kind_of(entry),
-                         "state": state, "why": why, "verdict": detail["verdict"],
-                         "engine": detail.get("engine"), "java": detail.get("java")})
+            row = {"group": group["name"], "id": version_id, "type": version_tools.kind_of(entry),
+                   "state": state, "why": why, "verdict": detail["verdict"],
+                   "engine": detail.get("engine"), "java": detail.get("java")}
+            # A version is never a dead end: when the JVM route cannot have it, the
+            # ahead-of-time route can, as soon as a workspace for that version exists. Say so
+            # here rather than leaving a bare "blocked".
+            if state in ("blocked", "one-layer", "unknown"):
+                row["alternative"] = ("ahead-of-time: a TeaVM workspace compiles the official client "
+                                      "for this version, with mods baked in (no runtime jars)")
+            rows.append(row)
 
     if args.json:
         print(json.dumps(rows, indent=2))
@@ -95,7 +102,10 @@ def main() -> int:
         if row["group"] != group:
             group = row["group"]
             print(f"\n{group}")
-        print(f"  {row['id']:<18} {icon.get(row['state'], row['state']):<18} {row['why']}")
+        line = f"  {row['id']:<18} {icon.get(row['state'], row['state']):<18} {row['why']}"
+        print(line)
+        if row.get("alternative"):
+            print(f"  {'':<18} {'':<18} ↳ or {row['alternative']}")
 
     counts: dict[str, int] = {}
     for row in rows:
