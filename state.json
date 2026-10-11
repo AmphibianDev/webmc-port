@@ -16,6 +16,9 @@
       "released": "2026-10-08T10:00:00+00:00",
       "verdict": "needs-port",
       "engine": null,
+      "engine_name": null,
+      "minutes": null,
+      "mods": null,
       "url": null,
       "kind": "queued"
     },
@@ -23,17 +26,23 @@
       "id": "26.3",
       "type": "release",
       "released": "2026-10-02T10:00:00+00:00",
-      "verdict": "build",
-      "engine": "gaius",
-      "url": "clients/26.3.html",
-      "kind": "built"
+      "verdict": "needs-port",
+      "engine": null,
+      "engine_name": null,
+      "minutes": null,
+      "mods": null,
+      "url": null,
+      "kind": "queued"
     },
     {
       "id": "26.2",
       "type": "release",
       "released": "2026-09-19T10:00:00+00:00",
       "verdict": "build",
-      "engine": "gaius",
+      "engine": "eagler-workspace-26.2",
+      "engine_name": "Eaglercraft 26.2 workspace (TeaVM + WASM-GC toolchain)",
+      "minutes": 42,
+      "mods": "yes - source hooks (see ../webmc-browser/modded/loader.py, which plans and prunes a Fabric mod set before the build)",
       "url": "clients/26.2.html",
       "kind": "built"
     },
@@ -41,10 +50,13 @@
       "id": "1.21.11",
       "type": "release",
       "released": "2026-06-01T10:00:00+00:00",
-      "verdict": "build",
-      "engine": "gaius",
-      "url": "clients/1.21.11.html",
-      "kind": "built"
+      "verdict": "needs-port",
+      "engine": null,
+      "engine_name": null,
+      "minutes": null,
+      "mods": null,
+      "url": null,
+      "kind": "queued"
     },
     {
       "id": "1.21.4",
@@ -52,6 +64,9 @@
       "released": "2024-12-03T10:00:00+00:00",
       "verdict": "needs-port",
       "engine": null,
+      "engine_name": null,
+      "minutes": null,
+      "mods": null,
       "url": null,
       "kind": "queued"
     },
@@ -59,10 +74,16 @@
       "id": "1.8.9",
       "type": "release",
       "released": "2015-12-09T10:00:00+00:00",
-      "verdict": "needs-port",
-      "engine": null,
-      "url": null,
-      "kind": "queued"
+      "verdict": "launch",
+      "engine": "cheerpj-unmodified",
+      "engine_name": "CheerpJ + cheerpj-natives: the official client, unmodified",
+      "minutes": 0,
+      "mods": "runtime - real .jar mods for these versions load with no rebuild, because this is a real JVM",
+      "kind": "launch",
+      "jar_url": "https://piston-data.mojang.com/v1/objects/example-1.8.9/client.jar",
+      "main_class": "net.minecraft.client.Minecraft",
+      "caveat": "cheerpj-natives' LWJGL is described as partial: geometry, textures and input work (browsercraft), and Forge 1.6.4 loads (WebForge), but treat any version beyond the two proven ones as something to test before advertising it.",
+      "url": null
     }
   ],
   "queued": [
@@ -71,22 +92,29 @@
       "type": "snapshot",
       "released": "2026-10-08T10:00:00+00:00",
       "why": "no engine has a browser platform layer for this version yet",
-      "queued": "2026-10-11T10:42:03Z"
+      "queued": "2026-10-11T10:53:13Z"
+    },
+    {
+      "id": "26.3",
+      "type": "release",
+      "released": "2026-10-02T10:00:00+00:00",
+      "why": "no engine has a browser platform layer for this version yet",
+      "queued": "2026-10-11T10:53:13Z"
+    },
+    {
+      "id": "1.21.11",
+      "type": "release",
+      "released": "2026-06-01T10:00:00+00:00",
+      "why": "no engine has a browser platform layer for this version yet",
+      "queued": "2026-10-11T10:53:13Z"
     },
     {
       "id": "1.21.4",
       "type": "release",
       "released": "2024-12-03T10:00:00+00:00",
       "why": "no engine has a browser platform layer for this version yet",
-      "queued": "2026-10-11T10:42:03Z"
-    },
-    {
-      "id": "1.8.9",
-      "type": "release",
-      "released": "2015-12-09T10:00:00+00:00",
-      "why": "no engine has a browser platform layer for this version yet",
-      "queued": "2026-10-11T10:42:03Z"
+      "queued": "2026-10-11T10:53:13Z"
     }
   ],
-  "updated": "2026-10-11T10:42:03Z"
+  "updated": "2026-10-11T10:53:13Z"
 }

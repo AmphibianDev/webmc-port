@@ -1,0 +1,12 @@
+{
+  "1.8.9": {
+    "jar_url": "https://piston-data.mojang.com/v1/objects/example-1.8.9/client.jar",
+    "main_class": "net.minecraft.client.Minecraft",
+    "java": 8
+  },
+  "1.12.2": {
+    "jar_url": "https://piston-data.mojang.com/v1/objects/example-1.12.2/client.jar",
+    "main_class": "net.minecraft.client.Minecraft",
+    "java": 8
+  }
+}

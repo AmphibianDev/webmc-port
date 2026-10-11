@@ -76,6 +76,26 @@ jobs:
             git pull --rebase && continue
           done
 
+      - name: Vendor the platform pieces the launch page needs (no game files)
+        # A real JVM in a page needs a platform layer: CheerpJ runs the JVM, cheerpj-natives
+        # (Apache-2.0) implements LWJGL's native methods in JavaScript, and LWJGL itself (BSD) is
+        # the Java side of the graphics API. None of it is Minecraft, and the game itself is never
+        # touched here: the launch page fetches that from Mojang in the visitor's browser.
+        run: |
+          set -euo pipefail
+          mkdir -p site/lwjgl-natives site/lwjgl
+          curl -fsSL --retry 3 --max-time 300 \
+            https://github.com/leaningtech/cheerpj-natives/archive/refs/heads/main.tar.gz | tar -xz -C /tmp
+          cp -r /tmp/cheerpj-natives-main/natives/. site/lwjgl-natives/
+          for jar in \
+            "org/lwjgl/lwjgl/lwjgl/2.9.3/lwjgl-2.9.3.jar" \
+            "org/lwjgl/lwjgl/lwjgl_util/2.9.3/lwjgl_util-2.9.3.jar"; do
+            curl -fsSL --retry 3 --max-time 300 "https://repo1.maven.org/maven2/$jar" \
+              --output "site/lwjgl/$(basename "$jar")"
+          done
+          echo "natives: $(ls site/lwjgl-natives | head -3 | tr '\n' ' ')"
+          echo "lwjgl:   $(ls site/lwjgl | tr '\n' ' ')"
+
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:

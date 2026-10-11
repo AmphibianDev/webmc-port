@@ -56,6 +56,19 @@ def engine_links(engines: list[dict]) -> dict:
 def verdict_for(version_id: str, kind: str, engines: list[dict]) -> dict:
     """Which engine handles this version, and how."""
     for engine in engines:
+        if engine.get("launch") and version_id in (engine.get("profiles") or []):
+            requires = engine.get("requires") or {}
+            return {
+                "verdict": "launch",
+                "engine": engine["id"],
+                "engine_name": engine.get("name", engine["id"]),
+                "why": f"{engine['id']} runs this version unmodified in the browser (real JVM, official jar)",
+                "java": requires.get("java"),
+                "minutes": requires.get("minutes"),
+                "mods": engine.get("mods"),
+                "launch": engine.get("launch_plan"),
+                "build": None,
+            }
         if version_id in (engine.get("profiles") or []):
             requires = engine.get("requires") or {}
             return {
@@ -111,7 +124,7 @@ def plan(manifest: dict, engines: list[dict], kinds=("release",),
 
 
 def report(rows: list[dict]) -> str:
-    icon = {"build": "🔨", "reuse": "📦", "needs-port": "🧱"}
+    icon = {"build": "🔨", "reuse": "📦", "needs-port": "🧱", "launch": "▶"}
     lines = ["| version | kind | verdict | engine | why |", "| --- | --- | --- | --- | --- |"]
     for row in rows:
         lines.append(f"| **{row['id']}** | {row['type']} | {icon[row['verdict']]} {row['verdict']} |"

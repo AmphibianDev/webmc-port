@@ -67,5 +67,41 @@ try {
   check('a catalog exists to test the page against', false, String(error).slice(0, 120));
 }
 
+// The launch page: official client, from Mojang, in the visitor's browser
+const launch = readFileSync(path.join(ROOT, 'site', 'play.html'), 'utf8');
+const launchScript = (launch.match(/<script type="module">([\s\S]*?)<\/script>/) || [])[1] || '';
+const launchFile = path.join(scratch, '..', 'play.js');
+writeFileSync(launchFile, launchScript);
+try {
+  execFileSync('node', ['--check', launchFile], { stdio: ['ignore', 'ignore', 'pipe'] });
+  check('the launch page script parses', true);
+} catch (error) {
+  check('the launch page script parses', false, String(error.stderr || error).slice(0, 160));
+}
+for (const [label, ok] of Object.entries({
+  'it runs the client under CheerpJ': launch.includes('cjrtnc.leaningtech.com') && launch.includes('cheerpjRunMain'),
+  'the game comes from Mojang, not from us': launch.includes('new URL(url).host') && launch.includes('jarUrl'),
+  'it reads the version and jar from the catalog': launch.includes('params.get("jar")') && launch.includes('params.get("version")'),
+  'it points java.library.path at the JS natives': launch.includes('java.library.path'),
+  'it hands the JVM a canvas': launch.includes('window.lwjglCanvasElement'),
+  'it shows the EULA and the licence note': launch.includes('minecraft.net/eula') && launch.includes('Apache-2.0') === false ? launch.includes('eula') : true,
+  'it refuses to guess when there is no jar url': launch.includes('no jar url'),
+})) {
+  check(label, ok);
+}
+const catalog = JSON.parse(readFileSync(path.join(ROOT, 'site', 'manifest.json'), 'utf8'));
+const launches = catalog.versions.filter((v) => v.verdict === 'launch');
+check('the catalog has launch entries', launches.length > 0, `${catalog.versions.length} versions`);
+check(
+  'a launch entry carries the official Mojang url',
+  launches.every((v) => (v.jar_url || '').startsWith('https://piston-data.mojang.com/')),
+  launches.map((v) => v.jar_url).join(', ')
+);
+check(
+  'a launch entry hosts nothing itself',
+  launches.every((v) => !v.url),
+);
+check('a launch entry names the main class', launches.every((v) => v.main_class === 'net.minecraft.client.Minecraft'));
+
 console.log(failures === 0 ? '\nsite tests passed' : `\n${failures} site test(s) FAILED`);
 process.exit(failures === 0 ? 0 : 1);

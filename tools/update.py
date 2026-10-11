@@ -59,12 +59,54 @@ def queue_needs_port(queued: list[dict], rows: list[dict]) -> list[dict]:
     return queued
 
 
-def catalog_entry(row: dict, engines: list[dict], links: dict) -> dict:
+def resolved_client_urls(manifest: dict, rows: list[dict], fixture: dict | None = None) -> dict:
+    """The official jar url for every 'launch' version: the page fetches that, not us.
+
+    Resolution needs the version's own document, which is one small request per version; a
+    fixture (--client-urls) keeps tests offline, and a failure is not fatal: the entry simply
+    says the url is resolved at serve time.
+    """
+    urls = {}
+    for row in rows:
+        if row["verdict"] != "launch":
+            continue
+        if fixture and row["id"] in fixture:
+            urls[row["id"]] = fixture[row["id"]]
+            continue
+        try:
+            import urllib.request
+            entry = version_tools.resolve(manifest, row["id"])
+            request = urllib.request.Request(entry["url"], headers={"User-Agent": "webmc-port/1.0"})
+            with urllib.request.urlopen(request, timeout=60) as response:
+                document = json.loads(response.read().decode("utf-8"))
+            targets = version_tools.download_targets(document)
+            if targets["client_url"]:
+                urls[row["id"]] = {"jar_url": targets["client_url"], "main_class": "net.minecraft.client.Minecraft",
+                                   "java": targets["java_major"]}
+        except Exception as error:  # noqa: BLE001
+            print(f"  ! could not resolve the client url for {row['id']}: {error}")
+    return urls
+
+
+def catalog_entry(row: dict, engines: list[dict], links: dict, client_urls: dict | None = None,
+                  previous: dict | None = None) -> dict:
     """One catalog row: what the launcher page needs to offer this version."""
     entry = {"id": row["id"], "type": row["type"], "released": row["released"],
              "verdict": row["verdict"], "engine": row["engine"],
              "engine_name": row.get("engine_name"), "minutes": row.get("minutes"),
              "mods": row.get("mods")}
+    if row["verdict"] == "launch":
+        resolved = (client_urls or {}).get(row["id"]) or {}
+        # The catalog is a cache: a refresh that could not reach Mojang must keep the url it
+        # already knows, not erase it (which is what an offline refresh used to do).
+        known = (previous or {}).get("jar_url")
+        entry["kind"] = "launch"
+        entry["jar_url"] = resolved.get("jar_url") or known
+        entry["main_class"] = resolved.get("main_class") or "net.minecraft.client.Minecraft"
+        entry["caveat"] = next((e.get("caveat") for e in engines
+                                if e["id"] == row.get("engine")), None)
+        entry["url"] = None  # we host nothing for this; the page builds itself from jar_url
+        return entry
     if row["verdict"] == "reuse":
         entry["url"] = links.get(row["id"])
         entry["kind"] = "prebuilt"
@@ -87,6 +129,8 @@ def main() -> int:
     parser.add_argument("--write", action="store_true", help="record what has been seen")
     parser.add_argument("--build", action="store_true", help="run the build for new versions")
     parser.add_argument("--dry-run", action="store_true", help="print the build commands instead")
+    parser.add_argument("--client-urls", default=None,
+                        help="json file of version -> {jar_url, main_class} to use instead of resolving from Mojang")
     args = parser.parse_args()
 
     state_path = pathlib.Path(args.state)
@@ -110,9 +154,13 @@ def main() -> int:
         print(planner.report(rows))
 
     links = planner.engine_links(engines)
+    fixture_urls = json.loads(pathlib.Path(args.client_urls).read_text()) if args.client_urls else None
+    client_urls = resolved_client_urls(manifest, rows, fixture_urls)
+    if client_urls:
+        print(f"\nresolved {len(client_urls)} official client url(s): the page fetches those from Mojang")
     catalog = {entry["id"]: entry for entry in state.get("catalog", [])}
     for row in rows:
-        catalog[row["id"]] = catalog_entry(row, engines, links)
+        catalog[row["id"]] = catalog_entry(row, engines, links, client_urls, catalog.get(row["id"]))
     state["catalog"] = sorted(catalog.values(), key=lambda e: e["released"], reverse=True)
     state["queued"] = queue_needs_port(list(state.get("queued", [])), rows)
     state["seen"] = sorted(set(state["seen"]) | {v["id"] for v in version_tools.versions(manifest)})

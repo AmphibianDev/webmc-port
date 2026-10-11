@@ -39,25 +39,39 @@ python3 tools/acquire.py --version 26.2 --dry-run                # what a build 
 
 ## Engines
 
-An engine compiles (or reimplements) a client for the web. This is the list `ports.json` carries,
-and the reason the project does not depend on any single one:
+An engine compiles — or *runs* — a client for the web. This is the list `ports.json` carries:
 
-| Engine | Versions | How it builds | Cost | Mods |
+| Engine | Versions | How it works | Textures | Mods |
 | --- | --- | --- | --- | --- |
-| **eagler-workspace-26.2** — Eaglercraft 26.2 workspace | 26.2 | Gradle compiles the patched source, `wasm-toolchain/link-web-target-standalone.js` links it, `build-single-html.js` packages one HTML | Java 25, ~10 GiB heap, 16 GiB RAM, ~40 min | ✅ compiled in through source hooks |
-| **eaglercraftx** — the original lineage | 1.5.2, 1.8.8, 1.12.2 | release assets are the clients | — | JS mod API only |
-| **eagler-ports** — classic ports | Indev → 1.2.5 | release assets are the clients | — | — |
-| **webforge** — CheerpJ (a real JVM) | 1.6.4 + Forge | release asset | — | ✅ real `.jar`s, at runtime |
-| ~~gaius~~ (disabled) | 1.21.11, 26.2, 26.3 | headless CLI, official client bytecode | 24 GiB RAM, ~55 min | ✅ compiled in |
+| **cheerpj-unmodified** (CheerpJ + cheerpj-natives) | 1.0 → **1.12.2** (the LWJGL 2 era) | **nothing is compiled and nothing is copied**: the visitor's browser fetches the official jar from `piston-data.mojang.com`, CheerpJ runs it with the JS natives on `java.library.path`, main class `net.minecraft.client.Minecraft` | **Mojang's, untouched** | ✅ real `.jar`s at runtime — it is a real JVM |
+| **browsercraft** (the reference implementation) | 1.2.5 | the CheerpJ team's own demo, Apache-2.0, Svelte UI; the pattern everything above copies | Mojang's, untouched | runtime |
+| **eagler-workspace-26.2** | 26.2 | Gradle + `wasm-toolchain/` node scripts compile the patched official source into one HTML | official resource overlay | ✅ compiled in via source hooks |
+| **eaglercraftx** | 1.5.2, 1.8.8, 1.12.2 | TeaVM builds, the tuned-performance route on the web | official assets | JS mod API |
+| **eagler-ports** | Indev → 1.2.5 | release assets are the clients | official assets | — |
+| **webforge** | 1.6.4 + Forge | CheerpJ again, with Forge's launcher in the JVM | Mojang's, untouched | ✅ real Forge jars |
+| ~~gaius~~ (disabled) | — | kept as the headless record | — | — |
 
-The first one is the interesting one: it is the **Eaglercraft lineage for 26.x**. The official
-client's source, patched with the browser platform layer, plus a real build system — and because
-the patched tree is the repository, the CLI steps above are the entire build (the author's
-patcher kit only matters if you start from your own jar, in which case it extracts with Java 17
-and the same commands follow).
+### Why the first row is the interesting one
 
-Gaius is left in the file, disabled, as a record of the headless alternative; the catalog will
-never pick it while `"enabled": false` stands. One line turns it back on.
+It is the only route where **the game is never copied by anyone but Mojang**:
+
+```js
+const urlDownloadMinecraft = 'https://piston-data.mojang.com/v1/objects/…/client.jar';
+await cheerpjInit({ javaProperties: ['java.library.path=/app/lwjgl-natives/'] });
+await cheerpjRunMain('net.minecraft.client.Minecraft', classpath);
+```
+
+* the jar is fetched **in the visitor's browser**, from Mojang — this repository and the site
+  serve no Minecraft file at all (`site/lwjgl` and `site/lwjgl-natives` are LWJGL (BSD) and
+  cheerpj-natives (Apache-2.0), vendored at build time);
+* the client is **unmodified**, so textures, UI and behaviour are exactly Mojang's;
+* it is a **real JVM**, so mods are real `.jar` files, loaded at runtime with no rebuild.
+
+Coverage is bounded by the LWJGL implementation: LWJGL **2** covers everything up to **1.12.2**;
+1.13+ uses LWJGL 3, whose JS native layer does not exist yet, and Java 21 puts 1.20.5+ out of any
+JVM-in-page route for now. `cheerpj-natives` describes its LWJGL support as partial, so the two
+versions with public proof (1.2.5 via browsercraft, 1.6.4+Forge via WebForge) are marked
+`proven`, and everything else on that row carries that caveat onto its card.
 
 ### Adding an engine
 

@@ -69,8 +69,12 @@ def main() -> int:
           str({k: rows["26.2"][k] for k in ("minutes", "ram_gb", "mods")}))
     check("a version whose only engine is disabled needs a port", rows["26.3"]["verdict"] == "needs-port",
           rows["26.3"]["why"] + " (engine " + str(rows["26.3"]["engine"]) + ")")
-    check("a classic version with an EaglercraftX client is reused", rows["1.8.9"]["verdict"] == "reuse")
-    check("and says which engine publishes it", rows["1.8.9"]["engine"] == "eaglercraftx")
+    check("a version the real-JVM route can run is launched, not built", rows["1.8.9"]["verdict"] == "launch",
+          rows["1.8.9"]["verdict"] + " via " + str(rows["1.8.9"]["engine"]))
+    check("a launch needs no compile time", rows["1.8.9"]["minutes"] == 0)
+    check("and says mods load at runtime", "runtime" in (rows["1.8.9"]["mods"] or ""))
+    check("a classic version with an EaglercraftX client is reused",
+          rows["b1.8.1"]["engine"] == "eagler-ports")
 
     print("\nengines")
     enabled = planner.load_engines()
@@ -81,7 +85,8 @@ def main() -> int:
     for engine in enabled:
         has_build = bool((engine.get("build") or {}).get("output")) and bool((engine.get("build") or {}).get("compile"))
         has_release = bool((engine.get("release") or {}).get("asset"))
-        check(f"engine {engine['id']} knows how to produce a client", has_build or has_release,
+        has_launch = bool(engine.get("launch_plan") or engine.get("launch"))
+        check(f"engine {engine['id']} knows how to produce a client", has_build or has_release or has_launch,
               str(engine.get("build"))[:80])
     check("every enabled engine covers at least one version",
           all(engine.get("profiles") or engine.get("versions") for engine in enabled))
@@ -104,7 +109,8 @@ def main() -> int:
     with tempfile.TemporaryDirectory() as tmp:
         state = pathlib.Path(tmp) / "state.json"
         code, output = run("tools/update.py", "--manifest", str(FIXTURE), "--state", str(state),
-                           "--kinds", "release,snapshot", "--write")
+                           "--kinds", "release,snapshot", "--client-urls",
+                           str(ROOT / "fixtures" / "client-urls.json"), "--write")
         check("it runs against the fixture", code == 0, output[-200:])
         check("it wrote a state file", state.is_file())
         check("it wrote the page's manifest", (ROOT / "site" / "manifest.json").is_file())
@@ -115,6 +121,16 @@ def main() -> int:
         check("it catalogued the buildable ones",
               any(entry["id"] == "26.2" and entry["verdict"] == "build" for entry in saved["catalog"]))
         check("queued entries say why", all(entry.get("why") for entry in saved["queued"]))
+
+        # a refresh with no way to resolve urls must keep the ones already known
+        before_urls = {entry["id"]: entry.get("jar_url") for entry in json.loads(state.read_text())["catalog"]
+                       if entry.get("verdict") == "launch"}
+        run("tools/update.py", "--manifest", str(FIXTURE), "--state", str(state),
+            "--kinds", "release,snapshot", "--write")   # deliberately without --client-urls
+        after_urls = {entry["id"]: entry.get("jar_url") for entry in json.loads(state.read_text())["catalog"]
+                      if entry.get("verdict") == "launch"}
+        check("an offline refresh keeps the jar url it already knew",
+              before_urls and after_urls == before_urls, f"{before_urls} -> {after_urls}")
 
         # a second run with nothing new must not add anything
         before = json.loads(state.read_text())
@@ -130,7 +146,8 @@ def main() -> int:
                                      "releaseTime": "2026-11-01T10:00:00+00:00"})
         newer = pathlib.Path(tmp) / "manifest-next.json"
         newer.write_text(json.dumps(extra))
-        code, output = run("tools/update.py", "--manifest", str(newer), "--state", str(state), "--write")
+        code, output = run("tools/update.py", "--manifest", str(newer), "--state", str(state),
+                           "--client-urls", str(ROOT / "fixtures" / "client-urls.json"), "--write")
         check("a new release is noticed", "27.0" in output and code == 0)
         final = json.loads(state.read_text())
         check("and queued for a port", any(entry["id"] == "27.0" for entry in final["queued"]))

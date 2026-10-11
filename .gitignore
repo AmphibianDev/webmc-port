@@ -3,3 +3,5 @@ dist/
 *.jar
 *.class
 node_modules/
+site/lwjgl-natives/
+site/lwjgl/

@@ -193,13 +193,15 @@ python3 tools/plan.py --kinds release,snapshot</pre>
   const verdictLabel = (v) => ({
     build: "ported — build available",
     reuse: "prebuilt client",
+    launch: "official client, unmodified",
     "needs-port": "queued, needs a port",
   }[v] || v);
 
   function versionCard(entry) {
     const node = document.createElement("div");
     node.className = "v";
-    const state = entry.url ? (entry.kind === "built" ? "build" : "reuse") : "queued";
+    const state = entry.verdict === "launch" ? "reuse"
+      : entry.url ? (entry.kind === "built" ? "build" : "reuse") : "queued";
     node.innerHTML = `
       <div class="row"><b class="grow">${entry.id}</b>
         <span class="pill ${state}">${verdictLabel(entry.verdict)}</span></div>
@@ -207,6 +209,29 @@ python3 tools/plan.py --kinds release,snapshot</pre>
         entry.engine ? " · " + entry.engine : ""}</div>
       <div class="actions" style="margin-top: 8px"></div>`;
     const actions = node.querySelector(".actions");
+    if (entry.verdict === "launch") {
+      // nothing of the game is served here: this page only starts the official client, which the
+      // visitor's browser fetches from Mojang
+      const play = document.createElement("a");
+      play.className = "btn play small";
+      play.target = "_blank";
+      play.rel = "noopener";
+      const query = new URLSearchParams({
+        version: entry.id,
+        jar: entry.jar_url || "",
+        main: entry.main_class || "net.minecraft.client.Minecraft",
+      });
+      play.href = `play.html?${query}`;
+      play.textContent = entry.jar_url ? "▶ Play unmodified" : "▶ Play (needs a jar url)";
+      actions.append(play);
+      if (entry.caveat) {
+        const note = document.createElement("div");
+        note.className = "meta";
+        note.textContent = entry.caveat;
+        actions.append(note);
+      }
+      return node;
+    }
     if (entry.url) {
       const play = document.createElement("a");
       play.className = "btn play small";
@@ -228,7 +253,7 @@ python3 tools/plan.py --kinds release,snapshot</pre>
     const needle = filter.trim().toLowerCase();
     const all = (catalog.versions || []).filter((entry) =>
       !needle || entry.id.toLowerCase().includes(needle) || (entry.type || "").includes(needle));
-    const playable = all.filter((entry) => entry.url);
+    const playable = all.filter((entry) => entry.url || entry.verdict === "launch");
 
     const playList = el("playList");
     const versionList = el("versionList");

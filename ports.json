@@ -2,13 +2,60 @@
   "note": "Where a browser client for a version can come from. An engine compiles (or reimplements) a Minecraft client for the web; this repository orchestrates them: it discovers versions, decides which engine can build one, and publishes what comes out. Adding an engine here is how a version family becomes buildable.",
   "engines": [
     {
+      "id": "cheerpj-unmodified",
+      "name": "CheerpJ + cheerpj-natives: the official client, unmodified",
+      "repo": "leaningtech/cheerpj-natives",
+      "kind": "real-jvm",
+      "enabled": true,
+      "launch": true,
+      "note": "No compile and no copy of the game: a real JVM (CheerpJ 4, Java 8/11/17) runs the official jar the visitor's browser downloads from Mojang, with the platform layer provided as JS natives (cheerpj-natives implements LWJGL). Textures, UI and behaviour are Mojang's because the jar is Mojang's and untouched. Coverage is the LWJGL 2 era: everything up to 1.12.2. Versions from 1.13 on use LWJGL 3, whose JS native layer does not exist yet - that single gap is what keeps 1.13 to 1.20.4 out, and Java 21 keeps 1.20.5 and later out of any JVM-in-page route.",
+      "profiles": [
+        "1.12.2",
+        "1.11.2",
+        "1.10.2",
+        "1.8.9",
+        "1.7.10",
+        "1.6.4",
+        "1.5.2",
+        "1.2.5",
+        "1.0"
+      ],
+      "requires": {
+        "java": 8,
+        "natives": "cheerpj-natives (LWJGL 2), partial",
+        "minutes": 0,
+        "runtime_gb": 1
+      },
+      "mods": "runtime - real .jar mods for these versions load with no rebuild, because this is a real JVM",
+      "launch_plan": {
+        "steps": [
+          "resolve the official client jar url for the version (tools/update.py does this from Mojang's manifest)",
+          "the page fetches that jar in the visitor's browser - never from this site",
+          "cheerpjInit with javaProperties java.library.path pointing at the JS natives",
+          "cheerpjRunMain('net.minecraft.client.Minecraft', classpath of lwjgl + the client jar)"
+        ],
+        "tested_by": [
+          "leaningtech/browsercraft",
+          "Cucuzacu/WebForge"
+        ]
+      },
+      "proven": [
+        "1.2.5",
+        "1.6.4"
+      ],
+      "caveat": "cheerpj-natives' LWJGL is described as partial: geometry, textures and input work (browsercraft), and Forge 1.6.4 loads (WebForge), but treat any version beyond the two proven ones as something to test before advertising it.",
+      "how": "Nothing is compiled and nothing is copied: the visitor's browser fetches the official jar from piston-data.mojang.com, CheerpJ runs it with the JS natives on java.library.path, and the main class is net.minecraft.client.Minecraft. Our site serves only code: CheerpJ's loader, cheerpj-natives (Apache-2.0) and the LWJGL jars (BSD)."
+    },
+    {
       "id": "eagler-workspace-26.2",
       "name": "Eaglercraft 26.2 workspace (TeaVM + WASM-GC toolchain)",
       "repo": "CynTheSolveroftheabsolutefabric/Eaglercraft-26.2-Workspace",
       "kind": "eagler-workspace",
       "enabled": true,
       "note": "The Eaglercraft lineage for 26.x: the official client's source, patched with the browser platform layer, plus a real build system (Gradle for the Java, node scripts in wasm-toolchain/ for the link and the single-file package). Mods are compiled in through source hooks, so a mod set is a build.",
-      "profiles": ["26.2"],
+      "profiles": [
+        "26.2"
+      ],
       "requires": {
         "java_extract": 17,
         "java_compile": 25,
@@ -39,7 +86,7 @@
       "repo": "lax1dude/eaglercraftx",
       "kind": "eagler-workspace",
       "enabled": true,
-      "note": "Where the Eaglercraft platform layer comes from: 1.5.2, 1.8.8 and 1.12.2, each a patched source tree compiled with TeaVM. Its layout (game/, platform-teavm/, a link step, a single-HTML package) is what the modern workspaces inherited, so the same build steps apply.",
+      "note": "Where the Eaglercraft platform layer comes from: 1.5.2, 1.8.8 and 1.12.2, each a patched source tree compiled with TeaVM. Its layout (game/, platform-teavm/, a link step, a single-HTML package) is what the modern workspaces inherited, so the same build steps apply. Its TeaVM builds are the ones with tuned performance on the web; prefer them over the CheerpJ route when smoothness matters more than unmodified fidelity.",
       "profiles": [],
       "versions": {
         "1.5.2": "1.5.2",
@@ -84,7 +131,9 @@
       "kind": "real-jvm",
       "enabled": true,
       "note": "A JVM in the page, so Forge jars load at runtime with no rebuild. Old versions only (its class library is Java 8 era), but it is the one place where a .jar loads in a browser.",
-      "versions": { "1.6.4-forge": "1.6.4" },
+      "versions": {
+        "1.6.4-forge": "1.6.4"
+      },
       "release": {
         "asset": "webforge_offline.html",
         "tag": "latest"
@@ -98,7 +147,11 @@
       "kind": "real-client",
       "enabled": false,
       "disabled_why": "Kept only as a record: it compiles the official client for 1.21.11/26.2/26.3 with a fully headless CLI, but each version needs its own hand-written profile, and its support stops at the versions it ships. Disabled by request; the Eaglercraft workspaces above are the preferred engines.",
-      "profiles": ["26.3", "26.2", "1.21.11"],
+      "profiles": [
+        "26.3",
+        "26.2",
+        "1.21.11"
+      ],
       "requires": {
         "java": 25,
         "heap_gb": 14,
@@ -119,6 +172,19 @@
     "release": "A release is a real client: buildable by an engine with a matching profile, otherwise it needs a workspace for that version.",
     "snapshot": "Snapshots move weekly and can change the platform layer a workspace patches. They are catalogued and queued rather than built blindly.",
     "old_beta": "Old versions have a different asset layout; use a classic engine.",
-    "old_alpha": "Same as old_beta."
-  }
+    "old_alpha": "Same as old_beta.",
+    "launch": "Runs the official client unmodified in a JVM inside the page: nothing is compiled and nothing is copied, the visitor's browser fetches the game from Mojang. This is the only verdict where the textures and UI are guaranteed to be exactly Mojang's, because the jar is Mojang's."
+  },
+  "references": [
+    {
+      "id": "browsercraft",
+      "name": "Browsercraft (the CheerpJ team's own demo)",
+      "repo": "leaningtech/browsercraft",
+      "license": "Apache-2.0",
+      "note": "Minecraft 1.2.5 with the original JAR used untouched: the page fetches the client from piston-data.mojang.com in the visitor's browser. This is the pattern the launch route follows, and the cleanest UI to copy.",
+      "jar_url": "https://piston-data.mojang.com/v1/objects/4a2fac7504182a97dcbcd7560c6392d7c8139928/client.jar",
+      "main_class": "net.minecraft.client.Minecraft",
+      "java_library_path": "/app/lwjgl/libraries/"
+    }
+  ]
 }
