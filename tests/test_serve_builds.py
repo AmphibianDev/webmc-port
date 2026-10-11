@@ -53,6 +53,21 @@ def main() -> int:
         check("and shows a mod's shape", "WebMCModAPI.on" in html and "registerKeybind" in html)
         check("the biggest build is first", html.index("26.2") < html.index("1.8.8"), "order")
         check("the page is html", html.lstrip().startswith("<!DOCTYPE html>"))
+
+        print("\nthe add-a-mod panel")
+        (root / "mods").mkdir(exist_ok=True)
+        (root / "mods" / "clock.js").write_text("// a mod")
+        panel = serve_builds.page(root, "http://127.0.0.1:8099")
+        check("a .js mod becomes a chip you can tick", 'type="checkbox"' in panel and "clock.js" in panel)
+        check("the chip carries the served url", "/mods/clock.js" in panel)
+        check("ticking one rewrites the play links", "link.dataset.base" in panel
+              and 'query += ' not in panel and '"mod=" + encodeURIComponent' in panel.replace("\n", " "))
+        check("there is a preview of the resulting link", 'id="preview"' in panel)
+        check("the api is documented for mod authors", "registerKeybind" in panel and "WebMCModAPI.on" in panel)
+        check("and the Fabric route is explained rather than faked",
+              "build_modded_workspace.py" in panel and "no JVM in the tab" in panel)
+        without = serve_builds.page(work / "empty", "http://127.0.0.1:8099")
+        check("a folder with no mods says how to add one", "drop one in" in without)
     finally:
         shutil.rmtree(work, ignore_errors=True)
 

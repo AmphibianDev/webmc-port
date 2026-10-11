@@ -1,5 +1,5 @@
 {
-  "note": "Every browser build this project catalogs, all of them from GitHub: EaglerPorts releases for the classic eras, the RN-LAUNCH mirror and the 3kh0 archive for the 1.5 and 1.8 lines and for 1.12.2 (including the one build with a runtime JS mod API), and community ports for the modern versions. Versions with no verifiable GitHub build - 1.18.2 (the only repository is empty) and 1.21.5 / 1.21.11 (no single-file client published on GitHub that could be checked) - are deliberately absent rather than listed as if they worked. tools/fetch_builds.py downloads these into work/builds/, which is git-ignored: the repository keeps the list, never the clients.",
+  "note": "Every browser build this project catalogs, all of them from GitHub. Clients that already ship a mod loader, or that are pre-modded (the EaglerForge build and the hacked clients: Astra, WurstX, Resent, DragonX, GX-Client, Pixel) are deliberately absent: mods here come from this project's own injector, so a second loader in the same page would only fight it. Versions with no verifiable GitHub build - 1.18.2 (empty repository) and 1.21.5 / 1.21.11 (no single-file client published that could be checked) - are absent too.",
   "verified_note": "verified means: fetched over the network, sniffed for the shape of a browser client, and recorded with a size and a sha256 in work/builds/manifest.json.",
   "versions": [
     {
@@ -187,54 +187,6 @@
       ]
     },
     {
-      "version": "1.8.8-astra",
-      "label": "1.8.8 Astra",
-      "era": "legacy",
-      "folder": "1.8.8-astra",
-      "source_repo": "Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions",
-      "notes": "1.8.8 client variant",
-      "files": [
-        {
-          "name": "Eaglercraft 1.8.8 Astra (WASM-GC).html",
-          "url": "https://github.com/Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions/raw/HEAD/Eaglercraft%201.8.8%20Astra%20%28WASM-GC%29.html",
-          "role": "client",
-          "bytes": 59215090
-        }
-      ]
-    },
-    {
-      "version": "1.8.8-wurstx",
-      "label": "1.8.8 WurstX",
-      "era": "legacy",
-      "folder": "1.8.8-wurstx",
-      "source_repo": "Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions",
-      "notes": "1.8.8 client variant",
-      "files": [
-        {
-          "name": "Eaglercraft 1.8.8 WurstX (WASM-GC).html",
-          "url": "https://github.com/Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions/raw/HEAD/Eaglercraft%201.8.8%20WurstX%20%28WASM-GC%29.html",
-          "role": "client",
-          "bytes": 27847113
-        }
-      ]
-    },
-    {
-      "version": "1.8.8-resent",
-      "label": "1.8.8 Resent",
-      "era": "legacy",
-      "folder": "1.8.8-resent",
-      "source_repo": "Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions",
-      "notes": "1.8.8 client variant",
-      "files": [
-        {
-          "name": "Eaglercraft 1.8.8 Resent Client (WASM-GC).html",
-          "url": "https://github.com/Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions/raw/HEAD/Eaglercraft%201.8.8%20Resent%20Client%20%28WASM-GC%29.html",
-          "role": "client",
-          "bytes": 18836996
-        }
-      ]
-    },
-    {
       "version": "1.8.8-signed",
       "label": "1.8.8 Signed (JS)",
       "era": "legacy",
@@ -251,22 +203,6 @@
       ]
     },
     {
-      "version": "1.8.8-dragonx",
-      "label": "EaglercraftX 1.8 DragonX",
-      "era": "legacy",
-      "folder": "1.8.8-dragonx",
-      "source_repo": "Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions",
-      "notes": "1.8.8 client variant",
-      "files": [
-        {
-          "name": "EaglercraftX 1.8 DragonX.html",
-          "url": "https://github.com/Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions/raw/HEAD/EaglercraftX%201.8%20DragonX.html",
-          "role": "client",
-          "bytes": 22111873
-        }
-      ]
-    },
-    {
       "version": "1.12.2",
       "label": "1.12.2 (WASM-GC)",
       "era": "legacy",
@@ -278,22 +214,6 @@
           "url": "https://github.com/Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions/raw/HEAD/Eaglercraft%201.12.2%20%28WASM-GC%29.html",
           "role": "client",
           "bytes": 20103718
-        }
-      ]
-    },
-    {
-      "version": "1.12.2-eaglerforge",
-      "label": "1.12.2 + EaglerForge",
-      "era": "legacy",
-      "folder": "1.12.2-eaglerforge",
-      "source_repo": "Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions",
-      "notes": "the one prebuilt build with a runtime JavaScript mod API",
-      "files": [
-        {
-          "name": "EaglerForge 1.12.2.html",
-          "url": "https://github.com/Poog-The-Pig97/RN-LAUNCH-for-Eaglercraft-20-versions/raw/HEAD/EaglerForge%201.12.2.html",
-          "role": "client",
-          "bytes": 85514220
         }
       ]
     },
@@ -430,5 +350,6 @@
         }
       ]
     }
-  ]
+  ],
+  "routes_note": "A version can be served three ways, and the order of preference is: real Java (a JVM in the page runs the official jar, no copy of the game anywhere) > compiled by us from the official source (ahead-of-time, mods baked in) > a prebuilt Eaglercraft-family client, which exists because somebody already did that compile for that version. The prebuilt builds are not 'instead of' the official versions: they *are* those versions, ported to run in a browser, which is why they can be downloaded and played without a JVM."
 }
