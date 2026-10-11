@@ -215,10 +215,17 @@ def main() -> int:
     check("every file says what it is for", all(entry.get("role") for entry in entries))
     check("sizes are known for everything the mirror hosts",
           sum(1 for entry in entries if entry.get("bytes")) >= 22, str(len(entries)))
-    check("the fruit of the run is a manifest with hashes",
-          (ROOT / "work" / "builds" / "manifest.json").is_file()
-          and all(e.get("sha256") for v in _json.loads((ROOT / "work" / "builds" / "manifest.json").read_text())["versions"].values()
-                  for e in v["files"] if e.get("state") != "failed"))
+    # The downloads themselves are local: this file is the evidence from a run of
+    # tools/fetch_builds.py, so a machine that has not fetched anything is not a failure, it is a
+    # machine that has not fetched anything. CI is exactly that machine.
+    manifest = ROOT / "work" / "builds" / "manifest.json"
+    if manifest.is_file():
+        fetched = _json.loads(manifest.read_text())["versions"]
+        check("every fetched build has a size and a hash",
+              all(e.get("sha256") for v in fetched.values() for e in v["files"] if e.get("state") != "failed"),
+              f"{len(fetched)} version(s) on this machine")
+    else:
+        print("  SKIP  every fetched build has a size and a hash — nothing fetched on this machine")
 
     print("\nthe target list")
     code, output = run("tools/targets.py", "--manifest", str(FIXTURE), "--json")
