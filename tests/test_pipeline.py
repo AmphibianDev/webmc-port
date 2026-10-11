@@ -200,6 +200,22 @@ def main() -> int:
     check("the Java 21 range says CheerpX cannot help either",
           "32-bit" in roadmap["cheerpj-java21"]["blocked_by"], roadmap["cheerpj-java21"]["blocked_by"][:90])
 
+    print("\nthe build list")
+    builds = ports.get("builds", {}).get("versions", {})
+    check("every target version family has at least one build or workspace",
+          all(group in builds for group in ("26.3", "26.2", "1.21.11", "1.21.5", "1.18.2", "1.16.5",
+                                           "1.12.2", "1.8.9", "1.5.2", "classic (Indev - 1.2.5)")),
+          str(sorted(builds)))
+    entries = [entry for group in builds.values() for entry in group]
+    check("each entry names a repository", all(entry.get("repo") for entry in entries))
+    check("each entry says how to get it", all(entry.get("how") for entry in entries))
+    check("each group marks what to use", all(any(e.get("recommended") for e in group) for group in builds.values()),
+          str([k for k, v in builds.items() if not any(e.get("recommended") for e in v)]))
+    check("a release-asset entry names the asset", all(entry.get("asset") for entry in entries
+                                                       if entry.get("how") == "release asset"))
+    check("a repository-file entry names the path", all(entry.get("path") for entry in entries
+                                                        if entry.get("how") == "repository file"))
+
     print("\nthe target list")
     code, output = run("tools/targets.py", "--manifest", str(FIXTURE), "--json")
     check("targets.py answers for the project's versions", code == 0, output[-160:])

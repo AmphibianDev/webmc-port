@@ -98,6 +98,8 @@ def find_body_span(text, signature):
 
 
 def patch(workspace, relative, signature, insertion, dry_run, label):
+    """signature may be one string or a list of candidates; the first that matches is used."""
+    candidates = [signature] if isinstance(signature, str) else list(signature)
     path = workspace / GAME / relative
     if not path.exists():
         print(f"  ❌ {relative}: file not found")
@@ -106,9 +108,14 @@ def patch(workspace, relative, signature, insertion, dry_run, label):
     if MARKER in text and insertion.strip() in text:
         print(f"  ↩︎  {label}: already applied")
         return True
-    span = find_body_span(text, signature)
+    span, used = None, None
+    for candidate in candidates:
+        span = find_body_span(text, candidate)
+        if span:
+            used = candidate
+            break
     if not span:
-        print(f"  ❌ {label}: anchor {signature!r} not found in {relative}")
+        print(f"  ❌ {label}: none of {candidates!r} found in {relative}")
         return False
     _, close = span
     patched = text[:close] + insertion + text[close:]
@@ -117,19 +124,29 @@ def patch(workspace, relative, signature, insertion, dry_run, label):
         print(f"  ✏️  {label}: would insert {len(insertion.splitlines())} line(s) at {relative}:{line}")
         return True
     path.write_text(patched)
-    print(f"  ✅ {label}: inserted at {relative}:{text[:close].count(chr(10)) + 1}")
+    print(f"  ✅ {label}: inserted at {relative}:{text[:close].count(chr(10)) + 1}"
+          f"{f' (matched {used!r})' if len(candidates) > 1 else ''}")
     return True
 
 
 def add_accessor(workspace, relative, anchor_line, insertion, dry_run, label):
+    """anchor_line may be one line or several candidates; a regex fallback covers the rest."""
+    anchors = [anchor_line] if isinstance(anchor_line, str) else list(anchor_line)
     path = workspace / GAME / relative
     text = path.read_text()
     if MARKER in text and "eaglerGetRenderables" in text:
         print(f"  ↩︎  {label}: already applied")
         return True
-    if anchor_line not in text:
-        print(f"  ❌ {label}: anchor line not found in {relative}")
-        return False
+    anchor_line = next((line for line in anchors if line in text), None)
+    if anchor_line is None:
+        # last resort: any declaration of that field, whatever it is initialised with
+        import re as _re
+        match = _re.search(r"\s*(?:private|protected) final List<Renderable> renderables = [^;]+;", text)
+        if match:
+            anchor_line = match.group(0)
+        else:
+            print(f"  ❌ {label}: no declaration of the renderables field in {relative}")
+            return False
     if dry_run:
         print(f"  ✏️  {label}: would add eaglerGetRenderables() to {relative}")
         return True
@@ -169,13 +186,31 @@ def main():
     print(f"workspace: {workspace}{' (dry run)' if args.dry_run else ''}")
     copy_sources(workspace, args.dry_run)
     ok = True
-    ok &= patch(workspace, "net/minecraft/client/Minecraft.java", "public void tick()",
+    # The client tick method has been named and shaped differently across versions: 26.x has
+    # runTick(boolean), older trees have tick(). Trying a list and reporting which one matched
+    # is what keeps this from silently hooking nothing after a version bump.
+    tick_signatures = (
+        "private void runTick(boolean",
+        "public void runTick(boolean",
+        "void runTick(boolean",
+        "public void runTick(",
+        "public void tick()",
+        "void tick()",
+    )
+    ok &= patch(workspace, "net/minecraft/client/Minecraft.java", tick_signatures,
                 TICK_HOOK, args.dry_run, "END_CLIENT_TICK")
     ok &= patch(workspace, "net/minecraft/client/gui/screens/Screen.java", "protected void init()",
                 SCREEN_HOOK, args.dry_run, "ScreenEvents.AFTER_INIT")
+    # The renderables field has been declared with Guava, with new ArrayList<>() and with
+    # other initialisers over the years; accept any of them rather than one spelling.
+    accessor_anchors = (
+        "private final List<Renderable> renderables = Lists.newArrayList();",
+        "private final List<Renderable> renderables = new ArrayList<>();",
+        "private final List<Renderable> renderables = new java.util.ArrayList<>();",
+        "protected final List<Renderable> renderables = new ArrayList<>();",
+    )
     ok &= add_accessor(workspace, "net/minecraft/client/gui/screens/Screen.java",
-                       "private final List<Renderable> renderables = Lists.newArrayList();",
-                       SCREEN_ACCESSOR, args.dry_run, "Screens.getWidgets")
+                       accessor_anchors, SCREEN_ACCESSOR, args.dry_run, "Screens.getWidgets")
     print("hooks applied" if ok else "FAILED - see above")
     return 0 if ok else 1
 
