@@ -7,6 +7,8 @@ echo "== version pipeline"; python3 tests/test_pipeline.py || failed=1
 echo; echo "== launcher page"; node tests/test_site.mjs || failed=1
 echo; echo "== the build downloader (GitHub only, verified on arrival)"
 python3 tests/test_fetch_builds.py || failed=1
+echo; echo "== the local launcher page"
+python3 tests/test_serve_builds.py || failed=1
 echo; echo "== the injector (JavaScript mods, any build)"
 python3 mods/tests/test_injector.py || failed=1
 echo; echo "== the mod loader (build-time Fabric, for workspaces)"
