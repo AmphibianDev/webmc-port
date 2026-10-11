@@ -212,7 +212,7 @@ def main() -> int:
     print("\nthe build list")
     builds_doc = _json.loads((ROOT / "builds.json").read_text())
     builds = {group["version"]: group["files"] for group in builds_doc["versions"]}
-    wanted_versions = ("26.3", "26.2", "1.20.6", "1.16.5", "1.14.4", "1.13.1", "1.12.2", "1.12.2-eaglerforge",
+    wanted_versions = ("26.3", "26.2", "1.20.6", "1.16.5", "1.14.4", "1.13.1", "1.12.2",
                        "1.8.8", "1.5.2", "1.2.5", "b1.8.1", "a1.2.6", "in-20100223")
     check("every version with a build on GitHub is listed",
           all(version in builds for version in wanted_versions),
@@ -222,8 +222,20 @@ def main() -> int:
     entries = [entry for group in builds.values() for entry in group]
     check("every entry is a GitHub address", all("github.com" in entry["url"] for entry in entries))
     check("every file says what it is for", all(entry.get("role") for entry in entries))
-    check("sizes are known for everything the mirror hosts",
-          sum(1 for entry in entries if entry.get("bytes")) >= 22, str(len(entries)))
+    # Sizes come from the repositories that store their builds as files (the mirrors). A release
+    # asset's size is not known until it is fetched, and one of them is a three-file bundle, so the
+    # honest assertion is "most of them", not "all of them".
+    with_size = sum(1 for entry in entries if entry.get("bytes"))
+    # Exactly the release assets (EaglerPorts' seven) have no size until fetched; every file in a
+    # repository does. So this asserts the split rather than a number that drifts.
+    unknown = [e["url"] for e in entries if not e.get("bytes")]
+    check("only release assets lack a known size",
+          all("/releases/" in url for url in unknown) and with_size >= 17,
+          f"{with_size} known, {len(unknown)} unknown: {[u.split('github.com/')[-1][:40] for u in unknown]}")
+    check("no pre-modded client is catalogued",
+          not any(word in entry["url"].lower() for entry in entries
+                  for word in ("eaglerforge", "astra", "wurst", "resent", "dragonx", "gx-client", "pixel")),
+          str([e["url"] for e in entries if "eaglerforge" in e["url"].lower()]))
     # The downloads themselves are local: this file is the evidence from a run of
     # tools/fetch_builds.py, so a machine that has not fetched anything is not a failure, it is a
     # machine that has not fetched anything. CI is exactly that machine.
