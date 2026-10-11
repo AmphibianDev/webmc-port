@@ -135,8 +135,13 @@ tools/versions.py       version list parsing, classification, sorting
 tools/plan.py           verdicts: build / reuse / needs-port
 tools/acquire.py        client jar + asset index, checksums, work/ only
 tools/update.py         the updater: what is new, what to queue, the page's manifest
+tools/targets.py        verdicts for the versions this project is meant to cover
+tools/lwjgl_surface.py  measures the LWJGL 3 gap (the one layer between us and 1.13-1.20.4)
+mods/                   the Fabric side: a build-time loader for ahead-of-time clients, the
+                        shim layer, the mod scanner, and a README on what "injector" means here
 site/                   the launcher page (Minecraft-launcher styled)
 state.json              the catalog's memory: every version seen, and what it needs
+targets.json            the versions this project is supposed to cover
 tests/                  offline tests: pipeline (31 checks) and the page's contract (14)
 fixtures/               a manifest to test against, so no test touches the network
 .github/workflows/      daily catalog + Pages, and a manual build job

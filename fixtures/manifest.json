@@ -1,13 +1,92 @@
 {
-  "latest": {"release": "26.2", "snapshot": "26.3-snapshot-7"},
+  "latest": {
+    "release": "26.2",
+    "snapshot": "26.3-snapshot-7"
+  },
   "versions": [
-    {"id": "26.3-snapshot-7", "type": "snapshot", "url": "https://example.invalid/26.3-snapshot-7.json", "releaseTime": "2026-10-08T10:00:00+00:00"},
-    {"id": "26.2", "type": "release", "url": "https://example.invalid/26.2.json", "releaseTime": "2026-09-19T10:00:00+00:00"},
-    {"id": "26.3", "type": "release", "url": "https://example.invalid/26.3.json", "releaseTime": "2026-10-02T10:00:00+00:00"},
-    {"id": "1.21.11", "type": "release", "url": "https://example.invalid/1.21.11.json", "releaseTime": "2026-06-01T10:00:00+00:00"},
-    {"id": "1.21.4", "type": "release", "url": "https://example.invalid/1.21.4.json", "releaseTime": "2024-12-03T10:00:00+00:00"},
-    {"id": "1.8.9", "type": "release", "url": "https://example.invalid/1.8.9.json", "releaseTime": "2015-12-09T10:00:00+00:00"},
-    {"id": "b1.8.1", "type": "old_beta", "url": "https://example.invalid/b1.8.1.json", "releaseTime": "2011-09-15T10:00:00+00:00"},
-    {"id": "a1.2.6", "type": "old_alpha", "url": "https://example.invalid/a1.2.6.json", "releaseTime": "2010-12-02T10:00:00+00:00"}
+    {
+      "id": "26.3-snapshot-7",
+      "type": "snapshot",
+      "url": "https://example.invalid/26.3-snapshot-7.json",
+      "releaseTime": "2026-10-08T10:00:00+00:00"
+    },
+    {
+      "id": "26.3",
+      "type": "release",
+      "url": "https://example.invalid/26.3.json",
+      "releaseTime": "2026-10-02T10:00:00+00:00"
+    },
+    {
+      "id": "26.2",
+      "type": "release",
+      "url": "https://example.invalid/26.2.json",
+      "releaseTime": "2026-09-19T10:00:00+00:00"
+    },
+    {
+      "id": "1.21.11",
+      "type": "release",
+      "url": "https://example.invalid/1.21.11.json",
+      "releaseTime": "2026-06-01T10:00:00+00:00"
+    },
+    {
+      "id": "1.21.4",
+      "type": "release",
+      "url": "https://example.invalid/1.21.4.json",
+      "releaseTime": "2024-12-03T10:00:00+00:00"
+    },
+    {
+      "id": "1.20.4",
+      "type": "release",
+      "url": "https://example.invalid/1.20.4.json",
+      "releaseTime": "2023-12-07T10:00:00+00:00"
+    },
+    {
+      "id": "1.18.2",
+      "type": "release",
+      "url": "https://example.invalid/1.18.2.json",
+      "releaseTime": "2022-02-28T10:00:00+00:00"
+    },
+    {
+      "id": "1.16.5",
+      "type": "release",
+      "url": "https://example.invalid/1.16.5.json",
+      "releaseTime": "2021-01-14T10:00:00+00:00"
+    },
+    {
+      "id": "1.13",
+      "type": "release",
+      "url": "https://example.invalid/1.13.json",
+      "releaseTime": "2018-07-18T10:00:00+00:00"
+    },
+    {
+      "id": "1.12.2",
+      "type": "release",
+      "url": "https://example.invalid/1.12.2.json",
+      "releaseTime": "2017-09-18T10:00:00+00:00"
+    },
+    {
+      "id": "1.8.9",
+      "type": "release",
+      "url": "https://example.invalid/1.8.9.json",
+      "releaseTime": "2015-12-09T10:00:00+00:00"
+    },
+    {
+      "id": "b1.8.1",
+      "type": "old_beta",
+      "url": "https://example.invalid/b1.8.1.json",
+      "releaseTime": "2011-09-15T10:00:00+00:00"
+    },
+    {
+      "id": "a1.2.6",
+      "type": "old_alpha",
+      "url": "https://example.invalid/a1.2.6.json",
+      "releaseTime": "2010-12-02T10:00:00+00:00"
+    },
+    {
+      "id": "in-20100223",
+      "type": "old_alpha",
+      "url": "https://example.invalid/in.json",
+      "releaseTime": "2010-02-23T10:00:00+00:00"
+    }
   ]
 }

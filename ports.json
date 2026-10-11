@@ -8,7 +8,7 @@
       "kind": "real-jvm",
       "enabled": true,
       "launch": true,
-      "note": "No compile and no copy of the game: a real JVM (CheerpJ 4, Java 8/11/17) runs the official jar the visitor's browser downloads from Mojang, with the platform layer provided as JS natives (cheerpj-natives implements LWJGL). Textures, UI and behaviour are Mojang's because the jar is Mojang's and untouched. Coverage is the LWJGL 2 era: everything up to 1.12.2. Versions from 1.13 on use LWJGL 3, whose JS native layer does not exist yet - that single gap is what keeps 1.13 to 1.20.4 out, and Java 21 keeps 1.20.5 and later out of any JVM-in-page route.",
+      "note": "No compile and no copy of the game: a real JVM (CheerpJ 4, Java 8/11/17) runs the official jar the visitor's browser downloads from Mojang, with the platform layer provided as JS natives (cheerpj-natives implements LWJGL). Textures, UI and behaviour are Mojang's because the jar is Mojang's and untouched. Coverage is the LWJGL 2 era: everything up to 1.12.2. Versions from 1.13 on use LWJGL 3, whose JS native layer does not exist yet - that single gap is what keeps 1.13 to 1.20.4 out, and Java 21 keeps 1.20.5 and later out of any JVM-in-page route. Classic versions fit here too: Indev, Alpha and Beta used LWJGL 2 and kept their textures inside the jar, which is exactly the case this route is good at.",
       "profiles": [
         "1.12.2",
         "1.11.2",
@@ -18,7 +18,12 @@
         "1.6.4",
         "1.5.2",
         "1.2.5",
-        "1.0"
+        "1.0",
+        "b1.8.1",
+        "b1.3_01",
+        "a1.2.6",
+        "a1.0.16_02",
+        "in-20100223"
       ],
       "requires": {
         "java": 8,
@@ -43,7 +48,7 @@
         "1.2.5",
         "1.6.4"
       ],
-      "caveat": "cheerpj-natives' LWJGL is described as partial: geometry, textures and input work (browsercraft), and Forge 1.6.4 loads (WebForge), but treat any version beyond the two proven ones as something to test before advertising it.",
+      "caveat": "LWJGL in JavaScript is described by its authors as partial. Browsercraft proves 1.2.5 and WebForge proves 1.6.4 with Forge; the Alpha/Beta/Indev ones use the same runtime path and older assets, so treat them as 'should work, test before advertising'.",
       "how": "Nothing is compiled and nothing is copied: the visitor's browser fetches the official jar from piston-data.mojang.com, CheerpJ runs it with the JS natives on java.library.path, and the main class is net.minecraft.client.Minecraft. Our site serves only code: CheerpJ's loader, cheerpj-natives (Apache-2.0) and the LWJGL jars (BSD)."
     },
     {

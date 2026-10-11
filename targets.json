@@ -1,0 +1,25 @@
+{
+  "note": "The versions this project is supposed to cover, and the eras they belong to. tools/targets.py prints a verdict for each one: real Java (a JVM in the page), one layer away, or blocked by the runtime.",
+  "groups": [
+    {
+      "name": "Newest releases",
+      "why": "what people actually play",
+      "versions": ["26.3", "26.2", "1.21.11"]
+    },
+    {
+      "name": "Latest snapshot",
+      "why": "so a new version is never a surprise",
+      "versions": ["26.3-snapshot-7"]
+    },
+    {
+      "name": "Legacy but modern enough",
+      "why": "modded servers, old worlds, the versions mods were written for",
+      "versions": ["1.18.2", "1.16.5", "1.12.2", "1.8.9"]
+    },
+    {
+      "name": "Pre-release eras",
+      "why": "Indev, Alpha and Beta: tiny clients, everything they need is inside the jar",
+      "versions": ["b1.8.1", "a1.2.6", "in-20100223"]
+    }
+  ]
+}

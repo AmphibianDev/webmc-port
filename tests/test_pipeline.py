@@ -43,7 +43,8 @@ def main() -> int:
     engines = planner.load_engines()
 
     print("version discovery")
-    check("the fixture lists versions", len(version_tools.versions(manifest)) == 8)
+    check("the fixture lists the target versions", len(version_tools.versions(manifest)) >= 14,
+          str(len(version_tools.versions(manifest))))
     check("releases are found newest first",
           [v["id"] for v in version_tools.newest(manifest, ("release",), 3)] == ["26.3", "26.2", "1.21.11"])
     check("old versions are a different kind",
@@ -74,8 +75,9 @@ def main() -> int:
           rows["1.8.9"]["verdict"] + " via " + str(rows["1.8.9"]["engine"]))
     check("a launch needs no compile time", rows["1.8.9"]["minutes"] == 0)
     check("and says mods load at runtime", "runtime" in (rows["1.8.9"]["mods"] or ""))
-    check("a classic version with an EaglercraftX client is reused",
-          rows["b1.8.1"]["engine"] == "eagler-ports")
+    check("a classic version prefers real Java when it can have it", rows["b1.8.1"]["verdict"] == "launch",
+          rows["b1.8.1"]["verdict"] + " via " + str(rows["b1.8.1"]["engine"]))
+    check("Indev gets the same answer as the later classics", rows["in-20100223"]["verdict"] == "launch")
 
     print("\nroadmap: why a version is not real Java yet")
     check("a 1.13-1.20.4 version is blocked by the missing LWJGL 3 layer",
@@ -107,9 +109,10 @@ def main() -> int:
     check("a real version with no profile needs a port", rows["1.21.4"]["verdict"] == "needs-port",
           rows["1.21.4"]["why"])
     check("a fresh snapshot needs a port too", rows["26.3-snapshot-7"]["verdict"] == "needs-port")
-    check("an old version with a prebuilt client is reused", rows["b1.8.1"]["verdict"] == "reuse",
-          rows["b1.8.1"]["why"])
-    check("and points at that client", "Eaglercraft_Offline_WASM.html" in (planner.engine_links(engines).get("b1.8.1") or ""))
+    links_any = planner.engine_links(engines)
+    check("a prebuilt client is still available as the fallback for classics",
+          "Eaglercraft_Offline_WASM.html" in (links_any.get("b1.8.1") or ""), str(sorted(links_any))[:80])
+    check("the TeaVM route is still offered where no JVM reaches", rows["26.2"]["verdict"] == "build")
 
     print("\nprebuilt links are never hosted by us")
     links = planner.engine_links(engines)
@@ -129,7 +132,7 @@ def main() -> int:
         check("it wrote a state file", state.is_file())
         check("it wrote the page's manifest", (ROOT / "site" / "manifest.json").is_file())
         saved = json.loads(state.read_text())
-        check("it recorded every version it saw", len(saved["seen"]) == 8)
+        check("it recorded every version it saw", len(saved["seen"]) >= 14, str(len(saved["seen"])))
         check("it queued the versions that need a port",
               {entry["id"] for entry in saved["queued"]} >= {"1.21.4", "26.3-snapshot-7"}, str(saved["queued"]))
         check("it catalogued the buildable ones",
@@ -174,6 +177,19 @@ def main() -> int:
                                                "--manifest", str(FIXTURE), "--dry-run")[0] != 0)
     check("no jar is ever committed", "work/" in (ROOT / ".gitignore").read_text()
           and "dist/" in (ROOT / ".gitignore").read_text())
+
+    print("\nthe target list")
+    code, output = run("tools/targets.py", "--manifest", str(FIXTURE), "--json")
+    check("targets.py answers for the project's versions", code == 0, output[-160:])
+    targets = json.loads(output)
+    states = {row["id"]: row["state"] for row in targets}
+    check("a LWJGL 2 legacy version is real Java", states.get("1.12.2") == "real-java", str(states.get("1.12.2")))
+    check("1.8.9 too", states.get("1.8.9") == "real-java")
+    check("a classic era version is real Java as well", states.get("b1.8.1") == "real-java")
+    check("a LWJGL 3 version waits on one layer", states.get("1.16.5") == "one-layer", str(states.get("1.16.5")))
+    check("a 26.x version is blocked by Java, not by us", states.get("26.2") == "ahead-of-time",
+          str(states.get("26.2")))
+    check("and 1.21.11 is blocked outright", states.get("1.21.11") == "blocked")
 
     print("\nthe map of the idea")
     code, output = run("tools/plan.py", "--manifest", str(FIXTURE), "--kinds", "release,snapshot,old_beta",
