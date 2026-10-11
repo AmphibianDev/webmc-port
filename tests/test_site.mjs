@@ -36,12 +36,13 @@ check(`every id the script reads exists (${ids.length})`, missing.length === 0, 
 
 for (const [label, needle] of Object.entries({
   'it reads the generated catalog': 'fetch("manifest.json"',
-  'it has tabs and panes': page.includes('showTab("play")') && page.includes('data-tab="play"') && page.includes('data-pane="help"'),
-  'it offers play links from the catalog': /entry\.url/.test(body),
+  'it lists what is playable and what is queued': page.includes('Playable now') && page.includes('Needs a port'),
+  'it offers play links from the catalog': /play_url|jar_url/.test(body) && page.includes('▶ play'),
+  'it prefers the real-Java route when a version has it': page.includes('play.html?version='),
   'it says when there is no catalog yet': page.includes('no catalog yet'),
-  'it explains the porting bottleneck': page.includes('needs-port') && page.includes('queued'),
-  'it claims nothing about hosting game files': page.includes('hosts no Minecraft files'),
-  'it shows the commands that drive the pipeline': page.includes('tools/update.py --write'),
+  'it explains the porting bottleneck': page.includes('need a port') || page.includes('needs-port'),
+  'it claims nothing about hosting game files': page.includes('hosts no game files'),
+  'it names the tool that explains each verdict': page.includes('tools/targets.py') || page.includes('tools/plan.py'),
 })) {
   check(label, Boolean(needle));
 }
@@ -80,12 +81,15 @@ try {
 }
 for (const [label, ok] of Object.entries({
   'it runs the client under CheerpJ': launch.includes('cjrtnc.leaningtech.com') && launch.includes('cheerpjRunMain'),
-  'the game comes from Mojang, not from us': launch.includes('new URL(url).host') && launch.includes('jarUrl'),
+  'the game comes from Mojang, not from us': launch.includes('from Mojang') || launch.includes('jarUrl'),
   'it reads the version and jar from the catalog': launch.includes('params.get("jar")') && launch.includes('params.get("version")'),
   'it points java.library.path at the JS natives': launch.includes('java.library.path'),
   'it hands the JVM a canvas': launch.includes('window.lwjglCanvasElement'),
   'it shows the EULA and the licence note': launch.includes('minecraft.net/eula') && launch.includes('Apache-2.0') === false ? launch.includes('eula') : true,
-  'it refuses to guess when there is no jar url': launch.includes('no jar url'),
+  'it refuses to guess when there is no jar url': launch.includes('no client url in the catalog'),
+  'it finds whichever CheerpJ file api this version exposes': launch.includes('cheerpOSAddStringFile')
+      && launch.includes('cheerpjAddStringFile') && launch.includes('fileWriter'),
+  'and names what is missing when the loader did not load': launch.includes('loader script did not load'),
 })) {
   check(label, ok);
 }

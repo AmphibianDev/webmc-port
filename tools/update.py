@@ -88,13 +88,62 @@ def resolved_client_urls(manifest: dict, rows: list[dict], fixture: dict | None 
     return urls
 
 
+def prebuilt_ports(path: pathlib.Path | None = None) -> dict:
+    """The builds catalogued in builds.json, as a version -> playable url map.
+
+    These are GitHub addresses, and the page links them: this project copies no client. They exist
+    because for those versions nothing else runs in a tab yet (no browser JVM for Java 21+, and no
+    JavaScript implementation of LWJGL 3), so a version whose only reachable client is somebody
+    else's port should say so and be playable rather than sit in a queue.
+    """
+    file = path or (ROOT / "builds.json")
+    if not file.is_file():
+        return {}
+    ports = {}
+    for group in json.loads(file.read_text()).get("versions", []):
+        client = next((item for item in group["files"] if item.get("role") == "client"), None)
+        if not client:
+            continue
+        entry = {
+            "url": client["url"],
+            "kind": "prebuilt port",
+            "source_repo": group.get("source_repo"),
+            "label": group.get("label", group["version"]),
+            "era": group.get("era"),
+            "bytes": client.get("bytes"),
+        }
+        # the port's own id and any id Mojang uses for the same version
+        for version_id in [group["version"]] + list(group.get("aliases") or []):
+            ports[version_id] = entry
+        continue
+        ports[group["version"]] = {
+            "url": client["url"],
+            "kind": "prebuilt port",
+            "source_repo": group.get("source_repo"),
+            "label": group.get("label", group["version"]),
+            "era": group.get("era"),
+            "bytes": client.get("bytes"),
+        }
+    return ports
+
+
 def catalog_entry(row: dict, engines: list[dict], links: dict, client_urls: dict | None = None,
-                  previous: dict | None = None, strict_urls: bool = False) -> dict:
+                  previous: dict | None = None, strict_urls: bool = False,
+                  ports: dict | None = None) -> dict:
     """One catalog row: what the launcher page needs to offer this version."""
     entry = {"id": row["id"], "type": row["type"], "released": row["released"],
              "verdict": row["verdict"], "engine": row["engine"],
              "engine_name": row.get("engine_name"), "minutes": row.get("minutes"),
              "mods": row.get("mods")}
+    port = (ports or {}).get(row["id"])
+    if port:
+        # Playable *today*, linked where the build lives. It is deliberately its own field: a
+        # version can be both buildable by us later and playable through somebody's port now, and
+        # the launch/build branches must not wipe that.
+        entry["play_url"] = port["url"]
+        entry["play_kind"] = port["kind"]
+        entry["play_repo"] = port.get("source_repo")
+        entry["play_bytes"] = port.get("bytes")
     if row["verdict"] == "launch":
         resolved = (client_urls or {}).get(row["id"]) or {}
         # The catalog is a cache: a refresh that could not reach Mojang must keep the url it
@@ -141,6 +190,8 @@ def main() -> int:
     parser.add_argument("--write", action="store_true", help="record what has been seen")
     parser.add_argument("--build", action="store_true", help="run the build for new versions")
     parser.add_argument("--dry-run", action="store_true", help="print the build commands instead")
+    parser.add_argument("--builds-file", default=str(ROOT / "builds.json"),
+                        help="the prebuilt builds to offer as playable ports")
     parser.add_argument("--strict-urls", action="store_true",
                         help="never keep a url that came from --client-urls (CI uses this)")
     parser.add_argument("--client-urls", default=None,
@@ -176,7 +227,8 @@ def main() -> int:
     catalog = {entry["id"]: entry for entry in state.get("catalog", [])}
     for row in rows:
         catalog[row["id"]] = catalog_entry(row, engines, links, client_urls, catalog.get(row["id"]),
-                                           strict_urls=args.strict_urls)
+                                           strict_urls=args.strict_urls,
+                                           ports=prebuilt_ports(pathlib.Path(args.builds_file)))
     state["catalog"] = sorted(catalog.values(), key=lambda e: e["released"], reverse=True)
     state["queued"] = queue_needs_port(list(state.get("queued", [])), rows)
     state["seen"] = sorted(set(state["seen"]) | {v["id"] for v in version_tools.versions(manifest)})

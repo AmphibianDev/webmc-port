@@ -104,81 +104,118 @@ jobs:
 
   build:
     name: Build a version into a browser client
-    # A build is a decision: dispatch this by hand with the version you want.
+    # A build is a decision: dispatch this by hand with the version you want. The engine for 26.2 is
+    # the Eaglercraft workspace, whose npm entry point does the work: gradle compiles the patched
+    # client with Java 25, the wasm toolchain links it, and build-single-html.js packages one HTML.
     if: ${{ inputs.build_version != '' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 300
+    timeout-minutes: 330
     steps:
       - uses: actions/checkout@v7
+        with:
+          path: ours
+
+      - name: Which engine can build this, and what it needs
+        run: |
+          set -euo pipefail
+          cd ours
+          python3 tools/plan.py --version "${{ inputs.build_version }}" --json > /tmp/plan.json
+          python3 -c "
+          import json
+          plan = json.load(open('/tmp/plan.json'))[0]
+          print('verdict:', plan['verdict'], '| engine:', plan['engine'], '|', plan['why'])
+          for key, value in (plan.get('build') or {}).items():
+              print(f'  {key}: {value.format(version=plan[\"id\"], repo=plan[\"engine\"])}')
+          "
+          VERDICT=$(python3 -c "import json;print(json.load(open('/tmp/plan.json'))[0]['verdict'])")
+          [ "$VERDICT" = "build" ] || {
+            echo "::error::${{ inputs.build_version }} is '$VERDICT': no enabled engine has a profile for it"
+            exit 1
+          }
+
+      - name: Check out the engine
+        uses: actions/checkout@v7
+        with:
+          repository: CynTheSolveroftheabsolutefabric/Eaglercraft-26.2-Workspace
+          path: engine
+          fetch-depth: 1
 
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "25"
 
-      - name: Which engine can build this, and what does it cost
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Compile, link and package the client
+        # ~40 minutes, ~10 GiB of heap. The tail is kept because that is where a TeaVM or gradle
+        # failure states its reason.
         run: |
           set -euo pipefail
-          python3 tools/plan.py --version "${{ inputs.build_version }}" --json > /tmp/plan.json
-          cat /tmp/plan.json
-          VERDICT=$(python3 -c "import json;print(json.load(open('/tmp/plan.json'))[0]['verdict'])")
-          if [ "$VERDICT" != "build" ]; then
-            echo "::error::${{ inputs.build_version }} is '$VERDICT': no engine has a browser platform layer for it yet"
-            echo "Porting it is the work; the pipeline around it is ready. See README.md."
-            exit 1
-          fi
+          cd engine
+          node --version
+          java -version 2>&1 | head -2
+          free -h | head -2
+          npm install --no-audit --no-fund 2>&1 | tail -5
+          export GRADLE_OPTS="-Xmx10g -Dorg.gradle.daemon=false -Dorg.gradle.parallel=true"
+          export NODE_OPTIONS="--max-old-space-size=6144"
+          ( while true; do sleep 60; free -h | awk 'NR==2 {print "  memory: " $3 " / " $2}'; done ) &
+          WATCH=$!
+          set +e
+          npm run build:single -- --output "dist/${{ inputs.build_version }}.html" 2>&1 | tail -120
+          STATUS=${PIPESTATUS[0]}
+          set -e
+          kill $WATCH 2>/dev/null || true
+          echo "build exit status: $STATUS"
+          echo "$STATUS" > /tmp/build-status
 
-      - name: Fetch the official client (build input, never committed)
-        run: python3 tools/acquire.py --version "${{ inputs.build_version }}" --dest work/client
-
-      - name: Build with the engine
+      - name: What came out
+        if: always()
         run: |
           set -euo pipefail
-          echo "engine commands, from ports.json:"
-          python3 -c "
-          import json
-          plan = json.load(open('/tmp/plan.json'))[0]
-          for step in ('clone','acquire','remap','compile'):
-              command = (plan.get('build') or {}).get(step)
-              if command:
-                  print(f'  {step}: {command.format(version=plan[\"id\"], repo=plan[\"engine\"])}')
-          "
-          echo
-          echo "A real run checks out the engine, runs those commands, and picks up the"
-          echo "output named in ports.json. That compile is the ~50 minute part, and it is"
-          echo "left to the machine that has the RAM for it."
+          {
+            echo "## Build ${{ inputs.build_version }}"
+            echo '```'
+            find engine -name '*.html' -size +1M -printf '%s\t%p\n' 2>/dev/null | sort -rn | head -5 || true
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
 
-      - name: Publish the client
-        # Your call, made explicit: CLIENT_HOSTING=release puts the built client in this
-        # repository's releases and the page links it; CLIENT_HOSTING=artifact keeps the
-        # client inside the run (nothing of the game is published anywhere) and the page
-        # keeps linking whatever project builds that version.
-        # Repository variable, default: release.
+      - name: Publish the client as a launcher card
+        # CLIENT_HOSTING=release (default) uploads the built client to this repository's releases and
+        # the page links it; CLIENT_HOSTING=artifact keeps it inside the run, so nothing of the game
+        # is published anywhere and the page keeps linking the port that already exists.
         if: ${{ vars.CLIENT_HOSTING != 'artifact' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          cd ours
           VERSION="${{ inputs.build_version }}"
-          CLIENT="$(find . -name 'Gaius.html' -o -name '*.html' | grep -v site | head -1 || true)"
-          if [ -z "$CLIENT" ]; then echo "no client was produced"; exit 0; fi
-          ASSET="webmc-port-$VERSION.html"
+          CLIENT=$(find ../engine -name '*.html' -size +5M | sort | head -1 || true)
+          if [ -z "$CLIENT" ]; then echo "no client produced, nothing to publish"; exit 0; fi
+          ASSET="client-$VERSION.html"
           cp "$CLIENT" "/tmp/$ASSET"
-          gh release view clients >/dev/null 2>&1 || gh release create clients \
-            --title "Compiled browser clients" --notes "Built from the official client at build time." || true
-          gh release upload clients "/tmp/$ASSET" --clobber
+          echo "publishing $ASSET ($(du -h "/tmp/$ASSET" | cut -f1))"
+          gh release view built-clients >/dev/null 2>&1 || gh release create built-clients \
+            --title "Built browser clients" --notes "Compiled from the official client by this repository's build job." || true
+          gh release upload built-clients "/tmp/$ASSET" --clobber
           python3 - "$VERSION" "$ASSET" <<'PY'
-          import json, pathlib, sys
+          import json, os, pathlib, sys
           version, asset = sys.argv[1], sys.argv[2]
+          repo = os.environ.get("GITHUB_REPOSITORY", "")
           path = pathlib.Path("site/manifest.json")
           data = json.loads(path.read_text()) if path.is_file() else {"versions": [], "queued": []}
-          repo = __import__("os").environ.get("GITHUB_REPOSITORY", "")
+          url = f"https://github.com/{repo}/releases/latest/download/{asset}"
+          hit = False
           for entry in data.get("versions", []):
               if entry["id"] == version:
-                  entry.update({"verdict": "build", "kind": "built",
-                                "url": f"https://github.com/{repo}/releases/latest/download/{asset}"})
+                  entry["url"] = url
+                  entry["kind"] = "built"
+                  hit = True
+          print("catalog updated for", version if hit else f"{version} (not in the catalog yet)")
           path.write_text(json.dumps(data, indent=2) + "\n")
-          print(f"catalog now links {version} at its release asset")
           PY
           git config user.name "webmc-port-bot"
           git config user.email "webmc-port-bot@users.noreply.github.com"
@@ -191,6 +228,7 @@ jobs:
         with:
           name: client-${{ inputs.build_version }}
           path: |
-            work/client
-            dist
+            engine/*.html
+            engine/dist
+            engine/build
           if-no-files-found: ignore

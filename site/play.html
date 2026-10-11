@@ -3,122 +3,101 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Playing… — WebMC Port</title>
+<title>Playing… — WebMC</title>
+<!-- CheerpJ: a JVM compiled to WebAssembly. If this script is blocked (ad-blocker, offline, CSP,
+     https-only extension) nothing below can run, which the page says out loud instead of failing
+     with a reference error. -->
 <script src="https://cjrtnc.leaningtech.com/4.2/loader.js"></script>
 <style>
-  :root { color-scheme: dark; }
-  body { margin: 0; background: #0b0d10; color: #e9ecef; font: 14px/1.55 system-ui, sans-serif; }
-  main { max-width: 940px; margin: 0 auto; padding: 18px; }
-  header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-  .logo { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 8px;
-    border: 1px solid #57402a;
-    background: repeating-linear-gradient(45deg, #4a3524 0 6px, #3b2a1c 6px 12px); }
-  h1 { font-size: 17px; margin: 0; }
-  p { color: #9aa3ad; }
-  canvas { width: 100%; max-width: 854px; aspect-ratio: 854 / 480; background: #05080b;
-    border: 1px solid #1d2733; border-radius: 10px; display: block; }
+  body { margin: 0; background: #111; color: #ddd; font: 14px/1.5 monospace; }
+  main { max-width: 880px; margin: 0 auto; padding: 16px; }
+  canvas { width: 100%; max-width: 854px; aspect-ratio: 854/480; background: #000; border: 1px solid #333; display: block; }
   #display { height: 0; overflow: hidden; }
-  .bar { height: 8px; background: #1d2228; border-radius: 5px; overflow: hidden; margin: 12px 0 6px; }
-  .bar > i { display: block; height: 100%; width: 0; background: #57a83b; transition: width .25s; }
-  pre { background: #0f1620; border: 1px solid #1d2733; border-radius: 10px; padding: 12px;
-    overflow: auto; max-height: 260px; font-size: 12.5px; white-space: pre-wrap; }
-  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 16px; border-radius: 8px;
-    border: 1px solid #3c8527; background: linear-gradient(180deg, #57a83b, #3c8527); color: #f2fff0;
-    font: inherit; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; cursor: pointer; }
-  .ok { color: #6ee7a8; } .bad { color: #ff8f8f; } .warn { color: #ffd479; }
-  .small { font-size: 12.5px; }
+  button { font: inherit; padding: 8px 14px; margin: 10px 0; }
+  pre { background: #000; border: 1px solid #333; padding: 10px; overflow: auto; max-height: 300px; white-space: pre-wrap; }
+  a { color: #8cf; }
 </style>
 </head>
 <body>
 <main>
-  <header>
-    <div class="logo">⛏</div>
-    <div>
-      <h1 id="title">Starting…</h1>
-      <div class="small" id="subtitle"></div>
-    </div>
-  </header>
-
-  <p class="small" id="explain">
-    This page runs the <b>official Minecraft client, unmodified</b>, in a JVM compiled for the
-    browser (CheerpJ). <b>Your browser downloads the game from Mojang</b> — this site hosts no
-    Minecraft files, only the code that starts it.
+  <h1 id="title" style="font-size:16px">Starting…</h1>
+  <p id="subtitle">—</p>
+  <p>
+    This runs the <b>official Minecraft client, unmodified</b>, in a JVM compiled for the browser.
+    Your browser downloads the game <b>from Mojang</b>; this site hosts no Minecraft files.
   </p>
-
   <canvas id="lwjgl" width="854" height="480" tabindex="-1"></canvas>
   <div id="display"></div>
-
-  <div class="bar"><i id="progress"></i></div>
-  <div class="row">
-    <button class="btn" id="start">▶ Start</button>
-    <span class="small" id="status">ready</span>
-  </div>
-
-  <pre id="log">…</pre>
-
-  <p class="small">
-    By starting it you agree to the
-    <a href="https://www.minecraft.net/eula" target="_blank" rel="noopener">Minecraft EULA</a>.
-    CheerpJ is a WebAssembly JVM by Leaning Technologies; the LWJGL implementation in JS is
-    <a href="https://github.com/leaningtech/cheerpj-natives" target="_blank" rel="noopener">cheerpj-natives</a>.
+  <button id="start">▶ Start</button>
+  <span id="status"></span>
+  <pre id="log"></pre>
+  <p style="font-size:12px; color:#888">
+    By starting it you agree to the <a href="https://www.minecraft.net/eula" target="_blank" rel="noopener">Minecraft EULA</a>.
     Not an official Minecraft product. Not approved by or associated with Mojang or Microsoft.
   </p>
 </main>
 
-<script type="module">
+<script>
   const params = new URLSearchParams(location.search);
-  const version = params.get("version") || "1.8.9";
-  // The jar url comes from Mojang's own manifest, resolved by the catalog. If it is missing the
-  // page says so instead of guessing.
+  const version = params.get("version") || "1.12.2";
   const jarUrl = params.get("jar") || "";
   const mainClass = params.get("main") || "net.minecraft.client.Minecraft";
   const natives = params.get("natives") || "lwjgl-natives";
   const libs = (params.get("libs") || "lwjgl/lwjgl-2.9.3.jar:lwjgl/lwjgl_util-2.9.3.jar").split(":");
 
   const el = (id) => document.getElementById(id);
-  const log = (message, cls = "") => {
-    const line = document.createElement("span");
-    line.className = cls;
-    line.textContent = message + "\n";
-    el("log").append(line);
-    console.log(message);
-  };
-  const setProgress = (fraction) => { el("progress").style.width = `${Math.min(100, fraction * 100)}%`; };
+  const log = (message) => { el("log").textContent += message + "\n"; console.log(message); };
 
-  el("title").textContent = `Minecraft ${version}`;
-  el("subtitle").textContent = jarUrl ? "official client, unmodified" : "no client url in the catalog";
+  /* A JVM in a browser needs the game's files to exist inside a virtual filesystem, and the API that
+   * writes them has been renamed more than once: cheerpjAddStringFile in CheerpJ 2/3, cheerpOSAddFile
+   * or cheerpOSAddStringFile in 4.x. So find whichever this build exposes, and if none, say which
+   * names were looked for - a hard-coded name is exactly what broke this page once. */
+  function fileWriter() {
+    const candidates = ["cheerpOSAddFile", "cheerpOSAddStringFile", "cheerpjAddFile",
+                        "cheerpjAddStringFile", "cheerpjAddBinaryFile"];
+    for (const name of candidates) {
+      if (typeof globalThis[name] === "function") return { name, fn: globalThis[name].bind(globalThis) };
+    }
+    return null;
+  }
+
+  function cheerpGlobals() {
+    return Object.keys(globalThis).filter((key) => /^cheerp/i.test(key)).sort();
+  }
 
   async function downloadToJvm(url, dest, label) {
-    setProgress(0.02);
-    log(`downloading ${label} from ${new URL(url).host}…`);
+    log(`  fetching ${label} …`);
     const response = await fetch(url);
     if (!response.ok) throw new Error(`${label}: HTTP ${response.status}`);
-    const total = Number(response.headers.get("content-length") || 0);
-    const reader = response.body.getReader();
-    const chunks = [];
-    let received = 0;
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      chunks.push(value);
-      received += value.length;
-      if (total) setProgress(0.02 + 0.35 * (received / total));
-      if (received % (8 * 1024 * 1024) < value.length) log(`  ${(received / 1048576).toFixed(1)} MB`);
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    const writer = fileWriter();
+    if (!writer) {
+      throw new Error(
+        `no CheerpJ file API on this page. Looked for cheerpOSAddFile, cheerpOSAddStringFile, ` +
+        `cheerpjAddFile, cheerpjAddStringFile, cheerpjAddBinaryFile. CheerpJ globals present: ` +
+        `${cheerpGlobals().join(", ") || "none — the loader script did not load"}`);
     }
-    const buffer = new Uint8Array(received);
-    let offset = 0;
-    for (const chunk of chunks) { buffer.set(chunk, offset); offset += chunk.length; }
-    await cheerpOSAddStringFile(dest, buffer);
-    log(`  ${label}: ${(received / 1048576).toFixed(1)} MB in the JVM's filesystem`, "ok");
+    await writer.fn(dest, bytes);
+    log(`  ${label}: ${(bytes.length / 1048576).toFixed(1)} MB into the JVM (${writer.name})`);
   }
 
   async function start() {
     el("start").disabled = true;
+    el("status").textContent = "";
     try {
-      if (!jarUrl) throw new Error("no jar url: run tools/update.py with network access to resolve it");
-      // libraries first (LWJGL, BSD licensed, served next to this page), then the game, which
-      // comes from Mojang
+      if (!jarUrl) throw new Error("no client url in the catalog for this version");
+      log(`version ${version} · main ${mainClass}`);
+
+      // a preflight, so a blocked loader script is named instead of throwing somewhere unrelated
+      const missing = ["cheerpjInit", "cheerpjRunMain", "cheerpjCreateDisplay"].filter(
+        (name) => typeof globalThis[name] !== "function");
+      log(`cheerpj globals: ${cheerpGlobals().join(", ") || "none"}`);
+      if (missing.length) {
+        throw new Error(`CheerpJ is not on this page (missing ${missing.join(", ")}). The loader ` +
+                        `script from cjrtnc.leaningtech.com did not load: an ad-blocker, an offline ` +
+                        `network or a content-security policy will do that.`);
+      }
+
       const classpath = [];
       for (const lib of libs) {
         const path = `/str/${lib}`;
@@ -126,43 +105,31 @@
         classpath.push(path);
       }
       const jarPath = `/str/client_${version}.jar`;
-      await downloadToJvm(jarUrl, jarPath, `${version} client (Mojang)`);
+      await downloadToJvm(jarUrl, jarPath, `${version} client (from Mojang)`);
       classpath.push(jarPath);
 
-      setProgress(0.45);
       log("starting the JVM…");
-      await cheerpjInit({
-        version: 8,
-        javaProperties: [`java.library.path=/app/${natives}/`],
-        clipboardMode: "false",
-      });
+      await cheerpjInit({ version: 8, javaProperties: [`java.library.path=/app/${natives}/`] });
       await cheerpjCreateDisplay(-1, -1, el("display"));
       window.lwjglCanvasElement = el("lwjgl");
 
-      setProgress(0.7);
-      log(`running ${mainClass}…`);
+      log(`running ${mainClass} …`);
       const code = await cheerpjRunMain(mainClass, classpath.join(":"));
-      log(code === 0 ? "the game exited cleanly" : `the game exited with ${code}`, code === 0 ? "ok" : "warn");
+      log(code === 0 ? "the game exited cleanly" : `the game exited with ${code}`);
+      el("status").textContent = "(finished)";
     } catch (error) {
-      log(`failed: ${error}`, "bad");
-      el("status").textContent = "failed - see the log";
+      log("FAILED: " + (error && error.message ? error.message : error));
+      el("status").textContent = "failed — see the log";
     } finally {
       el("start").disabled = false;
-      el("status").textContent = "finished";
     }
   }
 
+  el("title").textContent = `Minecraft ${version}`;
+  el("subtitle").textContent = jarUrl ? "official client, unmodified" : "no client url in the catalog yet";
   el("start").addEventListener("click", start);
-  if (jarUrl) {
-    log(`version: ${version}`);
-    log(`client:  ${jarUrl} (from Mojang, not from this site)`);
-    log(`main:    ${mainClass}`);
-    log(`natives: /app/${natives}/`);
-    log("press Start", "ok");
-  } else {
-    log("the catalog has no client url for this version yet: run python3 tools/update.py --write", "warn");
-    el("status").textContent = "nothing to start";
-  }
+  if (jarUrl) { log(`client: ${jarUrl}`); log(`natives: /app/${natives}/`); log("press Start"); }
+  else log("the catalog has no client url for this version: run tools/update.py --write");
 </script>
 </body>
 </html>
