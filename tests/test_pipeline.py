@@ -60,7 +60,8 @@ def main() -> int:
 
     print("\nverdicts")
     rows = {row["id"]: row for row in
-            planner.plan(manifest, engines, ("release", "snapshot", "old_beta", "old_alpha"), None, None)}
+            planner.plan(manifest, engines, ("release", "snapshot", "old_beta", "old_alpha"), None, None,
+                         planner.load_roadmap())}
     check("a version with an engine profile is buildable", rows["26.2"]["verdict"] == "build", rows["26.2"]["why"])
     check("and names the Eaglercraft workspace engine", rows["26.2"]["engine"] == "eagler-workspace-26.2",
           str(rows["26.2"]["engine"]))
@@ -75,6 +76,19 @@ def main() -> int:
     check("and says mods load at runtime", "runtime" in (rows["1.8.9"]["mods"] or ""))
     check("a classic version with an EaglercraftX client is reused",
           rows["b1.8.1"]["engine"] == "eagler-ports")
+
+    print("\nroadmap: why a version is not real Java yet")
+    check("a 1.13-1.20.4 version is blocked by the missing LWJGL 3 layer",
+          rows["1.21.4"]["roadmap"] == "cheerpj-java21" and "Java 21" in rows["1.21.4"]["blocked_by"],
+          str(rows["1.21.4"].get("blocked_by"))[:80])
+    check("a 26.x version is blocked by the Java version too", rows["26.3"]["roadmap"] == "cheerpj-java21")
+    check("the roadmap says what it would unlock", bool(rows["26.3"].get("unlocks")))
+    check("a version that can be launched is not blocked", "blocked_by" not in rows["1.8.9"])
+    lwjgl_gap = planner.roadmap_for("1.19.4", planner.load_roadmap())
+    check("1.19.4 is in the LWJGL 3 range", lwjgl_gap and lwjgl_gap["id"] == "cheerpj-lwjgl3", str(lwjgl_gap))
+    check("1.12.2 is not (it is LWJGL 2, which works today)",
+          planner.roadmap_for("1.12.2", planner.load_roadmap()) is None)
+    check("the roadmap points at the measuring tool", "lwjgl_surface.py" in (lwjgl_gap or {}).get("work", ""))
 
     print("\nengines")
     enabled = planner.load_engines()

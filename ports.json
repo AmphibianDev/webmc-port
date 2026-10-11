@@ -186,5 +186,27 @@
       "main_class": "net.minecraft.client.Minecraft",
       "java_library_path": "/app/lwjgl/libraries/"
     }
+  ],
+  "roadmap": [
+    {
+      "id": "cheerpj-lwjgl3",
+      "covers": {
+        "from": "1.13",
+        "to": "1.20.4"
+      },
+      "blocked_by": "LWJGL 3 has no JavaScript native layer (LWJGL 2 has one; Java is fine, CheerpJ runs Java 8 and 17)",
+      "work": "implement LWJGL 3's native methods in JavaScript - GLFW, OpenGL core, OpenAL, STB - or adapt cheerpj-natives' LWJGL 2 layer; the surface for a given client is measurable with tools/lwjgl_surface.py",
+      "unlocks": "unmodified official clients from 1.13 to 1.20.4, with real .jar mods and Mojang's own textures"
+    },
+    {
+      "id": "cheerpj-java21",
+      "covers": {
+        "from": "1.20.5",
+        "to": "9999"
+      },
+      "blocked_by": "CheerpJ supports Java 8, 11 and 17; 1.20.5 and later need Java 21, and 26.x needs Java 25",
+      "work": "nothing we can do from here: it needs the runtime to ship a newer Java. Until then these versions go the ahead-of-time route (the Eaglercraft workspaces) or get streamed from a machine of ours",
+      "unlocks": "a real JVM for the newest versions"
+    }
   ]
 }

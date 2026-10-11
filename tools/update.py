@@ -142,9 +142,10 @@ def main() -> int:
                                         args.limit or None)
     print(f"manifest: {len(version_tools.versions(manifest))} versions, {len(fresh)} new for {args.kinds}")
 
-    rows = planner.plan(manifest, engines, tuple(args.kinds.split(",")), None, None) if not fresh else [
+    roadmap = planner.load_roadmap(pathlib.Path(args.ports))
+    rows = planner.plan(manifest, engines, tuple(args.kinds.split(",")), None, None, roadmap) if not fresh else [
         {"id": v["id"], "type": version_tools.kind_of(v), "released": v.get("releaseTime", ""),
-         **planner.verdict_for(v["id"], version_tools.kind_of(v), engines)}
+         **planner.verdict_for(v["id"], version_tools.kind_of(v), engines, roadmap)}
         for v in fresh
     ]
 

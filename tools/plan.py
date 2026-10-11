@@ -29,6 +29,25 @@ sys.path.insert(0, str(HERE))
 import versions as version_tools  # noqa: E402
 
 
+def load_roadmap(path: pathlib.Path | None = None) -> list[dict]:
+    """Work that would make more versions possible, and what blocks each range."""
+    document = json.loads((path or (ROOT / "ports.json")).read_text())
+    return list(document.get("roadmap") or [])
+
+
+def roadmap_for(version_id: str, roadmap: list[dict]) -> dict | None:
+    key = version_tools.version_key(version_id)
+    for item in roadmap:
+        span = item.get("covers") or {}
+        if not isinstance(span, dict):
+            continue
+        low = version_tools.version_key(span.get("from") or "0")
+        high = version_tools.version_key(span.get("to") or "9999")
+        if low <= key <= high:
+            return item
+    return None
+
+
 def load_engines(path: pathlib.Path | None = None, include_disabled: bool = False) -> list[dict]:
     """The engines that may be used. A disabled one is documentation, not a candidate."""
     document = json.loads((path or (ROOT / "ports.json")).read_text())
@@ -53,7 +72,8 @@ def engine_links(engines: list[dict]) -> dict:
     return links
 
 
-def verdict_for(version_id: str, kind: str, engines: list[dict]) -> dict:
+def verdict_for(version_id: str, kind: str, engines: list[dict],
+                roadmap: list[dict] | None = None) -> dict:
     """Which engine handles this version, and how."""
     for engine in engines:
         if engine.get("launch") and version_id in (engine.get("profiles") or []):
@@ -92,6 +112,17 @@ def verdict_for(version_id: str, kind: str, engines: list[dict]) -> dict:
                 "repo": (engine.get("repo") or "").replace(
                     "{slug}", (engine.get("versions") or {}).get(version_id, version_id)),
             }
+    blocked = roadmap_for(version_id, roadmap or [])
+    if blocked:
+        return {
+            "verdict": "needs-port",
+            "engine": None,
+            "engine_name": None,
+            "why": f"blocked: {blocked['blocked_by']}",
+            "blocked_by": blocked["blocked_by"],
+            "roadmap": blocked["id"],
+            "unlocks": blocked.get("unlocks"),
+        }
     if kind in ("release", "snapshot"):
         return {
             "verdict": "needs-port",
@@ -108,7 +139,8 @@ def verdict_for(version_id: str, kind: str, engines: list[dict]) -> dict:
 
 
 def plan(manifest: dict, engines: list[dict], kinds=("release",),
-         limit: int | None = None, version_id: str | None = None) -> list[dict]:
+         limit: int | None = None, version_id: str | None = None,
+         roadmap: list[dict] | None = None) -> list[dict]:
     if version_id:
         chosen = [v for v in version_tools.versions(manifest) if v.get("id") == version_id]
         if not chosen:
@@ -117,7 +149,7 @@ def plan(manifest: dict, engines: list[dict], kinds=("release",),
         chosen = version_tools.newest(manifest, tuple(kinds), limit)
     rows = []
     for entry in chosen:
-        detail = verdict_for(entry["id"], version_tools.kind_of(entry), engines)
+        detail = verdict_for(entry["id"], version_tools.kind_of(entry), engines, roadmap)
         rows.append({"id": entry["id"], "type": version_tools.kind_of(entry),
                      "released": entry.get("releaseTime", ""), **detail})
     return rows
@@ -148,7 +180,8 @@ def main() -> int:
 
     manifest = version_tools.load_manifest(args.manifest)
     engines = load_engines(pathlib.Path(args.ports))
-    rows = plan(manifest, engines, tuple(args.kinds.split(",")), args.limit, args.version)
+    rows = plan(manifest, engines, tuple(args.kinds.split(",")), args.limit, args.version,
+                load_roadmap())
     if args.json:
         print(json.dumps(rows, indent=2))
     else:
