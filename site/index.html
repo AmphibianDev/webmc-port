@@ -164,6 +164,17 @@ python3 tools/plan.py --kinds release,snapshot</pre>
           <li><b>Catalog</b> — <code>tools/update.py</code> writes the state and this page's manifest, and
             queues the versions that need a port.</li>
         </ul>
+        <h3 style="margin-top: 14px">The three runtimes behind those verdicts</h3>
+        <ul class="small muted">
+          <li><b>CheerpJ</b> — a JVM in the page (Java 8/11/17). Runs the official jar <b>unmodified</b>, so
+            textures and behaviour are Mojang's; real <code>.jar</code> mods load at runtime. Needs a
+            JavaScript native library per platform API: LWJGL 2 exists, LWJGL 3 does not.</li>
+          <li><b>CheerpX / WebVM</b> — a real 32-bit x86 Linux in the page. Install a JDK and Mesa and the game
+            runs with the real LWJGL libraries and software OpenGL, so <b>no JavaScript layer has to be
+            written</b>. Slow, and 32-bit only, which is why Java 21+ is out of reach here.</li>
+          <li><b>TeaVM workspaces</b> — ahead-of-time: the official client is compiled to WebAssembly. This is
+            the only route the newest versions (Java 21/25) have, and mods are compiled in at build time.</li>
+        </ul>
         <p class="small muted" style="margin: 10px 0 0">
           This repository hosts no Minecraft files: it holds code, and the page links clients where
           their own projects publish them. Builds fetch the game at build time and keep it in

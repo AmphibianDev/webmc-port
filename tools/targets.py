@@ -86,8 +86,10 @@ def main() -> int:
             # ahead-of-time route can, as soon as a workspace for that version exists. Say so
             # here rather than leaving a bare "blocked".
             if state in ("blocked", "one-layer", "unknown"):
-                row["alternative"] = ("ahead-of-time: a TeaVM workspace compiles the official client "
-                                      "for this version, with mods baked in (no runtime jars)")
+                blocked = planner.roadmap_for(version_id, roadmap) or {}
+                row["alternatives"] = blocked.get("alternatives") or [
+                    "ahead-of-time: a TeaVM workspace compiles the official client for this version, with mods "
+                    "baked in (no runtime jars)"]
             rows.append(row)
 
     if args.json:
@@ -104,8 +106,8 @@ def main() -> int:
             print(f"\n{group}")
         line = f"  {row['id']:<18} {icon.get(row['state'], row['state']):<18} {row['why']}"
         print(line)
-        if row.get("alternative"):
-            print(f"  {'':<18} {'':<18} ↳ or {row['alternative']}")
+        for alternative in row.get("alternatives", []):
+            print(f"  {'':<18} {'':<18} ↳ {alternative}")
 
     counts: dict[str, int] = {}
     for row in rows:

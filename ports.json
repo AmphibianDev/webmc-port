@@ -204,7 +204,11 @@
       "unlocks": "unmodified official clients from 1.13 to 1.20.4, with real .jar mods and Mojang's own textures",
       "effort": "bounded and mechanical: WebForge already did the equivalent for LWJGL 2 in about 2,200 lines of JavaScript, and this is the same kind of work for a larger API",
       "why_not_install": "the LWJGL 3 jars are not the problem - they come from Maven like any library. The natives are: on a desktop they are .dll/.so/.dylib files that talk to the OS GL driver, and in a browser the only thing that can answer a native method is JavaScript.",
-      "alternative": "versions in this range can also be served ahead-of-time by a TeaVM workspace, which needs no JS natives at all because the platform layer is Java. That trades runtime mod loading for per-version build work."
+      "alternative": "versions in this range can also be served ahead-of-time by a TeaVM workspace, which needs no JS natives at all because the platform layer is Java. That trades runtime mod loading for per-version build work.",
+      "alternatives": [
+        "ahead-of-time: a TeaVM workspace for the version, no JS natives needed, mods baked in",
+        "CheerpX/WebVM: a real Linux in the page running a real JDK with Mesa, so the real LWJGL .so files work and no JS layer is written - 32-bit only and slow, but it removes this whole project"
+      ]
     },
     {
       "id": "cheerpj-java21",
@@ -212,9 +216,70 @@
         "from": "1.20.5",
         "to": "9999"
       },
-      "blocked_by": "CheerpJ supports Java 8, 11 and 17; 1.20.5 and later need Java 21, and 26.x needs Java 25",
+      "blocked_by": "CheerpJ supports Java 8, 11 and 17; 1.20.5 and later need Java 21, and 26.x needs Java 25. CheerpX cannot cover it either: it runs 32-bit x86 only, and Java 21 onwards ships 64-bit only.",
       "work": "nothing we can do from here: it needs the runtime to ship a newer Java. Until then these versions go the ahead-of-time route (the Eaglercraft workspaces) or get streamed from a machine of ours",
-      "unlocks": "a real JVM for the newest versions"
+      "unlocks": "a real JVM for the newest versions",
+      "alternatives": [
+        "ahead-of-time: a TeaVM workspace compiles the official client for the version (this is how 26.x is done everywhere, including by the Eaglercraft family)",
+        "streamed: a real JVM on a machine of ours, shown in a browser tab - real Java, but hours of a computer somebody owns"
+      ]
+    }
+  ],
+  "runtimes": [
+    {
+      "id": "cheerpj",
+      "name": "CheerpJ (Leaning Technologies)",
+      "kind": "jvm-in-the-page",
+      "java": [
+        8,
+        11,
+        17
+      ],
+      "license": "proprietary, free for personal and open-source use",
+      "gives": "the real client unmodified, with real .jar mods at runtime",
+      "limits": [
+        "no Java 21 or 25, so 1.20.5+ is out",
+        "needs a JavaScript native library per platform API (LWJGL 2 exists, LWJGL 3 does not)"
+      ],
+      "used_by": [
+        "leaningtech/browsercraft",
+        "Cucuzacu/WebForge"
+      ]
+    },
+    {
+      "id": "cheerpx",
+      "name": "CheerpX / WebVM (Leaning Technologies)",
+      "kind": "x86-linux-vm-in-the-page",
+      "java": "whatever the guest installs, within its architecture limit",
+      "license": "proprietary, free for personal and open-source use",
+      "gives": "a real Linux running in the page: install a JDK and Mesa, and Minecraft runs as an ordinary desktop application with the real LWJGL .so files and software OpenGL. No JavaScript natives to write at all, which is the one thing that makes it interesting here.",
+      "limits": [
+        "32-bit x86 binaries only, and Java 21+ is 64-bit only, so the newest versions stay out",
+        "software rendering through an x86-to-WebAssembly JIT: expect it to be slow",
+        "a Linux image to build and ship"
+      ],
+      "used_by": [
+        "leaningtech/webvm (17k stars)",
+        "leaningtech/alpine-image",
+        "leaningtech/cheerpx-games-runner"
+      ]
+    },
+    {
+      "id": "teavm-workspaces",
+      "name": "TeaVM workspaces (the Eaglercraft lineage)",
+      "kind": "ahead-of-time-compiler",
+      "java": "any - the game's bytecode is a compile target, not something to execute",
+      "license": "MIT/GPL depending on the workspace",
+      "gives": "the newest versions, which no JVM in a page can run; mods compiled in at build time",
+      "limits": [
+        "per-version platform layer is hand-maintained",
+        "no runtime mod loading (no class loader in an ahead-of-time client)"
+      ],
+      "used_by": [
+        "CynTheSolveroftheabsolutefabric/Eaglercraft-26.2-Workspace",
+        "EaglerPorts/*",
+        "Gaius (disabled)"
+      ]
     }
   ]
 }

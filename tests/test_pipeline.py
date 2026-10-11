@@ -178,6 +178,28 @@ def main() -> int:
     check("no jar is ever committed", "work/" in (ROOT / ".gitignore").read_text()
           and "dist/" in (ROOT / ".gitignore").read_text())
 
+    print("\nthe runtime family")
+    import json as _json
+    ports = _json.loads((ROOT / "ports.json").read_text())
+    runtimes = {r["id"]: r for r in ports.get("runtimes", [])}
+    check("the browser JVM is documented", runtimes.get("cheerpj", {}).get("java") == [8, 11, 17],
+          str(runtimes.get("cheerpj", {}).get("java")))
+    check("so is the Linux-in-the-page engine", "cheerpx" in runtimes)
+    check("and the ahead-of-time route", "teavm-workspaces" in runtimes)
+    check("each one states its licence", all(r.get("license") for r in runtimes.values()))
+    check("each one states its limits", all(r.get("limits") for r in runtimes.values()))
+    check("the 32-bit limit that rules out Java 21 is written down",
+          any("32-bit" in limit for limit in runtimes["cheerpx"]["limits"]),
+          str(runtimes["cheerpx"]["limits"])[:80])
+    check("the LWJGL 2 / LWJGL 3 split is written down",
+          any("LWJGL 2 exists" in limit for limit in runtimes["cheerpj"]["limits"]))
+    roadmap = {item["id"]: item for item in ports.get("roadmap", [])}
+    check("the LWJGL 3 range offers two ways round it",
+          len(roadmap["cheerpj-lwjgl3"].get("alternatives", [])) == 2,
+          str(roadmap["cheerpj-lwjgl3"].get("alternatives")))
+    check("the Java 21 range says CheerpX cannot help either",
+          "32-bit" in roadmap["cheerpj-java21"]["blocked_by"], roadmap["cheerpj-java21"]["blocked_by"][:90])
+
     print("\nthe target list")
     code, output = run("tools/targets.py", "--manifest", str(FIXTURE), "--json")
     check("targets.py answers for the project's versions", code == 0, output[-160:])
@@ -190,6 +212,10 @@ def main() -> int:
     check("a 26.x version is blocked by Java, not by us", states.get("26.2") == "ahead-of-time",
           str(states.get("26.2")))
     check("and 1.21.11 is blocked outright", states.get("1.21.11") == "blocked")
+    blocked_rows = [row for row in targets if row["state"] in ("blocked", "one-layer", "unknown")]
+    check("every blocked version names a way forward",
+          blocked_rows and all(row.get("alternatives") for row in blocked_rows),
+          str([row["id"] for row in blocked_rows if not row.get("alternatives")]))
 
     print("\nthe map of the idea")
     code, output = run("tools/plan.py", "--manifest", str(FIXTURE), "--kinds", "release,snapshot,old_beta",
