@@ -71,7 +71,7 @@ def resolved_client_urls(manifest: dict, rows: list[dict], fixture: dict | None 
         if row["verdict"] != "launch":
             continue
         if fixture and row["id"] in fixture:
-            urls[row["id"]] = fixture[row["id"]]
+            urls[row["id"]] = {**fixture[row["id"]], "from_fixture": True}
             continue
         try:
             import urllib.request
@@ -89,7 +89,7 @@ def resolved_client_urls(manifest: dict, rows: list[dict], fixture: dict | None 
 
 
 def catalog_entry(row: dict, engines: list[dict], links: dict, client_urls: dict | None = None,
-                  previous: dict | None = None) -> dict:
+                  previous: dict | None = None, strict_urls: bool = False) -> dict:
     """One catalog row: what the launcher page needs to offer this version."""
     entry = {"id": row["id"], "type": row["type"], "released": row["released"],
              "verdict": row["verdict"], "engine": row["engine"],
@@ -100,11 +100,20 @@ def catalog_entry(row: dict, engines: list[dict], links: dict, client_urls: dict
         # The catalog is a cache: a refresh that could not reach Mojang must keep the url it
         # already knows, not erase it (which is what an offline refresh used to do).
         known = (previous or {}).get("jar_url")
-        if known and ("example" in known or "invalid" in known):
-            print(f"  ! dropping a leftover test url for {row['id']}: {known[:60]}")
+        # A url that came in through --client-urls is test data. CI runs with --strict-urls, so it
+        # can never carry one of those forward into a real catalog; a local run keeps them, which is
+        # what lets the offline tests check the retention behaviour.
+        if known and (previous or {}).get("jar_url_source") == "fixture" and strict_urls:
+            print(f"  ! dropping a test url for {row['id']}: {known[:60]}")
             known = None
         entry["kind"] = "launch"
         entry["jar_url"] = resolved.get("jar_url") or known
+        if resolved.get("jar_url"):
+            entry["jar_url_source"] = "fixture" if resolved.get("from_fixture") else "mojang"
+        else:
+            # carried forward: say where it came from the first time, so a strict run can still
+            # recognise test data after an offline refresh
+            entry["jar_url_source"] = (previous or {}).get("jar_url_source") if entry["jar_url"] else None
         entry["main_class"] = resolved.get("main_class") or "net.minecraft.client.Minecraft"
         entry["caveat"] = next((e.get("caveat") for e in engines
                                 if e["id"] == row.get("engine")), None)
@@ -132,6 +141,8 @@ def main() -> int:
     parser.add_argument("--write", action="store_true", help="record what has been seen")
     parser.add_argument("--build", action="store_true", help="run the build for new versions")
     parser.add_argument("--dry-run", action="store_true", help="print the build commands instead")
+    parser.add_argument("--strict-urls", action="store_true",
+                        help="never keep a url that came from --client-urls (CI uses this)")
     parser.add_argument("--client-urls", default=None,
                         help="json file of version -> {jar_url, main_class} to use instead of resolving from Mojang")
     args = parser.parse_args()
@@ -164,7 +175,8 @@ def main() -> int:
         print(f"\nresolved {len(client_urls)} official client url(s): the page fetches those from Mojang")
     catalog = {entry["id"]: entry for entry in state.get("catalog", [])}
     for row in rows:
-        catalog[row["id"]] = catalog_entry(row, engines, links, client_urls, catalog.get(row["id"]))
+        catalog[row["id"]] = catalog_entry(row, engines, links, client_urls, catalog.get(row["id"]),
+                                           strict_urls=args.strict_urls)
     state["catalog"] = sorted(catalog.values(), key=lambda e: e["released"], reverse=True)
     state["queued"] = queue_needs_port(list(state.get("queued", [])), rows)
     state["seen"] = sorted(set(state["seen"]) | {v["id"] for v in version_tools.versions(manifest)})

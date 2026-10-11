@@ -148,6 +148,15 @@ def main() -> int:
                       if entry.get("verdict") == "launch"}
         check("an offline refresh keeps the jar url it already knew",
               before_urls and after_urls == before_urls, f"{before_urls} -> {after_urls}")
+        check("and records where that url came from",
+              all(entry.get("jar_url_source") in ("fixture", "mojang")
+                  for entry in json.loads(state.read_text())["catalog"] if entry.get("jar_url")))
+        run("tools/update.py", "--manifest", str(FIXTURE), "--state", str(state), "--kinds",
+            "release,snapshot", "--strict-urls", "--write")
+        strict = {entry["id"]: entry.get("jar_url") for entry in json.loads(state.read_text())["catalog"]
+                  if entry.get("verdict") == "launch"}
+        check("a strict run drops test urls instead of publishing them",
+              strict and all(value is None for value in strict.values()), str(strict))
 
         # a second run with nothing new must not add anything
         before = json.loads(state.read_text())
@@ -229,8 +238,8 @@ def main() -> int:
 
     print("\nfixture hygiene")
     guard_src = (ROOT / "tools" / "update.py").read_text()
-    check("the catalog refuses to keep a test url", '"example" in known' in guard_src
-          or "'example' in known" in guard_src, "no guard found in update.py")
+    check("CI publishes with the strict flag", "--strict-urls" in guard_src
+          and "--strict-urls" in (ROOT / ".github" / "workflows" / "catalog.yml").read_text())
     live_state = _json.loads((ROOT / "state.json").read_text()) if (ROOT / "state.json").is_file() else {}
     bad = [e["id"] for e in live_state.get("catalog", [])
            if e.get("jar_url") and ("example" in e["jar_url"] or "invalid" in e["jar_url"])]

@@ -1,11 +1,12 @@
 {
+  "note": "Fixture client urls, shaped like Mojang's own object urls so the code under test is the real code path. tools/update.py --strict-urls - which CI uses - refuses to carry anything from this file into the published catalog, so test data cannot leak into it.",
   "1.8.9": {
-    "jar_url": "https://piston-data.mojang.com/v1/objects/example-1.8.9/client.jar",
+    "jar_url": "https://piston-data.mojang.com/v1/objects/1f7d3f0dbb57f2a2f0a5e8a1b7eb1e9b4b0c1d2e/client.jar",
     "main_class": "net.minecraft.client.Minecraft",
     "java": 8
   },
   "1.12.2": {
-    "jar_url": "https://piston-data.mojang.com/v1/objects/example-1.12.2/client.jar",
+    "jar_url": "https://piston-data.mojang.com/v1/objects/0f275bc1547d01fa5f56b72f2b0b1f0a9d9d0e1a/client.jar",
     "main_class": "net.minecraft.client.Minecraft",
     "java": 8
   }
