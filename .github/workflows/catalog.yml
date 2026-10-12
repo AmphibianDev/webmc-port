@@ -62,6 +62,12 @@ jobs:
             python3 tools/plan.py --kinds old_beta,old_alpha --limit 8
           } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Classify what a browser JVM can run (the real-Java route)
+        # One small request per version, cached in state.json, so the catalog converges over runs
+        # instead of asking Mojang about 857 versions at once. This is what makes the launch route
+        # cover the whole LWJGL-2 family rather than nine hand-picked versions.
+        run: python3 tools/jvm_route.py --state state.json --limit 120 --write --print
+
       - name: Refresh what Fabric supports (the launcher's Fabric column)
         # Two meta calls cover the whole catalogue. If the meta is down the fixture from the last
         # successful refresh is used, so the page degrades to slightly stale Fabric data instead of

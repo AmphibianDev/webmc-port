@@ -128,6 +128,7 @@ def prebuilt_ports(path: pathlib.Path | None = None) -> dict:
 
 
 def catalog_entry(row: dict, engines: list[dict], links: dict, client_urls: dict | None = None,
+                  jvm: dict | None = None,
                   previous: dict | None = None, strict_urls: bool = False,
                   ports: dict | None = None) -> dict:
     """One catalog row: what the launcher page needs to offer this version."""
@@ -135,6 +136,34 @@ def catalog_entry(row: dict, engines: list[dict], links: dict, client_urls: dict
              "verdict": row["verdict"], "engine": row["engine"],
              "engine_name": row.get("engine_name"), "minutes": row.get("minutes"),
              "mods": row.get("mods")}
+    # What a browser JVM can do with this version, from Mojang's own document (tools/jvm_route.py).
+    # This is what makes the launch route cover the whole Java family instead of nine hand-picked
+    # versions: any version whose metadata says "LWJGL 2.9 + Java 8" is a launch version too.
+    verdict = (jvm or {}).get(row["id"]) or {}
+    if verdict:
+        # Every classified version carries its verdict, playable or not: the launcher shows this
+        # sentence instead of inventing one, so "why not" is Mojang's metadata talking.
+        entry["jvm_route"] = verdict.get("route")
+        entry["jvm_why"] = verdict.get("why")
+    if verdict.get("route", "").startswith("cheerpj") and verdict.get("jar_url"):
+        entry["verdict"] = "launch"
+        entry["jvm_route"] = verdict["route"]
+        entry["jvm_why"] = verdict["why"]
+        entry["kind"] = "launch"
+        entry["jar_url"] = verdict["jar_url"]
+        entry["jar_url_source"] = "mojang"
+        entry["main_class"] = verdict.get("main_class") or "net.minecraft.client.Minecraft"
+        entry["jar_bytes"] = verdict.get("jar_bytes")
+        entry["asset_index"] = verdict.get("asset_index")
+        entry["url"] = None
+        port = (ports or {}).get(row["id"])
+        if port:
+            entry["play_url"] = port["url"]
+            entry["play_kind"] = port["kind"]
+            entry["play_repo"] = port.get("source_repo")
+            entry["play_bytes"] = port.get("bytes")
+        return entry
+
     port = (ports or {}).get(row["id"])
     if port:
         # Playable *today*, linked where the build lives. It is deliberately its own field: a
@@ -219,6 +248,9 @@ def main() -> int:
     else:
         print(planner.report(rows))
 
+    # Classified in an earlier step of the same run (tools/jvm_route.py); state.json is the cache, so
+    # each run classifies a few dozen more versions and the catalog converges.
+    jvm = state.get("jvm") or {}
     links = planner.engine_links(engines)
     fixture_urls = json.loads(pathlib.Path(args.client_urls).read_text()) if args.client_urls else None
     client_urls = resolved_client_urls(manifest, rows, fixture_urls)
@@ -226,7 +258,7 @@ def main() -> int:
         print(f"\nresolved {len(client_urls)} official client url(s): the page fetches those from Mojang")
     catalog = {entry["id"]: entry for entry in state.get("catalog", [])}
     for row in rows:
-        catalog[row["id"]] = catalog_entry(row, engines, links, client_urls, catalog.get(row["id"]),
+        catalog[row["id"]] = catalog_entry(row, engines, links, client_urls, jvm, catalog.get(row["id"]),
                                            strict_urls=args.strict_urls,
                                            ports=prebuilt_ports(pathlib.Path(args.builds_file)))
     state["catalog"] = sorted(catalog.values(), key=lambda e: e["released"], reverse=True)

@@ -3,7 +3,11 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Playing… — WebMC</title>
+<title>Minecraft — WebMC</title>
+<!-- Preconnected on purpose: the JVM runtime and the client jar are the two things on the critical
+     path, and starting both conversations during HTML parsing saves a round trip each. -->
+<link rel="preconnect" href="https://cjrtnc.leaningtech.com" crossorigin />
+<link rel="preconnect" href="https://piston-data.mojang.com" crossorigin />
 <!-- CheerpJ: a JVM compiled to WebAssembly. If this script is blocked (ad-blocker, offline, CSP,
      https-only extension) nothing below can run, which the page says out loud instead of failing
      with a reference error. -->
@@ -13,40 +17,47 @@
   main { max-width: 880px; margin: 0 auto; padding: 16px; }
   canvas { width: 100%; max-width: 854px; aspect-ratio: 854/480; background: #000; border: 1px solid #333; display: block; }
   #display { height: 0; overflow: hidden; }
-  button { font: inherit; padding: 8px 14px; margin: 10px 0; }
-  pre { background: #000; border: 1px solid #333; padding: 10px; overflow: auto; max-height: 300px; white-space: pre-wrap; }
+  button { font: inherit; padding: 6px 12px; margin: 8px 0; }
+  pre { background: #000; border: 1px solid #333; padding: 10px; overflow: auto; max-height: 260px; white-space: pre-wrap; }
   a { color: #8cf; }
+  #bar { height: 6px; background: #222; margin: 8px 0; }
+  #bar > i { display: block; height: 100%; width: 0; background: #3d7d51; }
+  .small { font-size: 12px; color: #888; }
 </style>
 </head>
 <body>
 <main>
   <h1 id="title" style="font-size:16px">Starting…</h1>
-  <p id="subtitle">—</p>
-  <p>
-    This runs the <b>official Minecraft client, unmodified</b>, in a JVM compiled for the browser.
-    Your browser downloads the game <b>from Mojang</b>; this site hosts no Minecraft files.
-  </p>
+  <p id="subtitle" class="small">—</p>
   <canvas id="lwjgl" width="854" height="480" tabindex="-1"></canvas>
   <div id="display"></div>
-  <button id="start">▶ Start</button>
-  <span id="status"></span>
-  <pre id="log"></pre>
-  <p style="font-size:12px; color:#888">
-    By starting it you agree to the <a href="https://www.minecraft.net/eula" target="_blank" rel="noopener">Minecraft EULA</a>.
+  <div id="bar"><i id="bar-fill"></i></div>
+  <p><span id="status">working…</span>
+     <button id="again" style="display:none">▶ start again</button></p>
+  <details><summary class="small">log</summary><pre id="log"></pre></details>
+  <p class="small">
+    This runs the <b>official Minecraft client, unmodified</b>, in a JVM compiled for the browser.
+    Your browser downloads the game <b>from Mojang</b>; this site hosts no Minecraft files.
+    Starting it means you accept the <a href="https://www.minecraft.net/eula" target="_blank" rel="noopener">Minecraft EULA</a>.
     Not an official Minecraft product. Not approved by or associated with Mojang or Microsoft.
   </p>
 </main>
 
 <script>
+  /* No start button: this page exists to start one thing, so it starts. The only pause is the
+   * download, which is what the progress bar is for. */
   const params = new URLSearchParams(location.search);
   const version = params.get("version") || "1.12.2";
   const jarUrl = params.get("jar") || "";
   const mainClass = params.get("main") || "net.minecraft.client.Minecraft";
+  const assetIndex = params.get("assetIndex") || version;
   const natives = params.get("natives") || "lwjgl-natives";
   const libs = (params.get("libs") || "lwjgl/lwjgl-2.9.3.jar:lwjgl/lwjgl_util-2.9.3.jar").split(":");
 
   const el = (id) => document.getElementById(id);
-  const log = (message) => { el("log").textContent += message + "\n"; console.log(message); };
+  const log = (message) => { el("log").textContent += message + "\n"; };
+  const status = (message) => { el("status").textContent = message; };
+  const progress = (fraction) => { el("bar-fill").style.width = Math.max(0, Math.min(1, fraction)) * 100 + "%"; };
 
   /* A JVM in a browser needs the game's files to exist inside a virtual filesystem, and the API that
    * writes them has been renamed more than once: cheerpjAddStringFile in CheerpJ 2/3, cheerpOSAddFile
@@ -65,11 +76,54 @@
     return Object.keys(globalThis).filter((key) => /^cheerp/i.test(key)).sort();
   }
 
-  async function downloadToJvm(url, dest, label) {
-    log(`  fetching ${label} …`);
+  /* Downloads are the whole wait, and they are the same bytes every visit: keep them in the
+   * browser's cache so the second start has nothing left to fetch but the JVM runtime itself. */
+  const CACHE = "webmc-clients-v1";
+
+  async function fetchBytes(url, label, onProgress) {
+    if (typeof caches !== "undefined") {
+      try {
+        const hit = await caches.open(CACHE).then((cache) => cache.match(url));
+        if (hit) {
+          const bytes = new Uint8Array(await hit.arrayBuffer());
+          log(`  ${label}: ${(bytes.length / 1048576).toFixed(1)} MB from this browser's cache`);
+          if (onProgress) onProgress(1);
+          return bytes;
+        }
+      } catch (error) { /* a cache failure must never stop a launch */ }
+    }
     const response = await fetch(url);
     if (!response.ok) throw new Error(`${label}: HTTP ${response.status}`);
-    const bytes = new Uint8Array(await response.arrayBuffer());
+    const total = Number(response.headers.get("content-length")) || 0;
+    let bytes;
+    if (response.body && onProgress && total) {
+      const reader = response.body.getReader();
+      const chunks = [];
+      let seen = 0;
+      for (;;) {
+        const step = await reader.read();
+        if (step.done) break;
+        chunks.push(step.value);
+        seen += step.value.length;
+        onProgress(Math.min(1, seen / total));
+        status(`${label} — ${(seen / 1048576).toFixed(1)} / ${(total / 1048576).toFixed(1)} MB`);
+      }
+      bytes = new Uint8Array(await new Blob(chunks).arrayBuffer());
+    } else {
+      bytes = new Uint8Array(await response.arrayBuffer());
+    }
+    log(`  ${label}: ${(bytes.length / 1048576).toFixed(1)} MB`);
+    if (typeof caches !== "undefined") {
+      try {
+        await caches.open(CACHE).then((cache) => cache.put(url, new Response(bytes, {
+          headers: { "content-type": "application/octet-stream" }
+        })));
+      } catch (error) { /* over quota, private mode: fine, it just will not be cached */ }
+    }
+    return bytes;
+  }
+
+  async function put(url, dest, label, onStart) {
     const writer = fileWriter();
     if (!writer) {
       throw new Error(
@@ -77,59 +131,90 @@
         `cheerpjAddFile, cheerpjAddStringFile, cheerpjAddBinaryFile. CheerpJ globals present: ` +
         `${cheerpGlobals().join(", ") || "none — the loader script did not load"}`);
     }
+    if (onStart) onStart();
+    const bytes = await fetchBytes(url, label, (fraction) => progress(fraction * 0.7));
     await writer.fn(dest, bytes);
-    log(`  ${label}: ${(bytes.length / 1048576).toFixed(1)} MB into the JVM (${writer.name})`);
+    return `${label} (${writer.name})`;
+  }
+
+  /* The arguments differ by era, and getting them wrong is why a version "fails to start" with no
+   * explanation: 1.6+ takes a long-form command line, everything before it takes a player name. */
+  function clientArgs(className) {
+    const username = "WebMC";
+    if (className.endsWith("main.Main")) {
+      return ["--username", username, "--version", version, "--gameDir", ".",
+              "--assetsDir", "/str/assets", "--assetIndex", assetIndex,
+              "--uuid", "0", "--accessToken", "0", "--userType", "legacy"];
+    }
+    return [username];
   }
 
   async function start() {
-    el("start").disabled = true;
-    el("status").textContent = "";
+    el("again").style.display = "none";
+    progress(0);
     try {
       if (!jarUrl) throw new Error("no client url in the catalog for this version");
-      log(`version ${version} · main ${mainClass}`);
-
-      // a preflight, so a blocked loader script is named instead of throwing somewhere unrelated
       const missing = ["cheerpjInit", "cheerpjRunMain", "cheerpjCreateDisplay"].filter(
         (name) => typeof globalThis[name] !== "function");
-      log(`cheerpj globals: ${cheerpGlobals().join(", ") || "none"}`);
       if (missing.length) {
         throw new Error(`CheerpJ is not on this page (missing ${missing.join(", ")}). The loader ` +
                         `script from cjrtnc.leaningtech.com did not load: an ad-blocker, an offline ` +
                         `network or a content-security policy will do that.`);
       }
+      log(`version ${version} · main ${mainClass} · natives ${natives}`);
+      log(`cheerpj globals: ${cheerpGlobals().join(", ") || "none"}`);
+
+      /* The JVM runtime is a download of its own, so start it now and fetch the game while it runs.
+       * These two are independent and used to be sequential, which doubled the wait to first frame. */
+      status("starting the JVM…");
+      const booting = cheerpjInit({
+        version: 8,
+        javaProperties: [`java.library.path=/app/${natives}/`]
+      });
 
       const classpath = [];
+      let count = 0;
       for (const lib of libs) {
         const path = `/str/${lib}`;
-        await downloadToJvm(new URL(lib, location.href).href, path, lib);
+        const url = new URL(lib, location.href).href;
+        await put(url, path, lib, () => { count += 1; status(`library ${count}/${libs.length + 1}…`); });
         classpath.push(path);
       }
       const jarPath = `/str/client_${version}.jar`;
-      await downloadToJvm(jarUrl, jarPath, `${version} client (from Mojang)`);
+      await put(jarUrl, jarPath, `${version} client (from Mojang)`, () => status(`downloading Minecraft ${version}…`));
       classpath.push(jarPath);
 
-      log("starting the JVM…");
-      await cheerpjInit({ version: 8, javaProperties: [`java.library.path=/app/${natives}/`] });
+      await booting;
       await cheerpjCreateDisplay(-1, -1, el("display"));
       window.lwjglCanvasElement = el("lwjgl");
+      progress(1);
 
       log(`running ${mainClass} …`);
-      const code = await cheerpjRunMain(mainClass, classpath.join(":"));
+      status("launching…");
+      const args = clientArgs(mainClass);
+      log(`args: ${args.join(" ")}`);
+      const code = await cheerpjRunMain(mainClass, classpath.join(":"), ...args);
       log(code === 0 ? "the game exited cleanly" : `the game exited with ${code}`);
-      el("status").textContent = "(finished)";
+      status(code === 0 ? "finished" : `exited with ${code}`);
     } catch (error) {
       log("FAILED: " + (error && error.message ? error.message : error));
-      el("status").textContent = "failed — see the log";
+      status("failed — open the log");
     } finally {
-      el("start").disabled = false;
+      el("again").style.display = "inline-block";
     }
   }
 
   el("title").textContent = `Minecraft ${version}`;
-  el("subtitle").textContent = jarUrl ? "official client, unmodified" : "no client url in the catalog yet";
-  el("start").addEventListener("click", start);
-  if (jarUrl) { log(`client: ${jarUrl}`); log(`natives: /app/${natives}/`); log("press Start"); }
-  else log("the catalog has no client url for this version: run tools/update.py --write");
+  el("subtitle").textContent = jarUrl ? "official client, unmodified · downloads go to Mojang"
+                                      : "no client url in the catalog yet";
+  if (jarUrl) {
+    log(`client: ${jarUrl}`);
+    start();
+  } else {
+    log("the catalog has no client url for this version: run tools/update.py --write");
+    status("nothing to start");
+  }
+  el("again").addEventListener("click", start);
 </script>
 </body>
 </html>

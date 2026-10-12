@@ -228,6 +228,8 @@
         play: "play.html?version=" + encodeURIComponent(version.id)
             + "&jar=" + encodeURIComponent(version.jar_url)
             + "&main=" + encodeURIComponent(version.main_class || "net.minecraft.client.main.Main")
+            + (version.asset_index ? "&assetIndex=" + encodeURIComponent(version.asset_index) : ""),
+        jar: version.jar_url
       };
     }
     if (version.play_url) {
@@ -268,6 +270,26 @@
       // the other 800 would be a button that opens a form which fails immediately.
       request: version.verdict === "build" ? DISPATCH : null
     };
+  }
+
+  /* Opening a card is intent to play. The launch page reads its downloads out of the "webmc-clients-v1"
+   * cache, so filling it here means the click that follows downloads nothing. Failures are silent by
+   * design: this is an optimisation, never a requirement. */
+  function warmUp(route) {
+    if (!route.jar) { return; }
+    if (typeof caches === "undefined") { return; }
+    const link = document.createElement("link");
+    link.rel = "prefetch";
+    link.href = "https://cjrtnc.leaningtech.com/4.2/loader.js";
+    document.head.appendChild(link);
+    caches.open("webmc-clients-v1").then(function (cache) {
+      return cache.match(route.jar).then(function (hit) {
+        if (hit) { return null; }
+        return fetch(route.jar).then(function (response) {
+          return response.ok ? cache.put(route.jar, response) : null;
+        });
+      });
+    }).catch(function () { /* offline, quota, private mode: the launch still works */ });
   }
 
   // ---------------------------------------------------------------- starting
@@ -379,6 +401,7 @@
     card.appendChild(heading);
 
     var route = routeOf(version);
+    if (route.kind === "realjava") { warmUp(route); }
     var released = document.createElement("span");
     released.textContent = String(version.releaseTime || "").slice(0, 10);
 
@@ -508,12 +531,15 @@
   }
 
   function fabricPanel(version, route) {
-    var panel = document.createElement("div");
-    panel.className = "panel";
-    var title = document.createElement("h2");
-    title.textContent = "Fabric";
-    panel.appendChild(title);
+    // Parked, not removed: the data is real and the kit works, but the goal is the real-Java family
+    // first, so this does not take a panel on every card. One click opens it if it is wanted.
+    var fold = document.createElement("details");
+    fold.className = "panel";
+    var summary = document.createElement("summary");
+    summary.textContent = "Fabric (kit download for a real launcher; cannot run in a browser yet)";
+    fold.appendChild(summary);
 
+    var panel = fold;
     var support = status("asking Fabric's meta API…");
     panel.appendChild(support);
 

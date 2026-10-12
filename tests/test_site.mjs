@@ -72,6 +72,9 @@ for (const [label, needle] of Object.entries({
 })) {
   check(label, page.includes(needle));
 }
+check('opening a card warms the cache the launch page reads',
+  body.includes('function warmUp') && body.includes('webmc-clients-v1') && body.includes('rel = "prefetch"'));
+check('the launch url carries the asset index too', body.includes('&assetIndex='));
 check('the build request opens the build workflow, not the catalog one',
   body.includes('build-client.yml'));
 
@@ -123,6 +126,8 @@ check('the kit is a plain stored zip any launcher can open',
   body.includes('0x04034b50') && body.includes('0x02014b50') && body.includes('0x06054b50'));
 check('a version Fabric never supported is told so plainly',
   page.includes('Fabric has never supported'));
+check('Fabric is folded away while the real-Java family is the focus',
+  body.includes('createElement("details")') && page.includes('cannot run in a browser yet'));
 check('and it never promises to launch Fabric in the browser',
   page.includes('needs a JVM') && page.includes('class loader'));
 check('a deep link opens one version directly', body.includes('window.location.hash'));
@@ -196,6 +201,17 @@ try {
 }
 for (const [label, ok] of Object.entries({
   'it runs the client under CheerpJ': launch.includes('cjrtnc.leaningtech.com') && launch.includes('cheerpjRunMain'),
+  'it starts by itself, with no button to press': launch.includes('start();\n') && !/id="start"/.test(launch),
+  'it boots the JVM and downloads the game at the same time':
+      launch.includes('const booting = cheerpjInit(') && launch.includes('await booting'),
+  'it keeps the client in the browser cache, so the next start is quick':
+      launch.includes('webmc-clients-v1') && launch.includes("cache.put") && launch.includes('cache.match'),
+  'it says when a download came from the cache': launch.includes("from this browser's cache"),
+  'it passes the arguments each era needs':
+      launch.includes('--username') && launch.includes('--assetIndex') && launch.includes('clientArgs'),
+  'and it will not mis-arg a pre-1.6 client': launch.includes('endsWith("main.Main")'),
+  'it preconnects to the JVM and the jar host':
+      launch.includes('rel="preconnect"') && launch.includes('piston-data.mojang.com'),
   'the game comes from Mojang, not from us': launch.includes('from Mojang') || launch.includes('jarUrl'),
   'it reads the version and jar from the catalog': launch.includes('params.get("jar")') && launch.includes('params.get("version")'),
   'it points java.library.path at the JS natives': launch.includes('java.library.path'),
