@@ -21,6 +21,18 @@ import pathlib
 import re
 import sys
 
+HANDWRITTEN = "// HANDWRITTEN:"
+
+# Provided by hand-written implementations, so the generator must not emit them at all - and a
+# generated file cannot have the same JVM name as a hand-written one.
+EXTERNAL = {
+    "org.lwjgl.system.MemoryUtil$MemoryAllocator",
+    "org.lwjgl.system.MemoryUtil$MemoryAllocator$1",
+    "org.lwjgl.system.MemoryStack$1",
+    "org.lwjgl.system.FunctionProvider$Default",
+    "org.lwjgl.system.CustomBuffer$1",
+}
+
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parent
 
@@ -32,6 +44,12 @@ PRIMITIVES = {
 # Types the shim provides itself, or that Java already has: everything else is a nested LWJGL class
 # (a callback interface, a struct) which the skeleton also has to declare.
 NESTED_HINT = ("GLFW", "Callbacks", "Memory", "Pointer", "Callback", "Function", "STB", "ALC", "AL", "NVG")
+
+# Every constant LWJGL declares, with its real value and type (9,533 of them, read out of the jars by
+# tools/lwjgl3_constants.py). A wrong constant is worse than a missing one: it silently changes what
+# the client asks for.
+CONSTANTS_PATH = ROOT / "fixtures" / "lwjgl3-constants.json"
+CONSTANTS = json.loads(CONSTANTS_PATH.read_text()) if CONSTANTS_PATH.is_file() else {}
 
 
 def java_type(descriptor: str) -> str:
@@ -60,10 +78,27 @@ def split_member(entry: str) -> tuple[str, str, str, str]:
     else:
         kind, rest = "M", entry  # a scan from before references carried their kind
     owner, rest = rest.split("#", 1)
-    name, descriptor = rest.split("(", 1) if "(" in rest else (rest, "")
     if "(" in rest:
-        descriptor = "(" + descriptor
+        name, tail = rest.split("(", 1)
+        descriptor = "(" + tail
+    else:
+        # a field reference carries its descriptor after a colon: "name:I"
+        name, _, field_descriptor = rest.partition(":")
+        descriptor = field_descriptor
     return kind, owner, name, descriptor
+
+
+def field_type(descriptor: str) -> str:
+    return java_type(descriptor) if descriptor else "long"
+
+
+def constant_for(owner: str, name: str) -> tuple[str, str] | None:
+    """The declared value of a constant, straight out of the real LWJGL jars."""
+    entry = CONSTANTS.get(f"{owner}.{name}")
+    if not entry:
+        return None
+    return field_type(entry["descriptor"]), repr(entry["value"]) if not isinstance(entry["value"], float) \
+        else f"{entry['value']}f"
 
 
 def parameters(descriptor: str) -> list[str]:
@@ -159,7 +194,12 @@ def emit_owner(owner: str, members: dict[str, str]) -> str:
         if not re.fullmatch(r"[A-Za-z_$][A-Za-z0-9_$]*", name):
             continue
         if kind == "F":
-            lines.append(f"    public static long {name};  // field, "+descriptor)
+            known = constant_for(owner, name)
+            if known:
+                declared, value = known
+                lines.append(f"    public static final {declared} {name} = {value};")
+            else:
+                lines.append(f"    public static {field_type(descriptor)} {name};  // set by the shim")
             continue
         args = ", ".join(f"{type_name} arg{index}" for index, type_name in enumerate(parameters(descriptor)))
         returns = return_type(descriptor)
@@ -187,14 +227,26 @@ def main(argv=None) -> int:
     built = build(surfaces, args.merge)
     out = pathlib.Path(args.out) / "src" / "main" / "java"
     written = 0
+    kept = 0
     for owner in built["order"]:
         members = built["owners"][owner]
-        if not members:
+        if not members or owner in EXTERNAL:
             continue
         path = out / pathlib.PurePosixPath(owner.replace(".", "/") + ".java")
+        if path.is_file() and HANDWRITTEN in path.read_text():
+            kept += 1
+            continue
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(emit_owner(owner, members))
         written += 1
+
+    # a name provided by hand-written code must not also exist as a generated file: two classes with
+    # the same JVM name is a compile error, and a stale one from an earlier run is easy to leave behind
+    for name in EXTERNAL:
+        stale = out / pathlib.PurePosixPath(name.replace(".", "/") + ".java")
+        if stale.is_file() and HANDWRITTEN not in stale.read_text():
+            stale.unlink()
+            print(f"  removed a generated file that a hand-written class now provides: {name}")
 
     # and every type those classes mention, so the skeleton compiles as a whole
     declared = set(built["owners"])
@@ -203,8 +255,8 @@ def main(argv=None) -> int:
         mentioned |= referenced_types(members)
     placeholders = 0
     for name in sorted(mentioned - declared):
-        if not name.startswith("org.lwjgl") or "$" in name.split(".")[-1] and name in declared:
-            pass
+        if name in EXTERNAL:
+            continue
         path = out / pathlib.PurePosixPath(name.replace(".", "/") + ".java")
         if path.is_file():
             continue
@@ -225,7 +277,7 @@ def main(argv=None) -> int:
         print(f"  skipping {len(illegal)} non-identifier member(s): {illegal[:4]}")
 
     total = sum(len(m) for m in built["owners"].values())
-    print(f"wrote {written} classes, {total} members, into {out}")
+    print(f"wrote {written} classes, {total} members, into {out} ({kept} hand-written kept)")
     groups: dict[str, int] = collections.Counter()
     for owner, members in built["owners"].items():
         groups[owner.split(".")[2] if owner.startswith("org.lwjgl.") else "other"] += len(members)
