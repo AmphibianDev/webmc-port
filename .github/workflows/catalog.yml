@@ -60,6 +60,16 @@ jobs:
             python3 tools/plan.py --kinds old_beta,old_alpha --limit 8
           } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Refresh what Fabric supports (the launcher's Fabric column)
+        # Two meta calls cover the whole catalogue. If the meta is down the fixture from the last
+        # successful refresh is used, so the page degrades to slightly stale Fabric data instead of
+        # losing the column.
+        run: |
+          set -euo pipefail
+          python3 tools/fabric.py --out site/fabric.json --print \
+            || { echo "::warning::fabric meta unreachable; keeping the committed site/fabric.json"; \
+                 cp fixtures/fabric.json site/fabric.json; }
+
       - name: Update the state and the page's manifest
         run: python3 tools/update.py --strict-urls --write
 
@@ -68,7 +78,7 @@ jobs:
           set -euo pipefail
           git config user.name "webmc-port-bot"
           git config user.email "webmc-port-bot@users.noreply.github.com"
-          git add state.json site/manifest.json
+          git add state.json site/manifest.json site/fabric.json
           git diff --cached --quiet && echo "catalog unchanged" && exit 0
           git commit -m "catalog: refresh the version list"
           for attempt in 1 2 3; do

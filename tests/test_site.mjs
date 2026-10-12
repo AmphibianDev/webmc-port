@@ -36,15 +36,95 @@ check(`every id the script reads exists (${ids.length})`, missing.length === 0, 
 
 for (const [label, needle] of Object.entries({
   'it reads the generated catalog': 'fetch("manifest.json"',
-  'it lists what is playable and what is queued': page.includes('Playable now') && page.includes('Needs a port'),
-  'it offers play links from the catalog': /play_url|jar_url/.test(body) && page.includes('▶ play'),
-  'it prefers the real-Java route when a version has it': page.includes('play.html?version='),
-  'it says when there is no catalog yet': page.includes('no catalog yet'),
-  'it explains the porting bottleneck': page.includes('need a port') || page.includes('needs-port'),
+  'it says when there is no catalog yet': 'Could not read the catalog',
   'it claims nothing about hosting game files': page.includes('hosts no game files'),
-  'it names the tool that explains each verdict': page.includes('tools/targets.py') || page.includes('tools/plan.py'),
+  'it names the tool that explains each verdict': page.includes('tools/plan.py'),
 })) {
   check(label, Boolean(needle));
+}
+
+// What the launcher was asked to be: empty until you ask for something, any version findable, and a
+// route for the one you pick.
+check('it starts empty, with a note instead of a list',
+  page.includes('data-state="empty"') && page.includes('the launcher starts empty'));
+check('and does not load the catalog until asked',
+  !/^\s*loadCatalog\(\);\s*$/m.test(body), 'a top-level loadCatalog() would fill the page on sight');
+check('it searches every version in the catalog, not a curated few',
+  body.includes('state.catalog.versions') && !/1\.20\.4|26\.2/.test(body.split('fabricPanel')[0].replace(/placeholder[^,]*,/g, '')));
+check('with type filters for releases, snapshots, betas and alphas',
+  (page.match(/class="kind"/g) || []).length === 4 && body.includes('selectedKinds'));
+check('it ranks an exact match first', body.includes('id === query') && body.includes('indexOf(query) === 0'));
+check('it caps the list instead of dumping 857 rows', body.includes('MAX_ROWS'));
+
+// The four routes, each with its own tag and its own honest one-liner.
+for (const [label, needle] of Object.entries({
+  'it routes real Java through the launch page': '▶ real Java',
+  'it links a prebuilt port where it lives': '▶ prebuilt port',
+  'it links a client we compiled': '▶ our build',
+  'it says queued when there is no route': 'queued',
+  'and offers to request that build': 'request a build',
+  'the play link carries version, jar and main class': 'play.html?version=',
+  'the official jar is credited to Mojang': "Mojang's own servers",
+})) {
+  check(label, page.includes(needle));
+}
+check('the launch url passes the jar and the main class',
+  body.includes('jar=" + encodeURIComponent(version.jar_url)') && body.includes('main=" + encodeURIComponent'));
+
+// "download whatever version we want": every catalog entry knows its Mojang metadata document, so
+// the official jar can be resolved for any version, not only the ones that already have a route.
+check('it can resolve any version\'s official jar from Mojang metadata',
+  body.includes('piston-meta') && body.includes('downloads.client'));
+check('it downloads with a real progress bar and a saved file',
+  body.includes('getReader') && body.includes('createObjectURL') && body.includes('a.download'));
+
+// Fabric: real meta data, a kit that can be built in the browser, and no pretending that a kit can
+// be launched here.
+check('it reads Fabric support and loader versions from the catalog run',
+  page.includes('fabric.json') && body.includes('newest_loader'));
+check('it builds the kit in the browser rather than linking someone else\'s zip',
+  body.includes('buildZip') && body.includes('crc32') && body.includes('profile.libraries'));
+check('the kit is a plain stored zip any launcher can open',
+  body.includes('0x04034b50') && body.includes('0x02014b50') && body.includes('0x06054b50'));
+check('a version Fabric never supported is told so plainly',
+  page.includes('Fabric has never supported'));
+check('and it never promises to launch Fabric in the browser',
+  page.includes('needs a JVM') && page.includes('class loader'));
+check('a deep link opens one version directly', body.includes('window.location.hash'));
+check('clicking a version opens its install card', body.includes('openCard'));
+
+// The Fabric kit is a zip the page writes by hand, so build one here with the page's own code and
+// check it with an independent reader. A kit that will not open is worse than no kit.
+{
+  const start = body.indexOf('var CRC_TABLE');
+  const end = body.indexOf('// ---------------------------------------------------------------- wiring');
+  const writer = body.slice(start, end);
+  const scratchZip = path.join(scratch, '..', 'kit-test.zip');
+  try {
+    const makeZip = new Function(`${writer}\nreturn buildZip;`)();
+    const blob = makeZip([
+      { name: 'fabric-loader-0.19.5.jar', data: new TextEncoder().encode('not really a jar') },
+      { name: 'libraries/org_ow2_asm_asm_9.10.1.jar', data: new Uint8Array([0x50, 0x4b, 0x03, 0x04, 1, 2, 3]) },
+      { name: 'README.txt', data: new TextEncoder().encode('hello\n') },
+    ]);
+    writeFileSync(scratchZip, Buffer.from(await blob.arrayBuffer()));
+    const report = execFileSync('python3', ['-c', `
+import sys, zipfile
+z = zipfile.ZipFile(sys.argv[1])
+bad = z.testzip()
+names = sorted(z.namelist())
+data = z.read("README.txt").decode()
+assert bad is None, bad
+assert names == ["README.txt", "fabric-loader-0.19.5.jar", "libraries/org_ow2_asm_asm_9.10.1.jar"], names
+assert data.strip() == "hello", repr(data)
+print("ok")
+`, scratchZip], { encoding: 'utf8' }).trim();
+    check('the kit zip the page builds opens in an independent reader',
+      report === 'ok', report.slice(0, 120));
+  } catch (error) {
+    check('the kit zip the page builds opens in an independent reader', false,
+      String((error && (error.stderr || error.message)) || error).slice(0, 300));
+  }
 }
 
 // The catalog the page renders must be the shape update.py writes

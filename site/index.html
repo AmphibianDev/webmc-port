@@ -3,51 +3,694 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>WebMC</title>
+<title>WebMC — launcher</title>
 <style>
-  body { margin: 0; background: #111; color: #ddd; font: 14px/1.6 monospace; }
-  main { max-width: 900px; margin: 0 auto; padding: 16px; }
-  h1 { font-size: 17px; } h2 { font-size: 14px; margin: 18px 0 6px; color: #9c9; }
-  table { border-collapse: collapse; width: 100%; }
-  td, th { text-align: left; padding: 3px 8px 3px 0; border-bottom: 1px solid #222; }
-  a { color: #8cf; }
+  body { margin: 0; background: #101012; color: #dcdcdc; font: 14px/1.6 ui-monospace, Menlo, Consolas, monospace; }
+  main { max-width: 820px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  h2 { font-size: 15px; margin: 22px 0 6px; color: #9c9; }
   .muted { color: #888; }
+  a { color: #8cf; }
   code { color: #cc9; }
+  form { margin: 18px 0 10px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  input[type=text] { flex: 1 1 320px; background: #1b1b1f; border: 1px solid #333; color: #eee;
+                     padding: 9px 11px; font: inherit; border-radius: 3px; }
+  input[type=text]:focus { outline: none; border-color: #4a6; }
+  button { background: #23252a; border: 1px solid #3a3f46; color: #e6e6e6; padding: 8px 12px;
+           font: inherit; border-radius: 3px; cursor: pointer; }
+  button:hover:not(:disabled) { background: #2c3037; }
+  button:disabled { opacity: .5; cursor: default; }
+  button.go { background: #2a5c3a; border-color: #3d7d51; }
+  #kinds label { color: #999; margin-right: 10px; font-size: 13px; }
+  #results { margin: 12px 0 0; border-top: 1px solid #222; min-height: 1px; }
+  .row { display: flex; gap: 10px; padding: 6px 2px; border-bottom: 1px solid #1c1c1f; cursor: pointer; }
+  .row:hover { background: #17181b; }
+  .row b { font-weight: 600; min-width: 130px; }
+  .row .type { color: #888; min-width: 96px; }
+  .row .hint { color: #6b6; margin-left: auto; }
+  .facts { width: 100%; border-collapse: collapse; margin: 8px 0 4px; }
+  .facts td { padding: 2px 10px 2px 0; vertical-align: top; border-bottom: 1px solid #1a1a1d; }
+  .facts td:first-child { color: #888; width: 130px; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 4px; }
+  #card { margin-top: 18px; }
+  .panel { border: 1px solid #262a2f; border-radius: 4px; padding: 12px 14px; margin: 14px 0; background: #141518; }
+  .err { color: #e88; } .ok { color: #8c8; }
+  progress { width: 100%; height: 8px; }
+  footer { margin-top: 34px; border-top: 1px solid #222; padding-top: 10px; font-size: 13px; }
 </style>
 </head>
 <body>
 <main>
-  <h1>WebMC — Minecraft in a browser</h1>
-  <p class="muted" id="state">loading the catalog…</p>
-  <p class="muted" style="font-size:12px">
-    This page hosts no game files. A playable link either runs the official client in a JVM inside your
-    browser (the jar is fetched from Mojang by your browser) or points at the project that compiled that
-    client. Versions in the queue need a browser platform layer written for them.
+  <h1>WebMC</h1>
+  <p class="muted" id="hosting-note">
+    A launcher for Minecraft in a browser. This page hosts no game files, no jars and no mods: your
+    browser fetches every client from the official source at the moment you ask for it.
   </p>
-  <div id="out"></div>
+
+  <form id="find" autocomplete="off">
+    <input type="text" id="q" placeholder="Search versions — 1.20.4, 26.2, b1.7.3, 24w14a, snapshot…" />
+    <button type="button" id="show-all">show all</button>
+    <div id="kinds">
+      <label><input type="checkbox" class="kind" value="release" checked /> releases</label>
+      <label><input type="checkbox" class="kind" value="snapshot" checked /> snapshots</label>
+      <label><input type="checkbox" class="kind" value="old_beta" checked /> betas</label>
+      <label><input type="checkbox" class="kind" value="old_alpha" checked /> alphas</label>
+    </div>
+  </form>
+
+  <div id="results" data-state="empty">
+    <p class="muted" id="results-note">Nothing yet — the launcher starts empty. Type a version above.</p>
+  </div>
+
+  <div id="card"></div>
+
+  <footer class="muted">
+    Each version's route is decided by <code>tools/plan.py</code>: real Java in the browser
+    (CheerpJ), a client this project compiled, a prebuilt port, or queued behind a named blocker.
+    Fabric support and loader versions come from Fabric's own meta API (<code>tools/fabric.py</code>).
+  </footer>
 </main>
+
 <script>
-  // Barebones on purpose: the real layout comes later. This reads the catalog the CI publishes and
-  // lists what each version needs. Nothing here hosts a game file; the playable links point at
-  // Mojang (the official jar, run by a browser JVM) or at the project that built that client.
-  const el = (id) => document.getElementById(id);
-  fetch("manifest.json", { cache: "no-store" }).then((r) => r.json()).then((data) => {
-    el("state").textContent = `catalog updated ${data.updated || "never"} · ` +
-      `${data.versions.length} versions · ${(data.queued || []).length} still need a port`;
-    const playable = data.versions.filter((v) => v.jar_url || v.url || v.play_url);
-    const queued = data.versions.filter((v) => !v.jar_url && !v.url && !v.play_url);
-    const rows = (list) => list.map((v) => `<tr><td>${v.id}</td><td class="muted">${v.verdict}</td>
-      <td>${v.jar_url ? `<a href="play.html?version=${encodeURIComponent(v.id)}&jar=${encodeURIComponent(v.jar_url)}&main=${encodeURIComponent(v.main_class || "net.minecraft.client.Minecraft")}" target="_blank" rel="noopener">▶ play unmodified</a>` : ""}
-      ${v.url ? `<a href="${v.url}" target="_blank" rel="noopener">▶ play (our build)</a> ` : ""}
-      ${v.play_url ? `<a href="${v.play_url}" target="_blank" rel="noopener">▶ play (${v.play_kind})</a>` : ""}</td></tr>`).join("");
-    el("out").innerHTML =
-      `<h2>Playable now (${playable.length})</h2><table><tr><th>version</th><th>route</th><th></th></tr>${rows(playable)}</table>` +
-      `<h2>Needs a port (${queued.length})</h2><p class="muted">Each one needs a browser platform layer for that ` +
-      `version. <code>tools/targets.py</code> says why each is blocked; <code>tools/plan.py</code> shows the whole map.</p>` +
-      `<table><tr><th>version</th><th>why</th></tr>${queued.slice(0, 60).map((v) =>
-        `<tr><td>${v.id}</td><td class="muted">${(v.why || v.verdict || "")}</td></tr>`).join("")}</table>` +
-      `<p class="muted">${queued.length > 60 ? `… and ${queued.length - 60} more, all in manifest.json` : ""}</p>`;
-  }).catch((error) => { el("state").textContent = `no catalog yet (${error}) — the CI job writes it`; });
+(function () {
+  "use strict";
+
+  var el = function (id) { return document.getElementById(id); };
+  var REPO = "AmphibianDev/webmc-port";
+  var DISPATCH = "https://github.com/" + REPO + "/actions/workflows/catalog.yml";
+  var META = "https://meta.fabricmc.net/v2";
+  var MAVEN = "https://maven.fabricmc.net";
+  var MAX_ROWS = 30;
+
+  var state = { catalog: null, fabric: null, jars: new Map(), mains: new Map(), busy: false };
+
+  // ---------------------------------------------------------------- catalog
+
+  function loadCatalog() {
+    if (state.catalog) { return Promise.resolve(state.catalog); }
+    return fetch("manifest.json").then(function (response) {
+      if (!response.ok) { throw new Error("no catalog yet (HTTP " + response.status + ")"); }
+      return response.json();
+    }).then(function (data) {
+      state.catalog = data;
+      return data;
+    });
+  }
+
+  function loadFabric() {
+    if (state.fabric) { return Promise.resolve(state.fabric); }
+    return fetch("fabric.json").then(function (response) {
+      return response.ok ? response.json() : null;
+    }).catch(function () { return null; }).then(function (data) {
+      state.fabric = data;
+      return data;
+    });
+  }
+
+  function versionById(id) {
+    if (!state.catalog) { return null; }
+    for (var i = 0; i < state.catalog.versions.length; i++) {
+      if (state.catalog.versions[i].id === id) { return state.catalog.versions[i]; }
+    }
+    return null;
+  }
+
+  // ---------------------------------------------------------------- search
+
+  function selectedKinds() {
+    var kinds = el("kinds").querySelectorAll("input.kind");
+    var out = {};
+    for (var i = 0; i < kinds.length; i++) { if (kinds[i].checked) { out[kinds[i].value] = true; } }
+    return out;
+  }
+
+  function rank(version, query) {
+    var id = version.id.toLowerCase();
+    if (id === query) { return 0; }
+    if (id.indexOf(query) === 0) { return 1; }
+    return 2;
+  }
+
+  function search(query) {
+    var kinds = selectedKinds();
+    var found = [];
+    var versions = (state.catalog && state.catalog.versions) || [];
+    for (var i = 0; i < versions.length; i++) {
+      var version = versions[i];
+      if (!kinds[version.type]) { continue; }
+      if (query && version.id.toLowerCase().indexOf(query) === -1) { continue; }
+      found.push(version);
+    }
+    found.sort(function (a, b) {
+      var byRank = rank(a, query) - rank(b, query);
+      if (byRank !== 0) { return byRank; }
+      return String(b.releaseTime || "").localeCompare(String(a.releaseTime || ""));
+    });
+    return { matches: found.slice(0, MAX_ROWS), total: found.length };
+  }
+
+  function renderResults(result, query, total) {
+    var box = el("results");
+    box.textContent = "";
+    if (result.total === 0) {
+      box.setAttribute("data-state", "empty");
+      var none = document.createElement("p");
+      none.className = "muted";
+      none.textContent = "No version matches that.";
+      box.appendChild(none);
+      return;
+    }
+    box.setAttribute("data-state", "list");
+    var head = document.createElement("p");
+    head.className = "muted";
+    head.textContent = (query ? result.matches.length + " of " + result.total + " matches" : "newest " + result.matches.length + " of " + total)
+      + " — click one to install or play it.";
+    box.appendChild(head);
+    result.matches.forEach(function (version) {
+      var row = document.createElement("div");
+      row.className = "row";
+      row.setAttribute("data-version", version.id);
+      var id = document.createElement("b");
+      id.textContent = version.id;
+      var type = document.createElement("span");
+      type.className = "type";
+      type.textContent = String(version.type || "").replace("old_", "");
+      var when = document.createElement("span");
+      when.className = "muted";
+      when.textContent = String(version.releaseTime || "").slice(0, 10);
+      var hint = document.createElement("span");
+      hint.className = "hint";
+      hint.textContent = routeOf(version).tag;
+      row.appendChild(id); row.appendChild(type); row.appendChild(when); row.appendChild(hint);
+      row.addEventListener("click", function () { openCard(version.id); });
+      box.appendChild(row);
+    });
+  }
+
+  // ---------------------------------------------------------------- routes
+
+  // The same four routes the pipeline uses, decided here for one version. `tag` is what the list
+  // shows, `why` is the honest one-liner, `play` is where a click goes.
+  function routeOf(version) {
+    if (version.jar_url) {
+      return {
+        kind: "realjava",
+        tag: "▶ real Java",
+        label: "real Java, in the browser",
+        why: "CheerpJ runs the unmodified client jar with LWJGL translated to JS. The jar comes from "
+           + "Mojang when you press play; nothing is bundled here.",
+        play: "play.html?version=" + encodeURIComponent(version.id)
+            + "&jar=" + encodeURIComponent(version.jar_url)
+            + "&main=" + encodeURIComponent(version.main_class || "net.minecraft.client.main.Main")
+      };
+    }
+    if (version.play_url) {
+      return {
+        kind: "port",
+        tag: "▶ prebuilt port",
+        label: "a prebuilt browser port",
+        why: "Someone else's build of this version, linked where it lives"
+           + (version.play_repo ? " (" + version.play_repo + ")" : "")
+           + (version.play_bytes ? ", " + Math.round(version.play_bytes / 1048576) + " MB" : "")
+           + ". It is not ours and this page does not host it.",
+        play: version.play_url,
+        external: true
+      };
+    }
+    if (version.play_kind === "built" || version.url || version.verdict === "build") {
+      return {
+        kind: "built",
+        tag: "▶ our build",
+        label: "a client this project compiled",
+        why: version.engine_name
+          ? "Compiled from " + version.engine_name + " by our own build job."
+          : "Compiled by this project's build job.",
+        play: version.url
+      };
+    }
+    return {
+      kind: "queued",
+      tag: "queued",
+      label: "queued — needs a port",
+      why: version.blocker
+        ? "Blocked by: " + version.blocker
+        : version.engine_name
+          ? "The route named for it is " + version.engine_name + "."
+          : "No route is wired for this version yet.",
+      request: DISPATCH
+    };
+  }
+
+  // ---------------------------------------------------------------- the card
+
+  function facts(rows) {
+    var table = document.createElement("table");
+    table.className = "facts";
+    rows.forEach(function (pair) {
+      var tr = document.createElement("tr");
+      var key = document.createElement("td");
+      key.textContent = pair[0];
+      var value = document.createElement("td");
+      if (pair[1] instanceof Node) { value.appendChild(pair[1]); } else { value.textContent = pair[1]; }
+      tr.appendChild(key); tr.appendChild(value);
+      table.appendChild(tr);
+    });
+    return table;
+  }
+
+  function button(label, handler, className) {
+    var b = document.createElement("button");
+    b.textContent = label;
+    if (className) { b.className = className; }
+    b.addEventListener("click", handler);
+    return b;
+  }
+
+  function link(label, href, external) {
+    var a = document.createElement("a");
+    a.textContent = label;
+    a.href = href;
+    if (external) { a.rel = "noreferrer noopener"; a.target = "_blank"; }
+    return a;
+  }
+
+  function status(line) {
+    var p = document.createElement("p");
+    p.className = "muted";
+    p.textContent = line;
+    return p;
+  }
+
+  function openCard(id) {
+    var version = versionById(id);
+    var card = el("card");
+    card.textContent = "";
+    if (!version) {
+      card.appendChild(status("The catalog does not know " + id + "."));
+      return;
+    }
+    window.location.hash = "#" + encodeURIComponent(id);
+
+    var heading = document.createElement("h2");
+    heading.textContent = id + "  ·  " + String(version.type || "").replace("old_", "");
+    card.appendChild(heading);
+
+    var route = routeOf(version);
+    var released = document.createElement("span");
+    released.textContent = String(version.releaseTime || "").slice(0, 10);
+
+    var known = document.createElement("span");
+    known.textContent = route.label;
+    card.appendChild(facts([
+      ["released", released],
+      ["route", known],
+      ["what happens", route.why]
+    ]));
+
+    var actions = document.createElement("div");
+    actions.className = "actions";
+    if (route.play) {
+      actions.appendChild(button("▶ play", function () {
+        if (route.external) { window.open(route.play, "_blank", "noopener"); }
+        else { window.location.href = route.play; }
+      }, "go"));
+    }
+    if (route.request) {
+      actions.appendChild(button("request a build", function () { window.open(route.request, "_blank", "noopener"); }));
+    }
+    actions.appendChild(button("download official client jar", function () { downloadJar(version, jarNote); }));
+    card.appendChild(actions);
+    var jarNote = status("The jar is fetched from Mojang's own servers into this browser.");
+    card.appendChild(jarNote);
+
+    card.appendChild(fabricPanel(version, route));
+    return card;
+  }
+
+  // ---------------------------------------------------------------- download
+
+  function anchorDownload(url, filename) {
+    var a = document.createElement("a");
+    a.href = url;
+    if (filename) { a.download = filename; }
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  function baseName(url) {
+    var name = String(url).split("?")[0].split("/").pop();
+    return name || "client.jar";
+  }
+
+  // Every version in the catalog knows its Mojang metadata URL, so the official jar can be resolved
+  // and fetched for *any* version, not only the ones that already have a launch route.
+  function resolveJar(version) {
+    if (version.jar_url) { return Promise.resolve({ url: version.jar_url, main: version.main_class }); }
+    if (!version.url || String(version.url).indexOf("piston-meta") === -1) {
+      return Promise.reject(new Error("this version has no Mojang metadata URL in the catalog"));
+    }
+    if (state.jars.has(version.url)) {
+      return Promise.resolve({ url: state.jars.get(version.url), main: state.mains.get(version.url) });
+    }
+    return fetch(version.url).then(function (response) {
+      if (!response.ok) { throw new Error("Mojang metadata said HTTP " + response.status); }
+      return response.json();
+    }).then(function (meta) {
+      var url = meta && meta.downloads && meta.downloads.client && meta.downloads.client.url;
+      if (!url) { throw new Error("no client download in that metadata"); }
+      state.jars.set(version.url, url);
+      state.mains.set(version.url, meta.mainClass);
+      return { url: url, main: meta.mainClass };
+    });
+  }
+
+  function downloadJar(version, note) {
+    if (note) { note.textContent = "resolving " + version.id + "…"; note.className = "muted"; }
+    resolveJar(version).then(function (found) {
+      if (note) { note.textContent = "downloading " + baseName(found.url) + " from Mojang…"; }
+      return fetch(found.url).then(function (response) {
+        if (!response.ok) { throw new Error("HTTP " + response.status); }
+        var total = Number(response.headers.get("content-length")) || 0;
+        if (!response.body || !window.ReadableStream) { return response.blob(); }
+        var reader = response.body.getReader();
+        var chunks = [];
+        var seen = 0;
+        var bar = document.createElement("progress");
+        bar.max = total || 100;
+        if (note && note.parentNode) { note.parentNode.insertBefore(bar, note); }
+        function pump() {
+          return reader.read().then(function (step) {
+            if (step.done) { return new Blob(chunks, { type: "application/java-archive" }); }
+            chunks.push(step.value);
+            seen += step.value.length;
+            bar.value = total ? seen : (seen / (1024 * 1024)) % 100;
+            if (note) {
+              note.textContent = "downloading " + baseName(found.url) + " — "
+                + (seen / 1048576).toFixed(1) + (total ? " / " + (total / 1048576).toFixed(1) : "") + " MB";
+            }
+            return pump();
+          });
+        }
+        return pump();
+      });
+    }).then(function (blob) {
+      var url = URL.createObjectURL(blob);
+      anchorDownload(url, version.id + ".jar");
+      setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+      if (note) { note.className = "ok"; note.textContent = version.id + ".jar saved (" + (blob.size / 1048576).toFixed(1) + " MB)."; }
+    }).catch(function (error) {
+      if (note) { note.className = "err"; note.textContent = "could not fetch the jar: " + error.message; }
+    });
+  }
+
+  // ---------------------------------------------------------------- fabric
+
+  function fabricFor(versionId, data) {
+    if (!data || !data.supported || data.supported.indexOf(versionId) === -1) { return null; }
+    var loader = data.newest_loader;
+    return {
+      loader: loader,
+      stable: (data.stable || []).indexOf(versionId) !== -1,
+      loaderUrl: MAVEN + "/net/fabricmc/fabric-loader/" + loader + "/fabric-loader-" + loader + ".jar",
+      intermediaryUrl: MAVEN + "/net/fabricmc/intermediary/" + versionId + "/intermediary-" + versionId + ".jar",
+      profileUrl: META + "/versions/loader/" + versionId + "/" + loader + "/profile/json"
+    };
+  }
+
+  function fabricPanel(version, route) {
+    var panel = document.createElement("div");
+    panel.className = "panel";
+    var title = document.createElement("h2");
+    title.textContent = "Fabric";
+    panel.appendChild(title);
+
+    var support = status("asking Fabric's meta API…");
+    panel.appendChild(support);
+
+    loadFabric().then(function (data) {
+      var fabric = fabricFor(version.id, data);
+      panel.removeChild(support);
+      if (!fabric) {
+        var first = (data && data.first_supported) || "1.14";
+        panel.appendChild(status("Fabric has never supported " + version.id + " — its first release was for " + first + "."));
+        return;
+      }
+      panel.appendChild(facts([
+        ["loader", fabric.loader + (fabric.stable ? " (Fabric marks this game version stable)" : "")],
+        ["loader jar", link("fabric-loader-" + fabric.loader + ".jar", fabric.loaderUrl)],
+        ["intermediary", link("intermediary-" + version.id + ".jar", fabric.intermediaryUrl)],
+        ["profile", link("meta profile json", fabric.profileUrl)]
+      ]));
+
+      var actions = document.createElement("div");
+      actions.className = "actions";
+      var kit = button("download Fabric kit (.zip)", function () {
+        fabricKit(version, fabric, panel, kit);
+      }, "go");
+      actions.appendChild(kit);
+      panel.appendChild(actions);
+      panel.appendChild(status(runningFabric(route)));
+    });
+    return panel;
+  }
+
+  // Where a Fabric client could actually *run*, per route. This is the part that must not lie: our
+  // browser routes either have no JVM at all (an AOT build) or use one whose Java version predates
+  // Fabric (CheerpJ, and Fabric's first release was for 1.14).
+  function runningFabric(route) {
+    if (route.kind === "realjava") {
+      return "Fabric will not run on this route: it needs a JVM, and the CheerpJ range is 1.0–1.12.2, "
+           + "which Fabric never supported. The kit is for a real launcher on your own machine.";
+    }
+    if (route.kind === "built") {
+      return "Fabric mods run here only if they were baked in at build time — an AOT client has no "
+           + "class loader to load a jar at play time. See mods/build_modded_workspace.py.";
+    }
+    if (route.kind === "port") {
+      return "This port may include its own mod loader, but it cannot load Fabric jars either: same "
+           + "missing class loader. The kit is for a real launcher on your own machine.";
+    }
+    return "Nothing runs here yet (no route), so the kit is for a real launcher on your own machine.";
+  }
+
+  function mavenPath(base, coordinate) {
+    var parts = String(coordinate).split(":");
+    var group = parts[0], artifact = parts[1], version = parts[2];
+    var classifier = parts[3] ? "-" + parts[3] : "";
+    var extension = "jar";
+    if (String(version).indexOf("@") !== -1) {
+      extension = String(version).split("@")[1];
+      version = String(version).split("@")[0];
+    }
+    return (base || MAVEN).replace(/\/$/, "") + "/" + group.replace(/\./g, "/") + "/" + artifact + "/"
+      + version + "/" + artifact + "-" + version + classifier + "." + extension;
+  }
+
+  function fabricKit(version, fabric, panel, kitButton) {
+    if (state.busy) { return; }
+    state.busy = true;
+    kitButton.disabled = true;
+    var report = status("reading the Fabric profile…");
+    panel.appendChild(report);
+    var bar = document.createElement("progress");
+    bar.max = 100;
+    panel.appendChild(bar);
+
+    var files = [];
+    var skipped = [];
+    fetch(fabric.profileUrl).then(function (response) {
+      if (!response.ok) { throw new Error("profile HTTP " + response.status); }
+      return response.json();
+    }).then(function (profile) {
+      files.push({ name: "fabric-loader-" + fabric.loader + ".jar", url: fabric.loaderUrl });
+      files.push({ name: "intermediary-" + version.id + ".jar", url: fabric.intermediaryUrl });
+      (profile.libraries || []).forEach(function (library) {
+        var base = library.url || MAVEN;
+        files.push({ name: "libraries/" + String(library.name).replace(/[:@]/g, "_") + ".jar",
+                     url: mavenPath(base, library.name) });
+      });
+      var step = 0;
+      function next() {
+        if (step >= files.length) { return Promise.resolve(); }
+        var file = files[step++];
+        report.textContent = "fetching " + file.name + " (" + step + "/" + files.length + ")…";
+        bar.value = (step / files.length) * 100;
+        return fetch(file.url).then(function (response) {
+          if (!response.ok) { throw new Error(file.name + " HTTP " + response.status); }
+          return response.arrayBuffer();
+        }).then(function (buffer) {
+          file.data = new Uint8Array(buffer);
+          return next();
+        }).catch(function () {
+          skipped.push(file.url);
+          return next();
+        });
+      }
+      return next().then(function () {
+        var readme = "WebMC — Fabric kit for Minecraft " + version.id + "\n"
+          + "=================================================\n\n"
+          + "Fabric loader: " + fabric.loader + "\n"
+          + "Intermediary:  intermediary-" + version.id + ".jar\n\n"
+          + "What this is: the jars Fabric needs to start " + version.id + ", plus its profile json.\n"
+          + "How to use it: point a real launcher (Prism, MultiMC, the official launcher with a Fabric\n"
+          + "profile, or Fabric's own installer) at these files, or drop mods into a mods/ folder next\n"
+          + "to them. A browser cannot load these jars at play time: our browser routes either have no\n"
+          + "JVM (a build compiled ahead of time) or one older than Fabric itself (CheerpJ, 1.0-1.12.2).\n\n"
+          + "No Minecraft files are redistributed here: your browser fetched these from Fabric's maven\n"
+          + "and meta endpoints just now.\n"
+          + (skipped.length ? "\nNot downloaded (their host forbids cross-origin fetches):\n" + skipped.map(function (u) { return "  " + u; }).join("\n") + "\n" : "")
+          + "\nFetched: " + new Date().toISOString() + "\n";
+        files.push({ name: "fabric-profile.json", data: new TextEncoder().encode(JSON.stringify(profile, null, 1)) });
+        files.push({ name: "README.txt", data: new TextEncoder().encode(readme) });
+        return buildZip(files);
+      });
+    }).then(function (blob) {
+      var url = URL.createObjectURL(blob);
+      anchorDownload(url, "fabric-" + fabric.loader + "-" + version.id + ".zip");
+      setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+      report.className = "ok";
+      report.textContent = "saved fabric-" + fabric.loader + "-" + version.id + ".zip ("
+        + (blob.size / 1048576).toFixed(1) + " MB, " + files.length + " files"
+        + (skipped.length ? ", " + skipped.length + " left as URLs in the README" : "") + ").";
+    }).catch(function (error) {
+      report.className = "err";
+      report.textContent = "could not build the kit: " + error.message;
+    }).then(function () {
+      state.busy = false;
+      kitButton.disabled = false;
+      panel.removeChild(bar);
+    });
+  }
+
+  // ---------------------------------------------------------------- a tiny zip writer
+  // Fabric's jars are already compressed, so every entry is stored as-is: no deflate, no dependency,
+  // and the archive is a normal .zip that any launcher or unzip can open.
+
+  var CRC_TABLE = (function () {
+    var table = new Int32Array(256);
+    for (var n = 0; n < 256; n++) {
+      var c = n;
+      for (var k = 0; k < 8; k++) { c = (c & 1) ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1); }
+      table[n] = c;
+    }
+    return table;
+  })();
+
+  function crc32(bytes) {
+    var c = 0xffffffff;
+    for (var i = 0; i < bytes.length; i++) { c = CRC_TABLE[(c ^ bytes[i]) & 0xff] ^ (c >>> 8); }
+    return (c ^ 0xffffffff) >>> 0;
+  }
+
+  function dosTime(date) {
+    return { time: ((date.getHours() << 11) | (date.getMinutes() << 5) | (date.getSeconds() >> 1)) & 0xffff,
+             date: (((date.getFullYear() - 1980) << 9) | ((date.getMonth() + 1) << 5) | date.getDate()) & 0xffff };
+  }
+
+  function buildZip(files) {
+    var encoder = new TextEncoder();
+    var stamp = dosTime(new Date());
+    var parts = [];
+    var central = [];
+    var offset = 0;
+    files.forEach(function (file) {
+      var name = encoder.encode(file.name);
+      var data = file.data;
+      var crc = crc32(data);
+      var local = new DataView(new ArrayBuffer(30));
+      local.setUint32(0, 0x04034b50, true);
+      local.setUint16(4, 20, true);
+      local.setUint16(6, 0x0800, true);
+      local.setUint16(8, 0, true);
+      local.setUint16(10, stamp.time, true);
+      local.setUint16(12, stamp.date, true);
+      local.setUint32(14, crc, true);
+      local.setUint32(18, data.length, true);
+      local.setUint32(22, data.length, true);
+      local.setUint16(26, name.length, true);
+      local.setUint16(28, 0, true);
+      parts.push(new Uint8Array(local.buffer), name, data);
+
+      var entry = new DataView(new ArrayBuffer(46));
+      entry.setUint32(0, 0x02014b50, true);
+      entry.setUint16(4, 20, true);
+      entry.setUint16(6, 20, true);
+      entry.setUint16(8, 0x0800, true);
+      entry.setUint16(10, 0, true);
+      entry.setUint16(12, stamp.time, true);
+      entry.setUint16(14, stamp.date, true);
+      entry.setUint32(16, crc, true);
+      entry.setUint32(20, data.length, true);
+      entry.setUint32(24, data.length, true);
+      entry.setUint16(28, name.length, true);
+      entry.setUint32(42, offset, true);
+      central.push(new Uint8Array(entry.buffer), name);
+      offset += 30 + name.length + data.length;
+    });
+    var centralSize = central.reduce(function (total, part) { return total + part.length; }, 0);
+    var end = new DataView(new ArrayBuffer(22));
+    end.setUint32(0, 0x06054b50, true);
+    end.setUint16(8, files.length, true);
+    end.setUint16(10, files.length, true);
+    end.setUint32(12, centralSize, true);
+    end.setUint32(16, offset, true);
+    return new Blob(parts.concat(central, [new Uint8Array(end.buffer)]), { type: "application/zip" });
+  }
+
+  // ---------------------------------------------------------------- wiring
+
+  function go(query) {
+    var box = el("results");
+    if (!query) {
+      box.setAttribute("data-state", "empty");
+      box.textContent = "";
+      var note = document.createElement("p");
+      note.className = "muted";
+      note.textContent = "Nothing yet — the launcher starts empty. Type a version above.";
+      box.appendChild(note);
+      return;
+    }
+    loadCatalog().then(function (catalog) {
+      var result = search(query);
+      renderResults(result, query, catalog.versions.length);
+    }).catch(function (error) {
+      box.setAttribute("data-state", "empty");
+      box.textContent = "";
+      var fail = document.createElement("p");
+      fail.className = "err";
+      fail.textContent = "Could not read the catalog: " + error.message + ".";
+      box.appendChild(fail);
+    });
+  }
+
+  var timer = null;
+  el("q").addEventListener("input", function () {
+    if (timer) { clearTimeout(timer); }
+    timer = setTimeout(function () { go(el("q").value.trim().toLowerCase()); }, 120);
+  });
+  el("show-all").addEventListener("click", function () {
+    el("q").value = "";
+    go("");
+  });
+  el("find").addEventListener("submit", function (event) {
+    event.preventDefault();
+    go(el("q").value.trim().toLowerCase());
+  });
+  el("kinds").addEventListener("change", function () {
+    if (el("q").value.trim() || el("results").getAttribute("data-state") === "list") {
+      go(el("q").value.trim().toLowerCase());
+    }
+  });
+
+  // A deep link like #1.20.4 opens straight to that version's card.
+  if (window.location.hash.length > 1) {
+    loadCatalog().then(function () {
+      openCard(decodeURIComponent(window.location.hash.slice(1)));
+    }).catch(function () { /* the form is still usable */ });
+  }
+  window.openCard = openCard;
+})();
 </script>
 </body>
 </html>
