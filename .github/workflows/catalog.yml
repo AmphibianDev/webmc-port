@@ -149,6 +149,28 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Pack the audio archives the engine needs
+        # The packager reads sounds.epk unconditionally and fails without it, but that file is the
+        # official Minecraft audio: the engine's own skeleton manifest lists it under
+        # "external_inputs_required ... from a separately authorized, hash-pinned source". We have no
+        # licence to redistribute it and cannot rebuild it from source, so this writes a valid but
+        # EMPTY archive using the engine's own packager (their EPKCompiler writes it, their
+        # EPKDecompiler verifies it). The client fetches the real audio at play time through its
+        # in-game "Get game audio" button instead. See tools/empty-epk.init.gradle.kts.
+        working-directory: engine
+        run: |
+          set -euo pipefail
+          # one harmless file, so the archive is never a zero-entry edge case the packager's own
+          # verifier might reject
+          mkdir -p /tmp/webmc-empty-epk
+          printf 'This audio archive is intentionally empty: WebMC ships no Minecraft audio.\nUse the in-game "Get game audio" button to fetch it officially.\n' \
+            > /tmp/webmc-empty-epk/WEBMC-NO-AUDIO.txt
+          ./gradlew -I "$GITHUB_WORKSPACE/ours/tools/empty-epk.init.gradle.kts" \
+            :target_lwjgl_desktop:packEmptySounds \
+            :target_lwjgl_desktop:packEmptyMusic \
+            --console=plain --no-daemon 2>&1 | tail -20
+          ls -l target_teavm/build/web/*.epk
+
       - name: Compile, link and package the client
         # ~40 minutes, ~10 GiB of heap. The tail is kept because that is where a TeaVM or gradle
         # failure states its reason.
@@ -170,6 +192,12 @@ jobs:
           kill $WATCH 2>/dev/null || true
           echo "build exit status: $STATUS"
           echo "$STATUS" > /tmp/build-status
+          # A build that failed must fail the job. The first run of this job reported success while
+          # the toolchain had exited 1 and produced nothing, because the status was only echoed.
+          if [ "$STATUS" != "0" ]; then
+            echo "::error::the toolchain exited $STATUS (tail above)"
+            exit 1
+          fi
 
       - name: What came out
         if: always()
@@ -194,7 +222,8 @@ jobs:
           cd ours
           VERSION="${{ inputs.build_version }}"
           CLIENT=$(find ../engine -name '*.html' -size +5M | sort | head -1 || true)
-          if [ -z "$CLIENT" ]; then echo "no client produced, nothing to publish"; exit 0; fi
+          # Exiting 0 here hid the first failed build: nothing was published, yet the job was green.
+          if [ -z "$CLIENT" ]; then echo "::error::the toolchain produced no client to publish"; exit 1; fi
           ASSET="client-$VERSION.html"
           cp "$CLIENT" "/tmp/$ASSET"
           echo "publishing $ASSET ($(du -h "/tmp/$ASSET" | cut -f1))"

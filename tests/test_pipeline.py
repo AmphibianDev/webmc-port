@@ -280,6 +280,28 @@ def main() -> int:
     check("plan.py renders a table", code == 0 and "verdict" in output and "🧱" in output, output[-200:])
     check("the report counts the verdicts", "needs-port:" in output, output[-200:])
 
+
+    # The first real 26.2 run reported success while the toolchain had exited 1 and produced
+    # nothing. A job can lie about a build in two ways, and both are guarded here: echoing the exit
+    # status instead of acting on it, and treating "nothing was produced" as success.
+    workflow = (ROOT / ".github" / "workflows" / "catalog.yml").read_text()
+    build = workflow[workflow.index("Compile, link and package"):]
+    publish = build[build.index("Publish the client as a launcher card"):]
+    check("the build step fails on a non-zero toolchain status", 'if [ "$STATUS" != "0" ]' in build)
+    check("and exits non-zero rather than noting it",
+          "exit 1" in build.split('if [ "$STATUS" != "0" ]')[1])
+    check("publishing nothing fails the job",
+          'echo "::error::the toolchain produced no client' in publish)
+
+    # sounds.epk is documented by the engine as externally supplied; the job must create it, and
+    # must do so by reusing their packager rather than reimplementing the archive format.
+    check("the job creates the audio archive the packager reads unconditionally",
+          "Pack the audio archives the engine needs" in workflow)
+    init = (ROOT / "tools" / "empty-epk.init.gradle.kts").read_text()
+    check("it reuses the engine's packager classpath", "classpath = template.classpath" in init)
+    check("it does not reimplement the archive format", "EAGPKG" not in init)
+    check("and it records why the archive is empty", "separately authorized" in init)
+
     print()
     if FAILURES == 0:
         print("version pipeline tests passed")
