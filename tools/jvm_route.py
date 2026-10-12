@@ -168,6 +168,7 @@ def refresh(manifest: dict, state: dict, limit: int, fetch=fetch_document, log=p
             "jar_bytes": (downloads.get("client") or {}).get("size"),
             "main_class": document.get("mainClass"),
             "asset_index": (document.get("assetIndex") or {}).get("id"),
+            "meta_url": version.get("url"),
             "updated": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         })
         table[version["id"]] = verdict

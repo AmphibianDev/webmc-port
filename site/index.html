@@ -92,7 +92,7 @@
   var MAVEN = "https://maven.fabricmc.net";
   var MAX_ROWS = 30;
 
-  var state = { catalog: null, fabric: null, jars: new Map(), mains: new Map(), busy: false };
+  var state = { catalog: null, jars: new Map(), mains: new Map() };
 
   // ---------------------------------------------------------------- catalog
 
@@ -103,16 +103,6 @@
       return response.json();
     }).then(function (data) {
       state.catalog = data;
-      return data;
-    });
-  }
-
-  function loadFabric() {
-    if (state.fabric) { return Promise.resolve(state.fabric); }
-    return fetch("fabric.json").then(function (response) {
-      return response.ok ? response.json() : null;
-    }).catch(function () { return null; }).then(function (data) {
-      state.fabric = data;
       return data;
     });
   }
@@ -228,7 +218,8 @@
         play: "play.html?version=" + encodeURIComponent(version.id)
             + "&jar=" + encodeURIComponent(version.jar_url)
             + "&main=" + encodeURIComponent(version.main_class || "net.minecraft.client.main.Main")
-            + (version.asset_index ? "&assetIndex=" + encodeURIComponent(version.asset_index) : ""),
+            + (version.asset_index ? "&assetIndex=" + encodeURIComponent(version.asset_index) : "")
+            + (version.meta_url ? "&meta=" + encodeURIComponent(version.meta_url) : ""),
         jar: version.jar_url
       };
     }
@@ -237,7 +228,11 @@
         kind: "port",
         tag: "▶ prebuilt port",
         label: "a prebuilt browser port",
-        why: "Someone else's build of this version, linked where it lives"
+        why: (version.play_served_as === "download"
+                ? "This host serves the client as a file, not as a page, so clicking play downloads "
+                  + "it instead of running it - your browser will show or save a very large file.  "
+                : "")
+           + "Someone else's build of this version, linked where it lives"
            + (version.play_repo ? " (" + version.play_repo + ")" : "")
            + (version.play_bytes ? ", " + Math.round(version.play_bytes / 1048576) + " MB" : "")
            + ". It is not ours and this page does not host it.",
@@ -302,7 +297,9 @@
     var route = routeOf(version);
     if (!route.play) { openCard(version.id); return; }
     remember(version, route);
-    if (route.external) { window.open(route.play, "_blank", "noopener"); } else { window.location.href = route.play; }
+    // Always a new tab: the launcher stays where it is, so a second version is one click away, and
+    // a failed launch cannot take the page down with it.
+    window.open(route.play, "_blank", "noopener");
   }
 
   function remember(version, route) {
@@ -321,7 +318,7 @@
     if (!saved || !saved.id || !saved.url) { return; }
     var box = el("continue");
     var b = button("▶ continue " + saved.id, function () {
-      if (saved.external) { window.open(saved.url, "_blank", "noopener"); } else { window.location.href = saved.url; }
+      window.open(saved.url, "_blank", "noopener");
     }, "go");
     box.appendChild(b);
     var note = document.createElement("span");
@@ -437,7 +434,6 @@
         + "it, which is why there is no build button here. tools/plan.py names the blocker."));
     }
 
-    card.appendChild(fabricPanel(version, route));
     return card;
   }
 
@@ -520,165 +516,9 @@
 
   // ---------------------------------------------------------------- fabric
 
-  function fabricFor(versionId, data) {
-    if (!data || !data.supported || data.supported.indexOf(versionId) === -1) { return null; }
-    var loader = data.newest_loader;
-    return {
-      loader: loader,
-      stable: (data.stable || []).indexOf(versionId) !== -1,
-      loaderUrl: MAVEN + "/net/fabricmc/fabric-loader/" + loader + "/fabric-loader-" + loader + ".jar",
-      intermediaryUrl: MAVEN + "/net/fabricmc/intermediary/" + versionId + "/intermediary-" + versionId + ".jar",
-      profileUrl: META + "/versions/loader/" + versionId + "/" + loader + "/profile/json"
-    };
-  }
-
-  function fabricPanel(version, route) {
-    // Parked, not removed: the data is real and the kit works, but the goal is the real-Java family
-    // first, so this does not take a panel on every card. One click opens it if it is wanted.
-    var fold = document.createElement("details");
-    fold.className = "panel";
-    var summary = document.createElement("summary");
-    summary.textContent = "Fabric (kit download for a real launcher; cannot run in a browser yet)";
-    fold.appendChild(summary);
-
-    var panel = fold;
-    var support = status("asking Fabric's meta API…");
-    panel.appendChild(support);
-
-    loadFabric().then(function (data) {
-      var fabric = fabricFor(version.id, data);
-      panel.removeChild(support);
-      if (!fabric) {
-        var first = (data && data.first_supported) || "1.14";
-        panel.appendChild(status("Fabric has never supported " + version.id + " — its first release was for " + first + "."));
-        return;
-      }
-      panel.appendChild(facts([
-        ["loader", fabric.loader + (fabric.stable ? " (Fabric marks this game version stable)" : "")],
-        ["loader jar", link("fabric-loader-" + fabric.loader + ".jar", fabric.loaderUrl)],
-        ["intermediary", link("intermediary-" + version.id + ".jar", fabric.intermediaryUrl)],
-        ["profile", link("meta profile json", fabric.profileUrl)]
-      ]));
-
-      var actions = document.createElement("div");
-      actions.className = "actions";
-      var kit = button("download Fabric kit (.zip)", function () {
-        fabricKit(version, fabric, panel, kit);
-      }, "go");
-      actions.appendChild(kit);
-      panel.appendChild(actions);
-      panel.appendChild(status(runningFabric(route)));
-    });
-    return panel;
-  }
-
-  // Where a Fabric client could actually *run*, per route. This is the part that must not lie: our
-  // browser routes either have no JVM at all (an AOT build) or use one whose Java version predates
-  // Fabric (CheerpJ, and Fabric's first release was for 1.14).
-  function runningFabric(route) {
-    if (route.kind === "realjava") {
-      return "Fabric will not run on this route: it needs a JVM, and the CheerpJ range is 1.0–1.12.2, "
-           + "which Fabric never supported. The kit is for a real launcher on your own machine.";
-    }
-    if (route.kind === "built") {
-      return "Fabric mods run here only if they were baked in at build time — an AOT client has no "
-           + "class loader to load a jar at play time. See mods/build_modded_workspace.py.";
-    }
-    if (route.kind === "port") {
-      return "This port may include its own mod loader, but it cannot load Fabric jars either: same "
-           + "missing class loader. The kit is for a real launcher on your own machine.";
-    }
-    return "Nothing runs here yet (no route), so the kit is for a real launcher on your own machine.";
-  }
-
-  function mavenPath(base, coordinate) {
-    var parts = String(coordinate).split(":");
-    var group = parts[0], artifact = parts[1], version = parts[2];
-    var classifier = parts[3] ? "-" + parts[3] : "";
-    var extension = "jar";
-    if (String(version).indexOf("@") !== -1) {
-      extension = String(version).split("@")[1];
-      version = String(version).split("@")[0];
-    }
-    return (base || MAVEN).replace(/\/$/, "") + "/" + group.replace(/\./g, "/") + "/" + artifact + "/"
-      + version + "/" + artifact + "-" + version + classifier + "." + extension;
-  }
-
-  function fabricKit(version, fabric, panel, kitButton) {
-    if (state.busy) { return; }
-    state.busy = true;
-    kitButton.disabled = true;
-    var report = status("reading the Fabric profile…");
-    panel.appendChild(report);
-    var bar = document.createElement("progress");
-    bar.max = 100;
-    panel.appendChild(bar);
-
-    var files = [];
-    var skipped = [];
-    fetch(fabric.profileUrl).then(function (response) {
-      if (!response.ok) { throw new Error("profile HTTP " + response.status); }
-      return response.json();
-    }).then(function (profile) {
-      files.push({ name: "fabric-loader-" + fabric.loader + ".jar", url: fabric.loaderUrl });
-      files.push({ name: "intermediary-" + version.id + ".jar", url: fabric.intermediaryUrl });
-      (profile.libraries || []).forEach(function (library) {
-        var base = library.url || MAVEN;
-        files.push({ name: "libraries/" + String(library.name).replace(/[:@]/g, "_") + ".jar",
-                     url: mavenPath(base, library.name) });
-      });
-      var step = 0;
-      function next() {
-        if (step >= files.length) { return Promise.resolve(); }
-        var file = files[step++];
-        report.textContent = "fetching " + file.name + " (" + step + "/" + files.length + ")…";
-        bar.value = (step / files.length) * 100;
-        return fetch(file.url).then(function (response) {
-          if (!response.ok) { throw new Error(file.name + " HTTP " + response.status); }
-          return response.arrayBuffer();
-        }).then(function (buffer) {
-          file.data = new Uint8Array(buffer);
-          return next();
-        }).catch(function () {
-          skipped.push(file.url);
-          return next();
-        });
-      }
-      return next().then(function () {
-        var readme = "WebMC — Fabric kit for Minecraft " + version.id + "\n"
-          + "=================================================\n\n"
-          + "Fabric loader: " + fabric.loader + "\n"
-          + "Intermediary:  intermediary-" + version.id + ".jar\n\n"
-          + "What this is: the jars Fabric needs to start " + version.id + ", plus its profile json.\n"
-          + "How to use it: point a real launcher (Prism, MultiMC, the official launcher with a Fabric\n"
-          + "profile, or Fabric's own installer) at these files, or drop mods into a mods/ folder next\n"
-          + "to them. A browser cannot load these jars at play time: our browser routes either have no\n"
-          + "JVM (a build compiled ahead of time) or one older than Fabric itself (CheerpJ, 1.0-1.12.2).\n\n"
-          + "No Minecraft files are redistributed here: your browser fetched these from Fabric's maven\n"
-          + "and meta endpoints just now.\n"
-          + (skipped.length ? "\nNot downloaded (their host forbids cross-origin fetches):\n" + skipped.map(function (u) { return "  " + u; }).join("\n") + "\n" : "")
-          + "\nFetched: " + new Date().toISOString() + "\n";
-        files.push({ name: "fabric-profile.json", data: new TextEncoder().encode(JSON.stringify(profile, null, 1)) });
-        files.push({ name: "README.txt", data: new TextEncoder().encode(readme) });
-        return buildZip(files);
-      });
-    }).then(function (blob) {
-      var url = URL.createObjectURL(blob);
-      anchorDownload(url, "fabric-" + fabric.loader + "-" + version.id + ".zip");
-      setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
-      report.className = "ok";
-      report.textContent = "saved fabric-" + fabric.loader + "-" + version.id + ".zip ("
-        + (blob.size / 1048576).toFixed(1) + " MB, " + files.length + " files"
-        + (skipped.length ? ", " + skipped.length + " left as URLs in the README" : "") + ").";
-    }).catch(function (error) {
-      report.className = "err";
-      report.textContent = "could not build the kit: " + error.message;
-    }).then(function () {
-      state.busy = false;
-      kitButton.disabled = false;
-      panel.removeChild(bar);
-    });
-  }
+  // Fabric is parked by request: the data still exists on the site (fabric.json), and
+  // tools/fabric.py still refreshes it, but the launcher does not surface it while the
+  // goal is the real-Java family. Nothing below calls it.
 
   // ---------------------------------------------------------------- a tiny zip writer
   // Fabric's jars are already compressed, so every entry is stored as-is: no deflate, no dependency,

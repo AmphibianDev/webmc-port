@@ -72,6 +72,19 @@ jobs:
           python3 tools/jvm_route.py --state state.json --limit 120 --write --print \
             || echo "::warning::could not classify any more versions this run; keeping the cache"
 
+      - name: Vendor the libraries a version's client needs to start
+        # 1.12.2 declares 37 libraries; handing the JVM two of them is why every version failed to
+        # start. Deduplicated by sha1, so the pool grows far more slowly than the version count, and
+        # site/libs is git-ignored: these are third-party jars, deployed but never committed.
+        run: |
+          python3 tools/vendor_libs.py --limit 6 --out site/libs \
+            || echo "::warning::could not vendor more libraries this run"
+
+      - name: Check that every play link is alive and servable
+        run: |
+          python3 tools/check_links.py --state state.json --write --limit 60 \
+            || echo "::warning::link check did not finish"
+
       - name: Refresh what Fabric supports (the launcher's Fabric column)
         # Two meta calls cover the whole catalogue. If the meta is down the fixture from the last
         # successful refresh is used, so the page degrades to slightly stale Fabric data instead of

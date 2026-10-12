@@ -83,7 +83,7 @@ def resolved_client_urls(manifest: dict, rows: list[dict], fixture: dict | None 
             targets = version_tools.download_targets(document)
             if targets["client_url"]:
                 urls[row["id"]] = {"jar_url": targets["client_url"], "main_class": "net.minecraft.client.Minecraft",
-                                   "java": targets["java_major"]}
+                                   "java": targets["java_major"], "meta_url": entry["url"]}
         except Exception as error:  # noqa: BLE001
             print(f"  ! could not resolve the client url for {row['id']}: {error}")
     return urls
@@ -112,19 +112,13 @@ def prebuilt_ports(path: pathlib.Path | None = None) -> dict:
             "label": group.get("label", group["version"]),
             "era": group.get("era"),
             "bytes": client.get("bytes"),
+            # "html" when the host serves a page (a GitHub Pages deployment), "download" when it
+            # serves raw bytes as text/plain - which looks like a broken game but is a download
+            "served_as": client.get("served_as"),
         }
         # the port's own id and any id Mojang uses for the same version
         for version_id in [group["version"]] + list(group.get("aliases") or []):
             ports[version_id] = entry
-        continue
-        ports[group["version"]] = {
-            "url": client["url"],
-            "kind": "prebuilt port",
-            "source_repo": group.get("source_repo"),
-            "label": group.get("label", group["version"]),
-            "era": group.get("era"),
-            "bytes": client.get("bytes"),
-        }
     return ports
 
 
@@ -159,6 +153,7 @@ def catalog_entry(row: dict, engines: list[dict], links: dict, client_urls: dict
         entry["main_class"] = verdict.get("main_class") or "net.minecraft.client.Minecraft"
         entry["jar_bytes"] = verdict.get("jar_bytes")
         entry["asset_index"] = verdict.get("asset_index")
+        entry["meta_url"] = verdict.get("meta_url")
         entry["url"] = None
         port = (ports or {}).get(row["id"])
         if port:
@@ -166,6 +161,8 @@ def catalog_entry(row: dict, engines: list[dict], links: dict, client_urls: dict
             entry["play_kind"] = port["kind"]
             entry["play_repo"] = port.get("source_repo")
             entry["play_bytes"] = port.get("bytes")
+            entry["play_served_as"] = port.get("served_as")
+        entry["play_served_as"] = port.get("served_as")
         return entry
 
     port = (ports or {}).get(row["id"])
@@ -177,6 +174,7 @@ def catalog_entry(row: dict, engines: list[dict], links: dict, client_urls: dict
         entry["play_kind"] = port["kind"]
         entry["play_repo"] = port.get("source_repo")
         entry["play_bytes"] = port.get("bytes")
+        entry["play_served_as"] = port.get("served_as")
     if row["verdict"] == "launch":
         resolved = (client_urls or {}).get(row["id"]) or {}
         # The catalog is a cache: a refresh that could not reach Mojang must keep the url it

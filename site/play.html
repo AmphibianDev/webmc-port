@@ -53,6 +53,39 @@
   const assetIndex = params.get("assetIndex") || version;
   const natives = params.get("natives") || "lwjgl-natives";
   const libs = (params.get("libs") || "lwjgl/lwjgl-2.9.3.jar:lwjgl/lwjgl_util-2.9.3.jar").split(":");
+  const metaUrl = params.get("meta") || "";
+  /* The version's real classpath, vendored from its own metadata by tools/vendor_libs.py. Without
+   * it the JVM gets two jars instead of the ~35 a modern-ish client needs, and dies with
+   * NoClassDefFoundError - which is exactly why every version used to fail to start. */
+  async function classpathFor(version) {
+    try {
+      const response = await fetch(`libs/${version}.json`, { cache: "force-cache" });
+      if (!response.ok) return null;
+      const index = await response.json();
+      if (!index.classpath || !index.classpath.length) return null;
+      log(`classpath: ${index.classpath.length} jars from the version's own metadata`);
+      return index;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  /* The asset index is small and tells the client where its textures live. The objects themselves
+   * are hundreds of megabytes, so this fetches the index only: the game boots and says what is
+   * missing instead of refusing to start. */
+  async function installAssetIndex(meta, writer) {
+    if (!meta || !meta.url) return;
+    try {
+      const document = await (await fetch(meta.url)).json();
+      const index = document.assetIndex || {};
+      if (!index.url) return;
+      const bytes = new Uint8Array(await (await fetch(index.url)).arrayBuffer());
+      await writer("/str/assets/indexes/" + (index.id || version) + ".json", bytes);
+      log(`asset index ${index.id}: ${(bytes.length / 1024).toFixed(0)} kB (objects are not bundled)`);
+    } catch (error) {
+      log(`asset index unavailable: ${error && error.message ? error.message : error}`);
+    }
+  }
 
   const el = (id) => document.getElementById(id);
   const log = (message) => { el("log").textContent += message + "\n"; };
@@ -172,14 +205,22 @@
         javaProperties: [`java.library.path=/app/${natives}/`]
       });
 
+      const index = await classpathFor(version);
+      const entries = index ? index.classpath : libs;
+      if (!index) {
+        log("no vendored library set for this version: falling back to the bundled LWJGL jars, " +
+            "which a version this new will not accept. Run tools/vendor_libs.py for it.");
+      }
       const classpath = [];
       let count = 0;
-      for (const lib of libs) {
+      for (const lib of entries) {
         const path = `/str/${lib}`;
         const url = new URL(lib, location.href).href;
-        await put(url, path, lib, () => { count += 1; status(`library ${count}/${libs.length + 1}…`); });
+        await put(url, path, lib, () => { count += 1; status(`library ${count}/${entries.length + 1}…`); });
         classpath.push(path);
       }
+      const writer = fileWriter();
+      if (writer && metaUrl) { await installAssetIndex({ url: metaUrl }, writer.fn); }
       const jarPath = `/str/client_${version}.jar`;
       await put(jarUrl, jarPath, `${version} client (from Mojang)`, () => status(`downloading Minecraft ${version}…`));
       classpath.push(jarPath);

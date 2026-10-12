@@ -80,20 +80,13 @@ def main() -> int:
     check("and that Fabric never existed for 1.8.9", "1.8.9" not in fixture["supported"])
     check("it records where the data came from", "meta.fabricmc.net" in fixture.get("source", {}).get("game", ""))
 
-    print("\nthe launcher")
+    print()
+    print("the launcher does not surface Fabric while the real-Java family is the focus")
     page = (ROOT / "site" / "index.html").read_text()
-    check("it reads the Fabric table", 'fetch("fabric.json")' in page)
-    check("it offers a loader and its artefacts", "fabric-loader-" in page and "intermediary-" in page)
-    check("it can build a kit in the browser", "buildZip" in page and "crc32" in page)
-    check("the kit is built in a form browsers can run", "fetch(fabric.profileUrl)" in page, page.count("profileUrl"))
-    check("it explains a version Fabric never had",
-          "Fabric has never supported" in page and "first release was for" in page)
-    # The honest half: downloading a Fabric kit is not the same as running Fabric, and the page must
-    # not blur that. A browser route has either no JVM (an AOT build) or one older than Fabric.
-    check("it refuses to promise a Fabric launch in the browser", "needs a JVM" in page)
-    check("it says an AOT build has no class loader",
-          "class loader" in page and "baked in at build time" in page)
-    check("it says a port cannot load Fabric jars either", "cannot load Fabric jars" in page)
+    check("no Fabric panel is rendered", "fabricPanel" not in page and "fabricFor" not in page)
+    check("the launcher does not fetch the Fabric table", 'fetch("fabric.json")' not in page)
+    check("the data still exists for when it comes back", (ROOT / "site" / "fabric.json").is_file())
+    check("and the tool still refreshes it", "def build(" in (ROOT / "tools" / "fabric.py").read_text())
 
     print()
     if FAILURES == 0:
