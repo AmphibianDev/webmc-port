@@ -34,7 +34,12 @@ gradle.projectsEvaluated {
             mainClass.set(template.mainClass.get())
             emptyInput.mkdirs()
             output.parentFile.mkdirs()
-            args(emptyInput.absolutePath, output.absolutePath, archive)
+            // --include-web-unreachable is what lets this work at all: EPKPackagerMain otherwise
+            // asserts that the input tree is the *assets* tree (it insists on finding all the
+            // web-unreachable realm/icon PNGs so it can exclude them) and throws "Expected
+            // web-unreachable assets are missing from source tree" for any other directory. The
+            // flag says "this is not the assets tree, skip that expectation", which is true here.
+            args(emptyInput.absolutePath, output.absolutePath, archive, "--include-web-unreachable")
         }
     }
 

@@ -68,6 +68,8 @@ for (const [label, needle] of Object.entries({
 })) {
   check(label, page.includes(needle));
 }
+check('the build request opens the build workflow, not the catalog one',
+  body.includes('build-client.yml'));
 check('the launch url passes the jar and the main class',
   body.includes('jar=" + encodeURIComponent(version.jar_url)') && body.includes('main=" + encodeURIComponent'));
 

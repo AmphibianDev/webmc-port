@@ -300,6 +300,8 @@ def main() -> int:
     init = (ROOT / "tools" / "empty-epk.init.gradle.kts").read_text()
     check("it reuses the engine's packager classpath", "classpath = template.classpath" in init)
     check("it does not reimplement the archive format", "EAGPKG" not in init)
+    check("it tells the packager this is not the assets tree",
+          "--include-web-unreachable" in init)
     check("and it records why the archive is empty", "separately authorized" in init)
 
     print()
