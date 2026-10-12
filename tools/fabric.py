@@ -69,9 +69,6 @@ def build(fetch=fetch_json) -> dict:
         "loader_count": len(loaders),
         "supported": sorted(supported),
         "stable": sorted(stable),
-        "artifacts": {version: loader_artifacts(version, newest, version) for version in supported}
-        if newest
-        else {},
         "source": {"game": f"{META}/versions/game", "loader": f"{META}/versions/loader"},
     }
 
@@ -86,9 +83,7 @@ def annotate(version_id: str, data: dict) -> dict | None:
         "stable": version_id in set(data.get("stable", [])),
         "loader": loader,
         "intermediary": version_id,
-        "artifacts": (data.get("artifacts") or {}).get(version_id) or loader_artifacts(
-            version_id, loader, version_id
-        ),
+        "artifacts": loader_artifacts(version_id, loader, version_id),
     }
 
 
@@ -114,7 +109,11 @@ def main(argv=None) -> int:
               f"{data['newest_loader']} (of {data['loader_count']})")
         if args.version:
             print(json.dumps(annotate(args.version, data), indent=1))
-    print(f"wrote {out.relative_to(ROOT)}")
+    try:
+        shown = out.resolve().relative_to(ROOT)
+    except ValueError:
+        shown = out
+    print(f"wrote {shown}")
     return 0
 
 
