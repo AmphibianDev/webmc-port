@@ -30,7 +30,7 @@ public final class MemoryUtil {
 
     public static long nmemCalloc(long count, long size) {
         long address = WebMCArena.malloc(count * size);
-        memSet(address, 0, count * size);
+        memSet(address, (byte) 0, count * size);
         return address;
     }
 
@@ -72,11 +72,15 @@ public final class MemoryUtil {
     }
 
     public static IntBuffer memIntBuffer(long address, int capacity) {
-        return WebMCArena.window(address, capacity * 4).asIntBuffer();
+        IntBuffer view = WebMCArena.window(address, capacity * 4).asIntBuffer();
+        WebMCArena.remember(view, address);
+        return view;
     }
 
     public static FloatBuffer memFloatBuffer(long address, int capacity) {
-        return WebMCArena.window(address, capacity * 4).asFloatBuffer();
+        FloatBuffer view = WebMCArena.window(address, capacity * 4).asFloatBuffer();
+        WebMCArena.remember(view, address);
+        return view;
     }
 
     public static ByteBuffer memSlice(ByteBuffer buffer, int offset, int capacity) {
@@ -94,22 +98,33 @@ public final class MemoryUtil {
      * is correct as long as the client is passing it to be read.
      */
     public static long memAddress0(java.nio.Buffer buffer) {
-        if (buffer instanceof ByteBuffer) {
-            long known = WebMCArena.addressOf((ByteBuffer) buffer);
-            if (known >= 0) {
-                return known;
-            }
-            ByteBuffer source = ((ByteBuffer) buffer).duplicate();
-            int size = Math.max(1, source.remaining());
-            byte[] copy = new byte[size];
-            source.get(copy);
-            long address = WebMCArena.malloc(size);
-            WebMCArena.window(address, size).put(copy);
-            WebMCArena.remember((ByteBuffer) buffer, address);
-            return address;
+        long known = WebMCArena.addressOf(buffer);
+        if (known >= 0) {
+            return known;
         }
-        throw new UnsupportedOperationException("memAddress0 on a " + buffer.getClass().getName()
-            + ": the shim only knows addresses of byte buffers");
+        // a buffer the client allocated itself: copy it into the arena once, then remember it. It is
+        // about to be handed to a GL call that will read these bytes.
+        ByteBuffer source;
+        if (buffer instanceof ByteBuffer) {
+            source = ((ByteBuffer) buffer).duplicate();
+        } else if (buffer instanceof IntBuffer) {
+            source = ByteBuffer.allocate(((IntBuffer) buffer).remaining() * 4);
+            source.asIntBuffer().put((IntBuffer) buffer.duplicate());
+        } else if (buffer instanceof FloatBuffer) {
+            source = ByteBuffer.allocate(((FloatBuffer) buffer).remaining() * 4);
+            source.asFloatBuffer().put((FloatBuffer) buffer.duplicate());
+        } else {
+            throw new UnsupportedOperationException("memAddress0 on a " + buffer.getClass().getName()
+                + ": the shim knows byte, int and float buffers");
+        }
+        int size = Math.max(1, source.remaining());
+        byte[] copy = new byte[size];
+        source.rewind();
+        source.get(copy, 0, Math.min(size, source.remaining()));
+        long address = WebMCArena.malloc(size);
+        WebMCArena.window(address, size).put(copy);
+        WebMCArena.remember(buffer, address);
+        return address;
     }
 
     // ---- access -----------------------------------------------------------------------------------
@@ -178,7 +193,7 @@ public final class MemoryUtil {
         }
 
         public void free(java.nio.Buffer buffer) {
-            memFree(buffer);
+            WebMCArena.free(memAddress0(buffer));
         }
     }
 

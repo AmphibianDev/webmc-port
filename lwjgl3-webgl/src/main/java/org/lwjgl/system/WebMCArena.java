@@ -7,6 +7,7 @@ import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -33,7 +34,8 @@ public final class WebMCArena {
     private static final List<ByteBuffer> SLABS = new ArrayList<>();
     private static final List<List<long[]>> FREE = new ArrayList<>();   // per slab: {offset, length}
     private static final long[] BUMP = new long[64];                    // per slab: next free offset
-    private static final Map<ByteBuffer, Long> ADDRESSES = new IdentityHashMap<>();
+    private static final Map<java.nio.Buffer, Long> ADDRESSES = new IdentityHashMap<>();
+    private static final Map<Long, Long> SIZES = new HashMap<>();
 
     private WebMCArena() {
     }
@@ -45,10 +47,13 @@ public final class WebMCArena {
         for (int index = 0; index < SLABS.size(); index++) {
             Long found = firstFit(index, bytes);
             if (found != null) {
+                SIZES.put(found, bytes);
                 return found;
             }
         }
-        return bumpInNewSlab(bytes);
+        long address = bumpInNewSlab(bytes);
+        SIZES.put(address, bytes);
+        return address;
     }
 
     private static Long firstFit(int slabIndex, long bytes) {
@@ -85,19 +90,34 @@ public final class WebMCArena {
         if (address == 0) {
             return;
         }
-        // the size is not recorded, so this cannot merge regions; a freed region is simply reusable
-        // from its start, which is enough for the allocate-and-free patterns a game uses
         int index = slabIndex(address);
-        if (index < 0 || index >= SLABS.size()) {
-            return;
+        Long bytes = SIZES.remove(address);
+        if (index < 0 || index >= SLABS.size() || bytes == null || bytes <= 0) {
+            return;   // never handed out here, or freed twice: not this arena's problem
         }
-        FREE.get(index).add(new long[]{offset(address), 0});
+        List<long[]> regions = FREE.get(index);
+        regions.add(new long[]{offset(address), bytes});
+        // merge with the neighbouring region when it is already free, so a repeated
+        // allocate-and-free does not fragment the slab into unusable slivers
+        for (int first = 0; first < regions.size(); first++) {
+            long[] left = regions.get(first);
+            for (int second = 0; second < regions.size(); second++) {
+                long[] right = regions.get(second);
+                if (first != second && left[0] + left[1] == right[0]) {
+                    left[1] += right[1];
+                    regions.remove(second);
+                    return;
+                }
+            }
+        }
     }
 
     public static synchronized long realloc(long address, long bytes) {
         long fresh = malloc(bytes);
         if (address != 0) {
-            buffer(fresh, (int) bytes).put(0, buffer(address, (int) bytes), 0, (int) bytes);
+            Long old = SIZES.get(address);
+            int copy = (int) Math.min(old == null ? bytes : old, bytes);
+            window(fresh, copy).put(0, window(address, copy), 0, copy);
             free(address);
         }
         return fresh;
@@ -135,14 +155,15 @@ public final class WebMCArena {
         return slice;
     }
 
-    /** The address of a buffer this shim handed out, or -1 when it did not. */
-    public static synchronized long addressOf(ByteBuffer buffer) {
-        Long known = ADDRESSES.get(buffer);
-        return known == null ? -1L : known;
+    /** Register a derived view (an IntBuffer over a ByteBuffer, say) with the address it starts at. */
+    public static synchronized void remember(java.nio.Buffer buffer, long address) {
+        ADDRESSES.put(buffer, address);
     }
 
-    public static synchronized void remember(ByteBuffer buffer, long address) {
-        ADDRESSES.put(buffer, address);
+    /** The address of a buffer this shim handed out, or -1 when it did not. */
+    public static synchronized long addressOf(java.nio.Buffer buffer) {
+        Long known = ADDRESSES.get(buffer);
+        return known == null ? -1L : known;
     }
 
     public static synchronized int slabCount() {

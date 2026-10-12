@@ -26,7 +26,8 @@ public class PointerBuffer extends Pointer {
     private int limit;
     private final int capacity;
 
-    PointerBuffer(ByteBuffer container, long address, int capacity) {
+    /** Public because a MemoryStack builds one, and callers may want a view of their own memory. */
+    public PointerBuffer(ByteBuffer container, long address, int capacity) {
         this.container = container.order(ByteOrder.nativeOrder());
         this.address = address;
         this.capacity = capacity;
@@ -44,6 +45,10 @@ public class PointerBuffer extends Pointer {
     }
 
     public static PointerBuffer create(int count) {
+        return allocateDirect(count, null);
+    }
+
+    public static PointerBuffer allocateDirect(int count) {
         return allocateDirect(count, null);
     }
 
