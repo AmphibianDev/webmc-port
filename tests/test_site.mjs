@@ -49,8 +49,12 @@ check('it starts empty, with a note instead of a list',
   page.includes('data-state="empty"') && page.includes('the launcher starts empty'));
 check('and does not load the catalog until asked',
   !/^\s*loadCatalog\(\);\s*$/m.test(body), 'a top-level loadCatalog() would fill the page on sight');
+const codeOnly = body.replace(/\/\/[^\n]*/g, '');
 check('it searches every version in the catalog, not a curated few',
-  body.includes('state.catalog.versions') && !/1\.20\.4|26\.2/.test(body.split('fabricPanel')[0].replace(/placeholder[^,]*,/g, '')));
+  codeOnly.includes('state.catalog.versions')
+  // a curated list would be an array literal holding several version-looking strings
+  && !/\[[^\]]*("[0-9]+\.[0-9]+[^"]*"[^\]]*){2,}\]/.test(codeOnly),
+  'a hardcoded version list found in the script');
 check('with type filters for releases, snapshots, betas and alphas',
   (page.match(/class="kind"/g) || []).length === 4 && body.includes('selectedKinds'));
 check('it ranks an exact match first', body.includes('id === query') && body.includes('indexOf(query) === 0'));
@@ -70,6 +74,35 @@ for (const [label, needle] of Object.entries({
 }
 check('the build request opens the build workflow, not the catalog one',
   body.includes('build-client.yml'));
+
+// Fewest clicks to be in the game: a row starts a version, Enter starts the top result, and a saved
+// session starts again with one click and no catalog fetch at all.
+check('one function starts a version, so the paths cannot drift',
+  (body.match(/function play\(/g) || []).length === 1
+  && body.includes('play(version);') && body.includes('play(result.matches[0])'));
+check('clicking a row starts the version', /row\.addEventListener\("click", function \(\) \{ play\(version\); \}\)/.test(body));
+check('details is one click away and does not start anything',
+  body.includes('stopPropagation') && body.includes('openCard(version.id)'));
+check('Enter starts the top result', body.includes('play(result.matches[0])'));
+check('a saved session is one click, from localStorage alone',
+  body.includes('webmc.last') && body.includes('showContinue()'));
+check('the continue chip needs no catalog', !/showContinue[\s\S]{0,400}loadCatalog/.test(
+  body.slice(body.indexOf('function showContinue'), body.indexOf('function nearestPlayable'))));
+check('the version you can start outranks the one you cannot',
+  body.includes('playable') && body.includes('routeOf(b).play ? 1 : 0'));
+
+// A queued version must explain itself in plain words and point somewhere that runs.
+check('it says what a port actually is',
+  page.includes('A port is what makes a version run in a browser'));
+check('it says what is missing for the middle versions',
+  page.includes('LWJGL 3') && page.includes('Java 21+'));
+check('a queued version offers the nearest version that does run',
+  body.includes('nearestPlayable') && body.includes('instead'));
+check('the nearest one prefers the same game line', body.includes('sameFamily'));
+check('no build button for a version with no engine',
+  body.includes('version.verdict === "build" ? DISPATCH : null'));
+check('and it says why there is no build button',
+  page.includes('no engine has a profile for'));
 check('the launch url passes the jar and the main class',
   body.includes('jar=" + encodeURIComponent(version.jar_url)') && body.includes('main=" + encodeURIComponent'));
 

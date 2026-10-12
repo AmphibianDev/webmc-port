@@ -21,6 +21,10 @@
   button:hover:not(:disabled) { background: #2c3037; }
   button:disabled { opacity: .5; cursor: default; }
   button.go { background: #2a5c3a; border-color: #3d7d51; }
+  button.mini { padding: 2px 7px; font-size: 12px; color: #aaa; }
+  #continue:empty { display: none; }
+  #continue { margin: 16px 0 0; }
+  #hint { flex: 1 0 100%; margin: 6px 0 0; font-size: 12.5px; }
   #kinds label { color: #999; margin-right: 10px; font-size: 13px; }
   #results { margin: 12px 0 0; border-top: 1px solid #222; min-height: 1px; }
   .row { display: flex; gap: 10px; padding: 6px 2px; border-bottom: 1px solid #1c1c1f; cursor: pointer; }
@@ -47,6 +51,8 @@
     browser fetches every client from the official source at the moment you ask for it.
   </p>
 
+  <div id="continue"></div>
+
   <form id="find" autocomplete="off">
     <input type="text" id="q" placeholder="Search versions — 1.20.4, 26.2, b1.7.3, 24w14a, snapshot…" />
     <button type="button" id="show-all">show all</button>
@@ -56,6 +62,10 @@
       <label><input type="checkbox" class="kind" value="old_beta" checked /> betas</label>
       <label><input type="checkbox" class="kind" value="old_alpha" checked /> alphas</label>
     </div>
+    <p class="muted" id="hint">
+      Click a version to play it, or press <b>↵</b> to start the top result. Only versions with a
+      route can start; the rest explain what a port is and point at the nearest version that runs.
+    </p>
   </form>
 
   <div id="results" data-state="empty">
@@ -144,6 +154,9 @@
     found.sort(function (a, b) {
       var byRank = rank(a, query) - rank(b, query);
       if (byRank !== 0) { return byRank; }
+      // between two equally good matches, the one you can actually start wins
+      var playable = (routeOf(b).play ? 1 : 0) - (routeOf(a).play ? 1 : 0);
+      if (playable !== 0) { return playable; }
       return String(b.releaseTime || "").localeCompare(String(a.releaseTime || ""));
     });
     return { matches: found.slice(0, MAX_ROWS), total: found.length };
@@ -164,7 +177,7 @@
     var head = document.createElement("p");
     head.className = "muted";
     head.textContent = (query ? result.matches.length + " of " + result.total + " matches" : "newest " + result.matches.length + " of " + total)
-      + " — click one to install or play it.";
+      + " — click one to play it.";
     box.appendChild(head);
     result.matches.forEach(function (version) {
       var row = document.createElement("div");
@@ -178,11 +191,24 @@
       var when = document.createElement("span");
       when.className = "muted";
       when.textContent = String(version.releaseTime || "").slice(0, 10);
+      var route = routeOf(version);
       var hint = document.createElement("span");
       hint.className = "hint";
-      hint.textContent = routeOf(version).tag;
+      hint.textContent = route.tag;
       row.appendChild(id); row.appendChild(type); row.appendChild(when); row.appendChild(hint);
-      row.addEventListener("click", function () { openCard(version.id); });
+
+      // One click on the row starts the version when there is anything to start; when there is not,
+      // the row opens its card, which explains why and offers the nearest version that does run. The
+      // details button is always there, and it must not start anything on the way.
+      row.addEventListener("click", function () { play(version); });
+      var details = document.createElement("button");
+      details.textContent = "details";
+      details.className = "mini";
+      details.addEventListener("click", function (event) {
+        event.stopPropagation();
+        openCard(version.id);
+      });
+      row.appendChild(details);
       box.appendChild(row);
     });
   }
@@ -230,15 +256,72 @@
     }
     return {
       kind: "queued",
-      tag: "queued",
-      label: "queued — needs a port",
-      why: version.blocker
-        ? "Blocked by: " + version.blocker
-        : version.engine_name
-          ? "The route named for it is " + version.engine_name + "."
-          : "No route is wired for this version yet.",
-      request: DISPATCH
+      tag: "needs a port",
+      label: "not playable in a browser yet",
+      why: "A port is what makes a version run in a browser, and this one has none yet. There are "
+         + "three kinds: the real client under CheerpJ (1.12.2 and older), a browser client this "
+         + "project compiled from the real source, or someone else's prebuilt port. What is missing "
+         + "for 1.13-1.20.4 is a JavaScript replacement for LWJGL 3 (the graphics layer); 1.20.5 and "
+         + "newer also need a Java 21+ runtime that the browser JVM does not have."
+         + (version.blocker ? " This version: " + version.blocker : ""),
+      // Only a version the plan says has an engine can be built at all; offering a build button for
+      // the other 800 would be a button that opens a form which fails immediately.
+      request: version.verdict === "build" ? DISPATCH : null
     };
+  }
+
+  // ---------------------------------------------------------------- starting
+
+  // One entry point for "start this", used by the rows, the search box, the card and the continue
+  // chip, so they cannot drift apart.
+  function play(version) {
+    var route = routeOf(version);
+    if (!route.play) { openCard(version.id); return; }
+    remember(version, route);
+    if (route.external) { window.open(route.play, "_blank", "noopener"); } else { window.location.href = route.play; }
+  }
+
+  function remember(version, route) {
+    try {
+      window.localStorage.setItem("webmc.last", JSON.stringify({
+        id: version.id, url: route.play, external: Boolean(route.external)
+      }));
+    } catch (error) { /* private mode: the launcher simply will not remember */ }
+  }
+
+  // The smallest possible path back into the game: no catalog fetch, no list, one button. It is
+  // rendered from localStorage alone, which is why the page can still say it starts empty.
+  function showContinue() {
+    var saved = null;
+    try { saved = JSON.parse(window.localStorage.getItem("webmc.last") || "null"); } catch (error) { saved = null; }
+    if (!saved || !saved.id || !saved.url) { return; }
+    var box = el("continue");
+    var b = button("▶ continue " + saved.id, function () {
+      if (saved.external) { window.open(saved.url, "_blank", "noopener"); } else { window.location.href = saved.url; }
+    }, "go");
+    box.appendChild(b);
+    var note = document.createElement("span");
+    note.className = "muted";
+    note.textContent = "  jump straight back in";
+    box.appendChild(note);
+  }
+
+  // When a version has no route, the useful thing to offer is the version that is closest to it and
+  // does run: same 1.x line first, then nearest in time. 1.20.4 has no port; 1.20.6 does.
+  function nearestPlayable(version) {
+    var versions = (state.catalog && state.catalog.versions) || [];
+    var family = String(version.id).split(".").slice(0, 2).join(".");
+    var best = null;
+    var bestScore = null;
+    versions.forEach(function (other) {
+      if (other.id === version.id || !routeOf(other).play) { return; }
+      var sameFamily = family.indexOf("1.") === 0
+        && String(other.id).split(".").slice(0, 2).join(".") === family;
+      var gap = Math.abs(Date.parse(other.releaseTime || 0) - Date.parse(version.releaseTime || 0)) || 0;
+      var score = (sameFamily ? 0 : 1) * 1e15 + gap;
+      if (bestScore === null || score < bestScore) { bestScore = score; best = other; }
+    });
+    return best;
   }
 
   // ---------------------------------------------------------------- the card
@@ -310,18 +393,24 @@
     var actions = document.createElement("div");
     actions.className = "actions";
     if (route.play) {
-      actions.appendChild(button("▶ play", function () {
-        if (route.external) { window.open(route.play, "_blank", "noopener"); }
-        else { window.location.href = route.play; }
-      }, "go"));
+      actions.appendChild(button("▶ play", function () { play(version); }, "go"));
+    } else {
+      var nearest = nearestPlayable(version);
+      if (nearest) {
+        actions.appendChild(button("▶ play " + nearest.id + " instead", function () { play(nearest); }, "go"));
+      }
     }
     if (route.request) {
-      actions.appendChild(button("request a build", function () { window.open(route.request, "_blank", "noopener"); }));
+      actions.appendChild(button("request a build (opens GitHub)", function () { window.open(route.request, "_blank", "noopener"); }));
     }
     actions.appendChild(button("download official client jar", function () { downloadJar(version, jarNote); }));
     card.appendChild(actions);
     var jarNote = status("The jar is fetched from Mojang's own servers into this browser.");
     card.appendChild(jarNote);
+    if (!route.play && !route.request) {
+      card.appendChild(status("Nothing can build this version yet either: no engine has a profile for "
+        + "it, which is why there is no build button here. tools/plan.py names the blocker."));
+    }
 
     card.appendChild(fabricPanel(version, route));
     return card;
@@ -675,13 +764,21 @@
   });
   el("find").addEventListener("submit", function (event) {
     event.preventDefault();
-    go(el("q").value.trim().toLowerCase());
+    var query = el("q").value.trim().toLowerCase();
+    if (!query) { go(""); return; }
+    // Enter starts the top result instead of merely listing it: that is one action to be in the game.
+    loadCatalog().then(function () {
+      var result = search(query);
+      if (result.matches.length > 0) { play(result.matches[0]); } else { go(query); }
+    }).catch(function () { go(query); });
   });
   el("kinds").addEventListener("change", function () {
     if (el("q").value.trim() || el("results").getAttribute("data-state") === "list") {
       go(el("q").value.trim().toLowerCase());
     }
   });
+
+  showContinue();
 
   // A deep link like #1.20.4 opens straight to that version's card.
   if (window.location.hash.length > 1) {
