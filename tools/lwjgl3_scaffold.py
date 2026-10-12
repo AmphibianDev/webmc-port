@@ -128,6 +128,10 @@ def emit_owner(owner: str, members: dict[str, str]) -> str:
     ]
     for entry, kind in sorted(members.items()):
         _, _, name, descriptor = split_member(entry)
+        # a constructor or a static initialiser is not a static method; the shim's own classes
+        # declare those themselves, and emitting them produced a file that would not compile
+        if not re.fullmatch(r"[A-Za-z_$][A-Za-z0-9_$]*", name):
+            continue
         if kind == "F":
             lines.append(f"    public static long {name};  // field, "+descriptor)
             continue
@@ -165,6 +169,17 @@ def main(argv=None) -> int:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(emit_owner(owner, members))
         written += 1
+
+    # the generator has to produce compilable Java, so check its own output: every name it emits
+    # must be a legal identifier and every file must exist
+    illegal = []
+    for owner, members in built["owners"].items():
+        for entry in members:
+            _, _, name, _ = split_member(entry)
+            if not re.fullmatch(r"[A-Za-z_$][A-Za-z0-9_$]*", name):
+                illegal.append(f"{owner}#{name}")
+    if illegal:
+        print(f"  skipping {len(illegal)} non-identifier member(s): {illegal[:4]}")
 
     total = sum(len(m) for m in built["owners"].values())
     print(f"wrote {written} classes, {total} members, into {out}")

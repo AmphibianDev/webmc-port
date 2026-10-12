@@ -5,6 +5,4 @@ package org.lwjgl.stb;
 public final class STBIWriteCallback {
     private STBIWriteCallback() {}
 
-    public static void <init>() { throw new UnsupportedOperationException("org.lwjgl.stb.STBIWriteCallback.<init>"); }
-
 }
