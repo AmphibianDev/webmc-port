@@ -172,11 +172,31 @@ jobs:
           print("catalog updated for", version if hit else f"{version} (not in the catalog yet)")
           path.write_text(json.dumps(data, indent=2) + "\n")
           PY
+          # state.json is where the catalogue keeps what it knows; the manifest is generated from it.
+          python3 - "$VERSION" "$ASSET" <<'PYSTATE'
+          import hashlib, json, os, pathlib, sys
+          version, asset = sys.argv[1], sys.argv[2]
+          repo = os.environ.get("GITHUB_REPOSITORY", "")
+          path = pathlib.Path("state.json")
+          state = json.loads(path.read_text()) if path.is_file() else {"seen": [], "catalog": []}
+          blob = pathlib.Path("/tmp", asset)
+          state.setdefault("built", {})[version] = {
+              "url": f"https://github.com/{repo}/releases/latest/download/{asset}",
+              "bytes": blob.stat().st_size if blob.is_file() else None,
+              "sha256": hashlib.sha256(blob.read_bytes()).hexdigest() if blob.is_file() else None,
+              "at": __import__("datetime").datetime.now(__import__("datetime").timezone.utc)
+                    .strftime("%Y-%m-%dT%H:%M:%SZ"),
+              "note": "compiled by build-client.yml from the official client",
+          }
+          path.write_text(json.dumps(state, indent=2) + "\n")
+          print("state.json now records the built client for", version)
+          PYSTATE
+          python3 tools/update.py --state state.json --write
           git config user.name "webmc-port-bot"
           git config user.email "webmc-port-bot@users.noreply.github.com"
-          git add site/manifest.json
+          git add state.json site/manifest.json
           git diff --cached --quiet || git commit -m "catalog: $VERSION built and published"
-          git push || true
+          git push || echo "::warning::could not push the catalog update; the next run will"
 
       - uses: actions/upload-artifact@v7
         if: always()

@@ -1232,8 +1232,11 @@
       "jvm_source": "era",
       "jvm_route": "needs-jvm",
       "jvm_why": "this is a 26.x version: it needs Java 21 or newer, and the browser JVM stops at 17",
-      "url": "clients/26.2.html",
-      "kind": "built"
+      "url": "https://github.com/AmphibianDev/webmc-port/releases/latest/download/client-26.2.html",
+      "kind": "built",
+      "built_bytes": 41080814,
+      "built_at": "2026-10-12T04:43:56Z",
+      "built_sha256": null
     },
     {
       "id": "26.2-rc-2",
@@ -21006,7 +21009,7 @@
       "queued": "2026-10-11T12:55:14Z"
     }
   ],
-  "updated": "2026-10-12T04:40:07Z",
+  "updated": "2026-10-12T04:46:04Z",
   "jvm": {
     "17w48a": {
       "route": "needs-lwjgl3",
@@ -26037,6 +26040,14 @@
       "bytes": 77863500,
       "ok": true,
       "checked": "2026-10-12T04:40:06Z"
+    }
+  },
+  "built": {
+    "26.2": {
+      "url": "https://github.com/AmphibianDev/webmc-port/releases/latest/download/client-26.2.html",
+      "bytes": 41080814,
+      "at": "2026-10-12T04:43:56Z",
+      "note": "compiled by build-client.yml from the official 26.2 client (TeaVM + WASM-GC)"
     }
   }
 }

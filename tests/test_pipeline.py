@@ -18,6 +18,8 @@ import tempfile
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
+import update as update_module  # noqa: E402
+
 import plan as planner  # noqa: E402
 import update as updater  # noqa: E402
 import versions as version_tools  # noqa: E402
@@ -318,6 +320,24 @@ def main() -> int:
     check("and a push can no longer cancel a build", "cancel-in-progress: true" in catalog
           and "cancel-in-progress: false" in workflow)
     check("and it records why the archive is empty", "separately authorized" in init)
+
+    # A build's link has to survive the next catalog run, which regenerates the manifest from
+    # state.json - the first successful 26.2 build lost its link exactly that way.
+    built_entry = update_module.catalog_entry(
+        {"id": "26.2", "type": "release", "released": "2026-06-16", "verdict": "build",
+         "engine": "eagler-workspace-26.2", "engine_name": "workspace", "minutes": 42, "mods": None},
+        engines=[], links={}, client_urls=None, jvm={}, previous=None, strict_urls=True, ports={},
+        built={"26.2": {"url": "https://github.com/example/releases/latest/download/client-26.2.html",
+                        "bytes": 41080814, "at": "2026-10-12T04:43:56Z", "sha256": "ab"}})
+    check("a built client is linked from the published url",
+          built_entry.get("url", "").endswith("client-26.2.html"), str(built_entry.get("url")))
+    check("and keeps the size it was built at", built_entry.get("built_bytes") == 41080814)
+    unpublished = update_module.catalog_entry(
+        {"id": "26.3", "type": "release", "released": "2026-10-01", "verdict": "build",
+         "engine": "eagler-workspace-26.2", "engine_name": "workspace", "minutes": 42, "mods": None},
+        engines=[], links={}, client_urls=None, jvm={}, previous=None, strict_urls=True, ports={}, built={})
+    check("a version with no published build keeps the placeholder path",
+          unpublished.get("url") == "clients/26.3.html", str(unpublished.get("url")))
 
     print()
     if FAILURES == 0:

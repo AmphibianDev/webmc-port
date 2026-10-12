@@ -125,7 +125,7 @@ def prebuilt_ports(path: pathlib.Path | None = None) -> dict:
 def catalog_entry(row: dict, engines: list[dict], links: dict, client_urls: dict | None = None,
                   jvm: dict | None = None,
                   previous: dict | None = None, strict_urls: bool = False,
-                  ports: dict | None = None) -> dict:
+                  ports: dict | None = None, built: dict | None = None) -> dict:
     """One catalog row: what the launcher page needs to offer this version."""
     entry = {"id": row["id"], "type": row["type"], "released": row["released"],
              "verdict": row["verdict"], "engine": row["engine"],
@@ -202,7 +202,16 @@ def catalog_entry(row: dict, engines: list[dict], links: dict, client_urls: dict
         entry["url"] = links.get(row["id"])
         entry["kind"] = "prebuilt"
     elif row["verdict"] == "build":
-        entry["url"] = f"clients/{row['id']}.html"
+        # A build this project compiled and published. state.json is the catalogue's memory; the
+        # publish step writes there, because the generated manifest is rebuilt from it on every run
+        # (which is exactly how the first successful 26.2 build lost its link an hour after making it).
+        published = (built or {}).get(row["id"]) or {}
+        entry["url"] = published.get("url") or f"clients/{row['id']}.html"
+        entry["kind"] = "built"
+        if published:
+            entry["built_bytes"] = published.get("bytes")
+            entry["built_at"] = published.get("at")
+            entry["built_sha256"] = published.get("sha256")
         entry["kind"] = "built"
     else:
         entry["url"] = None
@@ -252,6 +261,7 @@ def main() -> int:
     # Classified in an earlier step of the same run (tools/jvm_route.py); state.json is the cache, so
     # each run classifies a few dozen more versions and the catalog converges.
     jvm = state.get("jvm") or {}
+    built = state.get("built") or {}
     links = planner.engine_links(engines)
     fixture_urls = json.loads(pathlib.Path(args.client_urls).read_text()) if args.client_urls else None
     client_urls = resolved_client_urls(manifest, rows, fixture_urls)
@@ -261,7 +271,8 @@ def main() -> int:
     for row in rows:
         catalog[row["id"]] = catalog_entry(row, engines, links, client_urls, jvm, catalog.get(row["id"]),
                                            strict_urls=args.strict_urls,
-                                           ports=prebuilt_ports(pathlib.Path(args.builds_file)))
+                                           ports=prebuilt_ports(pathlib.Path(args.builds_file)),
+                                           built=built)
     state["catalog"] = sorted(catalog.values(), key=lambda e: e["released"], reverse=True)
     state["queued"] = queue_needs_port(list(state.get("queued", [])), rows)
     state["seen"] = sorted(set(state["seen"]) | {v["id"] for v in version_tools.versions(manifest)})
