@@ -162,7 +162,6 @@ def catalog_entry(row: dict, engines: list[dict], links: dict, client_urls: dict
             entry["play_repo"] = port.get("source_repo")
             entry["play_bytes"] = port.get("bytes")
             entry["play_served_as"] = port.get("served_as")
-        entry["play_served_as"] = port.get("served_as")
         return entry
 
     port = (ports or {}).get(row["id"])

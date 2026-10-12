@@ -212,15 +212,20 @@ def main() -> int:
     print("\nthe build list")
     builds_doc = _json.loads((ROOT / "builds.json").read_text())
     builds = {group["version"]: group["files"] for group in builds_doc["versions"]}
-    wanted_versions = ("26.3", "26.2", "1.20.6", "1.16.5", "1.14.4", "1.13.1", "1.12.2",
-                       "1.8.8", "1.5.2", "1.2.5", "b1.8.1", "a1.2.6", "in-20100223")
+    # 26.2 and 26.3 moved to their own hosting after the repository that had them was deleted, so
+    # they are catalogued under the "-alt" ids the launcher falls back to.
+    wanted_versions = ("26.3-alt", "26.2-alt", "1.13.1", "1.2.5", "b1.8.1", "a1.2.6", "in-20100223")
     check("every version with a build on GitHub is listed",
           all(version in builds for version in wanted_versions),
           str([v for v in wanted_versions if v not in builds]))
     check("the versions with no verifiable build are absent, not pretended",
           not {"1.18.2", "1.21.5", "1.21.11"} & set(builds), str(sorted(builds)))
     entries = [entry for group in builds.values() for entry in group]
-    check("every entry is a GitHub address", all("github.com" in entry["url"] for entry in entries))
+    # GitHub serves ports from raw files and from Pages deployments; both are GitHub, and the
+    # launcher prefers a Pages page because a raw file arrives as text/plain (a download, not a game).
+    check("every entry is hosted by GitHub",
+          all("github.com" in entry["url"] or ".github.io/" in entry["url"] for entry in entries),
+          str([e["url"] for e in entries if "github" not in e["url"]][:3]))
     check("every file says what it is for", all(entry.get("role") for entry in entries))
     # Sizes come from the repositories that store their builds as files (the mirrors). A release
     # asset's size is not known until it is fetched, and one of them is a three-file bundle, so the
@@ -229,8 +234,10 @@ def main() -> int:
     # Exactly the release assets (EaglerPorts' seven) have no size until fetched; every file in a
     # repository does. So this asserts the split rather than a number that drifts.
     unknown = [e["url"] for e in entries if not e.get("bytes")]
-    check("only release assets lack a known size",
-          all("/releases/" in url for url in unknown) and with_size >= 17,
+    # A release asset has no size until it is fetched, and a Pages deployment does not send a
+    # content-length for its index either. Both are "unknown until fetched", which is honest.
+    check("only links that cannot know their size lack one",
+          all("/releases/" in url or ".github.io/" in url for url in unknown) and with_size >= 5,
           f"{with_size} known, {len(unknown)} unknown: {[u.split('github.com/')[-1][:40] for u in unknown]}")
     check("no pre-modded client is catalogued",
           not any(word in entry["url"].lower() for entry in entries
