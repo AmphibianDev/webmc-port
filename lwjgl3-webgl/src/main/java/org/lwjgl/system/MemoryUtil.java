@@ -5,7 +5,7 @@ package org.lwjgl.system;
 public final class MemoryUtil {
     private MemoryUtil() {}
 
-    public static org.lwjgl.system.MemoryUtil.MemoryAllocator getAllocator(boolean arg0) { throw new UnsupportedOperationException("org.lwjgl.system.MemoryUtil.getAllocator"); }
+    public static org.lwjgl.system.MemoryUtil$MemoryAllocator getAllocator(boolean arg0) { throw new UnsupportedOperationException("org.lwjgl.system.MemoryUtil.getAllocator"); }
 
     public static java.lang.String memASCII(java.nio.ByteBuffer arg0, int arg1) { throw new UnsupportedOperationException("org.lwjgl.system.MemoryUtil.memASCII"); }
 

@@ -35,7 +35,7 @@ public final class GLFW {
 
     public static org.lwjgl.glfw.GLFWVidMode glfwGetVideoMode(long arg0) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwGetVideoMode"); }
 
-    public static org.lwjgl.glfw.GLFWVidMode.Buffer glfwGetVideoModes(long arg0) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwGetVideoModes"); }
+    public static org.lwjgl.glfw.GLFWVidMode$Buffer glfwGetVideoModes(long arg0) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwGetVideoModes"); }
 
     public static long glfwGetWindowMonitor(long arg0) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwGetWindowMonitor"); }
 
@@ -75,7 +75,7 @@ public final class GLFW {
 
     public static org.lwjgl.glfw.GLFWWindowFocusCallback glfwSetWindowFocusCallback(long arg0, org.lwjgl.glfw.GLFWWindowFocusCallbackI arg1) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwSetWindowFocusCallback"); }
 
-    public static void glfwSetWindowIcon(long arg0, org.lwjgl.glfw.GLFWImage.Buffer arg1) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwSetWindowIcon"); }
+    public static void glfwSetWindowIcon(long arg0, org.lwjgl.glfw.GLFWImage$Buffer arg1) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwSetWindowIcon"); }
 
     public static void glfwSetWindowMonitor(long arg0, long arg1, int arg2, int arg3, int arg4, int arg5, int arg6) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwSetWindowMonitor"); }
 

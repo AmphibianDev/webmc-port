@@ -5,8 +5,8 @@ package org.lwjgl.glfw;
 public final class GLFWImage {
     private GLFWImage() {}
 
-    public static org.lwjgl.glfw.GLFWImage.Buffer malloc(int arg0, org.lwjgl.system.MemoryStack arg1) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFWImage.malloc"); }
+    public static org.lwjgl.glfw.GLFWImage$Buffer malloc(int arg0, org.lwjgl.system.MemoryStack arg1) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFWImage.malloc"); }
 
-    public static org.lwjgl.glfw.GLFWImage.Buffer mallocStack(int arg0, org.lwjgl.system.MemoryStack arg1) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFWImage.mallocStack"); }
+    public static org.lwjgl.glfw.GLFWImage$Buffer mallocStack(int arg0, org.lwjgl.system.MemoryStack arg1) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFWImage.mallocStack"); }
 
 }

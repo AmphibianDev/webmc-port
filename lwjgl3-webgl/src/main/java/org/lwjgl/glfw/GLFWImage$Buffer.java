@@ -5,12 +5,12 @@ package org.lwjgl.glfw;
 public final class GLFWImage$Buffer {
     private GLFWImage$Buffer() {}
 
-    public static org.lwjgl.glfw.GLFWImage.Buffer height(int arg0) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFWImage$Buffer.height"); }
+    public static org.lwjgl.glfw.GLFWImage$Buffer height(int arg0) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFWImage$Buffer.height"); }
 
-    public static org.lwjgl.glfw.GLFWImage.Buffer pixels(java.nio.ByteBuffer arg0) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFWImage$Buffer.pixels"); }
+    public static org.lwjgl.glfw.GLFWImage$Buffer pixels(java.nio.ByteBuffer arg0) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFWImage$Buffer.pixels"); }
 
     public static org.lwjgl.system.CustomBuffer position(int arg0) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFWImage$Buffer.position"); }
 
-    public static org.lwjgl.glfw.GLFWImage.Buffer width(int arg0) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFWImage$Buffer.width"); }
+    public static org.lwjgl.glfw.GLFWImage$Buffer width(int arg0) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFWImage$Buffer.width"); }
 
 }
