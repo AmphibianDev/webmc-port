@@ -80,11 +80,17 @@ jobs:
         working-directory: engine
         run: |
           set -euo pipefail
-          # one harmless file, so the archive is never a zero-entry edge case the packager's own
-          # verifier might reject
-          mkdir -p /tmp/webmc-empty-epk
-          printf 'This audio archive is intentionally empty: WebMC ships no Minecraft audio.\nUse the in-game "Get game audio" button to fetch it officially.\n' \
+          # The archives have to exist, and the optional music-pack export (which runs
+          # unconditionally at the end of the build) needs at least one entry whose name starts with
+          # assets/minecraft/sounds/music/ or .../records/ - it is a name filter, not an audio check.
+          # So: one placeholder text file in each, and no Minecraft audio anywhere. What this build
+          # produces is a client without bundled sound or music; the in-game "Get game audio" button
+          # fetches the real thing, and the music pack is optional by design.
+          mkdir -p /tmp/webmc-empty-epk/assets/minecraft/sounds/music/menu
+          printf 'This archive is a placeholder: WebMC bundles no Minecraft audio.\nThe client fetches audio at play time; nothing here is a sound file.\n' \
             > /tmp/webmc-empty-epk/WEBMC-NO-AUDIO.txt
+          cp /tmp/webmc-empty-epk/WEBMC-NO-AUDIO.txt \
+             /tmp/webmc-empty-epk/assets/minecraft/sounds/music/menu/WEBMC-NO-MUSIC.txt
           ./gradlew -I "$GITHUB_WORKSPACE/ours/tools/empty-epk.init.gradle.kts" \
             :target_lwjgl_desktop:packEmptySounds \
             :target_lwjgl_desktop:packEmptyMusic \

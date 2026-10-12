@@ -304,6 +304,8 @@ def main() -> int:
     check("it does not reimplement the archive format", "EAGPKG" not in init)
     check("it tells the packager this is not the assets tree",
           "--include-web-unreachable" in init)
+    check("and feeds the optional music-pack export a name it accepts",
+          "assets/minecraft/sounds/music/" in workflow)
     catalog = (ROOT / ".github" / "workflows" / "catalog.yml").read_text()
     check("the long compile is not in the push-triggered workflow", "Compile, link and package" not in catalog)
     check("and a push can no longer cancel a build", "cancel-in-progress: true" in catalog
