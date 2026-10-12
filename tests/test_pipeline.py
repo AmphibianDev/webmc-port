@@ -284,7 +284,9 @@ def main() -> int:
     # The first real 26.2 run reported success while the toolchain had exited 1 and produced
     # nothing. A job can lie about a build in two ways, and both are guarded here: echoing the exit
     # status instead of acting on it, and treating "nothing was produced" as success.
-    workflow = (ROOT / ".github" / "workflows" / "catalog.yml").read_text()
+    # The compile moved to its own workflow so that a push cannot cancel a 45-minute build; the
+    # promises it makes (fail on a non-zero status, fail when nothing was produced) moved with it.
+    workflow = (ROOT / ".github" / "workflows" / "build-client.yml").read_text()
     build = workflow[workflow.index("Compile, link and package"):]
     publish = build[build.index("Publish the client as a launcher card"):]
     check("the build step fails on a non-zero toolchain status", 'if [ "$STATUS" != "0" ]' in build)
@@ -302,6 +304,10 @@ def main() -> int:
     check("it does not reimplement the archive format", "EAGPKG" not in init)
     check("it tells the packager this is not the assets tree",
           "--include-web-unreachable" in init)
+    catalog = (ROOT / ".github" / "workflows" / "catalog.yml").read_text()
+    check("the long compile is not in the push-triggered workflow", "Compile, link and package" not in catalog)
+    check("and a push can no longer cancel a build", "cancel-in-progress: true" in catalog
+          and "cancel-in-progress: false" in workflow)
     check("and it records why the archive is empty", "separately authorized" in init)
 
     print()
