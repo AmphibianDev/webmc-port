@@ -50,7 +50,8 @@
 
   /** The game's canvas: the biggest one on the page, whatever the build called it. */
   function getCanvas() {
-    if (window.lwjglCanvasElement instanceof HTMLCanvasElement) return window.lwjglCanvasElement;
+    const isCanvas = typeof HTMLCanvasElement !== "undefined";
+    if (isCanvas && window.lwjglCanvasElement instanceof HTMLCanvasElement) return window.lwjglCanvasElement;
     let best = null;
     for (const canvas of document.querySelectorAll("canvas")) {
       const area = (canvas.width || 0) * (canvas.height || 0);
@@ -227,10 +228,12 @@
   const params = new URLSearchParams(location.search);
   const urls = [...params.getAll("mod"), ...(Array.isArray(window.WebMC_MODS) ? window.WebMC_MODS : [])];
 
-  function boot() {
+  async function boot() {
     log(`mod api v2 ready (deep hooks: ${ModAPI.deep.available ? "yes" : "no"})`);
-    emit("load", { version: 2 });
-    urls.forEach(loadMod);
+    // Order matters: a mod registers its handlers at module scope, so it has to be loaded before
+    // "load" is announced - otherwise every mod misses the one event it is guaranteed to want.
+    const results = await Promise.all(urls.map(loadMod));
+    emit("load", { version: 2, mods: results.filter(Boolean).length });
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
   else boot();
