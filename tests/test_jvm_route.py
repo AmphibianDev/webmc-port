@@ -82,17 +82,20 @@ def main() -> int:
 
     def fake_fetch(url: str):
         asked.append(url)
+        if url == "u3":  # the beta's own document, which is what decides its route
+            return document("b1.7.3", "old_beta", 8, "2.9.0", "net.minecraft.client.Minecraft")
         return document("1.12.2", "release", 8, "2.9.4-nightly-20150209")
 
     state: dict = {}
     table = jvm_route.refresh(manifest, state, limit=50, fetch=fake_fetch, log=lambda *_: None)
-    check("only the LWJGL 2 era version is worth a request", asked == ["u1"], str(asked))
+    check("the LWJGL 2 era release and the beta are worth a request", asked == ["u1", "u3"], str(asked))
     check("the modern version is not asked about", "26.2" not in table)
-    check("the beta needs no request either (its type decides)", "b1.7.3" not in table)
+    check("an alpha or beta is asked about, because its jar url is in the document", "b1.7.3" in table)
+    check("and its route comes from the type, not the date", table["b1.7.3"]["route"] == "cheerpj-old")
     check("the verdict records the jar it would run",
           table["1.12.2"]["jar_url"].endswith("1.12.2.jar") and table["1.12.2"]["asset_index"] == "1.12.2")
     again = jvm_route.refresh(manifest, state, limit=50, fetch=fake_fetch, log=lambda *_: None)
-    check("a second refresh asks nothing again", len(asked) == 1, str(asked))
+    check("a second refresh asks nothing again", len(asked) == 2, str(asked))
     check("and keeps what it already knew", again["1.12.2"]["route"] == "cheerpj")
 
     print()

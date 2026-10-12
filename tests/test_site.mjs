@@ -98,7 +98,9 @@ check('the version you can start outranks the one you cannot',
 check('it says what a port actually is',
   page.includes('A port is what makes a version run in a browser'));
 check('it says what is missing for the middle versions',
-  page.includes('LWJGL 3') && page.includes('Java 21+'));
+  page.includes('LWJGL 3') && page.includes('1.13 and newer'));
+check('each blocked version\'s reason comes from its own metadata',
+  body.includes('version.jvm_why') && page.includes('verdict from the release date'));
 check('a queued version offers the nearest version that does run',
   body.includes('nearestPlayable') && body.includes('instead'));
 check('the nearest one prefers the same game line', body.includes('sameFamily'));

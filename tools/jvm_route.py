@@ -102,13 +102,47 @@ def classify(document: dict) -> dict:
             "lwjgl": version, "java": java}
 
 
+# The three walls, by the date Minecraft crossed them. These are used only until a version's own
+# document has been read; then the document wins, because it is the authority.
+LWJGL3_FIRST = "2017-11-01"   # 17w43a, the first 1.13 snapshot
+JAVA21_FIRST = "2024-04-23"   # 1.20.5
+JAVA25_FIRST = "2026-01-01"   # the 26.x line
+
+
+EARA_WALLS = (
+    (JAVA25_FIRST, "needs-jvm", "this is a 26.x version: it needs Java 21 or newer, and the browser JVM stops at 17"),
+    (JAVA21_FIRST, "needs-jvm", "this needs Java 21 or newer; the browser JVM stops at 17"),
+    (LWJGL3_FIRST, "needs-lwjgl3", "this is 1.13 or newer: it needs a JavaScript LWJGL 3, which does not exist yet"),
+    (LWJGL2_FIRST, "cheerpj", "LWJGL 2 era: the browser JVM can run this (verdict from the date so far)"),
+)
+
+
+def era_verdict(version: dict) -> dict:
+    """A verdict from the release date alone, for versions no document has been read for yet."""
+    if version.get("type") in ("old_beta", "old_alpha"):
+        return {"route": "cheerpj-old", "source": "era",
+                "why": "alpha/beta era: pre-shader, so it draws with fixed-function OpenGL. An "
+                       "attempt rather than a promise - not every one of these will boot."}
+    released = str(version.get("releaseTime") or "")
+    for first_date, route, why in EARA_WALLS:
+        if released >= first_date:
+            return {"route": route, "source": "era", "why": why}
+    if released:
+        return {"route": "unknown", "source": "era",
+                "why": "older than the LWJGL 2 range: no verdict yet, and probably no client jar "
+                       "in Mojang's metadata"}
+    return {"route": "unknown", "source": "era", "why": "no release date in the metadata"}
+
+
 def interesting(version: dict, known: dict) -> bool:
     """Whether this version is worth spending a request on."""
     if version["id"] in known:
         return False
     released = str(version.get("releaseTime") or "")
     if version.get("type") in ("old_beta", "old_alpha"):
-        return False  # classified by type alone; no request needed
+        # the route comes from the type, but the jar url still has to be read out of the document,
+        # and a version whose metadata has no client download simply never becomes playable
+        return True
     return LWJGL2_FIRST <= released <= LWJGL2_LAST
 
 
@@ -123,6 +157,7 @@ def refresh(manifest: dict, state: dict, limit: int, fetch=fetch_document, log=p
             log(f"  ! {version['id']}: {error}")
             continue
         verdict = classify(document)
+        verdict["source"] = "document"
         downloads = document.get("downloads") or {}
         verdict.update({
             "id": version["id"],

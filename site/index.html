@@ -260,11 +260,13 @@
       kind: "queued",
       tag: "needs a port",
       label: "not playable in a browser yet",
-      why: "A port is what makes a version run in a browser, and this one has none yet. There are "
-         + "three kinds: the real client under CheerpJ (1.12.2 and older), a browser client this "
-         + "project compiled from the real source, or someone else's prebuilt port. What is missing "
-         + "for 1.13-1.20.4 is a JavaScript replacement for LWJGL 3 (the graphics layer); 1.20.5 and "
-         + "newer also need a Java 21+ runtime that the browser JVM does not have."
+      why: (version.jvm_why
+              ? "Why not: " + version.jvm_why + (version.jvm_source === "era" ? " (verdict from the release date; its own metadata has not been read yet)" : "")
+              : "A port is what makes a version run in a browser, and this one has none yet.")
+         + " A port is one of three things: the real client under CheerpJ (which is why 1.0 to 1.12.2 "
+         + "start), a client this project compiled from the real source, or someone else's browser "
+         + "port. The one missing layer is a JavaScript replacement for LWJGL 3, the graphics library "
+         + "1.13 and newer use."
          + (version.blocker ? " This version: " + version.blocker : ""),
       // Only a version the plan says has an engine can be built at all; offering a build button for
       // the other 800 would be a button that opens a form which fails immediately.

@@ -28,6 +28,7 @@ HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parent
 sys.path.insert(0, str(HERE))
 
+import jvm_route  # noqa: E402
 import plan as planner  # noqa: E402
 import versions as version_tools  # noqa: E402
 
@@ -139,8 +140,11 @@ def catalog_entry(row: dict, engines: list[dict], links: dict, client_urls: dict
     # What a browser JVM can do with this version, from Mojang's own document (tools/jvm_route.py).
     # This is what makes the launch route cover the whole Java family instead of nine hand-picked
     # versions: any version whose metadata says "LWJGL 2.9 + Java 8" is a launch version too.
-    verdict = (jvm or {}).get(row["id"]) or {}
+    verdict = (jvm or {}).get(row["id"]) or jvm_route.era_verdict(
+        {"type": row["type"], "releaseTime": row["released"]})
     if verdict:
+        if verdict.get("source") == "era":
+            entry["jvm_source"] = "era"
         # Every classified version carries its verdict, playable or not: the launcher shows this
         # sentence instead of inventing one, so "why not" is Mojang's metadata talking.
         entry["jvm_route"] = verdict.get("route")
