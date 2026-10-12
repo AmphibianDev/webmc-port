@@ -168,7 +168,8 @@ def main(argv=None) -> int:
     else:
         sys.path.insert(0, str(HERE))
         import versions as version_tools  # noqa: PLC0415 - only needed on this path
-        manifest = version_tools.load_manifest(None)
+        # load_manifest takes a URL as happily as a path; the classifier wants the live list
+        manifest = version_tools.load_manifest(version_tools.MANIFEST_URL)
     state_path = pathlib.Path(args.state)
     state = json.loads(state_path.read_text()) if state_path.is_file() else {}
     before = len(state.get("jvm") or {})
