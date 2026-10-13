@@ -98,6 +98,7 @@ jobs:
           mkdir -p site/loader/natives
           cp lwjgl3-webgl/natives/webmc-lwjgl3.js site/loader/natives/
           cp lwjgl3-webgl/test/boot.html site/loader/index.html
+          cp site/loader-play.html site/loader/play.html
           ls -la site/loader site/loader/natives | head -12
 
       - name: Check that every play link is alive and servable

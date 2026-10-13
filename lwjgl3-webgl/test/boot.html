@@ -60,7 +60,7 @@
   try {
     // a dynamic import, inside the try: a static one fails before this code can report why
     at("importing the shim");
-    const shim = await import("natives/webmc-lwjgl3.js");
+    const shim = await import(new URL("natives/webmc-lwjgl3.js", import.meta.url).href);
     at("shim imported: " + shim.count + " natives");
     const natives = shim.natives;
     const count = shim.count;
@@ -81,7 +81,8 @@
     window.webmcCanvasElement = document.getElementById("lwjgl");
     // if the class is not where the JVM is looking, say so with a status code rather than letting the
     // JVM report it as "could not find or load main class"
-    const probe = await fetch("app.jar", { method: "HEAD" }).then((r) => r.status).catch((e) => String(e));
+    const probe = await fetch(new URL("app.jar", import.meta.url), { method: "HEAD" })
+      .then((r) => r.status).catch((e) => String(e));
     lines.push("app.jar over HTTP: " + probe);
     const started = performance.now();
     // the jar, not the directory: see the workflow's note

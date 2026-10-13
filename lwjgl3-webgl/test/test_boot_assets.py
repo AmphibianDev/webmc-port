@@ -109,6 +109,17 @@ def main() -> int:
     page = (ROOT / "lwjgl3-webgl" / "test" / "boot.html").read_text()
     # the registrations: CheerpJ 4 takes natives as an option, not through java.library.path
     check("it registers the natives with cheerpjInit", "natives," in page and "import(" in page)
+    # a module specifier without ./ is a bare specifier, and browsers refuse it - which is exactly what
+    # happened on Pages while CI kept working, because there the path looked absolute
+    check("the shim is imported by a resolved URL, not a bare specifier",
+          'new URL("natives/webmc-lwjgl3.js", import.meta.url)' in page)
+    check("and so is the jar it runs", 'new URL("app.jar", import.meta.url)' in page)
+    play = (ROOT / "site" / "loader-play.html").read_text()
+    check("there is a page that starts the client in its own tab",
+          "requestFullscreen" in play and "cheerpjRunMain" in play)
+    check("and the test page offers it", 'href="play.html"' in page and 'target="_blank"' in page)
+    workflow = (ROOT / ".github" / "workflows" / "catalog.yml").read_text()
+    check("the published loader includes it", "site/loader/play.html" in workflow)
     check("it asks for Java 17 mode", "version: 17" in page)
     check("it hands the shim a canvas", "webmcCanvasElement" in page)
     check("it reports over HTTP, with the stage, so a stuck page says where",
