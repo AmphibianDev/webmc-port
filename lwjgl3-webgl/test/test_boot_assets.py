@@ -127,6 +127,8 @@ def main() -> int:
           and "Java_org_lwjgl_system_WebMC_log" in JS.read_text())
     play = (ROOT / "site" / "loader-play.html").read_text()
     check("and the page it starts from shows those lines", "window.webmc.log()" in play)
+    check("it shows them while the run is happening, not only after it ends",
+          "setInterval" in play and "printed" in play)
     check("it reports over HTTP, with the stage, so a stuck page says where",
           'fetch("/result"' in page and "at(\"" in page and "setInterval" in page)
     workflow = (ROOT / ".github" / "workflows" / "lwjgl3.yml").read_text()

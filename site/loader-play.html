@@ -76,6 +76,13 @@
   }
 
   let wasFullscreen = false;
+  // a run that never finishes still has to explain itself, so the Java log is shown as it grows
+  let printed = 0;
+  setInterval(() => {
+    const lines = window.webmc && window.webmc.log ? window.webmc.log() : [];
+    while (printed < lines.length) { log(lines[printed]); printed++; }
+  }, 3000);
+
   document.addEventListener("fullscreenchange", () => {
     // only a real exit is worth a line: entering fires this too, and the overlay being removed fires it
     // again, which is how one Escape turned into two messages

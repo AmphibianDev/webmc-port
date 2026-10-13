@@ -367,6 +367,12 @@ def main() -> int:
     check("the game itself is never run on a runner: only compiled",
           "run: python3 tools/vendor_libs.py" in workflow_text
           or "vendor_libs" in workflow_text)
+    coverage = (ROOT / "VERSION-COVERAGE.md").read_text().lower()
+    check("the version map answers the questions asked of it",
+          "1.16.5 - 1.20.4" in coverage and "snapshots" in coverage
+          and "april fools" in coverage and "fabric" in coverage)
+    check("and it is honest about where the blocker is",
+          "lwjgl 3" in coverage and "java 21 is past" in coverage)
     free_doc = (ROOT / "FREE-COMPUTE.md").read_text().lower()
     check("the free-compute question is answered with real numbers",
           "16 gb" in free_doc and "oracle" in free_doc and "24 gb" in free_doc)

@@ -273,6 +273,13 @@ function Java_org_lwjgl_glfw_GLFW_glfwMakeContextCurrent(lib, window) {
   if (!state.gl) { state.gl = state.canvas.getContext("webgl", { antialias: false, alpha: false }); }
   if (!state.gl) throw new Error("this browser gave no WebGL context for the window");
   window.webmcGL = state.gl;
+  // say what we got, in the log the page prints: a context that exists and one that is already lost look
+  // the same from Java, and every later call returns null in both cases
+  state.javaLog = state.javaLog || [];
+  state.javaLog.push("WebGL context: " + state.gl.getParameter(state.gl.VERSION) + " / "
+    + state.gl.getParameter(state.gl.RENDERER) + " lost=" + (state.gl.isContextLost ? state.gl.isContextLost() : "?")
+    + " canvas=" + state.canvas.width + "x" + state.canvas.height
+    + " maxVertexAttribs=" + state.gl.getParameter(state.gl.MAX_VERTEX_ATTRIBS));
 }
 function Java_org_lwjgl_glfw_GLFW_glfwGetCurrentContext() { return state.current; }
 function Java_org_lwjgl_glfw_GLFW_glfwPollEvents_inner(lib) { deliverEvents(lib); }
@@ -521,7 +528,13 @@ function Java_org_lwjgl_opengl_GL20_nglGenBuffers(lib, count, pointers) {
   Java_org_lwjgl_opengl_GL11_nglGenBuffers(lib, count, pointers);
 }
 function Java_org_lwjgl_opengl_GL20_glCreateShader_inner(lib, type) {
-  return nameOf("shader", gl().createShader(type));
+  const shader = gl().createShader(type);
+  if (!shader) {
+    state.javaLog = state.javaLog || [];
+    state.javaLog.push("createShader(" + type + ") returned null: glError=" + gl().getError()
+      + " lost=" + (gl().isContextLost ? gl().isContextLost() : "?"));
+  }
+  return nameOf("shader", shader);
 }
 function Java_org_lwjgl_opengl_GL20_glShaderSource_inner(lib, shader, string) {
   // the Java side hands over a String, which arrives here as a JavaScript string or as a Java object
