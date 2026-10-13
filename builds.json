@@ -170,6 +170,124 @@
    "version": "1.20.4-alt"
   },
   {
+   "aliases": [
+    "1.21"
+   ],
+   "era": "modern",
+   "files": [
+    {
+     "name": "entry",
+     "role": "client",
+     "served_as": "html",
+     "url": "https://xxmrmexx.github.io/Astral-client-1.21/"
+    }
+   ],
+   "folder": "1_21",
+   "label": "Minecraft 1.21",
+   "notes": "serves a page, so it plays in the tab",
+   "source_repo": "XxmrmexX/Astral-client-1.21",
+   "version": "1.21"
+  },
+  {
+   "aliases": [
+    "1.21.1"
+   ],
+   "era": "modern",
+   "files": [
+    {
+     "name": "entry",
+     "role": "client",
+     "served_as": "download",
+     "url": "https://github.com/Nate2018/Eaglercraft-1.21.1-TeaVM/raw/HEAD/index.html"
+    }
+   ],
+   "folder": "1_21_1_alt",
+   "label": "Minecraft 1.21.1 (TeaVM port)",
+   "notes": "no deployment: this one downloads rather than plays",
+   "source_repo": "Nate2018/Eaglercraft-1.21.1-TeaVM",
+   "version": "1.21.1-alt"
+  },
+  {
+   "aliases": [
+    "1.21.1"
+   ],
+   "era": "modern",
+   "files": [
+    {
+     "name": "entry",
+     "role": "client",
+     "served_as": "download",
+     "url": "https://github.com/crisppy1/Eaglercraft-1.21.1/raw/HEAD/index.html"
+    }
+   ],
+   "folder": "1_21_1_alt2",
+   "label": "Minecraft 1.21.1 (mirror)",
+   "notes": "no deployment: this one downloads rather than plays",
+   "source_repo": "crisppy1/Eaglercraft-1.21.1",
+   "version": "1.21.1-alt2"
+  },
+  {
+   "aliases": [
+    "1.21.11"
+   ],
+   "era": "modern",
+   "files": [
+    {
+     "name": "entry",
+     "role": "client",
+     "served_as": "html",
+     "url": "https://exgg1453.github.io/NX-Eaglercraft-Mobile/"
+    }
+   ],
+   "folder": "1_21_11",
+   "label": "Minecraft 1.21.11",
+   "notes": "single-file WASM-GC client, served as a page",
+   "source_repo": "exgg1453/NX-Eaglercraft-Mobile",
+   "version": "1.21.11"
+  },
+  {
+   "aliases": [
+    "26.1.1"
+   ],
+   "era": "modern",
+   "files": [
+    {
+     "name": "entry",
+     "role": "client",
+     "served_as": "download",
+     "url": "https://github.com/thebananamanjcgaming/EaglercraftZ-26.1.1/raw/HEAD/index.html"
+    }
+   ],
+   "folder": "26_1_1_alt",
+   "label": "Minecraft 26.1.1 (mirror)",
+   "notes": "no deployment: this one downloads rather than plays",
+   "source_repo": "thebananamanjcgaming/EaglercraftZ-26.1.1",
+   "version": "26.1.1-alt"
+  },
+  {
+   "aliases": [
+    "26.1.2",
+    "26.1"
+   ],
+   "era": "modern",
+   "files": [
+    {
+     "name": "entry",
+     "role": "client",
+     "served_as": "html",
+     "url": "https://diddy62626.github.io/eaglercraft-26.1.2/"
+    }
+   ],
+   "folder": "26_1_2",
+   "label": "Minecraft 26.1.2",
+   "notes": "serves a page, so it plays in the tab",
+   "source_repo": "diddy62626/eaglercraft-26.1.2",
+   "version": "26.1.2"
+  },
+  {
+   "aliases": [
+    "26.2"
+   ],
    "era": "newest",
    "files": [
     {
@@ -186,6 +304,9 @@
    "version": "26.2-alt"
   },
   {
+   "aliases": [
+    "26.3"
+   ],
    "era": "newest",
    "files": [
     {

@@ -13,6 +13,11 @@ on:
         description: "Minecraft version to compile (must be a version the plan says is buildable)"
         required: true
         type: string
+      engine_repo:
+        description: "Workspace to compile from (defaults to the engine the plan names)"
+        required: false
+        type: string
+        default: ""
 
 permissions:
   contents: write
@@ -36,6 +41,10 @@ jobs:
           path: ours
 
       - name: Which engine can build this, and what it needs
+        # With engine_repo given, a workspace nobody has wired up yet can be built anyway: the plan is
+        # asked for its advice rather than its permission. That is how a version with no port and no
+        # engine entry - a fresh snapshot, a new release - gets built the day a workspace appears.
+        if: ${{ inputs.engine_repo == '' }}
         run: |
           set -euo pipefail
           cd ours
@@ -57,6 +66,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           repository: CynTheSolveroftheabsolutefabric/Eaglercraft-26.2-Workspace
+          repository: ${{ inputs.engine_repo != '' && inputs.engine_repo || 'CynTheSolveroftheabsolutefabric/Eaglercraft-26.2-Workspace' }}
           path: engine
           fetch-depth: 1
 

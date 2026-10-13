@@ -216,6 +216,10 @@ def catalog_entry(row: dict, engines: list[dict], links: dict, client_urls: dict
         # (which is exactly how the first successful 26.2 build lost its link an hour after making it).
         published = (built or {}).get(row["id"]) or {}
         entry["url"] = published.get("url") or f"clients/{row['id']}.html"
+        if port and port.get("served_as") != "html" and published:
+            # a mirror that only downloads must not shadow a client this project compiled
+            entry.pop("play_url", None)
+            entry.pop("play_served_as", None)
         entry["kind"] = "built"
         if published:
             entry["built_bytes"] = published.get("bytes")

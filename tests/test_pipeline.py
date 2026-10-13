@@ -228,8 +228,19 @@ def main() -> int:
     check("every version with a build on GitHub is listed",
           all(version in builds for version in wanted_versions),
           str([v for v in wanted_versions if v not in builds]))
-    check("the versions with no verifiable build are absent, not pretended",
-          not {"1.18.2", "1.21.5", "1.21.11"} & set(builds), str(sorted(builds)))
+    # Every port has to say how it is served, because that is what the launcher acts on: a Pages
+    # deployment plays in the tab, a raw file downloads. The list of versions with a port is checked by
+    # tools/check_links.py against the live web, not by a hand-written list here that goes stale the
+    # moment somebody finds a port (which is how 1.21.11 made this assertion fail the first time).
+    served = {name: [entry.get("served_as") for entry in files] for name, files in builds.items()}
+    check("every port says how it is served",
+          all(all(kind in ("html", "download") for kind in kinds) for kinds in served.values()),
+          str({k: v for k, v in served.items() if any(x not in ("html", "download") for x in v)}))
+    check("a served-as-html entry is a Pages deployment",
+          all(("github.io" in entry["url"]) for files in builds.values() for entry in files
+              if entry.get("served_as") == "html"),
+          str([entry["url"] for files in builds.values() for entry in files
+               if entry.get("served_as") == "html" and "github.io" not in entry["url"]][:2]))
     entries = [entry for group in builds.values() for entry in group]
     # GitHub serves ports from raw files and from Pages deployments; both are GitHub, and the
     # launcher prefers a Pages page because a raw file arrives as text/plain (a download, not a game).
