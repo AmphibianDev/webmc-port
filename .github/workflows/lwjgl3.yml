@@ -8,6 +8,11 @@ name: LWJGL 3 shim
 
 on:
   workflow_dispatch:
+    inputs:
+      measure:
+        description: "Re-measure the client surface (downloads three client jars from Mojang)"
+        type: boolean
+        default: false
   push:
     paths:
       - "lwjgl3-webgl/**"
@@ -39,12 +44,23 @@ jobs:
           distribution: temurin
           java-version: "25"
 
-      - name: Measure what 1.13, 1.16 and 1.20 ask of LWJGL 3
+      - name: What 1.13, 1.16 and 1.20 ask of LWJGL 3
+        # The measurement is committed (lwjgl3-webgl/surface/*.json): it is our own data, it changes only
+        # when a client changes, and re-measuring it means downloading three client jars from Mojang on
+        # every run. Dispatch with measure=true to refresh it.
         run: |
           set -euo pipefail
-          for version in 1.13.2 1.16.5 1.20.4; do
-            python3 tools/lwjgl3_surface.py --version "$version" --out "work/surface-$version.json"
-          done
+          if [ "${{ inputs.measure }}" = "true" ]; then
+            for version in 1.13.2 1.16.5 1.20.4; do
+              python3 tools/lwjgl3_surface.py --version "$version" --out "lwjgl3-webgl/surface/surface-$version.json"
+            done
+          fi
+          python3 - <<'PYTHON'
+          import json, pathlib
+          for path in sorted(pathlib.Path("lwjgl3-webgl/surface").glob("surface-*.json")):
+              for scan in json.loads(path.read_text()):
+                  print(f"  {scan['jar']}: {scan['class_count']} classes, {scan['reference_count']} members")
+          PYTHON
           python3 tools/lwjgl3_surface.py \
             --jars work/client/1.13.2.jar,work/client/1.16.5.jar,work/client/1.20.4.jar --compare \
             | tee -a "$GITHUB_STEP_SUMMARY"
@@ -53,9 +69,9 @@ jobs:
         run: |
           set -euo pipefail
           python3 tools/lwjgl3_scaffold.py \
-            --surface work/surface-1.13.2.json \
-            --surface work/surface-1.16.5.json \
-            --surface work/surface-1.20.4.json \
+            --surface lwjgl3-webgl/surface/surface-1.13.2.json \
+            --surface lwjgl3-webgl/surface/surface-1.16.5.json \
+            --surface lwjgl3-webgl/surface/surface-1.20.4.json \
             --merge --out lwjgl3-webgl | tee -a "$GITHUB_STEP_SUMMARY"
           # the generator emits what the clients call; this turns the members the JavaScript
           # implements into native declarations, and adds the few the measurement never saw. It has to
