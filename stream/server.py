@@ -369,6 +369,47 @@ class Handler(BaseHTTPRequestHandler):
             return
         sys.stderr.write(f"  {self.address_string()} {fmt % args}\n")
 
+    def _cors(self) -> None:
+        # the GitHub pages stream page is https and this is http on loopback, so the browser only
+        # allows the request because 127.0.0.1 counts as a secure origin - and only if these headers
+        # say so
+        self.send_header("access-control-allow-origin", "*")
+        self.send_header("access-control-allow-headers", "content-type")
+        self.send_header("access-control-allow-methods", "POST, OPTIONS")
+
+    def do_OPTIONS(self) -> None:  # noqa: N802
+        self.send_response(204)
+        self._cors()
+        self.send_header("content-length", "0")
+        self.end_headers()
+
+    def do_POST(self) -> None:  # noqa: N802
+        """The one endpoint a page served from anywhere needs: turn an event into a real one.
+
+        Only this machine may call it. A session's input comes from a friend's browser, but it arrives
+        at *their* host page first and is relayed here, so nothing on the network ever reaches this.
+        """
+        path = self.path.split("?")[0]
+        length = int(self.headers.get("content-length") or 0)
+        payload = self.rfile.read(length) if length else b"{}"
+        if path != "/input":
+            self.send_response(404)
+            self._cors()
+            self.send_header("content-length", "0")
+            self.end_headers()
+            return
+        if not is_loopback(self.client_address[0]):
+            return self.reply_json({"error": "input is only accepted from this machine"}, status=403)
+        try:
+            event = json.loads(payload.decode("utf-8"))
+        except Exception as error:  # noqa: BLE001
+            return self.reply_json({"error": f"bad json: {error}"}, status=400)
+        self.hub.injector.handle(event)
+        self.send_response(204)
+        self._cors()
+        self.send_header("content-length", "0")
+        self.end_headers()
+
     def do_GET(self) -> None:  # noqa: N802 - http.server's spelling
         path = self.path.split("?")[0]
         if path == "/health":
@@ -389,6 +430,7 @@ class Handler(BaseHTTPRequestHandler):
     def reply_json(self, document: dict, status: int = 200) -> None:
         body = json.dumps(document, indent=1).encode("utf-8")
         self.send_response(status)
+        self._cors()
         self.send_header("content-type", "application/json")
         self.send_header("content-length", str(len(body)))
         self.send_header("cache-control", "no-store")

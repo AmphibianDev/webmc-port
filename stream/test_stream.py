@@ -141,6 +141,19 @@ def main() -> int:
 
         status, watch_page = get("/watch")
         check("the player is served at /watch", status == 200 and "Take control" in watch_page)
+        published = (ROOT / "site" / "stream.html").read_text()
+        check("a page on github can host or join a session", "Host this machine" in published
+              and "Join a session" in published)
+        check("the room code travels in the link", 'location.hash' in published
+              and "share-link" in published)
+        check("the picture is peer to peer, and the page says so",
+              "peerjs" in published.lower() and "peer to peer" in published)
+        check("input goes to the local injector, not through github",
+              'INJECTOR = "http://127.0.0.1:8770"' in published
+              and 'INJECTOR + "/input"' in published
+              and "/input" in (STREAM / "server.py").read_text())
+        check("nothing about it needs a game file on github",
+              ".jar" not in published and "minecraft" not in published.lower().split("github serves")[-1])
         check("it sends input only while control is held",
               "if (!control)" in watch_page and 't: "key"' in watch_page)
         check("Esc in the page hands control back",
@@ -191,6 +204,26 @@ def main() -> int:
         state = json.loads(get("/health")[1])
         check("the server says it injected nothing (input disabled)",
               state["injected"] >= 2 and state["input"] is False, str(state))
+
+        print()
+        print("the github-hosted page can inject input, and only from this machine")
+        request = urllib.request.Request(
+            f"http://127.0.0.1:{PORT}/input", method="POST",
+            data=json.dumps({"t": "move", "x": 5, "y": 6}).encode(),
+            headers={"content-type": "application/json"})
+        with urllib.request.urlopen(request, timeout=5) as response:
+            check("POST /input is accepted on loopback", response.status == 204, str(response.status))
+            check("and it permits the pages origin to call it",
+                  response.headers.get("access-control-allow-origin") == "*")
+        time.sleep(0.3)
+        state = json.loads(get("/health")[1])
+        check("the event was recorded (input disabled, so nothing moved)", state["injected"] >= 3, str(state))
+        bad = urllib.request.Request(f"http://127.0.0.1:{PORT}/nope", method="POST", data=b"{}")
+        try:
+            urllib.request.urlopen(bad, timeout=5)
+            check("an unknown POST is refused", False, "no error")
+        except urllib.error.HTTPError as error:
+            check("an unknown POST is refused", error.code == 404, str(error.code))
 
         print()
         print("a viewer leaving is noticed")
