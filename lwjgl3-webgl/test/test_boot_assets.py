@@ -86,6 +86,25 @@ def main() -> int:
           + ", ".join(orphans[:3]) if orphans else "  NOTE  every JavaScript function is declared")
 
     print()
+    print("signatures, since that is what kept breaking")
+    signatures = {}
+    for path in SHIM.rglob("*.java"):
+        owner = str(path.relative_to(SHIM)).replace(".java", "").replace("/", ".")
+        for match in re.finditer(r"public static (?:native )?[\w.<>\[\]$]+ (\w+)\(([^)]*)\)", path.read_text()):
+            arity = 0 if not match.group(2).strip() else len(match.group(2).split(","))
+            signatures.setdefault((owner, match.group(1)), []).append(arity)
+    wrong = []
+    for call in re.finditer(r"\b(GLFW|GL11|GL15|GL20|GL30|MemoryUtil)\.([A-Za-z0-9_]+)\(([^;]*?)\)", source):
+        simple, method, arguments = call.group(1), call.group(2), call.group(3)
+        owner = owner_of[simple]
+        # constants and nested calls make exact counting impossible here, so this counts top-level commas
+        arity = 0 if not arguments.strip() else len(re.split(r",(?![^(]*\))", arguments))
+        known = signatures.get((owner, method))
+        if known and arity not in known:
+            wrong.append(f"{owner}.{method} called with {arity}, declared {sorted(known)}")
+    check("every call passes the number of arguments the shim declares", not wrong, "; ".join(wrong[:4]))
+
+    print()
     print("the page that runs it")
     page = (ROOT / "lwjgl3-webgl" / "test" / "boot.html").read_text()
     check("it boots with the natives on the library path", "java.library.path=/app/natives" in page)
