@@ -378,6 +378,13 @@ def main() -> int:
     check("the game itself is never run on a runner: only compiled",
           "run: python3 tools/vendor_libs.py" in workflow_text
           or "vendor_libs" in workflow_text)
+    steps = (ROOT / "NEXT-STEPS.md").read_text().lower()
+    check("the fabric plan names a route per era, not one answer for all",
+          "legacy fabric" in steps and "fabric loader + its libraries on the classpath" in steps
+          and "baked at build time" in steps)
+    check("and it starts from the blocker rather than pretending there is none",
+          "first frame in the shim" in steps and "glicreateshader" in steps)
+    check("fast loading is its own list", "cache the payloads" in steps and "warm on intent" in steps)
     coverage = (ROOT / "VERSION-COVERAGE.md").read_text().lower()
     check("the version map answers the questions asked of it",
           "1.16.5 - 1.20.4" in coverage and "snapshots" in coverage

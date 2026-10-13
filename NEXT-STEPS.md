@@ -1,0 +1,71 @@
+# The goal: Fabric mods on every playable version, and loading that feels instant
+
+Written down because "Fabric on all versions" is three different problems wearing one name, and the answer
+differs per era. Fast loading is a fourth problem and mostly orthogonal.
+
+## The three shapes of "Fabric support"
+
+| versions | how the client runs | how a Fabric mod gets in | state |
+|---|---|---|---|
+| **1.0 - 1.12.2** | Mojang's jar in a real JVM (CheerpJ, LWJGL 2 natives) | **Legacy Fabric / Ornithe** on the classpath - a real class loader, so jars load at play time | route exists, nothing wired yet |
+| **1.13 - 1.20.4** | our LWJGL 3 shim under the same JVM | **Fabric Loader + its libraries on the classpath**, before the game; our own loader assembles that classpath | blocked on one bug: the first frame |
+| **1.20.5 - 26.x** | a client we compile (Java 21/25, no class loader exists at play time) | **baked at build time**: mod jars are applied before the link, by `mods/build_modded_workspace.py` | 26.2 builds; the bake-in path is unproven |
+
+The one that people actually mean by "add a mod" is the middle row: drop a jar in, it loads, no rebuild.
+That is possible **only** under a real JVM, which is exactly why the shim matters more than any port.
+
+## What is already true, so the plan starts from reality
+
+* The shim runs a JVM in a browser, registers **216 natives**, creates a window and a WebGL2 context, and
+  stops at the first shader (`glCreateShader` returns null - the context report now says whether the
+  context exists or was lost).
+* `mods/injector/` already patches a built client with a page-tier API (overlay, keybinds, tick/render,
+  chat) - that is the layer a mod author writes against when a jar cannot run.
+* `mods/build_modded_workspace.py` already plans, prunes and hooks a Fabric mod set for a build.
+* The launcher classifies every version by date, so snapshots and April Fools snapshots are routed with
+  the same rules as their release, and 274 versions are playable today by one of the three routes.
+
+## Milestones, in order, each one verifiable
+
+0. **First frame in the shim.** Fix the null from `glCreateShader`; then shaders, geometry, draw, and a
+   pixel read back. Everything in the middle row is behind this one bug.
+1. **Boot a real client through the shim**: 1.16.5 first (Java 8), then 1.18.2, 1.19.4, 1.20.4 (Java 17).
+   Success is the title screen, not "it started".
+2. **Fabric Loader on that classpath** for 1.16.5: our loader puts `fabric-loader` and its libraries
+   before the game, plus one trivial mod whose mixin writes a line. Success is that line appearing.
+3. **Our loader, manifest driven**: `mods.json` per version listing loader + mods + our API shim; the
+   launcher grows an "add a mod" action that edits that manifest and nothing else. No rebuild, no CDN.
+4. **Legacy Fabric for 1.8.9 - 1.12.2**, same classpath trick, different loader jar. This gives Fabric on
+   the real-Java versions that exist today.
+5. **Bake-in for 1.20.5 - 26.x**: apply mod jars at build time in the workspace pipeline. Document honestly
+   which mods survive (anything reflection- or native-heavy does not) - it is not "install a jar".
+6. **Snapshots and April Fools**: nothing new to build. They route by date through whichever of the three
+   rows applies; the work is verifying a few of each on the way past.
+
+## Fast loading, which is a separate list
+
+The long waits are downloads and JVM start, not the game:
+
+* **Cache the payloads.** Client jars, libraries, the loader and mod jars go in Cache Storage keyed by
+  URL, so a second visit starts with nothing to fetch. The launch page does this already for libraries;
+  the same cache should hold mods and the AOT clients.
+* **Service worker for the AOT clients.** A 39 MB single-file client should be served from cache after the
+  first visit, and the brotli payloads decoded once rather than per load.
+* **Warm on intent, not on load.** Opening a version card should start fetching that version's jar and
+  libraries in the background, so pressing play is not the beginning of a download.
+* **Ship the smallest classpath that boots.** The launcher should ask the version's metadata which
+  libraries it needs and fetch those, not a superset; the measured library set already exists per version.
+* **Assets after the title screen.** Textures and sounds are the largest payload and nothing needs them
+  until the game draws. Load them lazily and let the first frame arrive sooner.
+* **Mods last, in parallel.** Loader first, mods while the main menu is up, so a mod list does not delay
+  the first frame.
+
+## The honest ceiling
+
+* Mods with native libraries cannot work in any row - there are no native libraries.
+* Mods that need a Java version the browser JVM does not have cannot work in the middle row.
+* Mods that lean on desktop-only GL features (geometry shaders, compute) will not work until the shim's
+  GL coverage grows; the measured surface tells us exactly which members a client calls, so gaps are
+  discovered by running clients rather than by guessing.
+* A public streaming or hosting service for this stays out: the only machine that runs the game is one a
+  person owns, which is where all three rows already put it.
