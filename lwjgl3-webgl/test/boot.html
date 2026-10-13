@@ -23,15 +23,24 @@
 
   let stage = "module";
   let lastPayload = {};
-  // every stage change is posted, and a watchdog repeats the last one: when a page stops reporting, the
-  // question is always *where* it stopped, and a stuck await leaves no other trace
+  // The collector only exists in CI. Opened anywhere else - on GitHub Pages, from a file, in your own
+  // browser - the page still reports through its own DOM, which is what a person reads anyway.
+  const COLLECTOR = location.hostname === "127.0.0.1" || location.hostname === "localhost";
   function at(nextStage) { stage = nextStage; post({ code: -1, stage }); }
   function post(payload) {
     lastPayload = payload;
+    document.body.dataset.stage = payload.stage || String(payload.code);
+    const line = payload.stage || ("RESULT code=" + payload.code + " frames=" + (payload.frames ?? "?"));
+    if (result.textContent === "running" || (payload.stage || "").includes("still")) {
+      result.textContent = line;
+      document.title = payload.stage ? payload.stage : "EXIT " + payload.code;
+    }
+    if (!COLLECTOR) return Promise.resolve();
     return fetch("/result", { method: "POST", headers: { "content-type": "application/json" },
                               body: JSON.stringify({ ...payload, log: lines.slice(-60) }) })
       .catch(() => {});
   }
+  if (!COLLECTOR) { document.body.dataset.served = "pages"; }
   setInterval(() => post({ code: -1, stage: stage + " (still, after " +
     Math.round((performance.now() - startedAt) / 1000) + "s)" }), 15000);
 
@@ -51,7 +60,7 @@
   try {
     // a dynamic import, inside the try: a static one fails before this code can report why
     at("importing the shim");
-    const shim = await import("/natives/webmc-lwjgl3.js");
+    const shim = await import("natives/webmc-lwjgl3.js");
     at("shim imported: " + shim.count + " natives");
     const natives = shim.natives;
     const count = shim.count;
@@ -72,11 +81,13 @@
     window.webmcCanvasElement = document.getElementById("lwjgl");
     // if the class is not where the JVM is looking, say so with a status code rather than letting the
     // JVM report it as "could not find or load main class"
-    const probe = await fetch("/app.jar", { method: "HEAD" }).then((r) => r.status).catch((e) => String(e));
+    const probe = await fetch("app.jar", { method: "HEAD" }).then((r) => r.status).catch((e) => String(e));
     lines.push("app.jar over HTTP: " + probe);
     const started = performance.now();
     // the jar, not the directory: see the workflow's note
     at("running webmc.BootTest");
+    // relative to the page: /app/ is the directory the page was served from, so this works both from a
+    // local server in CI and from GitHub Pages
     const code = await cheerpjRunMain("webmc.BootTest", "/app/app.jar");
     const seconds = (performance.now() - started) / 1000;
     document.title = "EXIT " + code;

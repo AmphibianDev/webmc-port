@@ -83,6 +83,23 @@ jobs:
             || echo "::warning::could not vendor more libraries this run"
           du -sh site/libs 2>/dev/null || true
 
+      - name: Build the loader page (the shim, its natives, and the boot test)
+        # Published so the loader can be opened in a real browser without cloning anything: the page, the
+        # jar, and the JavaScript implementations. Nothing of the game - the Java program here is our own
+        # twenty-line boot test.
+        run: |
+          set -euo pipefail
+          mkdir -p site/loader/classes
+          find lwjgl3-webgl/src/main/java -name "*.java" > /tmp/loader-sources.txt
+          echo "lwjgl3-webgl/test/BootTest.java" >> /tmp/loader-sources.txt
+          javac --release 17 -nowarn -d site/loader/classes @/tmp/loader-sources.txt
+          (cd site/loader/classes && jar --create --file ../app.jar .)
+          rm -rf site/loader/classes
+          mkdir -p site/loader/natives
+          cp lwjgl3-webgl/natives/webmc-lwjgl3.js site/loader/natives/
+          cp lwjgl3-webgl/test/boot.html site/loader/index.html
+          ls -la site/loader site/loader/natives | head -12
+
       - name: Check that every play link is alive and servable
         run: |
           python3 tools/check_links.py --state state.json --write --limit 60 \
