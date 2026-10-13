@@ -82,6 +82,25 @@ function traced(name) {
   state.traceCount = (state.traceCount || 0) + 1;
 }
 
+/**
+ * Run a native, and turn any failure into a log line and a zero instead of a hang.
+ *
+ * An exception thrown inside a native does not come back as a Java exception: the JVM sits waiting for a
+ * value that never arrives, which is exactly what happened at glCreateShader - entered, and never
+ * returned. Reporting through WebMC.log means the Java side, the page and CI all see the reason.
+ */
+function guarded(name, body) {
+  try {
+    return body();
+  } catch (error) {
+    const message = name + " threw: " + (error && error.message ? error.message : error);
+    state.javaLog = state.javaLog || [];
+    if (state.javaLog.length < 400) state.javaLog.push(message + "\n" + String(error && error.stack || ""));
+    if (typeof console !== "undefined" && console.error) console.error("[shim] " + message);
+    return 0;
+  }
+}
+
 function nameOf(kind, object) {
   if (object === null || object === undefined) return 0;
   const existing = objects[kind].get(object);
@@ -821,19 +840,19 @@ window.webmc = {
   windows: () => state.windows.size,
 };
 
-async function Java_org_lwjgl_opengl_GL20_glCreateShader(...args) { traced("opengl.GL20.glCreateShader"); return Java_org_lwjgl_opengl_GL20_glCreateShader_inner(...args); }
-async function Java_org_lwjgl_opengl_GL20_glShaderSource(...args) { traced("opengl.GL20.glShaderSource"); return Java_org_lwjgl_opengl_GL20_glShaderSource_inner(...args); }
-async function Java_org_lwjgl_opengl_GL20_glCompileShader(...args) { traced("opengl.GL20.glCompileShader"); return Java_org_lwjgl_opengl_GL20_glCompileShader_inner(...args); }
-async function Java_org_lwjgl_opengl_GL20_glGetShaderi(...args) { traced("opengl.GL20.glGetShaderi"); return Java_org_lwjgl_opengl_GL20_glGetShaderi_inner(...args); }
-async function Java_org_lwjgl_opengl_GL20_glCreateProgram(...args) { traced("opengl.GL20.glCreateProgram"); return Java_org_lwjgl_opengl_GL20_glCreateProgram_inner(...args); }
-async function Java_org_lwjgl_opengl_GL20_glLinkProgram(...args) { traced("opengl.GL20.glLinkProgram"); return Java_org_lwjgl_opengl_GL20_glLinkProgram_inner(...args); }
-async function Java_org_lwjgl_opengl_GL20_glGetProgrami(...args) { traced("opengl.GL20.glGetProgrami"); return Java_org_lwjgl_opengl_GL20_glGetProgrami_inner(...args); }
-async function Java_org_lwjgl_opengl_GL20_glUseProgram(...args) { traced("opengl.GL20.glUseProgram"); return Java_org_lwjgl_opengl_GL20_glUseProgram_inner(...args); }
-async function Java_org_lwjgl_opengl_GL11_glClear(...args) { traced("opengl.GL11.glClear"); return Java_org_lwjgl_opengl_GL11_glClear_inner(...args); }
-async function Java_org_lwjgl_opengl_GL11_nglDrawArrays(...args) { traced("opengl.GL11.nglDrawArrays"); return Java_org_lwjgl_opengl_GL11_nglDrawArrays_inner(...args); }
-async function Java_org_lwjgl_opengl_GL11_glReadPixels(...args) { traced("opengl.GL11.glReadPixels"); return Java_org_lwjgl_opengl_GL11_glReadPixels_inner(...args); }
-async function Java_org_lwjgl_glfw_GLFW_glfwSwapBuffers(...args) { traced("glfw.GLFW.glfwSwapBuffers"); return Java_org_lwjgl_glfw_GLFW_glfwSwapBuffers_inner(...args); }
-async function Java_org_lwjgl_glfw_GLFW_glfwPollEvents(...args) { traced("glfw.GLFW.glfwPollEvents"); return Java_org_lwjgl_glfw_GLFW_glfwPollEvents_inner(...args); }
+function Java_org_lwjgl_opengl_GL20_glCreateShader(...args) { traced("opengl.GL20.glCreateShader"); return guarded("opengl.GL20.glCreateShader", () => Java_org_lwjgl_opengl_GL20_glCreateShader_inner(...args)); }
+function Java_org_lwjgl_opengl_GL20_glShaderSource(...args) { traced("opengl.GL20.glShaderSource"); return guarded("opengl.GL20.glShaderSource", () => Java_org_lwjgl_opengl_GL20_glShaderSource_inner(...args)); }
+function Java_org_lwjgl_opengl_GL20_glCompileShader(...args) { traced("opengl.GL20.glCompileShader"); return guarded("opengl.GL20.glCompileShader", () => Java_org_lwjgl_opengl_GL20_glCompileShader_inner(...args)); }
+function Java_org_lwjgl_opengl_GL20_glGetShaderi(...args) { traced("opengl.GL20.glGetShaderi"); return guarded("opengl.GL20.glGetShaderi", () => Java_org_lwjgl_opengl_GL20_glGetShaderi_inner(...args)); }
+function Java_org_lwjgl_opengl_GL20_glCreateProgram(...args) { traced("opengl.GL20.glCreateProgram"); return guarded("opengl.GL20.glCreateProgram", () => Java_org_lwjgl_opengl_GL20_glCreateProgram_inner(...args)); }
+function Java_org_lwjgl_opengl_GL20_glLinkProgram(...args) { traced("opengl.GL20.glLinkProgram"); return guarded("opengl.GL20.glLinkProgram", () => Java_org_lwjgl_opengl_GL20_glLinkProgram_inner(...args)); }
+function Java_org_lwjgl_opengl_GL20_glGetProgrami(...args) { traced("opengl.GL20.glGetProgrami"); return guarded("opengl.GL20.glGetProgrami", () => Java_org_lwjgl_opengl_GL20_glGetProgrami_inner(...args)); }
+function Java_org_lwjgl_opengl_GL20_glUseProgram(...args) { traced("opengl.GL20.glUseProgram"); return guarded("opengl.GL20.glUseProgram", () => Java_org_lwjgl_opengl_GL20_glUseProgram_inner(...args)); }
+function Java_org_lwjgl_opengl_GL11_glClear(...args) { traced("opengl.GL11.glClear"); return guarded("opengl.GL11.glClear", () => Java_org_lwjgl_opengl_GL11_glClear_inner(...args)); }
+function Java_org_lwjgl_opengl_GL11_nglDrawArrays(...args) { traced("opengl.GL11.nglDrawArrays"); return guarded("opengl.GL11.nglDrawArrays", () => Java_org_lwjgl_opengl_GL11_nglDrawArrays_inner(...args)); }
+function Java_org_lwjgl_opengl_GL11_glReadPixels(...args) { traced("opengl.GL11.glReadPixels"); return guarded("opengl.GL11.glReadPixels", () => Java_org_lwjgl_opengl_GL11_glReadPixels_inner(...args)); }
+function Java_org_lwjgl_glfw_GLFW_glfwSwapBuffers(...args) { traced("glfw.GLFW.glfwSwapBuffers"); return guarded("glfw.GLFW.glfwSwapBuffers", () => Java_org_lwjgl_glfw_GLFW_glfwSwapBuffers_inner(...args)); }
+function Java_org_lwjgl_glfw_GLFW_glfwPollEvents(...args) { traced("glfw.GLFW.glfwPollEvents"); return guarded("glfw.GLFW.glfwPollEvents", () => Java_org_lwjgl_glfw_GLFW_glfwPollEvents_inner(...args)); }
 
 // ------------------------------------------------------------------ what CheerpJ is given
 // cheerpjInit({ natives }) takes exactly this: JNI names to implementations. It is
