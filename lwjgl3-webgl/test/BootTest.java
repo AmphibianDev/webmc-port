@@ -41,23 +41,32 @@ public final class BootTest {
             GLFW.glfwMakeContextCurrent(window);
             step("context current, version " + GL11.glGetString(GL11.GL_VERSION));
 
+            step("creating the vertex shader");
             int vertexShader = GL20.glCreateShader(GL20.GL_VERTEX_SHADER);
+            step("vertex shader is " + vertexShader);
+            step("setting its source");
             GL20.glShaderSource(vertexShader, "attribute vec4 position; void main() { gl_Position = position; }");
+            step("compiling it");
             GL20.glCompileShader(vertexShader);
             if (GL20.glGetShaderi(vertexShader, GL20.GL_COMPILE_STATUS) == 0) {
                 throw new IllegalStateException("vertex shader: " + GL20.glGetShaderInfoLog(vertexShader, 4096));
             }
+            step("creating the fragment shader");
             int fragmentShader = GL20.glCreateShader(GL20.GL_FRAGMENT_SHADER);
             GL20.glShaderSource(fragmentShader,
                 "precision mediump float; void main() { gl_FragColor = vec4(0.9, 0.2, 0.1, 1.0); }");
+            step("compiling the fragment shader");
             GL20.glCompileShader(fragmentShader);
             if (GL20.glGetShaderi(fragmentShader, GL20.GL_COMPILE_STATUS) == 0) {
                 throw new IllegalStateException("fragment shader: " + GL20.glGetShaderInfoLog(fragmentShader, 4096));
             }
+            step("creating the program");
             int program = GL20.glCreateProgram();
+            step("program is " + program);
             GL20.glAttachShader(program, vertexShader);
             GL20.glAttachShader(program, fragmentShader);
             GL20.glBindAttribLocation(program, 0, "position");
+            step("linking");
             GL20.glLinkProgram(program);
             if (GL20.glGetProgrami(program, GL20.GL_LINK_STATUS) == 0) {
                 throw new IllegalStateException("program: " + GL20.glGetProgramInfoLog(program, 4096));
