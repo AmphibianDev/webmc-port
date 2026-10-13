@@ -208,4 +208,34 @@ public final class GL11 {
 
 
     public static native void nglDrawArrays(int mode, int first, int count);
+    public static final int GL_COLOR_BUFFER_BIT = 16384;
+    public static final int GL_DEPTH_BUFFER_BIT = 256;
+    public static final int GL_STENCIL_BUFFER_BIT = 1024;
+    public static final int GL_TRUE = 1;
+    public static final int GL_FALSE = 0;
+    public static final int GL_VERSION = 7938;
+    public static final int GL_VENDOR = 7936;
+    public static final int GL_RENDERER = 7937;
+    public static final int GL_EXTENSIONS = 7939;
+    public static final int GL_TRIANGLES = 4;
+    public static final int GL_QUADS = 7;
+    public static final int GL_FLOAT = 5126;
+    public static final int GL_UNSIGNED_BYTE = 5121;
+    public static final int GL_UNSIGNED_SHORT = 5123;
+    public static final int GL_UNSIGNED_INT = 5125;
+    public static final int GL_RGBA = 6408;
+    public static final int GL_RGB = 6407;
+    public static final int GL_DEPTH_TEST = 2929;
+    public static final int GL_BLEND = 3042;
+    public static final int GL_CULL_FACE = 2884;
+    public static final int GL_LESS = 513;
+    public static final int GL_LEQUAL = 515;
+    public static final int GL_SRC_ALPHA = 770;
+    public static final int GL_ONE_MINUS_SRC_ALPHA = 771;
+    public static final int GL_TEXTURE_2D = 3553;
+    public static final int GL_TEXTURE_MIN_FILTER = 10241;
+    public static final int GL_TEXTURE_MAG_FILTER = 10240;
+    public static final int GL_NEAREST = 9728;
+    public static final int GL_LINEAR = 9729;
+    public static final int GL_MAX_TEXTURE_SIZE = 3379;
 }

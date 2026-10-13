@@ -145,7 +145,7 @@ function deliverEvents(lib) {
 
 // ---------------------------------------------------------------------------- GLFW
 
-function Java_org_lwjgl_glfw_GLFW_glfwInit() { return 1; }                       // GLFW_TRUE
+function Java_org_lwjgl_glfw_GLFW_glfwInit() { return true; }                       // GLFW_TRUE
 function Java_org_lwjgl_glfw_GLFW_glfwTerminate() {}
 function Java_org_lwjgl_glfw_GLFW_glfwGetError(lib, description) { return 0; }    // GLFW_NO_ERROR
 function Java_org_lwjgl_glfw_GLFW_glfwDefaultWindowHints() { state.hintWidth = 854; state.hintHeight = 480; }
@@ -175,7 +175,7 @@ function Java_org_lwjgl_glfw_GLFW_glfwDestroyWindow(lib, window) {
   state.windows.delete(window);
   if (state.current === window) { state.current = 0; state.canvas = null; state.gl = null; }
 }
-function Java_org_lwjgl_glfw_GLFW_glfwWindowShouldClose(lib, window) { return state.shouldClose ? 1 : 0; }
+function Java_org_lwjgl_glfw_GLFW_glfwWindowShouldClose(lib, window) { return Boolean(state.shouldClose); }
 function Java_org_lwjgl_glfw_GLFW_glfwSetWindowShouldClose(lib, window, value) { state.shouldClose = value !== 0; }
 function Java_org_lwjgl_glfw_GLFW_glfwShowWindow(lib, window) {
   const canvas = canvasFor(window);
@@ -238,7 +238,7 @@ function Java_org_lwjgl_glfw_GLFW_glfwSetInputMode(lib, window, mode, value) {
     if (canvas) { canvas.style.cursor = value === 0x00034003 /* DISABLED */ ? "none" : "default"; }
   }
 }
-function Java_org_lwjgl_glfw_GLFW_glfwRawMouseMotionSupported() { return 1; }
+function Java_org_lwjgl_glfw_GLFW_glfwRawMouseMotionSupported() { return true; }
 function Java_org_lwjgl_glfw_GLFW_glfwCreateStandardCursor(lib, shape) { return 1; }
 function Java_org_lwjgl_glfw_GLFW_glfwDestroyCursor(lib, cursor) {}
 function Java_org_lwjgl_glfw_GLFW_glfwSetCursor(lib, window, cursor) {}
@@ -272,7 +272,7 @@ function Java_org_lwjgl_glfw_GLFW_glfwSetClipboardString(lib, window, text) {
 function Java_org_lwjgl_glfw_GLFW_glfwGetClipboardString(lib, window) {
   return window.webmcClipboard || "";
 }
-function Java_org_lwjgl_glfw_GLFW_glfwJoystickPresent(lib, jid) { return 0; }
+function Java_org_lwjgl_glfw_GLFW_glfwJoystickPresent(lib, jid) { return false; }
 function Java_org_lwjgl_glfw_GLFW_glfwGetJoystickName(lib, jid) { return null; }
 function Java_org_lwjgl_glfw_GLFW_glfwSetKeyCallback(lib, window, callback) { state.callbacks.key = callback; }
 function Java_org_lwjgl_glfw_GLFW_glfwSetCharCallback(lib, window, callback) { state.callbacks.char = callback; }
@@ -286,7 +286,7 @@ function Java_org_lwjgl_glfw_GLFW_glfwSetWindowPosCallback(lib, window, callback
 function Java_org_lwjgl_glfw_GLFW_glfwSetWindowFocusCallback(lib, window, callback) {}
 function Java_org_lwjgl_glfw_GLFW_glfwSetWindowCloseCallback(lib, window, callback) {}
 function Java_org_lwjgl_glfw_GLFW_glfwSetDropCallback(lib, window, callback) {}
-function Java_org_lwjgl_glfw_GLFW_glfwUpdateGamepadMappings(lib, mappings) { return 1; }
+function Java_org_lwjgl_glfw_GLFW_glfwUpdateGamepadMappings(lib, mappings) { return true; }
 function Java_org_lwjgl_glfw_GLFW_glfwGetVersionString() { return "3.3.3 WebMC (WebGL2)"; }
 function Java_org_lwjgl_glfw_GLFW_glfwGetKeyName(lib, key, scancode) { return null; }
 function Java_org_lwjgl_glfw_GLFW_glfwGetKeyScancode(lib, key) { return key; }
@@ -347,7 +347,7 @@ function Java_org_lwjgl_opengl_GL11_glGetFloat(lib, name) {
   const value = gl().getParameter(name);
   return typeof value === "number" ? value : 0;
 }
-function Java_org_lwjgl_opengl_GL11_glGetBoolean(lib, name) { return gl().getParameter(name) ? 1 : 0; }
+function Java_org_lwjgl_opengl_GL11_glGetBoolean(lib, name) { return Boolean(gl().getParameter(name)); }
 function Java_org_lwjgl_opengl_GL11_glClearColor(lib, red, green, blue, alpha) {
   gl().clearColor(red, green, blue, alpha);
 }
@@ -361,7 +361,7 @@ function Java_org_lwjgl_opengl_GL11_glEnable(lib, cap) {
   if (cap === 0x0B44) gl().depthMask(true);
 }
 function Java_org_lwjgl_opengl_GL11_glDisable(lib, cap) { gl().disable(cap); }
-function Java_org_lwjgl_opengl_GL11_glIsEnabled(lib, cap) { return gl().isEnabled(cap) ? 1 : 0; }
+function Java_org_lwjgl_opengl_GL11_glIsEnabled(lib, cap) { return Boolean(gl().isEnabled(cap)); }
 function Java_org_lwjgl_opengl_GL11_glBlendFunc(lib, source, destination) { gl().blendFunc(source, destination); }
 function Java_org_lwjgl_opengl_GL11_glBlendFuncSeparate(lib, r, g, b, a) { gl().blendFuncSeparate(r, g, b, a); }
 function Java_org_lwjgl_opengl_GL11_glBlendEquation(lib, mode) { gl().blendEquation(mode); }
@@ -463,7 +463,8 @@ function Java_org_lwjgl_opengl_GL20_glGetShaderi(lib, shader, name) {
   const value = gl().getShaderParameter(shader, name);
   return typeof value === "number" ? value : (value ? 1 : 0);
 }
-function Java_org_lwjgl_opengl_GL20_glGetShaderInfoLog(lib, shader) {
+function Java_org_lwjgl_opengl_GL20_glGetShaderInfoLog(lib, shader, maxLength) {
+  // the client passes a buffer length it decided on; the whole log is what it wants back
   return gl().getShaderInfoLog(shader) || "";
 }
 function Java_org_lwjgl_opengl_GL20_nglGetProgramiv(lib, program, name, pointer) {
@@ -473,7 +474,7 @@ function Java_org_lwjgl_opengl_GL20_glGetProgrami(lib, program, name) {
   const value = gl().getProgramParameter(program, name);
   return typeof value === "number" ? value : (value ? 1 : 0);
 }
-function Java_org_lwjgl_opengl_GL20_glGetProgramInfoLog(lib, program) {
+function Java_org_lwjgl_opengl_GL20_glGetProgramInfoLog(lib, program, maxLength) {
   return gl().getProgramInfoLog(program) || "";
 }
 function Java_org_lwjgl_opengl_GL20_glGetUniformLocation(lib, program, name) {
@@ -514,7 +515,7 @@ function Java_org_lwjgl_opengl_GL20_nglUniform1fv(lib, location, count, values) 
 function Java_org_lwjgl_opengl_GL20_glEnableVertexAttribArray(lib, index) { gl().enableVertexAttribArray(index); }
 function Java_org_lwjgl_opengl_GL20_glDisableVertexAttribArray(lib, index) { gl().disableVertexAttribArray(index); }
 function Java_org_lwjgl_opengl_GL20_nglVertexAttribPointer(lib, index, size, type, normalized, stride, pointer) {
-  gl().vertexAttribPointer(index, size, type, normalized !== 0, stride, pointer);
+  gl().vertexAttribPointer(index, size, type, Boolean(normalized), stride, pointer);
 }
 function Java_org_lwjgl_opengl_GL20_nglVertexAttribIPointer(lib, index, size, type, stride, pointer) {
   gl().vertexAttribIPointer(index, size, type, stride, pointer);

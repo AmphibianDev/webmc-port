@@ -13,4 +13,7 @@ public final class GL14 {
     // implemented in natives/webmc-lwjgl3.js
     public static native void glBlendFuncSeparate(int arg0, int arg1, int arg2, int arg3);
 
+    public static final int GL_FUNC_ADD = 32774;
+    public static final int GL_BLEND_SRC_ALPHA = 32971;
+    public static final int GL_BLEND_DST_ALPHA = 32970;
 }

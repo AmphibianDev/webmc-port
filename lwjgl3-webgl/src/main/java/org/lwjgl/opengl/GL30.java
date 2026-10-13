@@ -48,4 +48,9 @@ public final class GL30 {
 
     // implemented in natives/webmc-lwjgl3.js
     public static native void nglGenVertexArrays(int count, long pointers);
+    public static final int GL_FRAMEBUFFER = 36160;
+    public static final int GL_COLOR_ATTACHMENT0 = 36064;
+    public static final int GL_DEPTH_ATTACHMENT = 36096;
+    public static final int GL_FRAMEBUFFER_COMPLETE = 36053;
+    public static final int GL_RENDERBUFFER = 36161;
 }

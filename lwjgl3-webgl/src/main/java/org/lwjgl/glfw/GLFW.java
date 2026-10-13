@@ -136,4 +136,18 @@ public final class GLFW {
     // implemented in natives/webmc-lwjgl3.js
     public static native boolean glfwWindowShouldClose(long arg0);
 
+    public static final int GLFW_TRUE = 1;
+    public static final int GLFW_FALSE = 0;
+    public static final int GLFW_NO_ERROR = 0;
+    public static final int GLFW_KEY_ESCAPE = 256;
+    public static final int GLFW_PRESS = 1;
+    public static final int GLFW_RELEASE = 0;
+    public static final int GLFW_REPEAT = 2;
+    public static final int GLFW_CURSOR = 208897;
+    public static final int GLFW_CURSOR_DISABLED = 212995;
+    public static final int GLFW_CURSOR_NORMAL = 212993;
+    public static final int GLFW_CONTEXT_VERSION_MAJOR = 139266;
+    public static final int GLFW_CONTEXT_VERSION_MINOR = 139267;
+    public static final int GLFW_OPENGL_PROFILE = 139272;
+    public static final int GLFW_OPENGL_CORE_PROFILE = 204801;
 }

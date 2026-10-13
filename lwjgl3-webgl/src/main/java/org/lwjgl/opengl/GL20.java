@@ -100,4 +100,14 @@ public final class GL20 {
 
     // implemented in natives/webmc-lwjgl3.js
     public static native void nglVertexAttribPointer(int index, int size, int type, boolean normalized, int stride, long pointer);
+    public static final int GL_VERTEX_SHADER = 35633;
+    public static final int GL_FRAGMENT_SHADER = 35632;
+    public static final int GL_COMPILE_STATUS = 35713;
+    public static final int GL_LINK_STATUS = 35714;
+    public static final int GL_INFO_LOG_LENGTH = 35716;
+    public static final int GL_FLOAT_VEC2 = 35664;
+    public static final int GL_FLOAT_VEC3 = 35665;
+    public static final int GL_FLOAT_VEC4 = 35666;
+    public static final int GL_FLOAT_MAT4 = 35676;
+    public static final int GL_SAMPLER_2D = 35678;
 }

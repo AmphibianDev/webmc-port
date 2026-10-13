@@ -12,4 +12,8 @@ public final class GL13 {
 
     public static void glMultiTexCoord2f(int arg0, float arg1, float arg2) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL13.glMultiTexCoord2f"); }
 
+    public static final int GL_TEXTURE0 = 33984;
+    public static final int GL_TEXTURE1 = 33985;
+    public static final int GL_TEXTURE2 = 33986;
+    public static final int GL_TEXTURE3 = 33987;
 }

@@ -25,4 +25,9 @@ public final class GL15 {
     public static native void nglBufferData(int target, long size, long data, int usage);
 
     public static native void nglGenBuffers(int count, long pointers);
+    public static final int GL_ARRAY_BUFFER = 34962;
+    public static final int GL_ELEMENT_ARRAY_BUFFER = 34963;
+    public static final int GL_STATIC_DRAW = 35044;
+    public static final int GL_DYNAMIC_DRAW = 35048;
+    public static final int GL_STREAM_DRAW = 35040;
 }
