@@ -75,6 +75,8 @@ for (const [label, needle] of Object.entries({
 check('opening a card warms the cache the launch page reads',
   body.includes('function warmUp') && body.includes('webmc-clients-v1') && body.includes('rel = "prefetch"'));
 check('the launch url carries the asset index too', body.includes('&assetIndex='));
+check('it tells a version apart when its libraries are not deployed yet',
+  body.includes('libs_ready') && page.includes('libraries pending'));
 check('a release-asset build is described as a download, not a page',
   // the page's own test for "is this a release asset" is an escaped regex, so match the pieces
   body.includes('releases') && body.includes('download') && page.includes('download & open')

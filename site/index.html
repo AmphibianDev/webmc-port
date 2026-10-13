@@ -211,10 +211,14 @@
     if (version.jar_url) {
       return {
         kind: "realjava",
-        tag: "▶ real Java",
+        tag: version.libs_ready === false ? "▶ real Java (libraries pending)" : "▶ real Java",
         label: "real Java, in the browser",
         why: "CheerpJ runs the unmodified client jar with LWJGL translated to JS. The jar comes from "
-           + "Mojang when you press play; nothing is bundled here.",
+           + "Mojang when you press play; nothing is bundled here."
+           + (version.libs_ready === false
+                ? " This one's own libraries are not deployed yet, so it will stop early: the catalog "
+                  + "job vendors six more versions every run, newest first."
+                : ""),
         play: "play.html?version=" + encodeURIComponent(version.id)
             + "&jar=" + encodeURIComponent(version.jar_url)
             + "&main=" + encodeURIComponent(version.main_class || "net.minecraft.client.main.Main")

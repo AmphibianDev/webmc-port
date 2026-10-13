@@ -154,6 +154,10 @@ def catalog_entry(row: dict, engines: list[dict], links: dict, client_urls: dict
         entry["jar_bytes"] = verdict.get("jar_bytes")
         entry["asset_index"] = verdict.get("asset_index")
         entry["meta_url"] = verdict.get("meta_url")
+        # Whether this version's own libraries have been vendored yet. That file is what makes the
+        # difference between "runs under the browser JVM" and "starts": with only the two fallback
+        # LWJGL jars, a 1.12-era client dies with NoClassDefFoundError before it draws anything.
+        entry["libs_ready"] = (ROOT / "site" / "libs" / f"{row['id']}.json").is_file()
         entry["url"] = None
         port = (ports or {}).get(row["id"])
         if port:

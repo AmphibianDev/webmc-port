@@ -111,6 +111,8 @@ def main() -> int:
     check("and the page is told why this version can run at all",
           entry["jvm_route"] == "cheerpj" and "browser JVM can run" in entry["jvm_why"])
     check("we still host nothing for it", entry["url"] is None)
+    check("and the entry says whether its libraries are deployed",
+          "libs_ready" in entry, str(entry.get("libs_ready")))
 
     blocked = catalog_entry(
         {"id": "1.16.5", "type": "release", "released": "2021-01-15", "verdict": "needs-port",
