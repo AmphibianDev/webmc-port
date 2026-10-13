@@ -127,8 +127,14 @@ jobs:
             --window-size=400,400 --no-first-run --disable-features=DBus \
             http://127.0.0.1:8777/index.html >/tmp/chrome.log 2>&1 &
 
-          for _ in $(seq 1 90); do
+          # a cold JVM in a browser is slow on a shared runner: the page posts its stage every fifteen
+          # seconds, so waiting longer costs nothing and cuts off only a genuine hang
+          for _ in $(seq 1 300); do
             [ -f /tmp/result.json ] && break
+            sleep 2
+          done
+          for _ in $(seq 1 200); do
+            if python3 -c "import json,sys;d=json.load(open('/tmp/result.json'));sys.exit(0 if d.get('code') in (0,1,99) else 1)" 2>/dev/null; then break; fi
             sleep 2
           done
           if [ ! -f /tmp/result.json ]; then
