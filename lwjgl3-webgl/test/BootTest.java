@@ -22,6 +22,7 @@ public final class BootTest {
 
     private static void step(String what) {
         System.out.println("  " + what);
+        org.lwjgl.system.WebMC.log("  " + what);
     }
 
     public static void main(String[] args) {
@@ -104,6 +105,13 @@ public final class BootTest {
         } catch (Throwable failure) {
             System.out.println("BOOT FAILED: " + failure);
             failure.printStackTrace(System.out);
+            // the page and CI only ever see what goes through the device this shim provides
+            org.lwjgl.system.WebMC.log("BOOT FAILED: " + failure);
+            for (StackTraceElement frame : failure.getStackTrace()) {
+                if (frame.getClassName().startsWith("webmc") || frame.getClassName().startsWith("org.lwjgl")) {
+                    org.lwjgl.system.WebMC.log("    at " + frame);
+                }
+            }
             System.exit(1);
         } finally {
             if (geometry != 0) {

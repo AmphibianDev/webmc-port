@@ -751,6 +751,18 @@ function nextZeroByte(address) {
   return cursor;
 }
 
+function Java_org_lwjgl_system_WebMC_log(lib, message) {
+  // the Java program's own words, kept where a page and CI can read them
+  const text = message === null || message === undefined ? "" : String(message);
+  state.javaLog = state.javaLog || [];
+  if (state.javaLog.length < 400) state.javaLog.push(text);
+  if (typeof console !== "undefined" && console.log) console.log("[java] " + text);
+}
+
+function Java_org_lwjgl_system_WebMC_logText(lib) {
+  return (state.javaLog || []).join("\n");
+}
+
 function Java_org_lwjgl_system_WebMC_nmemAlloc(lib, size) { return webmcAlloc(size); }
 function Java_org_lwjgl_system_WebMC_nmemFree(lib, address) { webmcFree(address); }
 function Java_org_lwjgl_system_WebMC_nmemSet(lib, address, value, bytes) {
@@ -795,6 +807,7 @@ function Java_org_lwjgl_system_WebMC_arenaCapacity(lib) { return HEAP_BYTES; }
 
 // what the harness reads to prove the frame happened
 window.webmc = {
+  log: () => state.javaLog || [],
   trace: () => ({ called: state.trace, count: state.traceCount || 0 }),
   handles: () => Object.fromEntries(HANDLE_KINDS.map((kind) => [kind, handles[kind].size])),
   frames: () => state.swapCount,
@@ -1019,6 +1032,8 @@ export const natives = {
   Java_org_lwjgl_opengl_GL32_glBlendFuncSeparate,
   Java_org_lwjgl_system_WebMC_arenaCapacity,
   Java_org_lwjgl_system_WebMC_arenaUsed,
+  Java_org_lwjgl_system_WebMC_log,
+  Java_org_lwjgl_system_WebMC_logText,
   Java_org_lwjgl_system_WebMC_nmemASCII,
   Java_org_lwjgl_system_WebMC_nmemAlloc,
   Java_org_lwjgl_system_WebMC_nmemCopy,
@@ -1042,4 +1057,4 @@ export const natives = {
   Java_org_lwjgl_system_WebMC_nmemWriteBytes,
 };
 
-export const count = 214;
+export const count = 216;

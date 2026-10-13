@@ -57,7 +57,8 @@
   }, 15000);
 
   function report(payload) {
-    payload = { ...payload, log: lines.slice(-80) };
+    payload = { ...payload, log: lines.slice(-80),
+                javaLog: (payload.javaLog) || (window.webmc && window.webmc.log ? window.webmc.log() : null) };
     result.textContent = JSON.stringify(payload).slice(0, 800);
     return fetch("/result", {
       method: "POST",
@@ -106,6 +107,7 @@
     document.title = "EXIT " + code;
     await report({
       code,
+      javaLog: window.webmc && window.webmc.log ? window.webmc.log() : null,
       frames: window.webmc ? window.webmc.frames() : -1,
       seconds: Number(seconds.toFixed(1)),
       gl: window.webmc ? window.webmc.glInfo() : null,

@@ -64,4 +64,16 @@ public final class WebMC {
     public static native long arenaUsed();
 
     public static native long arenaCapacity();
+
+    /**
+     * Java's own log line, delivered where a page (and CI) can read it.
+     *
+     * System.out goes to the browser console under CheerpJ, which nobody can read from a script or from a
+     * shell - so every "BOOT FAILED" this program printed was invisible to the thing running it. This is
+     * the one line of plumbing that fixes that.
+     */
+    public static native void log(String message);
+
+    /** And the same for the lines that are already StringBuffered. */
+    public static native String logText();
 }

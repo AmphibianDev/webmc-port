@@ -122,6 +122,11 @@ def main() -> int:
     check("the published loader includes it", "site/loader/play.html" in workflow)
     check("it asks for Java 17 mode", "version: 17" in page)
     check("it hands the shim a canvas", "webmcCanvasElement" in page)
+    check("the Java program can report through the shim, not only through a console nobody reads",
+          "WebMC.log(" in (ROOT / "lwjgl3-webgl" / "test" / "BootTest.java").read_text()
+          and "Java_org_lwjgl_system_WebMC_log" in JS.read_text())
+    play = (ROOT / "site" / "loader-play.html").read_text()
+    check("and the page it starts from shows those lines", "window.webmc.log()" in play)
     check("it reports over HTTP, with the stage, so a stuck page says where",
           'fetch("/result"' in page and "at(\"" in page and "setInterval" in page)
     workflow = (ROOT / ".github" / "workflows" / "lwjgl3.yml").read_text()

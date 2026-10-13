@@ -63,6 +63,8 @@
       log("cheerpjInit done (java 17 mode)");
       const code = await cheerpjRunMain("webmc.BootTest", "/app/app.jar");
       log("exit code " + code);
+      const javaLog = window.webmc && window.webmc.log ? window.webmc.log() : [];
+      for (const line of javaLog) { log(line); }
       log("frames drawn: " + (window.webmc ? window.webmc.frames() : "?"));
       if (window.webmc && window.webmc.glInfo()) {
         log("gl: " + JSON.stringify(window.webmc.glInfo()));
@@ -73,8 +75,13 @@
     }
   }
 
+  let wasFullscreen = false;
   document.addEventListener("fullscreenchange", () => {
-    if (!document.fullscreenElement && started) { log("left fullscreen (double click the canvas to re-enter)"); }
+    // only a real exit is worth a line: entering fires this too, and the overlay being removed fires it
+    // again, which is how one Escape turned into two messages
+    if (document.fullscreenElement) { wasFullscreen = true; return; }
+    if (wasFullscreen && started) { log("left fullscreen (double click the canvas to re-enter)"); }
+    wasFullscreen = false;
   });
   canvas.addEventListener("dblclick", goFullscreen);
 </script>
