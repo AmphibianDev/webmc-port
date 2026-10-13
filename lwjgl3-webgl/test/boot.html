@@ -47,8 +47,14 @@
       .catch(() => {});
   }
   if (!COLLECTOR) { document.body.dataset.served = "pages"; }
-  setInterval(() => post({ code: -1, stage: stage + " (still, after " +
-    Math.round((performance.now() - startedAt) / 1000) + "s)" }), 15000);
+  // the trace says which natives were entered: a JVM stuck in a call and a native that was never
+  // dispatched look identical from outside
+  setInterval(() => {
+    const trace = window.webmc && window.webmc.trace ? window.webmc.trace() : null;
+    post({ code: -1, stage: stage + " (still, after " +
+           Math.round((performance.now() - startedAt) / 1000) + "s)",
+           trace: trace ? trace.called.slice(-25) : null, nativesCalled: trace ? trace.count : null });
+  }, 15000);
 
   function report(payload) {
     payload = { ...payload, log: lines.slice(-80) };

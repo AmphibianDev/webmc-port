@@ -77,6 +77,11 @@ for (const kind of HANDLE_KINDS) {
   handles[kind].next = 1;
 }
 
+function traced(name) {
+  if (state.trace.length < 60) state.trace.push(name);
+  state.traceCount = (state.traceCount || 0) + 1;
+}
+
 function nameOf(kind, object) {
   if (object === null || object === undefined) return 0;
   const existing = objects[kind].get(object);
@@ -107,6 +112,7 @@ function dropHandle(kind, name) {
 // ---------------------------------------------------------------------------- window and input
 
 const state = {
+  trace: [],
   windows: new Map(),
   nextWindow: 1,
   current: 0,
@@ -243,10 +249,10 @@ function Java_org_lwjgl_glfw_GLFW_glfwMakeContextCurrent(lib, window) {
   window.webmcGL = state.gl;
 }
 function Java_org_lwjgl_glfw_GLFW_glfwGetCurrentContext() { return state.current; }
-function Java_org_lwjgl_glfw_GLFW_glfwPollEvents(lib) { deliverEvents(lib); }
+function Java_org_lwjgl_glfw_GLFW_glfwPollEvents_inner(lib) { deliverEvents(lib); }
 function Java_org_lwjgl_glfw_GLFW_glfwWaitEvents(lib) { deliverEvents(lib); }
 function Java_org_lwjgl_glfw_GLFW_glfwWaitEventsTimeout(lib, seconds) { deliverEvents(lib); }
-function Java_org_lwjgl_glfw_GLFW_glfwSwapBuffers(lib, window) {
+function Java_org_lwjgl_glfw_GLFW_glfwSwapBuffers_inner(lib, window) {
   // WebGL composites when the frame is free; the count is what the harness asserts on
   state.swapCount += 1;
   window.webmcFrames = state.swapCount;
@@ -398,7 +404,7 @@ function Java_org_lwjgl_opengl_GL11_glGetBoolean(lib, name) { return Boolean(gl(
 function Java_org_lwjgl_opengl_GL11_glClearColor(lib, red, green, blue, alpha) {
   gl().clearColor(red, green, blue, alpha);
 }
-function Java_org_lwjgl_opengl_GL11_glClear(lib, mask) { gl().clear(mask); }
+function Java_org_lwjgl_opengl_GL11_glClear_inner(lib, mask) { gl().clear(mask); }
 function Java_org_lwjgl_opengl_GL11_glClearDepth(lib, depth) { gl().clearDepth(depth); }
 function Java_org_lwjgl_opengl_GL11_glClearStencil(lib, value) { gl().clearStencil(value); }
 function Java_org_lwjgl_opengl_GL11_glViewport(lib, x, y, width, height) { gl().viewport(x, y, width, height); }
@@ -488,10 +494,10 @@ function Java_org_lwjgl_opengl_GL30_glBindVertexArray(lib, array) {
 function Java_org_lwjgl_opengl_GL20_nglGenBuffers(lib, count, pointers) {
   Java_org_lwjgl_opengl_GL11_nglGenBuffers(lib, count, pointers);
 }
-function Java_org_lwjgl_opengl_GL20_glCreateShader(lib, type) {
+function Java_org_lwjgl_opengl_GL20_glCreateShader_inner(lib, type) {
   return nameOf("shader", gl().createShader(type));
 }
-function Java_org_lwjgl_opengl_GL20_glShaderSource(lib, shader, string) {
+function Java_org_lwjgl_opengl_GL20_glShaderSource_inner(lib, shader, string) {
   // the Java side hands over a String, which arrives here as a JavaScript string or as a Java object
   // depending on how it was built; both have to end up as text
   gl().shaderSource(objectOf("shader", shader), string === null || string === undefined ? "" : String(string));
@@ -506,7 +512,7 @@ function Java_org_lwjgl_opengl_GL20_nglShaderSource(lib, shader, count, strings,
   }
   gl().shaderSource(objectOf("shader", shader), parts.join(""));
 }
-function Java_org_lwjgl_opengl_GL20_glCompileShader(lib, shader) {
+function Java_org_lwjgl_opengl_GL20_glCompileShader_inner(lib, shader) {
   gl().compileShader(objectOf("shader", shader));
 }
 function Java_org_lwjgl_opengl_GL20_glDeleteShader(lib, shader) {
@@ -514,17 +520,17 @@ function Java_org_lwjgl_opengl_GL20_glDeleteShader(lib, shader) {
   gl().deleteShader(object);
   dropHandle("shader", shader);
 }
-function Java_org_lwjgl_opengl_GL20_glCreateProgram() { return nameOf("program", gl().createProgram()); }
+function Java_org_lwjgl_opengl_GL20_glCreateProgram_inner() { return nameOf("program", gl().createProgram()); }
 function Java_org_lwjgl_opengl_GL20_glAttachShader(lib, program, shader) {
   gl().attachShader(objectOf("program", program), objectOf("shader", shader));
 }
 function Java_org_lwjgl_opengl_GL20_glDetachShader(lib, program, shader) {
   gl().detachShader(objectOf("program", program), objectOf("shader", shader));
 }
-function Java_org_lwjgl_opengl_GL20_glLinkProgram(lib, program) {
+function Java_org_lwjgl_opengl_GL20_glLinkProgram_inner(lib, program) {
   gl().linkProgram(objectOf("program", program));
 }
-function Java_org_lwjgl_opengl_GL20_glUseProgram(lib, program) {
+function Java_org_lwjgl_opengl_GL20_glUseProgram_inner(lib, program) {
   gl().useProgram(program ? objectOf("program", program) : null);
 }
 function Java_org_lwjgl_opengl_GL20_glDeleteProgram(lib, program) {
@@ -542,7 +548,7 @@ function Java_org_lwjgl_opengl_GL20_nglGetShaderiv(lib, shader, name, pointer) {
   const value = gl().getShaderParameter(objectOf("shader", shader), name);
   I32[pointer >> 2] = typeof value === "number" ? value : (value ? 1 : 0);
 }
-function Java_org_lwjgl_opengl_GL20_glGetShaderi(lib, shader, name) {
+function Java_org_lwjgl_opengl_GL20_glGetShaderi_inner(lib, shader, name) {
   const value = gl().getShaderParameter(objectOf("shader", shader), name);
   return typeof value === "number" ? value : (value ? 1 : 0);
 }
@@ -554,7 +560,7 @@ function Java_org_lwjgl_opengl_GL20_nglGetProgramiv(lib, program, name, pointer)
   const value = gl().getProgramParameter(objectOf("program", program), name);
   I32[pointer >> 2] = typeof value === "number" ? value : (value ? 1 : 0);
 }
-function Java_org_lwjgl_opengl_GL20_glGetProgrami(lib, program, name) {
+function Java_org_lwjgl_opengl_GL20_glGetProgrami_inner(lib, program, name) {
   const value = gl().getProgramParameter(objectOf("program", program), name);
   return typeof value === "number" ? value : (value ? 1 : 0);
 }
@@ -605,7 +611,7 @@ function Java_org_lwjgl_opengl_GL20_nglVertexAttribPointer(lib, index, size, typ
 function Java_org_lwjgl_opengl_GL20_nglVertexAttribIPointer(lib, index, size, type, stride, pointer) {
   gl().vertexAttribIPointer(index, size, type, stride, pointer);
 }
-function Java_org_lwjgl_opengl_GL11_nglDrawArrays(lib, mode, first, count) { gl().drawArrays(mode, first, count); }
+function Java_org_lwjgl_opengl_GL11_nglDrawArrays_inner(lib, mode, first, count) { gl().drawArrays(mode, first, count); }
 function Java_org_lwjgl_opengl_GL11_nglDrawElements(lib, mode, count, type, indices) {
   const bytes = count * (type === 0x1403 ? 2 : type === 0x1401 ? 1 : 4);
   gl().drawElements(mode, count, type, indices);
@@ -615,7 +621,7 @@ function Java_org_lwjgl_opengl_GL11_glDrawElements(lib, mode, count, type, indic
   gl().drawElements(mode, count, type, indices || 0);
 }
 function Java_org_lwjgl_opengl_GL11_glDepthRange(lib, near, far) { gl().depthRange(near, far); }
-function Java_org_lwjgl_opengl_GL11_glReadPixels(lib, x, y, width, height, format, type, pointer) {
+function Java_org_lwjgl_opengl_GL11_glReadPixels_inner(lib, x, y, width, height, format, type, pointer) {
   const glc = gl();
   const length = width * height * 4;
   const pixels = new Uint8Array(length);
@@ -789,6 +795,7 @@ function Java_org_lwjgl_system_WebMC_arenaCapacity(lib) { return HEAP_BYTES; }
 
 // what the harness reads to prove the frame happened
 window.webmc = {
+  trace: () => ({ called: state.trace, count: state.traceCount || 0 }),
   handles: () => Object.fromEntries(HANDLE_KINDS.map((kind) => [kind, handles[kind].size])),
   frames: () => state.swapCount,
   arenaUsed: () => bump,
@@ -800,6 +807,20 @@ window.webmc = {
   lastCallbackError: () => state.lastCallbackError || null,
   windows: () => state.windows.size,
 };
+
+function Java_org_lwjgl_opengl_GL20_glCreateShader(...args) { traced("opengl.GL20.glCreateShader"); return Java_org_lwjgl_opengl_GL20_glCreateShader_inner(...args); }
+function Java_org_lwjgl_opengl_GL20_glShaderSource(...args) { traced("opengl.GL20.glShaderSource"); return Java_org_lwjgl_opengl_GL20_glShaderSource_inner(...args); }
+function Java_org_lwjgl_opengl_GL20_glCompileShader(...args) { traced("opengl.GL20.glCompileShader"); return Java_org_lwjgl_opengl_GL20_glCompileShader_inner(...args); }
+function Java_org_lwjgl_opengl_GL20_glGetShaderi(...args) { traced("opengl.GL20.glGetShaderi"); return Java_org_lwjgl_opengl_GL20_glGetShaderi_inner(...args); }
+function Java_org_lwjgl_opengl_GL20_glCreateProgram(...args) { traced("opengl.GL20.glCreateProgram"); return Java_org_lwjgl_opengl_GL20_glCreateProgram_inner(...args); }
+function Java_org_lwjgl_opengl_GL20_glLinkProgram(...args) { traced("opengl.GL20.glLinkProgram"); return Java_org_lwjgl_opengl_GL20_glLinkProgram_inner(...args); }
+function Java_org_lwjgl_opengl_GL20_glGetProgrami(...args) { traced("opengl.GL20.glGetProgrami"); return Java_org_lwjgl_opengl_GL20_glGetProgrami_inner(...args); }
+function Java_org_lwjgl_opengl_GL20_glUseProgram(...args) { traced("opengl.GL20.glUseProgram"); return Java_org_lwjgl_opengl_GL20_glUseProgram_inner(...args); }
+function Java_org_lwjgl_opengl_GL11_glClear(...args) { traced("opengl.GL11.glClear"); return Java_org_lwjgl_opengl_GL11_glClear_inner(...args); }
+function Java_org_lwjgl_opengl_GL11_nglDrawArrays(...args) { traced("opengl.GL11.nglDrawArrays"); return Java_org_lwjgl_opengl_GL11_nglDrawArrays_inner(...args); }
+function Java_org_lwjgl_opengl_GL11_glReadPixels(...args) { traced("opengl.GL11.glReadPixels"); return Java_org_lwjgl_opengl_GL11_glReadPixels_inner(...args); }
+function Java_org_lwjgl_glfw_GLFW_glfwSwapBuffers(...args) { traced("glfw.GLFW.glfwSwapBuffers"); return Java_org_lwjgl_glfw_GLFW_glfwSwapBuffers_inner(...args); }
+function Java_org_lwjgl_glfw_GLFW_glfwPollEvents(...args) { traced("glfw.GLFW.glfwPollEvents"); return Java_org_lwjgl_glfw_GLFW_glfwPollEvents_inner(...args); }
 
 // ------------------------------------------------------------------ what CheerpJ is given
 // cheerpjInit({ natives }) takes exactly this: JNI names to implementations. It is

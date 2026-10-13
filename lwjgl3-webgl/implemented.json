@@ -74,6 +74,12 @@
   "glfwWindowHint",
   "glfwWindowShouldClose"
  ],
+ "org.lwjgl.glfw.GLFW.glfwPollEvents": [
+  "inner"
+ ],
+ "org.lwjgl.glfw.GLFW.glfwSwapBuffers": [
+  "inner"
+ ],
  "org.lwjgl.opengl.GL11": [
   "glBindBuffer",
   "glBindTexture",
@@ -128,6 +134,15 @@
   "nglReadPixels",
   "nglTexImage2D",
   "nglTexSubImage2D"
+ ],
+ "org.lwjgl.opengl.GL11.glClear": [
+  "inner"
+ ],
+ "org.lwjgl.opengl.GL11.glReadPixels": [
+  "inner"
+ ],
+ "org.lwjgl.opengl.GL11.nglDrawArrays": [
+  "inner"
  ],
  "org.lwjgl.opengl.GL13": [
   "glActiveTexture",
@@ -186,6 +201,30 @@
   "nglUniformMatrix4fv",
   "nglVertexAttribIPointer",
   "nglVertexAttribPointer"
+ ],
+ "org.lwjgl.opengl.GL20.glCompileShader": [
+  "inner"
+ ],
+ "org.lwjgl.opengl.GL20.glCreateProgram": [
+  "inner"
+ ],
+ "org.lwjgl.opengl.GL20.glCreateShader": [
+  "inner"
+ ],
+ "org.lwjgl.opengl.GL20.glGetProgrami": [
+  "inner"
+ ],
+ "org.lwjgl.opengl.GL20.glGetShaderi": [
+  "inner"
+ ],
+ "org.lwjgl.opengl.GL20.glLinkProgram": [
+  "inner"
+ ],
+ "org.lwjgl.opengl.GL20.glShaderSource": [
+  "inner"
+ ],
+ "org.lwjgl.opengl.GL20.glUseProgram": [
+  "inner"
  ],
  "org.lwjgl.opengl.GL30": [
   "glBindFramebuffer",
