@@ -11,7 +11,6 @@
 <div id="result">running</div>
 <script type="module">
   // The loader's own test page: a real Java program against the shim, in a real browser.
-  import { natives, count } from "/natives/webmc-lwjgl3.js";
   //
   // It reports by POSTing to the server that served it, because a headless browser's console is not
   // readable from a shell - and because the Java program's own output is the thing worth reading when
@@ -32,7 +31,16 @@
     }).catch(() => {});
   }
 
+  // tell the collector the module ran at all: "no report" and "reported a failure" are different
+  // problems, and the first version of this page could not tell them apart
+  await fetch("/result", { method: "POST", headers: { "content-type": "application/json" },
+                           body: JSON.stringify({ code: -1, stage: "module started" }) }).catch(() => {});
+
   try {
+    // a dynamic import, inside the try: a static one fails before this code can report why
+    const shim = await import("/natives/webmc-lwjgl3.js");
+    const natives = shim.natives;
+    const count = shim.count;
     await cheerpjInit({
       // CheerpJ starts in Java 8 mode, and this shim is compiled for 17 - the JVM's message for that
       // mismatch is "Could not find or load main class", which cost three CI runs to decode. Which mode
