@@ -107,12 +107,16 @@ def main() -> int:
     print()
     print("the page that runs it")
     page = (ROOT / "lwjgl3-webgl" / "test" / "boot.html").read_text()
-    check("it boots with the natives on the library path", "java.library.path=/app/natives" in page)
+    # the registrations: CheerpJ 4 takes natives as an option, not through java.library.path
+    check("it registers the natives with cheerpjInit", "natives," in page and "import(" in page)
+    check("it asks for Java 17 mode", "version: 17" in page)
     check("it hands the shim a canvas", "webmcCanvasElement" in page)
-    check("it reports an exit code the workflow can assert on",
-          'document.title = "EXIT "' in page and "RESULT code=" in page)
+    check("it reports over HTTP, with the stage, so a stuck page says where",
+          'fetch("/result"' in page and "at(\"" in page and "setInterval" in page)
     workflow = (ROOT / ".github" / "workflows" / "lwjgl3.yml").read_text()
-    check("and the workflow asserts a frame was drawn", "RESULT code=0 frames=[1-9]" in workflow)
+    check("and the workflow asserts a real result arrived",
+          "d.get('code')==0 and d.get('frames',0)>0" in workflow)
+    check("it compiles for the Java version the browser JVM runs", "-release 17" in workflow)
 
     print()
     if FAILURES == 0:
