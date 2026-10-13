@@ -5,70 +5,99 @@ package org.lwjgl.opengl;
 public final class GL20 {
     private GL20() {}
 
-    public static void glAttachShader(int arg0, int arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL20.glAttachShader"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glAttachShader(int arg0, int arg1);
 
-    public static void glBindAttribLocation(int arg0, int arg1, java.lang.CharSequence arg2) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL20.glBindAttribLocation"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glBindAttribLocation(int arg0, int arg1, java.lang.CharSequence arg2);
 
-    public static void glCompileShader(int arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL20.glCompileShader"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glCompileShader(int arg0);
 
     public static void glCopyTexSubImage2D(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL20.glCopyTexSubImage2D"); }
 
-    public static int glCreateProgram() { throw new UnsupportedOperationException("org.lwjgl.opengl.GL20.glCreateProgram"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native int glCreateProgram();
 
-    public static int glCreateShader(int arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL20.glCreateShader"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native int glCreateShader(int arg0);
 
-    public static void glDeleteProgram(int arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL20.glDeleteProgram"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glDeleteProgram(int arg0);
 
-    public static void glDeleteShader(int arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL20.glDeleteShader"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glDeleteShader(int arg0);
 
-    public static void glDisableVertexAttribArray(int arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL20.glDisableVertexAttribArray"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glDisableVertexAttribArray(int arg0);
 
-    public static void glEnableVertexAttribArray(int arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL20.glEnableVertexAttribArray"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glEnableVertexAttribArray(int arg0);
 
-    public static int glGetAttribLocation(int arg0, java.lang.CharSequence arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL20.glGetAttribLocation"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native int glGetAttribLocation(int arg0, java.lang.CharSequence arg1);
 
-    public static java.lang.String glGetProgramInfoLog(int arg0, int arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL20.glGetProgramInfoLog"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native java.lang.String glGetProgramInfoLog(int arg0, int arg1);
 
-    public static int glGetProgrami(int arg0, int arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL20.glGetProgrami"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native int glGetProgrami(int arg0, int arg1);
 
-    public static java.lang.String glGetShaderInfoLog(int arg0, int arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL20.glGetShaderInfoLog"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native java.lang.String glGetShaderInfoLog(int arg0, int arg1);
 
-    public static int glGetShaderi(int arg0, int arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL20.glGetShaderi"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native int glGetShaderi(int arg0, int arg1);
 
-    public static int glGetUniformLocation(int arg0, java.lang.CharSequence arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL20.glGetUniformLocation"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native int glGetUniformLocation(int arg0, java.lang.CharSequence arg1);
 
-    public static void glLinkProgram(int arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL20.glLinkProgram"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glLinkProgram(int arg0);
 
     public static void glScissor(int arg0, int arg1, int arg2, int arg3) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL20.glScissor"); }
 
-    public static void glShaderSource(int arg0, java.lang.CharSequence arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL20.glShaderSource"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glShaderSource(int arg0, java.lang.CharSequence arg1);
 
     public static void glUniform1fv(int arg0, java.nio.FloatBuffer arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL20.glUniform1fv"); }
 
-    public static void glUniform1i(int arg0, int arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL20.glUniform1i"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glUniform1i(int arg0, int arg1);
 
-    public static void glUniform1iv(int arg0, java.nio.IntBuffer arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL20.glUniform1iv"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glUniform1iv(int arg0, java.nio.IntBuffer arg1);
 
-    public static void glUniform2fv(int arg0, java.nio.FloatBuffer arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL20.glUniform2fv"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glUniform2fv(int arg0, java.nio.FloatBuffer arg1);
 
     public static void glUniform2iv(int arg0, java.nio.IntBuffer arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL20.glUniform2iv"); }
 
-    public static void glUniform3fv(int arg0, java.nio.FloatBuffer arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL20.glUniform3fv"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glUniform3fv(int arg0, java.nio.FloatBuffer arg1);
 
     public static void glUniform3iv(int arg0, java.nio.IntBuffer arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL20.glUniform3iv"); }
 
-    public static void glUniform4fv(int arg0, java.nio.FloatBuffer arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL20.glUniform4fv"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glUniform4fv(int arg0, java.nio.FloatBuffer arg1);
 
     public static void glUniform4iv(int arg0, java.nio.IntBuffer arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL20.glUniform4iv"); }
 
-    public static void glUniformMatrix2fv(int arg0, boolean arg1, java.nio.FloatBuffer arg2) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL20.glUniformMatrix2fv"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glUniformMatrix2fv(int arg0, boolean arg1, java.nio.FloatBuffer arg2);
 
-    public static void glUniformMatrix3fv(int arg0, boolean arg1, java.nio.FloatBuffer arg2) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL20.glUniformMatrix3fv"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glUniformMatrix3fv(int arg0, boolean arg1, java.nio.FloatBuffer arg2);
 
-    public static void glUniformMatrix4fv(int arg0, boolean arg1, java.nio.FloatBuffer arg2) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL20.glUniformMatrix4fv"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glUniformMatrix4fv(int arg0, boolean arg1, java.nio.FloatBuffer arg2);
 
-    public static void glUseProgram(int arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL20.glUseProgram"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glUseProgram(int arg0);
 
     public static void glVertexAttribPointer(int arg0, int arg1, int arg2, boolean arg3, int arg4, long arg5) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL20.glVertexAttribPointer"); }
 
+
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void nglVertexAttribPointer(int index, int size, int type, boolean normalized, int stride, long pointer);
 }

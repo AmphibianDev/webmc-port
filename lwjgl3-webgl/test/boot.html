@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>loading…</title>
+<script src="https://cjrtnc.leaningtech.com/4.2/loader.js"></script>
+<style>body { background: #111; color: #ddd; font: 14px monospace } canvas { border: 1px solid #333 }</style>
+</head>
+<body>
+<canvas id="lwjgl" width="320" height="240"></canvas>
+<div id="result">running</div>
+<script type="module">
+  // The loader's own test page: a real Java program against the shim, in a real browser.
+  const result = document.getElementById("result");
+  try {
+    await cheerpjInit({
+      // the JavaScript natives live under this path, which is how CheerpJ finds an implementation for
+      // every `native` method in the shim
+      javaProperties: ["java.library.path=/app/natives"],
+      status: "none",
+    });
+    window.webmcCanvasElement = document.getElementById("lwjgl");
+    const started = performance.now();
+    const code = await cheerpjRunMain("webmc.BootTest", "/app/classes");
+    const seconds = ((performance.now() - started) / 1000).toFixed(1);
+    const frames = window.webmc && window.webmc.frames ? window.webmc.frames() : -1;
+    const info = window.webmc && window.webmc.glInfo ? window.webmc.glInfo() : null;
+    document.title = "EXIT " + code;
+    result.textContent = "RESULT code=" + code + " frames=" + frames + " seconds=" + seconds
+      + " gl=" + JSON.stringify(info) + " arena=" + (window.webmc ? window.webmc.arenaUsed() : -1)
+      + " callbackError=" + (window.webmc ? window.webmc.lastCallbackError() : "n/a");
+  } catch (error) {
+    document.title = "EXIT 99";
+    result.textContent = "RESULT threw " + (error && error.message ? error.message : error);
+  }
+</script>
+</body>
+</html>

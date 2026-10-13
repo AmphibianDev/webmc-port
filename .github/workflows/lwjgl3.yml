@@ -72,6 +72,44 @@ jobs:
           wc -l < /tmp/sources.txt
           javac -nowarn -d /tmp/shim-classes @/tmp/sources.txt && echo "the skeleton compiles"
 
+      - name: Boot a Java program against the shim, in a real browser
+        # This is the test that says the approach works: CheerpJ runs a Java program that opens a
+        # window through our GLFW, draws through our GL, and reads a pixel back through our memory.
+        # Headless Chrome with SwiftShader, because a runner has no GPU and software WebGL is enough.
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/shimweb/classes
+          find lwjgl3-webgl/src/main/java -name "*.java" > /tmp/sources.txt
+          echo "lwjgl3-webgl/test/BootTest.java" >> /tmp/sources.txt
+          javac -nowarn -d /tmp/shimweb/classes @/tmp/sources.txt
+          cp lwjgl3-webgl/test/boot.html /tmp/shimweb/index.html
+          cp -r lwjgl3-webgl/natives /tmp/shimweb/natives
+          test -f /tmp/shimweb/natives/webmc-lwjgl3.js
+          cd /tmp/shimweb && python3 -m http.server 8777 >/dev/null 2>&1 &
+          sleep 2
+          curl -sf http://127.0.0.1:8777/index.html >/dev/null && echo "the test page is being served"
+
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium)"
+          echo "chrome: $CHROME"
+          # --dump-dom waits for the page to settle under a virtual clock; the page writes the result
+          # into the DOM, which is how a browser with no console access reports back
+          "$CHROME" --headless=new --no-sandbox --disable-gpu-sandbox --use-gl=angle \
+            --use-angle=swiftshader --enable-unsafe-swiftshader --allow-file-access-from-files \
+            --virtual-time-budget=120000 --dump-dom --disable-dev-shm-usage \
+            http://127.0.0.1:8777/index.html > /tmp/dom.html 2>/tmp/chrome.err || true
+          echo "--- what the page said ---"
+          grep -oE "RESULT[^<]*" /tmp/dom.html || echo "(no RESULT line: the page did not finish)"
+          grep -oE "<title>[^<]*</title>" /tmp/dom.html || true
+          echo "--- the java log, if it got that far ---"
+          grep -oE "BOOT [A-Z]+[^<]*" /tmp/dom.html | head -5 || true
+          if grep -qE "RESULT code=0 frames=[1-9]" /tmp/dom.html; then
+            echo "::notice::the loader booted and drew a frame in a real browser"
+          else
+            echo "::error::the loader did not boot; see the RESULT line above"
+            tail -30 /tmp/chrome.err || true
+            exit 1
+          fi
+
       - name: Count what is still unimplemented
         run: |
           set -euo pipefail

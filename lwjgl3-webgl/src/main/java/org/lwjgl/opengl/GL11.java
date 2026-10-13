@@ -7,23 +7,30 @@ public final class GL11 {
 
     public static void glAlphaFunc(int arg0, float arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glAlphaFunc"); }
 
-    public static void glBindTexture(int arg0, int arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glBindTexture"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glBindTexture(int arg0, int arg1);
 
-    public static void glBlendFunc(int arg0, int arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glBlendFunc"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glBlendFunc(int arg0, int arg1);
 
     public static void glCallList(int arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glCallList"); }
 
-    public static void glClear(int arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glClear"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glClear(int arg0);
 
-    public static void glClearColor(float arg0, float arg1, float arg2, float arg3) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glClearColor"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glClearColor(float arg0, float arg1, float arg2, float arg3);
 
-    public static void glClearDepth(double arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glClearDepth"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glClearDepth(double arg0);
 
-    public static void glClearStencil(int arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glClearStencil"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glClearStencil(int arg0);
 
     public static void glColor4f(float arg0, float arg1, float arg2, float arg3) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glColor4f"); }
 
-    public static void glColorMask(boolean arg0, boolean arg1, boolean arg2, boolean arg3) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glColorMask"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glColorMask(boolean arg0, boolean arg1, boolean arg2, boolean arg3);
 
     public static void glColorMaterial(int arg0, int arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glColorMaterial"); }
 
@@ -31,7 +38,8 @@ public final class GL11 {
 
     public static void glColorPointer(int arg0, int arg1, int arg2, java.nio.ByteBuffer arg3) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glColorPointer"); }
 
-    public static void glCullFace(int arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glCullFace"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glCullFace(int arg0);
 
     public static void glDeleteLists(int arg0, int arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glDeleteLists"); }
 
@@ -39,21 +47,27 @@ public final class GL11 {
 
     public static void glDeleteTextures(int[] arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glDeleteTextures"); }
 
-    public static void glDepthFunc(int arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glDepthFunc"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glDepthFunc(int arg0);
 
-    public static void glDepthMask(boolean arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glDepthMask"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glDepthMask(boolean arg0);
 
-    public static void glDisable(int arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glDisable"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glDisable(int arg0);
 
     public static void glDisableClientState(int arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glDisableClientState"); }
 
-    public static void glDrawArrays(int arg0, int arg1, int arg2) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glDrawArrays"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glDrawArrays(int arg0, int arg1, int arg2);
 
-    public static void glDrawElements(int arg0, int arg1, int arg2, long arg3) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glDrawElements"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glDrawElements(int arg0, int arg1, int arg2, long arg3);
 
     public static void glDrawPixels(int arg0, int arg1, int arg2, int arg3, long arg4) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glDrawPixels"); }
 
-    public static void glEnable(int arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glEnable"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glEnable(int arg0);
 
     public static void glEnableClientState(int arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glEnableClientState"); }
 
@@ -73,13 +87,16 @@ public final class GL11 {
 
     public static void glGenTextures(int[] arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glGenTextures"); }
 
-    public static int glGetError() { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glGetError"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native int glGetError();
 
     public static void glGetFloatv(int arg0, java.nio.FloatBuffer arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glGetFloatv"); }
 
-    public static int glGetInteger(int arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glGetInteger"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native int glGetInteger(int arg0);
 
-    public static java.lang.String glGetString(int arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glGetString"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native java.lang.String glGetString(int arg0);
 
     public static void glGetTexImage(int arg0, int arg1, int arg2, int arg3, long arg4) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glGetTexImage"); }
 
@@ -89,7 +106,8 @@ public final class GL11 {
 
     public static void glLightfv(int arg0, int arg1, java.nio.FloatBuffer arg2) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glLightfv"); }
 
-    public static void glLineWidth(float arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glLineWidth"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glLineWidth(float arg0);
 
     public static void glLoadIdentity() { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glLoadIdentity"); }
 
@@ -109,7 +127,8 @@ public final class GL11 {
 
     public static void glOrtho(double arg0, double arg1, double arg2, double arg3, double arg4, double arg5) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glOrtho"); }
 
-    public static void glPixelStorei(int arg0, int arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glPixelStorei"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glPixelStorei(int arg0, int arg1);
 
     public static void glPixelTransferf(int arg0, float arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glPixelTransferf"); }
 
@@ -125,9 +144,11 @@ public final class GL11 {
 
     public static void glPushMatrix() { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glPushMatrix"); }
 
-    public static void glReadPixels(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, long arg6) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glReadPixels"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glReadPixels(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, long arg6);
 
-    public static void glReadPixels(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, java.nio.ByteBuffer arg6) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glReadPixels"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glReadPixels(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, java.nio.ByteBuffer arg6);
 
     public static void glRotated(double arg0, double arg1, double arg2, double arg3) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glRotated"); }
 
@@ -159,15 +180,20 @@ public final class GL11 {
 
     public static void glTexGeni(int arg0, int arg1, int arg2) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glTexGeni"); }
 
-    public static void glTexImage2D(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, java.nio.IntBuffer arg8) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glTexImage2D"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glTexImage2D(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, java.nio.IntBuffer arg8);
 
-    public static void glTexParameterf(int arg0, int arg1, float arg2) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glTexParameterf"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glTexParameterf(int arg0, int arg1, float arg2);
 
-    public static void glTexParameteri(int arg0, int arg1, int arg2) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glTexParameteri"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glTexParameteri(int arg0, int arg1, int arg2);
 
-    public static void glTexSubImage2D(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, long arg8) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glTexSubImage2D"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glTexSubImage2D(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, long arg8);
 
-    public static void glTexSubImage2D(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, java.nio.IntBuffer arg8) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glTexSubImage2D"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glTexSubImage2D(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, java.nio.IntBuffer arg8);
 
     public static void glTranslated(double arg0, double arg1, double arg2) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glTranslated"); }
 
@@ -177,6 +203,9 @@ public final class GL11 {
 
     public static void glVertexPointer(int arg0, int arg1, int arg2, java.nio.ByteBuffer arg3) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glVertexPointer"); }
 
-    public static void glViewport(int arg0, int arg1, int arg2, int arg3) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glViewport"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glViewport(int arg0, int arg1, int arg2, int arg3);
 
+
+    public static native void nglDrawArrays(int mode, int first, int count);
 }

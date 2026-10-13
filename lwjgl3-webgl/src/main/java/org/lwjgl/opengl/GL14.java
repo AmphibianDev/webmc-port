@@ -7,8 +7,10 @@ public final class GL14 {
 
     public static void glBlendColor(float arg0, float arg1, float arg2, float arg3) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL14.glBlendColor"); }
 
-    public static void glBlendEquation(int arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL14.glBlendEquation"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glBlendEquation(int arg0);
 
-    public static void glBlendFuncSeparate(int arg0, int arg1, int arg2, int arg3) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL14.glBlendFuncSeparate"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glBlendFuncSeparate(int arg0, int arg1, int arg2, int arg3);
 
 }

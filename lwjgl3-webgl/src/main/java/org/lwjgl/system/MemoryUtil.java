@@ -201,4 +201,12 @@ public final class MemoryUtil {
     public static ByteBuffer memByteBuffer(long address, int capacity, ByteOrder ignored) {
         return memByteBuffer(address, capacity);
     }
+
+    public static void memPutFloat(long address, float value) {
+        WebMC.nmemPutFloat(address, value);
+    }
+
+    public static float memGetFloat(long address) {
+        return WebMC.nmemGetFloat(address);
+    }
 }

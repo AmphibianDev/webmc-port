@@ -5,7 +5,8 @@ package org.lwjgl.opengl;
 public final class GL13 {
     private GL13() {}
 
-    public static void glActiveTexture(int arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL13.glActiveTexture"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glActiveTexture(int arg0);
 
     public static void glClientActiveTexture(int arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL13.glClientActiveTexture"); }
 

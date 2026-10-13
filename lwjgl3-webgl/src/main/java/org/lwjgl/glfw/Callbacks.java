@@ -5,6 +5,7 @@ package org.lwjgl.glfw;
 public final class Callbacks {
     private Callbacks() {}
 
-    public static void glfwFreeCallbacks(long arg0) { throw new UnsupportedOperationException("org.lwjgl.glfw.Callbacks.glfwFreeCallbacks"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glfwFreeCallbacks(long arg0);
 
 }

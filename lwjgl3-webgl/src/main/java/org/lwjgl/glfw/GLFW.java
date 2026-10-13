@@ -5,96 +5,135 @@ package org.lwjgl.glfw;
 public final class GLFW {
     private GLFW() {}
 
-    public static long glfwCreateWindow(int arg0, int arg1, java.lang.CharSequence arg2, long arg3, long arg4) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwCreateWindow"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native long glfwCreateWindow(int arg0, int arg1, java.lang.CharSequence arg2, long arg3, long arg4);
 
-    public static void glfwDefaultWindowHints() { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwDefaultWindowHints"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glfwDefaultWindowHints();
 
-    public static void glfwDestroyWindow(long arg0) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwDestroyWindow"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glfwDestroyWindow(long arg0);
 
-    public static java.lang.String glfwGetClipboardString(long arg0) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwGetClipboardString"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native java.lang.String glfwGetClipboardString(long arg0);
 
-    public static long glfwGetCurrentContext() { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwGetCurrentContext"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native long glfwGetCurrentContext();
 
-    public static int glfwGetError(org.lwjgl.PointerBuffer arg0) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwGetError"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native int glfwGetError(org.lwjgl.PointerBuffer arg0);
 
-    public static void glfwGetFramebufferSize(long arg0, int[] arg1, int[] arg2) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwGetFramebufferSize"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glfwGetFramebufferSize(long arg0, int[] arg1, int[] arg2);
 
-    public static int glfwGetKey(long arg0, int arg1) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwGetKey"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native int glfwGetKey(long arg0, int arg1);
 
-    public static java.lang.String glfwGetKeyName(int arg0, int arg1) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwGetKeyName"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native java.lang.String glfwGetKeyName(int arg0, int arg1);
 
-    public static void glfwGetMonitorPos(long arg0, int[] arg1, int[] arg2) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwGetMonitorPos"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glfwGetMonitorPos(long arg0, int[] arg1, int[] arg2);
 
-    public static org.lwjgl.PointerBuffer glfwGetMonitors() { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwGetMonitors"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native org.lwjgl.PointerBuffer glfwGetMonitors();
 
     public static int glfwGetPlatform() { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwGetPlatform"); }
 
-    public static long glfwGetPrimaryMonitor() { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwGetPrimaryMonitor"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native long glfwGetPrimaryMonitor();
 
-    public static double glfwGetTime() { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwGetTime"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native double glfwGetTime();
 
-    public static org.lwjgl.glfw.GLFWVidMode glfwGetVideoMode(long arg0) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwGetVideoMode"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native org.lwjgl.glfw.GLFWVidMode glfwGetVideoMode(long arg0);
 
-    public static org.lwjgl.glfw.GLFWVidMode$Buffer glfwGetVideoModes(long arg0) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwGetVideoModes"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native org.lwjgl.glfw.GLFWVidMode$Buffer glfwGetVideoModes(long arg0);
 
     public static long glfwGetWindowMonitor(long arg0) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwGetWindowMonitor"); }
 
     public static void glfwGetWindowPos(long arg0, int[] arg1, int[] arg2) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwGetWindowPos"); }
 
-    public static boolean glfwInit() { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwInit"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native boolean glfwInit();
 
-    public static void glfwMakeContextCurrent(long arg0) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwMakeContextCurrent"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glfwMakeContextCurrent(long arg0);
 
-    public static void glfwPollEvents() { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwPollEvents"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glfwPollEvents();
 
     public static org.lwjgl.glfw.GLFWCharModsCallback glfwSetCharModsCallback(long arg0, org.lwjgl.glfw.GLFWCharModsCallbackI arg1) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwSetCharModsCallback"); }
 
-    public static void glfwSetClipboardString(long arg0, java.nio.ByteBuffer arg1) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwSetClipboardString"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glfwSetClipboardString(long arg0, java.nio.ByteBuffer arg1);
 
     public static org.lwjgl.glfw.GLFWCursorEnterCallback glfwSetCursorEnterCallback(long arg0, org.lwjgl.glfw.GLFWCursorEnterCallbackI arg1) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwSetCursorEnterCallback"); }
 
-    public static void glfwSetCursorPos(long arg0, double arg1, double arg2) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwSetCursorPos"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glfwSetCursorPos(long arg0, double arg1, double arg2);
 
-    public static org.lwjgl.glfw.GLFWCursorPosCallback glfwSetCursorPosCallback(long arg0, org.lwjgl.glfw.GLFWCursorPosCallbackI arg1) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwSetCursorPosCallback"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native org.lwjgl.glfw.GLFWCursorPosCallback glfwSetCursorPosCallback(long arg0, org.lwjgl.glfw.GLFWCursorPosCallbackI arg1);
 
-    public static org.lwjgl.glfw.GLFWDropCallback glfwSetDropCallback(long arg0, org.lwjgl.glfw.GLFWDropCallbackI arg1) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwSetDropCallback"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native org.lwjgl.glfw.GLFWDropCallback glfwSetDropCallback(long arg0, org.lwjgl.glfw.GLFWDropCallbackI arg1);
 
-    public static org.lwjgl.glfw.GLFWErrorCallback glfwSetErrorCallback(org.lwjgl.glfw.GLFWErrorCallbackI arg0) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwSetErrorCallback"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native org.lwjgl.glfw.GLFWErrorCallback glfwSetErrorCallback(org.lwjgl.glfw.GLFWErrorCallbackI arg0);
 
-    public static org.lwjgl.glfw.GLFWFramebufferSizeCallback glfwSetFramebufferSizeCallback(long arg0, org.lwjgl.glfw.GLFWFramebufferSizeCallbackI arg1) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwSetFramebufferSizeCallback"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native org.lwjgl.glfw.GLFWFramebufferSizeCallback glfwSetFramebufferSizeCallback(long arg0, org.lwjgl.glfw.GLFWFramebufferSizeCallbackI arg1);
 
-    public static void glfwSetInputMode(long arg0, int arg1, int arg2) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwSetInputMode"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glfwSetInputMode(long arg0, int arg1, int arg2);
 
-    public static org.lwjgl.glfw.GLFWKeyCallback glfwSetKeyCallback(long arg0, org.lwjgl.glfw.GLFWKeyCallbackI arg1) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwSetKeyCallback"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native org.lwjgl.glfw.GLFWKeyCallback glfwSetKeyCallback(long arg0, org.lwjgl.glfw.GLFWKeyCallbackI arg1);
 
     public static org.lwjgl.glfw.GLFWMonitorCallback glfwSetMonitorCallback(org.lwjgl.glfw.GLFWMonitorCallbackI arg0) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwSetMonitorCallback"); }
 
-    public static org.lwjgl.glfw.GLFWMouseButtonCallback glfwSetMouseButtonCallback(long arg0, org.lwjgl.glfw.GLFWMouseButtonCallbackI arg1) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwSetMouseButtonCallback"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native org.lwjgl.glfw.GLFWMouseButtonCallback glfwSetMouseButtonCallback(long arg0, org.lwjgl.glfw.GLFWMouseButtonCallbackI arg1);
 
-    public static org.lwjgl.glfw.GLFWScrollCallback glfwSetScrollCallback(long arg0, org.lwjgl.glfw.GLFWScrollCallbackI arg1) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwSetScrollCallback"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native org.lwjgl.glfw.GLFWScrollCallback glfwSetScrollCallback(long arg0, org.lwjgl.glfw.GLFWScrollCallbackI arg1);
 
-    public static org.lwjgl.glfw.GLFWWindowFocusCallback glfwSetWindowFocusCallback(long arg0, org.lwjgl.glfw.GLFWWindowFocusCallbackI arg1) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwSetWindowFocusCallback"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native org.lwjgl.glfw.GLFWWindowFocusCallback glfwSetWindowFocusCallback(long arg0, org.lwjgl.glfw.GLFWWindowFocusCallbackI arg1);
 
-    public static void glfwSetWindowIcon(long arg0, org.lwjgl.glfw.GLFWImage$Buffer arg1) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwSetWindowIcon"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glfwSetWindowIcon(long arg0, org.lwjgl.glfw.GLFWImage$Buffer arg1);
 
     public static void glfwSetWindowMonitor(long arg0, long arg1, int arg2, int arg3, int arg4, int arg5, int arg6) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwSetWindowMonitor"); }
 
-    public static org.lwjgl.glfw.GLFWWindowPosCallback glfwSetWindowPosCallback(long arg0, org.lwjgl.glfw.GLFWWindowPosCallbackI arg1) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwSetWindowPosCallback"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native org.lwjgl.glfw.GLFWWindowPosCallback glfwSetWindowPosCallback(long arg0, org.lwjgl.glfw.GLFWWindowPosCallbackI arg1);
 
-    public static org.lwjgl.glfw.GLFWWindowSizeCallback glfwSetWindowSizeCallback(long arg0, org.lwjgl.glfw.GLFWWindowSizeCallbackI arg1) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwSetWindowSizeCallback"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native org.lwjgl.glfw.GLFWWindowSizeCallback glfwSetWindowSizeCallback(long arg0, org.lwjgl.glfw.GLFWWindowSizeCallbackI arg1);
 
-    public static void glfwSetWindowTitle(long arg0, java.lang.CharSequence arg1) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwSetWindowTitle"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glfwSetWindowTitle(long arg0, java.lang.CharSequence arg1);
 
-    public static void glfwSwapBuffers(long arg0) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwSwapBuffers"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glfwSwapBuffers(long arg0);
 
-    public static void glfwSwapInterval(int arg0) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwSwapInterval"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glfwSwapInterval(int arg0);
 
-    public static void glfwTerminate() { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwTerminate"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glfwTerminate();
 
-    public static void glfwWaitEventsTimeout(double arg0) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwWaitEventsTimeout"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glfwWaitEventsTimeout(double arg0);
 
-    public static void glfwWindowHint(int arg0, int arg1) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwWindowHint"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glfwWindowHint(int arg0, int arg1);
 
-    public static boolean glfwWindowShouldClose(long arg0) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwWindowShouldClose"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native boolean glfwWindowShouldClose(long arg0);
 
 }

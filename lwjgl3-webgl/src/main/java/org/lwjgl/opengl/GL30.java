@@ -5,15 +5,20 @@ package org.lwjgl.opengl;
 public final class GL30 {
     private GL30() {}
 
-    public static void glBindFramebuffer(int arg0, int arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL30.glBindFramebuffer"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glBindFramebuffer(int arg0, int arg1);
 
-    public static void glBindRenderbuffer(int arg0, int arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL30.glBindRenderbuffer"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glBindRenderbuffer(int arg0, int arg1);
 
-    public static void glBindVertexArray(int arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL30.glBindVertexArray"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glBindVertexArray(int arg0);
 
-    public static void glBlitFramebuffer(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL30.glBlitFramebuffer"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glBlitFramebuffer(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9);
 
-    public static int glCheckFramebufferStatus(int arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL30.glCheckFramebufferStatus"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native int glCheckFramebufferStatus(int arg0);
 
     public static void glDeleteFramebuffers(int arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL30.glDeleteFramebuffers"); }
 
@@ -21,9 +26,11 @@ public final class GL30 {
 
     public static void glDeleteVertexArrays(int arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL30.glDeleteVertexArrays"); }
 
-    public static void glFramebufferRenderbuffer(int arg0, int arg1, int arg2, int arg3) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL30.glFramebufferRenderbuffer"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glFramebufferRenderbuffer(int arg0, int arg1, int arg2, int arg3);
 
-    public static void glFramebufferTexture2D(int arg0, int arg1, int arg2, int arg3, int arg4) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL30.glFramebufferTexture2D"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glFramebufferTexture2D(int arg0, int arg1, int arg2, int arg3, int arg4);
 
     public static int glGenFramebuffers() { throw new UnsupportedOperationException("org.lwjgl.opengl.GL30.glGenFramebuffers"); }
 
@@ -33,8 +40,12 @@ public final class GL30 {
 
     public static int glGetFramebufferAttachmentParameteri(int arg0, int arg1, int arg2) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL30.glGetFramebufferAttachmentParameteri"); }
 
-    public static void glRenderbufferStorage(int arg0, int arg1, int arg2, int arg3) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL30.glRenderbufferStorage"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glRenderbufferStorage(int arg0, int arg1, int arg2, int arg3);
 
     public static void glVertexAttribIPointer(int arg0, int arg1, int arg2, int arg3, long arg4) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL30.glVertexAttribIPointer"); }
 
+
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void nglGenVertexArrays(int count, long pointers);
 }

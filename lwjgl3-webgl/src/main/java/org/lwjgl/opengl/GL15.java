@@ -5,7 +5,8 @@ package org.lwjgl.opengl;
 public final class GL15 {
     private GL15() {}
 
-    public static void glBindBuffer(int arg0, int arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL15.glBindBuffer"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glBindBuffer(int arg0, int arg1);
 
     public static void glBufferData(int arg0, long arg1, int arg2) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL15.glBufferData"); }
 
@@ -19,4 +20,9 @@ public final class GL15 {
 
     public static boolean glUnmapBuffer(int arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL15.glUnmapBuffer"); }
 
+
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void nglBufferData(int target, long size, long data, int usage);
+
+    public static native void nglGenBuffers(int count, long pointers);
 }
