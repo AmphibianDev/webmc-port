@@ -76,7 +76,8 @@ check('opening a card warms the cache the launch page reads',
   body.includes('function warmUp') && body.includes('webmc-clients-v1') && body.includes('rel = "prefetch"'));
 check('the launch url carries the asset index too', body.includes('&assetIndex='));
 check('a release-asset build is described as a download, not a page',
-  body.includes('releases/download') && page.includes('download & open')
+  // the page's own test for "is this a release asset" is an escaped regex, so match the pieces
+  body.includes('releases') && body.includes('download') && page.includes('download & open')
   && page.includes('serve Minecraft bytes'));
 check('the build request opens the build workflow, not the catalog one',
   body.includes('build-client.yml'));
