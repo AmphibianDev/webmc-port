@@ -1,14 +1,4 @@
 {
- "org.lwjgl.GLFW": [
-  "glfwCreateWindow",
-  "glfwInit",
-  "glfwMakeContextCurrent",
-  "glfwPollEvents",
-  "glfwSwapBuffers"
- ],
- "org.lwjgl.OpenGL": [
-  "glClear"
- ],
  "org.lwjgl.glfw.Callbacks": [
   "glfwFreeCallbacks"
  ],

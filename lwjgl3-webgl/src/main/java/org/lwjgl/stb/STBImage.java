@@ -5,6 +5,13 @@ package org.lwjgl.stb;
 public final class STBImage {
     private STBImage() {}
 
+    // constants: javac folds these into a client, so they exist for our own code
+    public static final int STBI_default = 0;
+    public static final int STBI_grey = 1;
+    public static final int STBI_grey_alpha = 2;
+    public static final int STBI_rgb = 3;
+    public static final int STBI_rgb_alpha = 4;
+
     public static void nstbi_image_free(long arg0) { throw new UnsupportedOperationException("org.lwjgl.stb.STBImage.nstbi_image_free"); }
 
     public static java.lang.String stbi_failure_reason() { throw new UnsupportedOperationException("org.lwjgl.stb.STBImage.stbi_failure_reason"); }

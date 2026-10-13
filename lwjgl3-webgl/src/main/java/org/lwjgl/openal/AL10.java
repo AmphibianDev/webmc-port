@@ -5,6 +5,63 @@ package org.lwjgl.openal;
 public final class AL10 {
     private AL10() {}
 
+    // constants: javac folds these into a client, so they exist for our own code
+    public static final int AL_BITS = 8194;
+    public static final int AL_BUFFER = 4105;
+    public static final int AL_BUFFERS_PROCESSED = 4118;
+    public static final int AL_BUFFERS_QUEUED = 4117;
+    public static final int AL_CHANNELS = 8195;
+    public static final int AL_CONE_INNER_ANGLE = 4097;
+    public static final int AL_CONE_OUTER_ANGLE = 4098;
+    public static final int AL_CONE_OUTER_GAIN = 4130;
+    public static final int AL_DIRECTION = 4101;
+    public static final int AL_DISTANCE_MODEL = 53248;
+    public static final int AL_DOPPLER_FACTOR = 49152;
+    public static final int AL_EXTENSIONS = 45060;
+    public static final int AL_FALSE = 0;
+    public static final int AL_FORMAT_MONO16 = 4353;
+    public static final int AL_FORMAT_MONO8 = 4352;
+    public static final int AL_FORMAT_STEREO16 = 4355;
+    public static final int AL_FORMAT_STEREO8 = 4354;
+    public static final int AL_FREQUENCY = 8193;
+    public static final int AL_GAIN = 4106;
+    public static final int AL_INITIAL = 4113;
+    public static final int AL_INVALID = -1;
+    public static final int AL_INVALID_ENUM = 40962;
+    public static final int AL_INVALID_NAME = 40961;
+    public static final int AL_INVALID_OPERATION = 40964;
+    public static final int AL_INVALID_VALUE = 40963;
+    public static final int AL_INVERSE_DISTANCE = 53249;
+    public static final int AL_INVERSE_DISTANCE_CLAMPED = 53250;
+    public static final int AL_LOOPING = 4103;
+    public static final int AL_MAX_DISTANCE = 4131;
+    public static final int AL_MAX_GAIN = 4110;
+    public static final int AL_MIN_GAIN = 4109;
+    public static final int AL_NONE = 0;
+    public static final int AL_NO_ERROR = 0;
+    public static final int AL_ORIENTATION = 4111;
+    public static final int AL_OUT_OF_MEMORY = 40965;
+    public static final int AL_PAUSED = 4115;
+    public static final int AL_PENDING = 8209;
+    public static final int AL_PITCH = 4099;
+    public static final int AL_PLAYING = 4114;
+    public static final int AL_POSITION = 4100;
+    public static final int AL_PROCESSED = 8210;
+    public static final int AL_REFERENCE_DISTANCE = 4128;
+    public static final int AL_RENDERER = 45059;
+    public static final int AL_ROLLOFF_FACTOR = 4129;
+    public static final int AL_SIZE = 8196;
+    public static final int AL_SOURCE_ABSOLUTE = 513;
+    public static final int AL_SOURCE_RELATIVE = 514;
+    public static final int AL_SOURCE_STATE = 4112;
+    public static final int AL_SOURCE_TYPE = 4135;
+    public static final int AL_STOPPED = 4116;
+    public static final int AL_TRUE = 1;
+    public static final int AL_UNUSED = 8208;
+    public static final int AL_VELOCITY = 4102;
+    public static final int AL_VENDOR = 45057;
+    public static final int AL_VERSION = 45058;
+
     public static void alBufferData(int arg0, int arg1, java.nio.ByteBuffer arg2, int arg3) { throw new UnsupportedOperationException("org.lwjgl.openal.AL10.alBufferData"); }
 
     public static void alDeleteBuffers(java.nio.IntBuffer arg0) { throw new UnsupportedOperationException("org.lwjgl.openal.AL10.alDeleteBuffers"); }

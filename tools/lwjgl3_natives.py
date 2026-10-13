@@ -37,6 +37,47 @@ def implemented(js_path: pathlib.Path) -> dict[str, set[str]]:
     return found
 
 
+# Members the JavaScript implements that no measured client happened to call, so the scaffold has no
+# reason to declare them. They are real LWJGL members - the boot test reaches for some of them - and
+# without this table they would be JavaScript that nothing can ever call.
+EXTRA_SIGNATURES = {
+    "org.lwjgl.opengl.GL15": [
+        ("nglBufferData", "int target, long size, long data, int usage"),
+        ("nglGenBuffers", "int count, long pointers"),
+    ],
+    "org.lwjgl.opengl.GL30": [("nglGenVertexArrays", "int count, long pointers")],
+    "org.lwjgl.opengl.GL11": [
+        ("glReadPixels", "int x, int y, int width, int height, int format, int type, long pixels"),
+        ("nglDrawArrays", "int mode, int first, int count"),
+    ],
+    "org.lwjgl.opengl.GL20": [
+        ("nglVertexAttribPointer", "int index, int size, int type, boolean normalized, int stride, long pointer"),
+    ],
+}
+
+
+def add_extras(java_root: pathlib.Path, log=print) -> int:
+    """Declare the members the JavaScript implements but the measurement never saw."""
+    added = 0
+    for owner, members in EXTRA_SIGNATURES.items():
+        path = java_root / pathlib.PurePosixPath(owner.replace(".", "/") + ".java")
+        if not path.is_file():
+            continue
+        text = path.read_text()
+        for name, parameters in members:
+            if re.search(rf"\b{name}\(", text):
+                continue
+            marker = text.rindex("}")
+            text = (text[:marker]
+                    + "    // implemented in natives/webmc-lwjgl3.js (declared here because no measured\n"
+                    + "    // client calls it, so the generated surface does not mention it)\n"
+                    + f"    public static native void {name}({parameters});\n" + text[marker:])
+            added += 1
+            log(f"  added {owner}.{name}")
+        path.write_text(text)
+    return added
+
+
 def rewrite(java_root: pathlib.Path, table: dict[str, set[str]]) -> dict:
     """Turn implemented stubs into native declarations."""
     stats = {"classes": 0, "natives": 0, "still_stubs": 0}
@@ -81,7 +122,9 @@ def main(argv=None) -> int:
         print(f"  {owner:<44} {len(table[owner]):>3}")
     if args.list:
         return 0
-    stats = rewrite(pathlib.Path(args.java), table)
+    java_root = pathlib.Path(args.java)
+    stats = rewrite(java_root, table)
+    stats["extras"] = add_extras(java_root)
     print(f"  rewrote {stats['natives']} native declaration(s) in {stats['classes']} class(es); "
           f"{stats['still_stubs']} members still throw")
     (ROOT / "lwjgl3-webgl" / "implemented.json").write_text(json.dumps(

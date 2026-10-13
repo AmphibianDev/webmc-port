@@ -5,6 +5,12 @@ package org.lwjgl.opengl;
 public final class EXTFramebufferBlit {
     private EXTFramebufferBlit() {}
 
+    // constants: javac folds these into a client, so they exist for our own code
+    public static final int GL_DRAW_FRAMEBUFFER_BINDING_EXT = 36006;
+    public static final int GL_DRAW_FRAMEBUFFER_EXT = 36009;
+    public static final int GL_READ_FRAMEBUFFER_BINDING_EXT = 36010;
+    public static final int GL_READ_FRAMEBUFFER_EXT = 36008;
+
     public static void glBlitFramebufferEXT(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9) { throw new UnsupportedOperationException("org.lwjgl.opengl.EXTFramebufferBlit.glBlitFramebufferEXT"); }
 
 }

@@ -5,6 +5,27 @@ package org.lwjgl.stb;
 public final class STBImageResize {
     private STBImageResize() {}
 
+    // constants: javac folds these into a client, so they exist for our own code
+    public static final int STBIR_ALPHA_CHANNEL_NONE = -1;
+    public static final int STBIR_COLORSPACE_LINEAR = 0;
+    public static final int STBIR_COLORSPACE_SRGB = 1;
+    public static final int STBIR_EDGE_CLAMP = 1;
+    public static final int STBIR_EDGE_REFLECT = 2;
+    public static final int STBIR_EDGE_WRAP = 3;
+    public static final int STBIR_EDGE_ZERO = 4;
+    public static final int STBIR_FILTER_BOX = 1;
+    public static final int STBIR_FILTER_CATMULLROM = 4;
+    public static final int STBIR_FILTER_CUBICBSPLINE = 3;
+    public static final int STBIR_FILTER_DEFAULT = 0;
+    public static final int STBIR_FILTER_MITCHELL = 5;
+    public static final int STBIR_FILTER_TRIANGLE = 2;
+    public static final int STBIR_FLAG_ALPHA_PREMULTIPLIED = 1;
+    public static final int STBIR_FLAG_ALPHA_USES_COLORSPACE = 2;
+    public static final int STBIR_TYPE_FLOAT = 3;
+    public static final int STBIR_TYPE_UINT16 = 1;
+    public static final int STBIR_TYPE_UINT32 = 2;
+    public static final int STBIR_TYPE_UINT8 = 0;
+
     public static int nstbir_resize_uint8(long arg0, int arg1, int arg2, int arg3, long arg4, int arg5, int arg6, int arg7, int arg8) { throw new UnsupportedOperationException("org.lwjgl.stb.STBImageResize.nstbir_resize_uint8"); }
 
 }

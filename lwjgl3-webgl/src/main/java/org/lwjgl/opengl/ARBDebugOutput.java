@@ -5,6 +5,30 @@ package org.lwjgl.opengl;
 public final class ARBDebugOutput {
     private ARBDebugOutput() {}
 
+    // constants: javac folds these into a client, so they exist for our own code
+    public static final int GL_DEBUG_CALLBACK_FUNCTION_ARB = 33348;
+    public static final int GL_DEBUG_CALLBACK_USER_PARAM_ARB = 33349;
+    public static final int GL_DEBUG_LOGGED_MESSAGES_ARB = 37189;
+    public static final int GL_DEBUG_NEXT_LOGGED_MESSAGE_LENGTH_ARB = 33347;
+    public static final int GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB = 33346;
+    public static final int GL_DEBUG_SEVERITY_HIGH_ARB = 37190;
+    public static final int GL_DEBUG_SEVERITY_LOW_ARB = 37192;
+    public static final int GL_DEBUG_SEVERITY_MEDIUM_ARB = 37191;
+    public static final int GL_DEBUG_SOURCE_API_ARB = 33350;
+    public static final int GL_DEBUG_SOURCE_APPLICATION_ARB = 33354;
+    public static final int GL_DEBUG_SOURCE_OTHER_ARB = 33355;
+    public static final int GL_DEBUG_SOURCE_SHADER_COMPILER_ARB = 33352;
+    public static final int GL_DEBUG_SOURCE_THIRD_PARTY_ARB = 33353;
+    public static final int GL_DEBUG_SOURCE_WINDOW_SYSTEM_ARB = 33351;
+    public static final int GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR_ARB = 33357;
+    public static final int GL_DEBUG_TYPE_ERROR_ARB = 33356;
+    public static final int GL_DEBUG_TYPE_OTHER_ARB = 33361;
+    public static final int GL_DEBUG_TYPE_PERFORMANCE_ARB = 33360;
+    public static final int GL_DEBUG_TYPE_PORTABILITY_ARB = 33359;
+    public static final int GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR_ARB = 33358;
+    public static final int GL_MAX_DEBUG_LOGGED_MESSAGES_ARB = 37188;
+    public static final int GL_MAX_DEBUG_MESSAGE_LENGTH_ARB = 37187;
+
     public static void glDebugMessageCallbackARB(org.lwjgl.opengl.GLDebugMessageARBCallbackI arg0, long arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.ARBDebugOutput.glDebugMessageCallbackARB"); }
 
     public static void glDebugMessageControlARB(int arg0, int arg1, int arg2, int[] arg3, boolean arg4) { throw new UnsupportedOperationException("org.lwjgl.opengl.ARBDebugOutput.glDebugMessageControlARB"); }

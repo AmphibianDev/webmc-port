@@ -175,6 +175,34 @@ def emit_placeholder(name: str) -> str:
             f"public {kind} {simple} {{\n}}\n")
 
 
+def constants_for(owner: str) -> list[tuple[str, str, str]]:
+    """Every constant LWJGL declares on this class, with its real value.
+
+    They are inline in a client's bytecode - javac folds them - which is why no measured surface ever
+    mentions them. Our own code has to name them, though, and the CI job regenerates these files, so
+    they have to be part of what the generator emits rather than something added by hand that the next
+    regeneration erases. That is exactly how they were lost the first time.
+    """
+    prefix = owner + "."
+    found = []
+    for key, entry in CONSTANTS.items():
+        if not key.startswith(prefix):
+            continue
+        name = key[len(prefix):]
+        if "." in name:
+            continue
+        value = entry.get("value")
+        if not isinstance(value, (int, float)) or isinstance(value, bool):
+            continue
+        descriptor = entry.get("descriptor", "I")
+        declared = "int" if descriptor == "I" else "long" if descriptor == "J" else "short" if descriptor == "S" else "byte" if descriptor == "B" else None
+        if declared is None:
+            continue
+        text = f"{int(value)}" if declared != "long" else f"{int(value)}L"
+        found.append((name, declared, text))
+    return sorted(found)
+
+
 def emit_owner(owner: str, members: dict[str, str]) -> str:
     package, _, simple = owner.rpartition(".")
     simple = re.sub(r"[^A-Za-z0-9_$]", "_", simple)
@@ -187,6 +215,13 @@ def emit_owner(owner: str, members: dict[str, str]) -> str:
         f"    private {simple}() {{}}",
         "",
     ]
+    constants = constants_for(owner)
+    if constants:
+        lines.append("    // constants: javac folds these into a client, so they exist for our own code")
+        for name, declared, text in constants:
+            lines.append(f"    public static final {declared} {name} = {text};")
+        lines.append("")
+
     for entry, kind in sorted(members.items()):
         _, _, name, descriptor = split_member(entry)
         # a constructor or a static initialiser is not a static method; the shim's own classes

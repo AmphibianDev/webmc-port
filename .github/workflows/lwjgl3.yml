@@ -57,6 +57,11 @@ jobs:
             --surface work/surface-1.16.5.json \
             --surface work/surface-1.20.4.json \
             --merge --out lwjgl3-webgl | tee -a "$GITHUB_STEP_SUMMARY"
+          # the generator emits what the clients call; this turns the members the JavaScript
+          # implements into native declarations, and adds the few the measurement never saw. It has to
+          # run here, after the regeneration, or the regeneration erases it - which is exactly what
+          # happened the first time these were added by hand.
+          python3 tools/lwjgl3_natives.py | tee -a "$GITHUB_STEP_SUMMARY"
           if ! git diff --quiet lwjgl3-webgl; then
             echo "::warning::the committed skeleton is out of date with the measured surface"
             git diff --stat lwjgl3-webgl | tail -3

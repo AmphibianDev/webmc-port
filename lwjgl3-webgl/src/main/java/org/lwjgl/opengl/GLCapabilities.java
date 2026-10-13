@@ -5,6 +5,9 @@ package org.lwjgl.opengl;
 public final class GLCapabilities {
     private GLCapabilities() {}
 
+    // constants: javac folds these into a client, so they exist for our own code
+    public static final int ADDRESS_BUFFER_SIZE = 2228;
+
     public static void GL_ARB_debug_outputZ() { throw new UnsupportedOperationException("org.lwjgl.opengl.GLCapabilities.GL_ARB_debug_outputZ"); }
 
     public static void GL_ARB_fragment_shaderZ() { throw new UnsupportedOperationException("org.lwjgl.opengl.GLCapabilities.GL_ARB_fragment_shaderZ"); }

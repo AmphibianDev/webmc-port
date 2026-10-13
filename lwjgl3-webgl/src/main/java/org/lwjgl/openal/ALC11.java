@@ -5,6 +5,15 @@ package org.lwjgl.openal;
 public final class ALC11 {
     private ALC11() {}
 
+    // constants: javac folds these into a client, so they exist for our own code
+    public static final int ALC_ALL_DEVICES_SPECIFIER = 4115;
+    public static final int ALC_CAPTURE_DEFAULT_DEVICE_SPECIFIER = 785;
+    public static final int ALC_CAPTURE_DEVICE_SPECIFIER = 784;
+    public static final int ALC_CAPTURE_SAMPLES = 786;
+    public static final int ALC_DEFAULT_ALL_DEVICES_SPECIFIER = 4114;
+    public static final int ALC_MONO_SOURCES = 4112;
+    public static final int ALC_STEREO_SOURCES = 4113;
+
     public static int alcGetInteger(long arg0, int arg1) { throw new UnsupportedOperationException("org.lwjgl.openal.ALC11.alcGetInteger"); }
 
 }

@@ -5,6 +5,12 @@ package org.lwjgl.opengl;
 public final class EXTBlendFuncSeparate {
     private EXTBlendFuncSeparate() {}
 
+    // constants: javac folds these into a client, so they exist for our own code
+    public static final int GL_BLEND_DST_ALPHA_EXT = 32970;
+    public static final int GL_BLEND_DST_RGB_EXT = 32968;
+    public static final int GL_BLEND_SRC_ALPHA_EXT = 32971;
+    public static final int GL_BLEND_SRC_RGB_EXT = 32969;
+
     public static void glBlendFuncSeparateEXT(int arg0, int arg1, int arg2, int arg3) { throw new UnsupportedOperationException("org.lwjgl.opengl.EXTBlendFuncSeparate.glBlendFuncSeparateEXT"); }
 
 }
