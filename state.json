@@ -9473,6 +9473,7 @@
       "jar_bytes": 10180113,
       "asset_index": "1.12",
       "meta_url": null,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -9493,6 +9494,7 @@
       "jar_bytes": 10180190,
       "asset_index": "1.12",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -9513,6 +9515,7 @@
       "jar_bytes": 10180422,
       "asset_index": "1.12",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -9533,6 +9536,7 @@
       "jar_bytes": 10178558,
       "asset_index": "1.12",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -9553,6 +9557,7 @@
       "jar_bytes": 10178612,
       "asset_index": "1.12",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -9573,6 +9578,7 @@
       "jar_bytes": 10178129,
       "asset_index": "1.12",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -9593,6 +9599,7 @@
       "jar_bytes": 10177098,
       "asset_index": "1.12",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -9613,6 +9620,7 @@
       "jar_bytes": 10177172,
       "asset_index": "1.12",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -9633,6 +9641,7 @@
       "jar_bytes": 10176047,
       "asset_index": "1.12",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -9653,6 +9662,7 @@
       "jar_bytes": 10158482,
       "asset_index": "1.12",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -9673,6 +9683,7 @@
       "jar_bytes": 10151079,
       "asset_index": "1.12",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -9693,6 +9704,7 @@
       "jar_bytes": 10150521,
       "asset_index": "1.12",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -9713,6 +9725,7 @@
       "jar_bytes": 10151176,
       "asset_index": "1.12",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -9733,6 +9746,7 @@
       "jar_bytes": 10148714,
       "asset_index": "1.12",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -9753,6 +9767,7 @@
       "jar_bytes": 10118268,
       "asset_index": "1.12",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -9773,6 +9788,7 @@
       "jar_bytes": 10102975,
       "asset_index": "1.12",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -9793,6 +9809,7 @@
       "jar_bytes": 10085394,
       "asset_index": "1.12",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -9813,6 +9830,7 @@
       "jar_bytes": 10078137,
       "asset_index": "1.12",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -9833,6 +9851,7 @@
       "jar_bytes": 10039579,
       "asset_index": "1.12",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -9853,6 +9872,7 @@
       "jar_bytes": 10035274,
       "asset_index": "1.12",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -9873,6 +9893,7 @@
       "jar_bytes": 10000532,
       "asset_index": "1.12",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -9893,6 +9914,7 @@
       "jar_bytes": 9895086,
       "asset_index": "1.12",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -9913,6 +9935,7 @@
       "jar_bytes": 9861051,
       "asset_index": "1.12",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -9933,6 +9956,7 @@
       "jar_bytes": 9845358,
       "asset_index": "1.12",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -9953,6 +9977,7 @@
       "jar_bytes": 9296634,
       "asset_index": "1.11",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -9973,6 +9998,7 @@
       "jar_bytes": 9198097,
       "asset_index": "1.11",
       "meta_url": null,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -9993,6 +10019,7 @@
       "jar_bytes": 9198018,
       "asset_index": "1.11",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10013,6 +10040,7 @@
       "jar_bytes": 9194941,
       "asset_index": "1.11",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10033,6 +10061,7 @@
       "jar_bytes": 9183701,
       "asset_index": "1.11",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10053,6 +10082,7 @@
       "jar_bytes": 9183464,
       "asset_index": "1.11",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10073,6 +10103,7 @@
       "jar_bytes": 9268856,
       "asset_index": "1.11",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10093,6 +10124,7 @@
       "jar_bytes": 9255644,
       "asset_index": "1.11",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10113,6 +10145,7 @@
       "jar_bytes": 9252178,
       "asset_index": "1.11",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10133,6 +10166,7 @@
       "jar_bytes": 9262771,
       "asset_index": "1.11",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10153,6 +10187,7 @@
       "jar_bytes": 9252677,
       "asset_index": "1.11",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10173,6 +10208,7 @@
       "jar_bytes": 9250850,
       "asset_index": "1.11",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10193,6 +10229,7 @@
       "jar_bytes": 9275077,
       "asset_index": "1.11",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10213,6 +10250,7 @@
       "jar_bytes": 9252453,
       "asset_index": "1.11",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10233,6 +10271,7 @@
       "jar_bytes": 8893357,
       "asset_index": "1.11",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10253,6 +10292,7 @@
       "jar_bytes": 8894291,
       "asset_index": "1.11",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10273,6 +10313,7 @@
       "jar_bytes": 8892558,
       "asset_index": "1.11",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10293,6 +10334,7 @@
       "jar_bytes": 8889021,
       "asset_index": "1.11",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10313,6 +10355,7 @@
       "jar_bytes": 8887744,
       "asset_index": "1.11",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10333,6 +10376,7 @@
       "jar_bytes": 8886213,
       "asset_index": "1.10",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10353,6 +10397,7 @@
       "jar_bytes": 8857653,
       "asset_index": "1.10",
       "meta_url": null,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -10373,6 +10418,7 @@
       "jar_bytes": 8857880,
       "asset_index": "1.10",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10393,6 +10439,7 @@
       "jar_bytes": 8856992,
       "asset_index": "1.10",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10413,6 +10460,7 @@
       "jar_bytes": 8857151,
       "asset_index": "1.10",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10433,6 +10481,7 @@
       "jar_bytes": 8861822,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10453,6 +10502,7 @@
       "jar_bytes": 8848015,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10473,6 +10523,7 @@
       "jar_bytes": 8847721,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10493,6 +10544,7 @@
       "jar_bytes": 8841325,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10513,6 +10565,7 @@
       "jar_bytes": 8736083,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10533,6 +10586,7 @@
       "jar_bytes": 8736082,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10553,6 +10607,7 @@
       "jar_bytes": 8736129,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10573,6 +10628,7 @@
       "jar_bytes": 8739333,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10593,6 +10649,7 @@
       "jar_bytes": 8733737,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10613,6 +10670,7 @@
       "jar_bytes": 8734209,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10633,6 +10691,7 @@
       "jar_bytes": 8739319,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10653,6 +10712,7 @@
       "jar_bytes": 8699265,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10673,6 +10733,7 @@
       "jar_bytes": 8746426,
       "asset_index": "1.9-aprilfools",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10693,6 +10754,7 @@
       "jar_bytes": 8699297,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10713,6 +10775,7 @@
       "jar_bytes": 8699282,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10733,6 +10796,7 @@
       "jar_bytes": 8698555,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10753,6 +10817,7 @@
       "jar_bytes": 8698508,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10773,6 +10838,7 @@
       "jar_bytes": 8698588,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10793,6 +10859,7 @@
       "jar_bytes": 8697592,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10813,6 +10880,7 @@
       "jar_bytes": 8697157,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10833,6 +10901,7 @@
       "jar_bytes": 8698063,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10853,6 +10922,7 @@
       "jar_bytes": 8695482,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10873,6 +10943,7 @@
       "jar_bytes": 8695161,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10893,6 +10964,7 @@
       "jar_bytes": 8694898,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10913,6 +10985,7 @@
       "jar_bytes": 8694955,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10933,6 +11006,7 @@
       "jar_bytes": 8693204,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10953,6 +11027,7 @@
       "jar_bytes": 8692004,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10973,6 +11048,7 @@
       "jar_bytes": 8693367,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10993,6 +11069,7 @@
       "jar_bytes": 11555287,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11013,6 +11090,7 @@
       "jar_bytes": 8694309,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11033,6 +11111,7 @@
       "jar_bytes": 8694645,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11053,6 +11132,7 @@
       "jar_bytes": 8671610,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11073,6 +11153,7 @@
       "jar_bytes": 8671285,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11093,6 +11174,7 @@
       "jar_bytes": 8654344,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11113,6 +11195,7 @@
       "jar_bytes": 8653646,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11133,6 +11216,7 @@
       "jar_bytes": 8461484,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -11153,6 +11237,7 @@
       "jar_bytes": 8654252,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11173,6 +11258,7 @@
       "jar_bytes": 9194297,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11193,6 +11279,7 @@
       "jar_bytes": 9193775,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11213,6 +11300,7 @@
       "jar_bytes": 9193228,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11233,6 +11321,7 @@
       "jar_bytes": 9190347,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11253,6 +11342,7 @@
       "jar_bytes": 9186764,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11273,6 +11363,7 @@
       "jar_bytes": 9183296,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11293,6 +11384,7 @@
       "jar_bytes": 9171604,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11313,6 +11405,7 @@
       "jar_bytes": 9167478,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11333,6 +11426,7 @@
       "jar_bytes": 9181985,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11353,6 +11447,7 @@
       "jar_bytes": 9171193,
       "asset_index": "1.9",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11373,6 +11468,7 @@
       "jar_bytes": 9064648,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11393,6 +11489,7 @@
       "jar_bytes": 9043459,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11413,6 +11510,7 @@
       "jar_bytes": 9043438,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11433,6 +11531,7 @@
       "jar_bytes": 8969615,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11453,6 +11552,7 @@
       "jar_bytes": 8967698,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11473,6 +11573,7 @@
       "jar_bytes": 8963905,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11493,6 +11594,7 @@
       "jar_bytes": 8962465,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11513,6 +11615,7 @@
       "jar_bytes": 8962459,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11533,6 +11636,7 @@
       "jar_bytes": 8960082,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11553,6 +11657,7 @@
       "jar_bytes": 8957967,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11573,6 +11678,7 @@
       "jar_bytes": 8953756,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11593,6 +11699,7 @@
       "jar_bytes": 8942556,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11613,6 +11720,7 @@
       "jar_bytes": 8941252,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11633,6 +11741,7 @@
       "jar_bytes": 8941202,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11653,6 +11762,7 @@
       "jar_bytes": 8941175,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11673,6 +11783,7 @@
       "jar_bytes": 8931722,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11693,6 +11804,7 @@
       "jar_bytes": 8930824,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11713,6 +11825,7 @@
       "jar_bytes": 8930753,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11733,6 +11846,7 @@
       "jar_bytes": 8926948,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11753,6 +11867,7 @@
       "jar_bytes": 8926953,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11773,6 +11888,7 @@
       "jar_bytes": 8879569,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11793,6 +11909,7 @@
       "jar_bytes": 8879460,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11813,6 +11930,7 @@
       "jar_bytes": 8865951,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11833,6 +11951,7 @@
       "jar_bytes": 8864068,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11853,6 +11972,7 @@
       "jar_bytes": 8830962,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11873,6 +11993,7 @@
       "jar_bytes": 8748966,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11893,6 +12014,7 @@
       "jar_bytes": 8748581,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11913,6 +12035,7 @@
       "jar_bytes": 8706595,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11933,6 +12056,7 @@
       "jar_bytes": 8704556,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11953,6 +12077,7 @@
       "jar_bytes": 8684210,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11973,6 +12098,7 @@
       "jar_bytes": 8661273,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11993,6 +12119,7 @@
       "jar_bytes": 8657710,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12013,6 +12140,7 @@
       "jar_bytes": 8657591,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12033,6 +12161,7 @@
       "jar_bytes": 8465313,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12053,6 +12182,7 @@
       "jar_bytes": 8461925,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12073,6 +12203,7 @@
       "jar_bytes": 8461536,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12093,6 +12224,7 @@
       "jar_bytes": 8462879,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12113,6 +12245,7 @@
       "jar_bytes": 8461965,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12133,6 +12266,7 @@
       "jar_bytes": 8471640,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12153,6 +12287,7 @@
       "jar_bytes": 8460790,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12173,6 +12308,7 @@
       "jar_bytes": 8460686,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12193,6 +12329,7 @@
       "jar_bytes": 8460242,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12213,6 +12350,7 @@
       "jar_bytes": 8458592,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12233,6 +12371,7 @@
       "jar_bytes": 8455287,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12253,6 +12392,7 @@
       "jar_bytes": 7769313,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12273,6 +12413,7 @@
       "jar_bytes": 7767301,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12293,6 +12434,7 @@
       "jar_bytes": 7767264,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12313,6 +12455,7 @@
       "jar_bytes": 7766305,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12333,6 +12476,7 @@
       "jar_bytes": 7762712,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12353,6 +12497,7 @@
       "jar_bytes": 7762774,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12373,6 +12518,7 @@
       "jar_bytes": 7762739,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12393,6 +12539,7 @@
       "jar_bytes": 7760874,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12413,6 +12560,7 @@
       "jar_bytes": 7758982,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12433,6 +12581,7 @@
       "jar_bytes": 7758764,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12453,6 +12602,7 @@
       "jar_bytes": 7746841,
       "asset_index": "1.8",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12473,6 +12623,7 @@
       "jar_bytes": 7745431,
       "asset_index": "14w31a",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12493,6 +12644,7 @@
       "jar_bytes": 7745336,
       "asset_index": "14w31a",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12513,6 +12665,7 @@
       "jar_bytes": 7744560,
       "asset_index": "14w31a",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12533,6 +12686,7 @@
       "jar_bytes": 7740152,
       "asset_index": "14w31a",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12553,6 +12707,7 @@
       "jar_bytes": 7740273,
       "asset_index": "14w31a",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12573,6 +12728,7 @@
       "jar_bytes": 7740621,
       "asset_index": "14w31a",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12593,6 +12749,7 @@
       "jar_bytes": 7740544,
       "asset_index": "14w31a",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12613,6 +12770,7 @@
       "jar_bytes": 7733434,
       "asset_index": "14w31a",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12633,6 +12791,7 @@
       "jar_bytes": 7733442,
       "asset_index": "14w31a",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12653,6 +12812,7 @@
       "jar_bytes": 7731808,
       "asset_index": "14w31a",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12673,6 +12833,7 @@
       "jar_bytes": 7734787,
       "asset_index": "14w31a",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12693,6 +12854,7 @@
       "jar_bytes": 7700663,
       "asset_index": "14w31a",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12713,6 +12875,7 @@
       "jar_bytes": 7696706,
       "asset_index": "14w31a",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12733,6 +12896,7 @@
       "jar_bytes": 7658975,
       "asset_index": "14w31a",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12753,6 +12917,7 @@
       "jar_bytes": 7622704,
       "asset_index": "14w31a",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12773,6 +12938,7 @@
       "jar_bytes": 7600703,
       "asset_index": "14w25a",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12793,6 +12959,7 @@
       "jar_bytes": 7590320,
       "asset_index": "14w25a",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12813,6 +12980,7 @@
       "jar_bytes": 7589788,
       "asset_index": "14w25a",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12833,6 +13001,7 @@
       "jar_bytes": 7468957,
       "asset_index": "14w25a",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12853,6 +13022,7 @@
       "jar_bytes": 7457097,
       "asset_index": "14w25a",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12873,6 +13043,7 @@
       "jar_bytes": 7434595,
       "asset_index": "14w25a",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12893,6 +13064,7 @@
       "jar_bytes": 7501876,
       "asset_index": "14w25a",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12913,6 +13085,7 @@
       "jar_bytes": 7555769,
       "asset_index": "14w25a",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12933,6 +13106,7 @@
       "jar_bytes": 7549667,
       "asset_index": "14w25a",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12953,6 +13127,7 @@
       "jar_bytes": 7533056,
       "asset_index": "14w25a",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12973,6 +13148,7 @@
       "jar_bytes": 7527257,
       "asset_index": "14w25a",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12993,6 +13169,7 @@
       "jar_bytes": 7527314,
       "asset_index": "14w25a",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13013,6 +13190,7 @@
       "jar_bytes": 7508590,
       "asset_index": "14w25a",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13033,6 +13211,7 @@
       "jar_bytes": 7508874,
       "asset_index": "14w25a",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13053,6 +13232,7 @@
       "jar_bytes": 6937978,
       "asset_index": "1.7.4",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13073,6 +13253,7 @@
       "jar_bytes": 6937980,
       "asset_index": "1.7.4",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13093,6 +13274,7 @@
       "jar_bytes": 6943272,
       "asset_index": "1.7.4",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13113,6 +13295,7 @@
       "jar_bytes": 6943220,
       "asset_index": "1.7.4",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13133,6 +13316,7 @@
       "jar_bytes": 5256245,
       "asset_index": "1.7.10",
       "meta_url": null,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -13153,6 +13337,7 @@
       "jar_bytes": 5256237,
       "asset_index": "1.7.10",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13173,6 +13358,7 @@
       "jar_bytes": 5314833,
       "asset_index": "1.7.4",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13193,6 +13379,7 @@
       "jar_bytes": 5318843,
       "asset_index": "1.7.4",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13213,6 +13400,7 @@
       "jar_bytes": 5318829,
       "asset_index": "1.7.4",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13233,6 +13421,7 @@
       "jar_bytes": 6933335,
       "asset_index": "1.7.4",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13253,6 +13442,7 @@
       "jar_bytes": 6794883,
       "asset_index": "1.7.4",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13273,6 +13463,7 @@
       "jar_bytes": 6794794,
       "asset_index": "1.7.4",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13293,6 +13484,7 @@
       "jar_bytes": 6786407,
       "asset_index": "1.7.4",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13313,6 +13505,7 @@
       "jar_bytes": 5794332,
       "asset_index": "1.7.4",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13333,6 +13526,7 @@
       "jar_bytes": 5268481,
       "asset_index": "1.7.4",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13353,6 +13547,7 @@
       "jar_bytes": 5269934,
       "asset_index": "1.7.4",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13373,6 +13568,7 @@
       "jar_bytes": 5267555,
       "asset_index": "1.7.4",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13393,6 +13589,7 @@
       "jar_bytes": 5341288,
       "asset_index": "1.7.4",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13413,6 +13610,7 @@
       "jar_bytes": 5793149,
       "asset_index": "1.7.4",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13433,6 +13631,7 @@
       "jar_bytes": 5338685,
       "asset_index": "1.7.4",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13453,6 +13652,7 @@
       "jar_bytes": 5338568,
       "asset_index": "1.7.4",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13473,6 +13673,7 @@
       "jar_bytes": 5658797,
       "asset_index": "1.7.4",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13493,6 +13694,7 @@
       "jar_bytes": 5652876,
       "asset_index": "1.7.4",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13513,6 +13715,7 @@
       "jar_bytes": 5644746,
       "asset_index": "1.7.4",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13533,6 +13736,7 @@
       "jar_bytes": 5506495,
       "asset_index": "1.7.4",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13553,6 +13757,7 @@
       "jar_bytes": 5225771,
       "asset_index": "1.7.4",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13573,6 +13778,7 @@
       "jar_bytes": 5503565,
       "asset_index": "1.7.4",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13593,6 +13799,7 @@
       "jar_bytes": 5454809,
       "asset_index": "1.7.4",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13613,6 +13820,7 @@
       "jar_bytes": 5449702,
       "asset_index": "1.7.4",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13633,6 +13841,7 @@
       "jar_bytes": 5408185,
       "asset_index": "1.7.4",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13653,6 +13862,7 @@
       "jar_bytes": 5403792,
       "asset_index": "1.7.4",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13673,6 +13883,7 @@
       "jar_bytes": 5374779,
       "asset_index": "1.7.4",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13693,6 +13904,7 @@
       "jar_bytes": 5373524,
       "asset_index": "1.7.4",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13713,6 +13925,7 @@
       "jar_bytes": 5318002,
       "asset_index": "1.7.4",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13733,6 +13946,7 @@
       "jar_bytes": 5305298,
       "asset_index": "1.7.4",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13753,6 +13967,7 @@
       "jar_bytes": 5288029,
       "asset_index": "1.7.4",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13773,6 +13988,7 @@
       "jar_bytes": 5286472,
       "asset_index": "1.7.4",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13793,6 +14009,7 @@
       "jar_bytes": 5286446,
       "asset_index": "1.7.4",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13813,6 +14030,7 @@
       "jar_bytes": 5206443,
       "asset_index": "1.7.4",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13833,6 +14051,7 @@
       "jar_bytes": 5206064,
       "asset_index": "1.7.3",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13853,6 +14072,7 @@
       "jar_bytes": 5203693,
       "asset_index": "1.7.3",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13873,6 +14093,7 @@
       "jar_bytes": 5220650,
       "asset_index": "legacy",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13893,6 +14114,7 @@
       "jar_bytes": 5217181,
       "asset_index": "legacy",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13913,6 +14135,7 @@
       "jar_bytes": 5210881,
       "asset_index": "legacy",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13933,6 +14156,7 @@
       "jar_bytes": 5210179,
       "asset_index": "legacy",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13953,6 +14177,7 @@
       "jar_bytes": 5206040,
       "asset_index": "legacy",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13973,6 +14198,7 @@
       "jar_bytes": 5205960,
       "asset_index": "legacy",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13993,6 +14219,7 @@
       "jar_bytes": 5204563,
       "asset_index": "legacy",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -14013,6 +14240,7 @@
       "jar_bytes": 5117607,
       "asset_index": "legacy",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -14033,6 +14261,7 @@
       "jar_bytes": 5114745,
       "asset_index": "legacy",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -14053,6 +14282,7 @@
       "jar_bytes": 5114556,
       "asset_index": "legacy",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -14073,6 +14303,7 @@
       "jar_bytes": 5108315,
       "asset_index": "legacy",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -14093,6 +14324,7 @@
       "jar_bytes": 5095595,
       "asset_index": "legacy",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -14113,6 +14345,7 @@
       "jar_bytes": 5091927,
       "asset_index": "legacy",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -14133,6 +14366,7 @@
       "jar_bytes": 5156175,
       "asset_index": "legacy",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -14153,6 +14387,7 @@
       "jar_bytes": 5153365,
       "asset_index": "legacy",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -14173,6 +14408,7 @@
       "jar_bytes": 5019817,
       "asset_index": "legacy",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -14193,6 +14429,7 @@
       "jar_bytes": 5018857,
       "asset_index": "legacy",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -14213,6 +14450,7 @@
       "jar_bytes": 4998459,
       "asset_index": "legacy",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -14233,6 +14471,7 @@
       "jar_bytes": 4998850,
       "asset_index": "legacy",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -14253,6 +14492,7 @@
       "jar_bytes": 4995118,
       "asset_index": "legacy",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -14273,6 +14513,7 @@
       "jar_bytes": 4745096,
       "asset_index": "legacy",
       "meta_url": null,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -14293,6 +14534,7 @@
       "jar_bytes": 4744682,
       "asset_index": "legacy",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -14313,6 +14555,7 @@
       "jar_bytes": 4920810,
       "asset_index": "legacy",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -14333,6 +14576,7 @@
       "jar_bytes": 4905694,
       "asset_index": "legacy",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -14353,6 +14597,7 @@
       "jar_bytes": 4891235,
       "asset_index": "legacy",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -14373,6 +14618,7 @@
       "jar_bytes": 4890231,
       "asset_index": "legacy",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -14393,6 +14639,7 @@
       "jar_bytes": 4731988,
       "asset_index": "legacy",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -14413,6 +14660,7 @@
       "jar_bytes": 4726671,
       "asset_index": "legacy",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -14433,6 +14681,7 @@
       "jar_bytes": 4720746,
       "asset_index": "legacy",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -14453,6 +14702,7 @@
       "jar_bytes": 4718211,
       "asset_index": "legacy",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -14473,6 +14723,7 @@
       "jar_bytes": 4709948,
       "asset_index": "legacy",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -14493,6 +14744,7 @@
       "jar_bytes": 4701260,
       "asset_index": "legacy",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -14513,6 +14765,7 @@
       "jar_bytes": 4703294,
       "asset_index": "legacy",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -14533,6 +14786,7 @@
       "jar_bytes": 4701461,
       "asset_index": "legacy",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -14553,6 +14807,7 @@
       "jar_bytes": 4702776,
       "asset_index": "legacy",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -14573,6 +14828,7 @@
       "jar_bytes": 4939711,
       "asset_index": "pre-1.6",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -14593,6 +14849,7 @@
       "jar_bytes": 4663757,
       "asset_index": "pre-1.6",
       "meta_url": null,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -21009,7 +21266,7 @@
       "queued": "2026-10-11T12:55:14Z"
     }
   ],
-  "updated": "2026-10-13T02:09:30Z",
+  "updated": "2026-10-13T02:11:27Z",
   "jvm": {
     "17w48a": {
       "route": "needs-lwjgl3",
@@ -25969,77 +26226,77 @@
       "content_type": "text/html",
       "bytes": 4352,
       "ok": true,
-      "checked": "2026-10-13T02:09:26Z"
+      "checked": "2026-10-13T02:11:25Z"
     },
     "https://eaglerports.github.io/a1.0.16_02/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 4495,
       "ok": true,
-      "checked": "2026-10-13T02:09:26Z"
+      "checked": "2026-10-13T02:11:25Z"
     },
     "https://eaglerports.github.io/a1.2.6/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 4495,
       "ok": true,
-      "checked": "2026-10-13T02:09:26Z"
+      "checked": "2026-10-13T02:11:25Z"
     },
     "https://eaglerports.github.io/b1.3_01/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 4495,
       "ok": true,
-      "checked": "2026-10-13T02:09:26Z"
+      "checked": "2026-10-13T02:11:25Z"
     },
     "https://eaglerports.github.io/b1.6-tb3/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 4495,
       "ok": true,
-      "checked": "2026-10-13T02:09:26Z"
+      "checked": "2026-10-13T02:11:26Z"
     },
     "https://eaglerports.github.io/b1.8.1/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 4495,
       "ok": true,
-      "checked": "2026-10-13T02:09:27Z"
+      "checked": "2026-10-13T02:11:26Z"
     },
     "https://eaglerports.github.io/1.2.5/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 4495,
       "ok": true,
-      "checked": "2026-10-13T02:09:27Z"
+      "checked": "2026-10-13T02:11:26Z"
     },
     "https://github.com/3kh0/eaglercraft-builds/raw/HEAD/Eaglercraft_b1.3_Offline_Download.html": {
       "status": 200,
       "content_type": "text/plain",
       "bytes": 4534321,
       "ok": true,
-      "checked": "2026-10-13T02:09:27Z"
+      "checked": "2026-10-13T02:11:26Z"
     },
     "https://userarham.github.io/1.13.1-Eaglercraft-UNFORKED/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 2234,
       "ok": true,
-      "checked": "2026-10-13T02:09:27Z"
+      "checked": "2026-10-13T02:11:26Z"
     },
     "https://github.com/3lit3-Pl4y3r/eaglercraft-26.2/raw/HEAD/index.html": {
       "status": 200,
       "content_type": "text/plain",
       "bytes": 75576620,
       "ok": true,
-      "checked": "2026-10-13T02:09:29Z"
+      "checked": "2026-10-13T02:11:27Z"
     },
     "https://dhyeybg.github.io/Eaglercraft-26.3/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 77863500,
       "ok": true,
-      "checked": "2026-10-13T02:09:29Z"
+      "checked": "2026-10-13T02:11:27Z"
     }
   },
   "built": {
