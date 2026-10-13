@@ -33,6 +33,10 @@
 
   try {
     await cheerpjInit({
+      // CheerpJ starts in Java 8 mode, and this shim is compiled for 17 - the JVM's message for that
+      // mismatch is "Could not find or load main class", which cost three CI runs to decode. Which mode
+      // a *game* needs depends on the game: 1.13 to 1.16 ask for Java 8, 1.17 and newer for 17.
+      version: 17,
       // the JavaScript natives live under this path, which is how CheerpJ finds an implementation for
       // every `native` method the shim declares
       javaProperties: ["java.library.path=/app/natives"],
@@ -58,7 +62,8 @@
     });
   } catch (error) {
     document.title = "EXIT 99";
-    await report({ code: 99, threw: String(error && error.message ? error.message : error) });
+    await report({ code: 99, threw: String(error && error.message ? error.message : error),
+                   stack: String(error && error.stack ? error.stack.split("\n").slice(0, 6).join(" | ") : "") });
   }
 </script>
 </body>
