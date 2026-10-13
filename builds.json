@@ -1,5 +1,5 @@
 {
- "note": "Every browser build this project catalogs, all of them from GitHub. Clients that already ship a mod loader, or that are pre-modded (the EaglerForge build and the hacked clients: Astra, WurstX, Resent, DragonX, GX-Client, Pixel) are deliberately absent: mods here come from this project's own injector, so a second loader in the same page would only fight it. Versions with no verifiable GitHub build - 1.18.2 (empty repository) and 1.21.5 / 1.21.11 (no single-file client published that could be checked) - are absent too. Dead sources are removed when their repository disappears; the 26.2/26.3 entries were dropped when the repo that hosted them was deleted. Ports are found by searching GitHub for per-version browser builds and by probing each one: a link is only catalogued when it serves text/html (a page that plays) or, failing that, when it serves a file (a download, and the launcher says so).",
+ "note": "Every browser build this project catalogs, all of them from GitHub. Clients that already ship a mod loader, or that are pre-modded (the EaglerForge build and the hacked clients: Astra, WurstX, Resent, DragonX, GX-Client, Pixel) are deliberately absent: mods here come from this project's own injector, so a second loader in the same page would only fight it. Versions with no verifiable GitHub build - 1.18.2 (empty repository) and 1.21.5 / 1.21.11 (no single-file client published that could be checked) - are absent too. Dead sources are removed when their repository disappears; the 26.2/26.3 entries were dropped when the repo that hosted them was deleted. Ports are found by searching GitHub for per-version browser builds and by probing each one: a link is only catalogued when it serves text/html (a page that plays) or, failing that, when it serves a file (a download, and the launcher says so). A client that ships hacks or a mod loader is not catalogued: 'Astral client' was removed for that reason, as earlier ones were.",
  "routes_note": "A version can be served three ways, and the order of preference is: real Java (a JVM in the page runs the official jar, no copy of the game anywhere) > compiled by us from the official source (ahead-of-time, mods baked in) > a prebuilt Eaglercraft-family client, which exists because somebody already did that compile for that version. The prebuilt builds are not 'instead of' the official versions: they *are* those versions, ported to run in a browser, which is why they can be downloaded and played without a JVM.",
  "verified_note": "verified means: fetched over the network, sniffed for the shape of a browser client, and recorded with a size and a sha256 in work/builds/manifest.json.",
  "versions": [
@@ -168,25 +168,6 @@
    "notes": "no deployment: this one downloads rather than plays",
    "source_repo": "unspeakfan/Eaglercraft-1.20.4",
    "version": "1.20.4-alt"
-  },
-  {
-   "aliases": [
-    "1.21"
-   ],
-   "era": "modern",
-   "files": [
-    {
-     "name": "entry",
-     "role": "client",
-     "served_as": "html",
-     "url": "https://xxmrmexx.github.io/Astral-client-1.21/"
-    }
-   ],
-   "folder": "1_21",
-   "label": "Minecraft 1.21",
-   "notes": "serves a page, so it plays in the tab",
-   "source_repo": "XxmrmexX/Astral-client-1.21",
-   "version": "1.21"
   },
   {
    "aliases": [

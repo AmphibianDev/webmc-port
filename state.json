@@ -977,6 +977,11 @@
       "jvm_source": "era",
       "jvm_route": "needs-jvm",
       "jvm_why": "this is a 26.x version: it needs Java 21 or newer, and the browser JVM stops at 17",
+      "play_url": "https://dhyeybg.github.io/Eaglercraft-26.3/",
+      "play_kind": "prebuilt port",
+      "play_repo": "DhyeyBG/Eaglercraft-26.3",
+      "play_bytes": 77863500,
+      "play_served_as": "html",
       "url": null,
       "kind": "queued"
     },
@@ -1232,6 +1237,9 @@
       "jvm_source": "era",
       "jvm_route": "needs-jvm",
       "jvm_why": "this is a 26.x version: it needs Java 21 or newer, and the browser JVM stops at 17",
+      "play_kind": "prebuilt port",
+      "play_repo": "3lit3-Pl4y3r/eaglercraft-26.2",
+      "play_bytes": 75576620,
       "url": "https://github.com/AmphibianDev/webmc-port/releases/latest/download/client-26.2.html",
       "kind": "built",
       "built_bytes": 41080814,
@@ -1475,6 +1483,11 @@
       "jvm_source": "era",
       "jvm_route": "needs-jvm",
       "jvm_why": "this is a 26.x version: it needs Java 21 or newer, and the browser JVM stops at 17",
+      "play_url": "https://diddy62626.github.io/eaglercraft-26.1.2/",
+      "play_kind": "prebuilt port",
+      "play_repo": "diddy62626/eaglercraft-26.1.2",
+      "play_bytes": null,
+      "play_served_as": "html",
       "url": null,
       "kind": "queued"
     },
@@ -1535,6 +1548,11 @@
       "jvm_source": "era",
       "jvm_route": "needs-jvm",
       "jvm_why": "this is a 26.x version: it needs Java 21 or newer, and the browser JVM stops at 17",
+      "play_url": "https://github.com/thebananamanjcgaming/EaglercraftZ-26.1.1/raw/HEAD/index.html",
+      "play_kind": "prebuilt port",
+      "play_repo": "thebananamanjcgaming/EaglercraftZ-26.1.1",
+      "play_bytes": null,
+      "play_served_as": "download",
       "url": null,
       "kind": "queued"
     },
@@ -1565,6 +1583,11 @@
       "jvm_source": "era",
       "jvm_route": "needs-jvm",
       "jvm_why": "this is a 26.x version: it needs Java 21 or newer, and the browser JVM stops at 17",
+      "play_url": "https://diddy62626.github.io/eaglercraft-26.1.2/",
+      "play_kind": "prebuilt port",
+      "play_repo": "diddy62626/eaglercraft-26.1.2",
+      "play_bytes": null,
+      "play_served_as": "html",
       "url": null,
       "kind": "queued"
     },
@@ -1835,6 +1858,11 @@
       "jvm_source": "era",
       "jvm_route": "needs-jvm",
       "jvm_why": "this needs Java 21 or newer; the browser JVM stops at 17",
+      "play_url": "https://exgg1453.github.io/NX-Eaglercraft-Mobile/",
+      "play_kind": "prebuilt port",
+      "play_repo": "exgg1453/NX-Eaglercraft-Mobile",
+      "play_bytes": null,
+      "play_served_as": "html",
       "url": null,
       "kind": "queued"
     },
@@ -3245,6 +3273,11 @@
       "jvm_source": "era",
       "jvm_route": "needs-jvm",
       "jvm_why": "this needs Java 21 or newer; the browser JVM stops at 17",
+      "play_url": "https://github.com/crisppy1/Eaglercraft-1.21.1/raw/HEAD/index.html",
+      "play_kind": "prebuilt port",
+      "play_repo": "crisppy1/Eaglercraft-1.21.1",
+      "play_bytes": null,
+      "play_served_as": "download",
       "url": null,
       "kind": "queued"
     },
@@ -9566,7 +9599,7 @@
       "jar_bytes": 10178558,
       "asset_index": "1.12",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -9629,7 +9662,7 @@
       "jar_bytes": 10177098,
       "asset_index": "1.12",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -10028,7 +10061,7 @@
       "jar_bytes": 9198097,
       "asset_index": "1.11",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10049,7 +10082,7 @@
       "jar_bytes": 9198018,
       "asset_index": "1.11",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -10427,7 +10460,7 @@
       "jar_bytes": 8857653,
       "asset_index": "1.10",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11246,7 +11279,7 @@
       "jar_bytes": 8461484,
       "asset_index": "1.8",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13346,7 +13379,7 @@
       "jar_bytes": 5256245,
       "asset_index": "1.7.10",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -14543,7 +14576,7 @@
       "jar_bytes": 4745096,
       "asset_index": "legacy",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -21296,7 +21329,7 @@
       "queued": "2026-10-11T12:55:14Z"
     }
   ],
-  "updated": "2026-10-13T12:01:27Z",
+  "updated": "2026-10-13T12:09:31Z",
   "jvm": {
     "17w48a": {
       "route": "needs-lwjgl3",
