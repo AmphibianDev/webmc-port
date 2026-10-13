@@ -172,11 +172,18 @@ class Hub:
         self.viewers: dict[int, "Connection"] = {}
         self.next_id = 1
         self.lock = threading.Lock()
+        self.sharing = False
+        self.screen = (1920, 1080)
 
     def describe(self) -> dict:
         with self.lock:
             return {
-                "host": self.host is not None,
+                # live means a window is being shared, not that the page is open: the host page is
+                # open long before anyone captures anything, and the lobby must not lie about it
+                "host": self.host is not None and self.sharing,
+                "host_connected": self.host is not None,
+                "sharing": self.sharing,
+                "screen": {"width": self.screen[0], "height": self.screen[1]},
                 "viewers": list(self.viewers),
                 "injected": len(self.injector.seen),
                 "input": self.injector.enabled,
@@ -234,6 +241,16 @@ class Hub:
                 self.to_viewer(message.get("to"), message)
             else:
                 self.to_host({**message, "from": connection.viewer_id})
+        elif kind == "sharing":
+            with self.hub.lock:
+                self.hub.sharing = bool(message.get("on"))
+                width = int(message.get("width") or 1920)
+                height = int(message.get("height") or 1080)
+                self.hub.screen = (width, height)
+            for viewer_id in list(self.hub.viewers):
+                self.hub.to_viewer(viewer_id, {"t": "sharing", "on": self.hub.sharing,
+                                               "width": width, "height": height})
+            print("  host is " + (f"sharing {width}x{height}" if self.hub.sharing else "no longer sharing"))
         elif kind == "input":
             self.injector.handle(message.get("event") or {})
         elif kind == "ping":
@@ -351,13 +368,15 @@ class Handler(BaseHTTPRequestHandler):
         path = self.path.split("?")[0]
         if path == "/health":
             return self.reply_json(self.hub.describe())
-        if path in ("/", "/watch", "/watch.html"):
+        if path in ("/", "/lobby", "/lobby.html"):
+            return self.reply_file("lobby.html", "text/html; charset=utf-8")
+        if path in ("/watch", "/watch.html"):
             return self.reply_file("watch.html", "text/html; charset=utf-8")
         if path in ("/host", "/host.html"):
             return self.reply_file("host.html", "text/html; charset=utf-8")
         if path == "/signal" and self.headers.get("Upgrade", "").lower() == "websocket":
             return self.upgrade()
-        self.reply_json({"error": "not found", "try": ["/", "/host", "/health"]}, status=404)
+        self.reply_json({"error": "not found", "try": ["/", "/host", "/watch", "/health"]}, status=404)
 
     def reply_json(self, document: dict, status: int = 200) -> None:
         body = json.dumps(document, indent=1).encode("utf-8")
@@ -410,14 +429,34 @@ class Handler(BaseHTTPRequestHandler):
         super().finish()
 
 
+def lan_address() -> str | None:
+    """This machine's address on the network - what a friend should actually be given.
+
+    The hostname is not the way: on a Mac it usually resolves to 127.0.0.1, and the one-command
+    launcher printed exactly that the first time it ran. Asking the routing table which address would
+    be used to leave this machine gives the real one, and sends nothing.
+    """
+    try:
+        probe = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        probe.connect(("10.255.255.255", 1))
+        address = probe.getsockname()[0]
+        probe.close()
+        return address if not address.startswith("127.") else None
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def local_addresses() -> list[str]:
     """The addresses a friend on the same network (or the same tailnet) could use."""
     found = []
+    address = lan_address()
+    if address:
+        found.append(address)
     try:
         for info in socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET):
-            address = info[4][0]
-            if address not in found:
-                found.append(address)
+            candidate = info[4][0]
+            if candidate not in found and not candidate.startswith("127."):
+                found.append(candidate)
     except Exception:  # noqa: BLE001
         pass
     return found

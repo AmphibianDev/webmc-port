@@ -128,13 +128,19 @@ def main() -> int:
         check("and says input is off in this run", json.loads(health)["input"] is False)
 
         status, host_page = get("/host")
-        check("the host page is served", status == 200 and "Share a window" in host_page)
+        check("the host page is served", status == 200 and "Share the" in host_page)
+        check("and it can start a version itself, since that is what gets streamed",
+              "Start a version" in host_page and "webmc-port/#1.12.2" in host_page)
         check("it captures with the browser's own screen capture",
               "getDisplayMedia" in host_page and "contentHint" in host_page)
         check("it sets a bitrate per viewer", "maxBitrate" in host_page and "setParameters" in host_page)
 
-        status, watch_page = get("/")
-        check("the viewer page is served at the root", status == 200 and "Take control" in watch_page)
+        status, lobby = get("/")
+        check("the lobby is served at the root", status == 200 and "Join the session" in lobby)
+        check("it says whether anyone is streaming", "financial" not in lobby and "Nobody is streaming" in lobby)
+
+        status, watch_page = get("/watch")
+        check("the player is served at /watch", status == 200 and "Take control" in watch_page)
         check("it sends input only while control is held",
               "if (!control)" in watch_page and 't: "key"' in watch_page)
         check("Esc in the page hands control back",
@@ -183,7 +189,10 @@ def main() -> int:
         workflow_text = "\n".join(path.read_text().lower()
                                   for path in (ROOT / ".github" / "workflows").glob("*.yml"))
         check("no workflow starts this streamer", "stream/server.py" not in workflow_text
-              and "host.sh" not in workflow_text)
+              and "host.sh" not in workflow_text and "live.sh" not in workflow_text)
+        check("the one-command launcher exists and prints the friends link",
+              (STREAM / "live.sh").is_file()
+              and "friends (LAN)" in (STREAM / "live.sh").read_text())
     finally:
         process.terminate()
         try:

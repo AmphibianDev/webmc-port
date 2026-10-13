@@ -51,6 +51,10 @@
       el("state").className = "muted";
     } else if (message.t === "candidate") {
       if (message.candidate) { try { await peer.addIceCandidate(message.candidate); } catch (error) {} }
+    } else if (message.t === "sharing") {
+      screenWidth = message.width || screenWidth;
+      screenHeight = message.height || screenHeight;
+      if (message.on) { log("the host is sharing " + screenWidth + "x" + screenHeight); }
     } else if (message.t === "host-gone") {
       el("state").textContent = "the host stopped sharing";
       el("state").className = "err";

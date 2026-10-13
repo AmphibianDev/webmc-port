@@ -26,7 +26,8 @@
     theirs; the little local server only carries the handshake and their keystrokes.
   </p>
   <p>
-    <button id="share" class="go">Share a window</button>
+    <button id="play" class="go">1. Start a version</button>
+    <button id="share" class="go">2. Share the screen</button>
     <button id="stop" disabled>Stop sharing</button>
     <span id="state" class="muted">not sharing</span>
   </p>
@@ -126,13 +127,14 @@
     track.addEventListener("ended", stopSharing);
     log("capturing: " + track.label);
     const settings = track.getSettings ? track.getSettings() : {};
-    const size = { t: "screen", width: settings.width || 1920, height: settings.height || 1080 };
-    socket.send(JSON.stringify(size));
+    socket.send(JSON.stringify({ t: "sharing", on: true,
+                                 width: settings.width || 1920, height: settings.height || 1080 }));
     for (const id of peers.keys()) { closeViewer(id); }
     socket.send(JSON.stringify({ t: "ping", at: Date.now() }));
   }
 
   function stopSharing() {
+    if (socket.readyState === WebSocket.OPEN) { socket.send(JSON.stringify({ t: "sharing", on: false })); }
     if (stream) { stream.getTracks().forEach((track) => track.stop()); stream = null; }
     for (const id of [...peers.keys()]) { closeViewer(id); }
     el("preview").srcObject = null;
@@ -142,6 +144,12 @@
     el("stop").disabled = true;
   }
 
+  el("play").addEventListener("click", () => {
+    // the launcher runs the real client in a tab; fullscreen it and share the screen, and what your
+    // friends see is that tab
+    window.open("https://amphibiandev.github.io/webmc-port/#1.12.2", "_blank", "noopener");
+    log("opened the launcher: pick 1.12.2, wait for the title screen, then go fullscreen and share");
+  });
   el("share").addEventListener("click", share);
   el("stop").addEventListener("click", stopSharing);
   el("bitrate").addEventListener("input", () => {
