@@ -102,7 +102,14 @@ function guarded(name, body) {
 }
 
 function nameOf(kind, object) {
-  if (object === null || object === undefined) return 0;
+  if (object === null || object === undefined) {
+    state.javaLog = state.javaLog || [];
+    const context = state.gl;
+    const lost = context && context.isContextLost ? context.isContextLost() : "no context";
+    state.javaLog.push("WebGL returned null for a " + kind + " (context lost: " + lost + ", "
+                       + (context ? context.getParameter(context.VERSION) : "none") + ")");
+    return 0;
+  }
   const existing = objects[kind].get(object);
   if (existing !== undefined) return existing;
   const name = handles[kind].next++;
