@@ -357,6 +357,12 @@ def main() -> int:
     check("the game itself is never run on a runner: only compiled",
           "run: python3 tools/vendor_libs.py" in workflow_text
           or "vendor_libs" in workflow_text)
+    vm_doc = (ROOT / "stream" / "vm" / "README.md").read_text().lower()
+    check("the cloud-host question is answered with the hosts and their real limits",
+          "oracle" in vm_doc and "always free" in vm_doc and "cannot run" in vm_doc)
+    check("and it says the licence line is separate from the hosting line",
+          "mojang" in vm_doc and "eula" in vm_doc)
+    check("the provisioner exists for a box a person owns", (ROOT / "stream" / "vm" / "provision.sh").is_file())
     streaming = (ROOT / "STREAMING.md").read_text().lower()
     check("the streaming question is written down with its prices",
           "1.25/hour" in streaming and "section 2.8" in streaming and "non-commercial" in streaming)
