@@ -357,6 +357,11 @@ def main() -> int:
     check("the game itself is never run on a runner: only compiled",
           "run: python3 tools/vendor_libs.py" in workflow_text
           or "vendor_libs" in workflow_text)
+    streaming = (ROOT / "STREAMING.md").read_text().lower()
+    check("the streaming question is written down with its prices",
+          "1.25/hour" in streaming and "section 2.8" in streaming and "non-commercial" in streaming)
+    check("and it points at the only defensible shape: self-hosted",
+          "your own machine" in streaming and "never as a ci job" in streaming)
     compliance = (ROOT / "COMPLIANCE.md").read_text().lower()
     check("this rule is written down where a person will read it",
           "private" in compliance and "circumvention" in compliance
