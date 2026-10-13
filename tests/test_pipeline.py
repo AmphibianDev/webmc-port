@@ -357,6 +357,13 @@ def main() -> int:
     check("the game itself is never run on a runner: only compiled",
           "run: python3 tools/vendor_libs.py" in workflow_text
           or "vendor_libs" in workflow_text)
+    free_doc = (ROOT / "FREE-COMPUTE.md").read_text().lower()
+    check("the free-compute question is answered with real numbers",
+          "16 gb" in free_doc and "oracle" in free_doc and "24 gb" in free_doc)
+    check("and it names what each provider forbids rather than guessing",
+          "unlimited minutes" in free_doc and "no" in free_doc and "terms" in free_doc)
+    check("it separates building (allowed) from hosting a session (not)",
+          "to *build*" in free_doc or "to build" in free_doc)
     desktop_doc = (ROOT / "stream" / "desktop" / "README.md").read_text().lower()
     check("the archived streaming stack is revived, and says what it is",
           "selkies" in desktop_doc and "x11vnc" in desktop_doc and "archived stack" in desktop_doc)
