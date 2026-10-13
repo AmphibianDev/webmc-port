@@ -41,10 +41,11 @@
     window.webmcCanvasElement = document.getElementById("lwjgl");
     // if the class is not where the JVM is looking, say so with a status code rather than letting the
     // JVM report it as "could not find or load main class"
-    const probe = await fetch("/classes/webmc/BootTest.class", { method: "HEAD" }).then((r) => r.status).catch((e) => String(e));
-    lines.push("class file over HTTP: " + probe);
+    const probe = await fetch("/app.jar", { method: "HEAD" }).then((r) => r.status).catch((e) => String(e));
+    lines.push("app.jar over HTTP: " + probe);
     const started = performance.now();
-    const code = await cheerpjRunMain("webmc.BootTest", "/app/classes");
+    // the jar, not the directory: see the workflow's note
+    const code = await cheerpjRunMain("webmc.BootTest", "/app/app.jar");
     const seconds = (performance.now() - started) / 1000;
     document.title = "EXIT " + code;
     await report({

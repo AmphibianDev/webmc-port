@@ -94,6 +94,11 @@ jobs:
           # javac fails with the JVM's least helpful message
           javac --release 17 -nowarn -d /tmp/shimweb/classes @/tmp/sources.txt
           javap -v -p -cp /tmp/shimweb/classes webmc.BootTest | grep -m1 "major version" || true
+          # a jar rather than a directory of class files: that is the form CheerpJ is documented to
+          # load, and the directory form answered "Could not find or load main class" with the class
+          # file sitting right there and fetchable
+          (cd /tmp/shimweb/classes && jar --create --file /tmp/shimweb/app.jar .)
+          ls -l /tmp/shimweb/app.jar
           cp lwjgl3-webgl/test/boot.html /tmp/shimweb/index.html
           cp -r lwjgl3-webgl/natives /tmp/shimweb/natives
 
