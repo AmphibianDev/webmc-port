@@ -69,3 +69,65 @@ The long waits are downloads and JVM start, not the game:
   discovered by running clients rather than by guessing.
 * A public streaming or hosting service for this stays out: the only machine that runs the game is one a
   person owns, which is where all three rows already put it.
+
+## The starter: mods that compile in front of you, in fifteen minutes
+
+The shape asked for: a `mods/` folder, a start command, and the mods are compiled into the client as it
+starts. That is two different mechanisms, and the honest design says which one is instant and which one has
+a budget.
+
+### Where it is instant: the real JVM routes (1.0 - 1.20.4)
+
+Under a real JVM there is nothing to compile ahead of time - the class loader is the mechanism:
+
+```
+/mods/
+  my-mod/                 sources, a built jar, or a Fabric mod jar - all three work
+  my-mod/mod.json         what to load and when (optional; sensible defaults otherwise)
+start.sh 1.16.5           compiles what needs compiling, assembles the classpath, opens the client
+```
+
+`start.sh` does, in order: read the version's route (Fabric Loader for 1.14+, Legacy Fabric for 1.8.9 -
+1.12.2, our own loader for the page-tier API); compile any `mods/*/src/**/*.java` with `javac` against the
+client's own jars, which is seconds, not minutes; put the result, plus every `mods/*.jar`, **before** the
+game on the classpath; then start. Success is a served game with the mod live, and the whole start is
+seconds - the client jar and libraries are already in the browser cache after the first visit.
+
+That is the row where "compiles in front of you" is literally true, because the JVM compiles and loads
+classes anyway.
+
+### Where it has a 15-minute budget: the compiled routes (1.20.5 - 26.x)
+
+Those clients are ahead-of-time compiled, so a mod cannot be loaded at play time and must go in **before**
+the link. The starter therefore runs the same pipeline our 26.2 build runs, but incrementally, and the
+budget is the point:
+
+| step | cold (first ever run) | warm, one mod changed | how |
+|---|---|---|---|
+| gradle compile | ~25 s | ~5 s | gradle build cache, daemon-less, `--offline` after the first resolve |
+| mod sources (`mods/*/src`) | ~1 min | ~10 s | compiled against the client's classpath, only changed files |
+| TeaVM wasm link | ~20 min | **~8 min** | incremental link: only mod-owning classes recompile; the client's 102 MB image is reused |
+| brotli recompress | ~4 min | **~1 min** | only payloads whose bytes changed; unchanged `.br` files are reused |
+| package single HTML | ~20 s | ~20 s | the packager already does this |
+| **total** | ~45 min (today's cold build) | **~15 min or less** | |
+
+Rules that keep it inside the budget: the link cache in `wasm-toolchain/standalone-link-cache.js` is kept
+between runs; a mod that changes nothing in the client's own classes must not trigger a client relink; and
+the precompressed wasm is reused unless the link actually produced new bytes.
+
+### What the starter does not promise
+
+* Baked mods must be **AOT-friendly**: no native libraries, no runtime bytecode generation, no assuming a
+  class loader exists. A mod that reflects its way around the game will not survive 26.x, and the starter
+  says so before it spends fifteen minutes finding out.
+* On the real-JVM rows the mods are ordinary Fabric mods, with the ordinary caveats: a mod needing a Java
+  version the browser JVM lacks, or a GL feature the shim has not grown, will not run.
+* Fifteen minutes is the target for **one changed mod**, measured from a warm cache on the machine doing
+  the build; the first build of a version is the ~45 minutes the 26.2 job already takes.
+
+### The order this lands in
+
+1. `start.sh` for the real-JVM rows, with `javac` over `mods/`, because it is small and instantly useful.
+2. The manifest (`mods.json`) that both rows read, so the launcher can add a mod by editing one file.
+3. The incremental build for the compiled rows, with the budget above as its acceptance test: **one mod
+   changed, fifteen minutes, from the warm cache**.

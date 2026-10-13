@@ -383,8 +383,14 @@ def main() -> int:
           "legacy fabric" in steps and "fabric loader + its libraries on the classpath" in steps
           and "baked at build time" in steps)
     check("and it starts from the blocker rather than pretending there is none",
-          "first frame in the shim" in steps and "glicreateshader" in steps)
+          "first frame in the shim" in steps and "glcreateshader" in steps)
     check("fast loading is its own list", "cache the payloads" in steps and "warm on intent" in steps)
+    check("the starter is specced per route, with the instant one separated from the budgeted one",
+          "start.sh" in steps and "javac" in steps and "15-minute budget" in steps)
+    check("and the fifteen minutes are broken down rather than asserted",
+          "teavm wasm link" in steps and "brotli recompress" in steps and "incremental link" in steps)
+    check("it also says what the starter cannot promise",
+          "aot-friendly" in steps and "will not survive 26.x" in steps)
     coverage = (ROOT / "VERSION-COVERAGE.md").read_text().lower()
     check("the version map answers the questions asked of it",
           "1.16.5 - 1.20.4" in coverage and "snapshots" in coverage
