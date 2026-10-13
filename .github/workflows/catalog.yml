@@ -77,8 +77,11 @@ jobs:
         # start. Deduplicated by sha1, so the pool grows far more slowly than the version count, and
         # site/libs is git-ignored: these are third-party jars, deployed but never committed.
         run: |
-          python3 tools/vendor_libs.py --limit 6 --out site/libs \
+          # Releases first, newest first, then snapshots: these are what make a version start, and
+          # the pool is deduplicated by sha1 so it grows far more slowly than the version count.
+          python3 tools/vendor_libs.py --from-manifest site/manifest.json --limit 25 --out site/libs \
             || echo "::warning::could not vendor more libraries this run"
+          du -sh site/libs 2>/dev/null || true
 
       - name: Check that every play link is alive and servable
         run: |

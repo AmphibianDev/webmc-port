@@ -114,6 +114,9 @@ def main(argv=None) -> int:
     parser.add_argument("--limit", type=int, default=8, help="how many to do when given a list")
     parser.add_argument("--out", default=str(ROOT / "site" / "libs"))
     parser.add_argument("--report", action="store_true")
+    parser.add_argument("--from-manifest", help="vendor whatever the catalog says is launchable and not yet done")
+    parser.add_argument("--budget-mb", type=int, default=700,
+                        help="stop growing the pool past this size (GitHub Pages allows 1 GB)")
     args = parser.parse_args(argv)
 
     wanted = []
@@ -121,10 +124,31 @@ def main(argv=None) -> int:
         wanted.append(args.version)
     if args.versions:
         wanted.extend(v.strip() for v in args.versions.split(",") if v.strip())
+    if not wanted and args.from_manifest:
+        # every version the launcher can start as real Java whose libraries are not deployed yet.
+        # Releases first, newest first, then snapshots newest first: the versions a person tries are
+        # the ones they know, and the pool is deduplicated by sha1, so later versions reuse jars.
+        document = json.loads(pathlib.Path(args.from_manifest).read_text())
+        launchable = [v for v in document.get("versions", []) if v.get("jar_url")]
+        wanted = [v["id"] for v in sorted(launchable, key=lambda v: v.get("released") or "", reverse=True)
+                  if v.get("type") == "release" and not v.get("libs_ready")]
+        wanted += [v["id"] for v in sorted(launchable, key=lambda v: v.get("released") or "", reverse=True)
+                   if v.get("type") != "release" and not v.get("libs_ready")]
     if not wanted:
         # the versions a person is most likely to try first, newest first
         wanted = ["1.12.2", "1.11.2", "1.10.2", "1.8.9", "1.7.10", "1.6.4", "1.5.2", "1.2.5"]
     wanted = wanted[: args.limit]
+
+
+    # GitHub Pages publishes at most 1 GB. Refusing to grow past a budget is better than a deploy that
+    # silently fails, so the pool stops growing and says why.
+    pool = pathlib.Path(args.out)
+    if pool.is_dir():
+        used = sum(f.stat().st_size for f in pool.glob("*.jar"))
+        if used > args.budget_mb * 1048576:
+            print(f"  the library pool is {used / 1048576:.0f} MB, over the {args.budget_mb} MB budget: "
+                  f"not vendoring more this run")
+            return 0
 
     out = pathlib.Path(args.out)
     done = []

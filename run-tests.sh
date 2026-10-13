@@ -8,6 +8,7 @@ echo; echo "== launcher page"; node tests/test_site.mjs || failed=1
 echo; echo "== what Fabric supports"; python3 tests/test_fabric.py || failed=1
 echo; echo "== what a browser JVM can run (the whole Java family)"; python3 tests/test_jvm_route.py || failed=1
 echo; echo "== vendored libraries and live links"; python3 tests/test_vendor_libs.py || failed=1
+echo; echo "== the self-hosted streamer (pages, handshake, input safety)"; python3 stream/test_stream.py || failed=1
 echo; echo "== the build downloader (GitHub only, verified on arrival)"
 python3 tests/test_fetch_builds.py || failed=1
 echo; echo "== the local launcher page"

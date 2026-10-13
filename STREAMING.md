@@ -55,6 +55,18 @@ this file does - "GitHub-hosted runners are for building, not game hosting; a ma
 neither limit". The honest upgrade for smoothness is to replace noVNC with WebRTC (20-50 ms locally
 instead of a laggy VNC canvas), which is a weekend of work and needs no host at all.
 
+## It exists in this repository now
+
+`stream/` is that tool: `./stream/host.sh`, then press "Share a window" and pick Minecraft. Viewers
+open the address, press "Take control", and play; Esc in the page hands control back. Video is WebRTC
+straight between the two browsers, the local server carries only the handshake and the keystrokes, and
+afraid of nothing it is standard-library Python. See `stream/README.md` for the limits, which are
+honest ones: one action-game viewer at a time is comfortable, input goes to whatever window is focused,
+and macOS will ask for Screen Recording and Accessibility the first time.
+
+For friends outside your network, a tailnet (free for three users) is the quiet way to give them an
+address without opening a port to the internet; the local network works for anyone in the house.
+
 What this repository will not do, and `tests/test_pipeline.py` asserts it: no workflow may mention
 xvfb, x11vnc, noVNC, ffmpeg, rtmp, cloudflared, ngrok or a server jar, and the only long job stays
 manual. If streaming comes back, it comes back as a self-hosted tool a person runs on their own
