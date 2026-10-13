@@ -8,6 +8,7 @@ cd "$(dirname "$0")"
 PORT="${WEBMC_STREAM_PORT:-8770}"
 BIND="127.0.0.1"
 EXTRA=()
+WANT_FUNNEL=0
 for arg in "$@"; do
   case "$arg" in
     --tailscale) BIND="0.0.0.0"; EXTRA+=(--tailscale) ;;

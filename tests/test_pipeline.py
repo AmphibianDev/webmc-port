@@ -357,6 +357,17 @@ def main() -> int:
     check("the game itself is never run on a runner: only compiled",
           "run: python3 tools/vendor_libs.py" in workflow_text
           or "vendor_libs" in workflow_text)
+    desktop_doc = (ROOT / "stream" / "desktop" / "README.md").read_text().lower()
+    check("the archived streaming stack is revived, and says what it is",
+          "selkies" in desktop_doc and "x11vnc" in desktop_doc and "archived stack" in desktop_doc)
+    check("it says why it cannot run on this Mac",
+          "no xvfb" in desktop_doc and "linux only" in desktop_doc)
+    check("its quality lessons are written down",
+          "encoder is a list" in desktop_doc and "window manager" in desktop_doc)
+    check("and the part that got the account suspended did not come across",
+          "github actions workflow" in desktop_doc and "nothing in this repository starts a session" in desktop_doc)
+    for name in ("session.sh", "provision.sh", "publish.sh", "fetch-client.py"):
+        check(f"{name} is in place", (ROOT / "stream" / "desktop" / name).is_file())
     vm_doc = (ROOT / "stream" / "vm" / "README.md").read_text().lower()
     check("the cloud-host question is answered with the hosts and their real limits",
           "oracle" in vm_doc and "always free" in vm_doc and "cannot run" in vm_doc)

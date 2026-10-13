@@ -205,6 +205,10 @@ def main() -> int:
                                   for path in (ROOT / ".github" / "workflows").glob("*.yml"))
         check("no workflow starts this streamer", "stream/server.py" not in workflow_text
               and "host.sh" not in workflow_text and "live.sh" not in workflow_text)
+        live = (STREAM / "live.sh").read_text()
+        check("the launcher initialises every flag it later reads",
+              "WANT_FUNNEL=0" in live and live.index("WANT_FUNNEL=0") < live.index("--funnel"),
+              "set -u makes an unset flag fatal, and it killed the script after the server had started")
         check("the one-command launcher exists and prints the friends link",
               (STREAM / "live.sh").is_file()
               and "friends (LAN)" in (STREAM / "live.sh").read_text())
