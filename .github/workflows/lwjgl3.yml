@@ -78,9 +78,13 @@ jobs:
           javac -nowarn -d /tmp/shim-classes @/tmp/sources.txt && echo "the skeleton compiles"
 
       - name: Boot a Java program against the shim, in a real browser
-        # This is the test that says the approach works: CheerpJ runs a Java program that opens a
-        # window through our GLFW, draws through our GL, and reads a pixel back through our memory.
-        # Headless Chrome with SwiftShader, because a runner has no GPU and software WebGL is enough.
+        # This is the test that says the approach works: CheerpJ runs a Java program that opens a window
+        # through our GLFW, draws through our GL, and reads a pixel back through our memory. Headless
+        # Chrome with SwiftShader, because a runner has no GPU and software WebGL is enough.
+        #
+        # The page reports by POSTing to this collector rather than being scraped from the DOM: a DOM
+        # dump happens before an async module has finished, and the Java program's own output is the
+        # thing worth reading when it fails.
         run: |
           set -euo pipefail
           mkdir -p /tmp/shimweb/classes
@@ -89,29 +93,49 @@ jobs:
           javac -nowarn -d /tmp/shimweb/classes @/tmp/sources.txt
           cp lwjgl3-webgl/test/boot.html /tmp/shimweb/index.html
           cp -r lwjgl3-webgl/natives /tmp/shimweb/natives
-          test -f /tmp/shimweb/natives/webmc-lwjgl3.js
-          cd /tmp/shimweb && python3 -m http.server 8777 >/dev/null 2>&1 &
+
+          cat > /tmp/collector.py <<'PYTHON'
+          import http.server, json, pathlib, socketserver
+          class Handler(http.server.SimpleHTTPRequestHandler):
+              def log_message(self, *args): pass
+              def do_POST(self):
+                  length = int(self.headers.get("content-length") or 0)
+                  body = self.rfile.read(length)
+                  pathlib.Path("/tmp/result.json").write_bytes(body)
+                  self.send_response(204); self.send_header("content-length", "0"); self.end_headers()
+          socketserver.TCPServer.allow_reuse_address = True
+          with socketserver.TCPServer(("127.0.0.1", 8777), Handler) as server:
+              server.serve_forever()
+          PYTHON
+          rm -f /tmp/result.json
+          (cd /tmp/shimweb && python3 /tmp/collector.py) &
           sleep 2
           curl -sf http://127.0.0.1:8777/index.html >/dev/null && echo "the test page is being served"
 
           CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium)"
           echo "chrome: $CHROME"
-          # --dump-dom waits for the page to settle under a virtual clock; the page writes the result
-          # into the DOM, which is how a browser with no console access reports back
           "$CHROME" --headless=new --no-sandbox --disable-gpu-sandbox --use-gl=angle \
-            --use-angle=swiftshader --enable-unsafe-swiftshader --allow-file-access-from-files \
-            --virtual-time-budget=120000 --dump-dom --disable-dev-shm-usage \
-            http://127.0.0.1:8777/index.html > /tmp/dom.html 2>/tmp/chrome.err || true
-          echo "--- what the page said ---"
-          grep -oE "RESULT[^<]*" /tmp/dom.html || echo "(no RESULT line: the page did not finish)"
-          grep -oE "<title>[^<]*</title>" /tmp/dom.html || true
-          echo "--- the java log, if it got that far ---"
-          grep -oE "BOOT [A-Z]+[^<]*" /tmp/dom.html | head -5 || true
-          if grep -qE "RESULT code=0 frames=[1-9]" /tmp/dom.html; then
-            echo "::notice::the loader booted and drew a frame in a real browser"
+            --use-angle=swiftshader --enable-unsafe-swiftshader --disable-dev-shm-usage \
+            --window-size=400,400 --no-first-run --disable-features=DBus \
+            http://127.0.0.1:8777/index.html >/tmp/chrome.log 2>&1 &
+
+          for _ in $(seq 1 90); do
+            [ -f /tmp/result.json ] && break
+            sleep 2
+          done
+          if [ ! -f /tmp/result.json ]; then
+            echo "::error::the page never reported back; last lines of the browser log:"
+            tail -20 /tmp/chrome.log || true
+            exit 1
+          fi
+          echo "--- what the java program said ---"
+          python3 -c "import json;d=json.load(open('/tmp/result.json'));print('\n'.join(d.get('log') or []))"
+          echo "--- what the page reported ---"
+          python3 -c "import json;print(json.dumps(json.load(open('/tmp/result.json')), indent=1)[:1200])"
+          if python3 -c "import json,sys;d=json.load(open('/tmp/result.json'));sys.exit(0 if d.get('code')==0 and d.get('frames',0)>0 else 1)"; then
+            echo "::notice::the loader booted a JVM, opened a window and drew a frame in a real browser"
           else
-            echo "::error::the loader did not boot; see the RESULT line above"
-            tail -30 /tmp/chrome.err || true
+            echo "::error::the loader did not boot; the log above says where"
             exit 1
           fi
 
