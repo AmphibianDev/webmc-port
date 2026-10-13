@@ -75,7 +75,7 @@ jobs:
           mkdir -p /tmp/shim-classes
           find lwjgl3-webgl/src/main/java -name "*.java" > /tmp/sources.txt
           wc -l < /tmp/sources.txt
-          javac -nowarn -d /tmp/shim-classes @/tmp/sources.txt && echo "the skeleton compiles"
+          javac --release 17 -nowarn -d /tmp/shim-classes @/tmp/sources.txt && echo "the skeleton compiles (java 17 bytecode, which is what CheerpJ runs)"
 
       - name: Boot a Java program against the shim, in a real browser
         # This is the test that says the approach works: CheerpJ runs a Java program that opens a window
@@ -90,7 +90,10 @@ jobs:
           mkdir -p /tmp/shimweb/classes
           find lwjgl3-webgl/src/main/java -name "*.java" > /tmp/sources.txt
           echo "lwjgl3-webgl/test/BootTest.java" >> /tmp/sources.txt
-          javac -nowarn -d /tmp/shimweb/classes @/tmp/sources.txt
+          # bytecode version matters: CheerpJ runs Java 8, 11 and 17, and a class file from a newer
+          # javac fails with the JVM's least helpful message
+          javac --release 17 -nowarn -d /tmp/shimweb/classes @/tmp/sources.txt
+          javap -v -p -cp /tmp/shimweb/classes webmc.BootTest | grep -m1 "major version" || true
           cp lwjgl3-webgl/test/boot.html /tmp/shimweb/index.html
           cp -r lwjgl3-webgl/natives /tmp/shimweb/natives
 
