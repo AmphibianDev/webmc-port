@@ -57,6 +57,53 @@ function webmcFree(address) {
   freeBySize.get(size).push(address);
 }
 
+// ---------------------------------------------------------------------------- handles
+//
+// WebGL hands out objects - a WebGLShader, a WebGLBuffer, a WebGLProgram - and Minecraft deals in ints,
+// because that is what its bytecode was compiled against and what it passes back to every later call.
+// So every object gets a small integer name here, and every call that takes a handle looks it up.
+//
+// This was the bug that stopped the boot test dead at the first GL call after the context: createShader
+// returned an object where an int was expected, and writing an object into an Int32Array writes 0, so
+// every handle in the program was silently null.
+
+const HANDLE_KINDS = ["buffer", "texture", "vertexArray", "program", "shader", "framebuffer",
+                      "renderbuffer", "uniform", "sampler"];
+const handles = {};
+const objects = {};
+for (const kind of HANDLE_KINDS) {
+  handles[kind] = new Map();   // int -> object
+  objects[kind] = new Map();   // object -> int
+  handles[kind].next = 1;
+}
+
+function nameOf(kind, object) {
+  if (object === null || object === undefined) return 0;
+  const existing = objects[kind].get(object);
+  if (existing !== undefined) return existing;
+  const name = handles[kind].next++;
+  handles[kind].set(name, object);
+  objects[kind].set(object, name);
+  return name;
+}
+
+function objectOf(kind, name) {
+  if (!name) return null;
+  const found = handles[kind].get(name);
+  if (found === undefined) {
+    throw new Error("no " + kind + " with handle " + name + " (was it deleted, or never created here?)");
+  }
+  return found;
+}
+
+function dropHandle(kind, name) {
+  const object = handles[kind].get(name);
+  if (object !== undefined) {
+    objects[kind].delete(object);
+    handles[kind].delete(name);
+  }
+}
+
 // ---------------------------------------------------------------------------- window and input
 
 const state = {
@@ -378,21 +425,24 @@ function Java_org_lwjgl_opengl_GL11_glFinish() { gl().finish(); }
 function Java_org_lwjgl_opengl_GL11_nglGenBuffers(lib, count, pointers) {
   const glc = gl();
   for (let index = 0; index < count; index++) {
-    I32[(pointers >> 2) + index] = glc.createBuffer();
-    // WebGL hands out objects, so this file keeps the mapping from the integer a client sees to the
-    // object GL knows; the client only ever passes the integer back
-    bufferNames.set(I32[(pointers >> 2) + index], true);
+    I32[(pointers >> 2) + index] = nameOf("buffer", glc.createBuffer());
   }
 }
-function Java_org_lwjgl_opengl_GL11_glGenBuffers(lib, buffers) {
-  const glc = gl();
-  const array = lib.org.webmc.webgl.GL.toJavaIntArray(buffers);
-  for (let index = 0; index < array.length; index++) array[index] = glc.createBuffer();
+function Java_org_lwjgl_opengl_GL11_glGenBuffers(lib, buffers, offset) {
+  // the int[] form: write the names straight into the arena address the client passed
+  const start = Number(buffers) + (Number(offset) || 0);
+  I32[start >> 2] = nameOf("buffer", gl().createBuffer());
 }
 function Java_org_lwjgl_opengl_GL11_nglDeleteBuffers(lib, count, pointers) {
-  for (let index = 0; index < count; index++) gl().deleteBuffer(I32[(pointers >> 2) + index]);
+  for (let index = 0; index < count; index++) {
+    const name = I32[(pointers >> 2) + index];
+    const object = handles.buffer.get(name);
+    if (object !== undefined) { gl().deleteBuffer(object); dropHandle("buffer", name); }
+  }
 }
-function Java_org_lwjgl_opengl_GL11_glBindBuffer(lib, target, buffer) { gl().bindBuffer(target, buffer || null); }
+function Java_org_lwjgl_opengl_GL11_glBindBuffer(lib, target, buffer) {
+  gl().bindBuffer(target, buffer ? objectOf("buffer", buffer) : null);
+}
 function Java_org_lwjgl_opengl_GL11_nglBufferData1(lib, target, size, data, usage) {
   const glc = gl();
   if (data) glc.bufferData(target, U8.subarray(data, data + size), usage);
@@ -416,21 +466,35 @@ function Java_org_lwjgl_opengl_GL15_nglGenBuffers(lib, count, pointers) {
 function Java_org_lwjgl_opengl_GL15_nglDeleteBuffers(lib, count, pointers) {
   Java_org_lwjgl_opengl_GL11_nglDeleteBuffers(lib, count, pointers);
 }
-function Java_org_lwjgl_opengl_GL15_glBindBuffer(lib, target, buffer) { gl().bindBuffer(target, buffer || null); }
+function Java_org_lwjgl_opengl_GL15_glBindBuffer(lib, target, buffer) {
+  gl().bindBuffer(target, buffer ? objectOf("buffer", buffer) : null);
+}
 function Java_org_lwjgl_opengl_GL30_nglGenVertexArrays(lib, count, pointers) {
   const glc = gl();
-  for (let index = 0; index < count; index++) I32[(pointers >> 2) + index] = glc.createVertexArray();
+  for (let index = 0; index < count; index++) {
+    I32[(pointers >> 2) + index] = nameOf("vertexArray", glc.createVertexArray());
+  }
 }
 function Java_org_lwjgl_opengl_GL30_nglDeleteVertexArrays(lib, count, pointers) {
-  for (let index = 0; index < count; index++) gl().deleteVertexArray(I32[(pointers >> 2) + index]);
+  for (let index = 0; index < count; index++) {
+    const name = I32[(pointers >> 2) + index];
+    const object = handles.vertexArray.get(name);
+    if (object !== undefined) { gl().deleteVertexArray(object); dropHandle("vertexArray", name); }
+  }
 }
-function Java_org_lwjgl_opengl_GL30_glBindVertexArray(lib, array) { gl().bindVertexArray(array || null); }
+function Java_org_lwjgl_opengl_GL30_glBindVertexArray(lib, array) {
+  gl().bindVertexArray(array ? objectOf("vertexArray", array) : null);
+}
 function Java_org_lwjgl_opengl_GL20_nglGenBuffers(lib, count, pointers) {
   Java_org_lwjgl_opengl_GL11_nglGenBuffers(lib, count, pointers);
 }
-function Java_org_lwjgl_opengl_GL20_glCreateShader(lib, type) { return gl().createShader(type); }
+function Java_org_lwjgl_opengl_GL20_glCreateShader(lib, type) {
+  return nameOf("shader", gl().createShader(type));
+}
 function Java_org_lwjgl_opengl_GL20_glShaderSource(lib, shader, string) {
-  gl().shaderSource(shader, string);
+  // the Java side hands over a String, which arrives here as a JavaScript string or as a Java object
+  // depending on how it was built; both have to end up as text
+  gl().shaderSource(objectOf("shader", shader), string === null || string === undefined ? "" : String(string));
 }
 function Java_org_lwjgl_opengl_GL20_nglShaderSource(lib, shader, count, strings, lengths) {
   const parts = [];
@@ -440,51 +504,72 @@ function Java_org_lwjgl_opengl_GL20_nglShaderSource(lib, shader, count, strings,
     const end = length > 0 ? address + length : nextZeroByte(address);
     parts.push(String.fromCharCode.apply(null, U8.subarray(address, end)));
   }
-  gl().shaderSource(shader, parts.join(""));
+  gl().shaderSource(objectOf("shader", shader), parts.join(""));
 }
-function Java_org_lwjgl_opengl_GL20_glCompileShader(lib, shader) { gl().compileShader(shader); }
-function Java_org_lwjgl_opengl_GL20_glDeleteShader(lib, shader) { gl().deleteShader(shader); }
-function Java_org_lwjgl_opengl_GL20_glCreateProgram() { return gl().createProgram(); }
-function Java_org_lwjgl_opengl_GL20_glAttachShader(lib, program, shader) { gl().attachShader(program, shader); }
-function Java_org_lwjgl_opengl_GL20_glDetachShader(lib, program, shader) { gl().detachShader(program, shader); }
-function Java_org_lwjgl_opengl_GL20_glLinkProgram(lib, program) { gl().linkProgram(program); }
-function Java_org_lwjgl_opengl_GL20_glUseProgram(lib, program) { gl().useProgram(program || null); }
-function Java_org_lwjgl_opengl_GL20_glDeleteProgram(lib, program) { gl().deleteProgram(program); }
+function Java_org_lwjgl_opengl_GL20_glCompileShader(lib, shader) {
+  gl().compileShader(objectOf("shader", shader));
+}
+function Java_org_lwjgl_opengl_GL20_glDeleteShader(lib, shader) {
+  const object = objectOf("shader", shader);
+  gl().deleteShader(object);
+  dropHandle("shader", shader);
+}
+function Java_org_lwjgl_opengl_GL20_glCreateProgram() { return nameOf("program", gl().createProgram()); }
+function Java_org_lwjgl_opengl_GL20_glAttachShader(lib, program, shader) {
+  gl().attachShader(objectOf("program", program), objectOf("shader", shader));
+}
+function Java_org_lwjgl_opengl_GL20_glDetachShader(lib, program, shader) {
+  gl().detachShader(objectOf("program", program), objectOf("shader", shader));
+}
+function Java_org_lwjgl_opengl_GL20_glLinkProgram(lib, program) {
+  gl().linkProgram(objectOf("program", program));
+}
+function Java_org_lwjgl_opengl_GL20_glUseProgram(lib, program) {
+  gl().useProgram(program ? objectOf("program", program) : null);
+}
+function Java_org_lwjgl_opengl_GL20_glDeleteProgram(lib, program) {
+  gl().deleteProgram(objectOf("program", program));
+  dropHandle("program", program);
+}
 function Java_org_lwjgl_opengl_GL20_glBindAttribLocation(lib, program, index, name) {
-  gl().bindAttribLocation(program, index, String(name));
+  gl().bindAttribLocation(objectOf("program", program), index, String(name));
 }
 function Java_org_lwjgl_opengl_GL20_glGetAttribLocation(lib, program, name) {
-  return gl().getAttribLocation(program, String(name));
+  return gl().getAttribLocation(objectOf("program", program), String(name));
 }
 function Java_org_lwjgl_opengl_GL20_nglGetShaderiv(lib, shader, name, pointer) {
-  I32[pointer >> 2] = gl().getShaderParameter(shader, name) ? 1 : 0;
+  // WebGL answers a boolean for COMPILE_STATUS and a number for the log length
+  const value = gl().getShaderParameter(objectOf("shader", shader), name);
+  I32[pointer >> 2] = typeof value === "number" ? value : (value ? 1 : 0);
 }
 function Java_org_lwjgl_opengl_GL20_glGetShaderi(lib, shader, name) {
-  const value = gl().getShaderParameter(shader, name);
+  const value = gl().getShaderParameter(objectOf("shader", shader), name);
   return typeof value === "number" ? value : (value ? 1 : 0);
 }
 function Java_org_lwjgl_opengl_GL20_glGetShaderInfoLog(lib, shader, maxLength) {
   // the client passes a buffer length it decided on; the whole log is what it wants back
-  return gl().getShaderInfoLog(shader) || "";
+  return gl().getShaderInfoLog(objectOf("shader", shader)) || "";
 }
 function Java_org_lwjgl_opengl_GL20_nglGetProgramiv(lib, program, name, pointer) {
-  I32[pointer >> 2] = gl().getProgramParameter(program, name) ? 1 : 0;
+  const value = gl().getProgramParameter(objectOf("program", program), name);
+  I32[pointer >> 2] = typeof value === "number" ? value : (value ? 1 : 0);
 }
 function Java_org_lwjgl_opengl_GL20_glGetProgrami(lib, program, name) {
-  const value = gl().getProgramParameter(program, name);
+  const value = gl().getProgramParameter(objectOf("program", program), name);
   return typeof value === "number" ? value : (value ? 1 : 0);
 }
 function Java_org_lwjgl_opengl_GL20_glGetProgramInfoLog(lib, program, maxLength) {
-  return gl().getProgramInfoLog(program) || "";
+  return gl().getProgramInfoLog(objectOf("program", program)) || "";
 }
 function Java_org_lwjgl_opengl_GL20_glGetUniformLocation(lib, program, name) {
-  return gl().getUniformLocation(program, String(name));
+  const location = gl().getUniformLocation(objectOf("program", program), String(name));
+  return location === null ? -1 : nameOf("uniform", location);
 }
-function Java_org_lwjgl_opengl_GL20_glUniform1i(lib, location, value) { gl().uniform1i(location, value); }
-function Java_org_lwjgl_opengl_GL20_glUniform1f(lib, location, value) { gl().uniform1f(location, value); }
-function Java_org_lwjgl_opengl_GL20_glUniform2f(lib, location, x, y) { gl().uniform2f(location, x, y); }
-function Java_org_lwjgl_opengl_GL20_glUniform3f(lib, location, x, y, z) { gl().uniform3f(location, x, y, z); }
-function Java_org_lwjgl_opengl_GL20_glUniform4f(lib, location, x, y, z, w) { gl().uniform4f(location, x, y, z, w); }
+function Java_org_lwjgl_opengl_GL20_glUniform1i(lib, location, value) { gl().uniform1i(location < 0 ? null : objectOf("uniform", location), value); }
+function Java_org_lwjgl_opengl_GL20_glUniform1f(lib, location, value) { gl().uniform1f(location < 0 ? null : objectOf("uniform", location), value); }
+function Java_org_lwjgl_opengl_GL20_glUniform2f(lib, location, x, y) { gl().uniform2f(location < 0 ? null : objectOf("uniform", location), x, y); }
+function Java_org_lwjgl_opengl_GL20_glUniform3f(lib, location, x, y, z) { gl().uniform3f(location < 0 ? null : objectOf("uniform", location), x, y, z); }
+function Java_org_lwjgl_opengl_GL20_glUniform4f(lib, location, x, y, z, w) { gl().uniform4f(location < 0 ? null : objectOf("uniform", location), x, y, z, w); }
 function Java_org_lwjgl_opengl_GL20_glUniform1iv(lib, location, count, values) {
   gl().uniform1iv(location, I32.subarray(values >> 2, (values >> 2) + count));
 }
@@ -542,12 +627,20 @@ function Java_org_lwjgl_opengl_GL11_nglReadPixels(lib, x, y, width, height, form
 }
 function Java_org_lwjgl_opengl_GL11_nglGenTextures(lib, count, pointers) {
   const glc = gl();
-  for (let index = 0; index < count; index++) I32[(pointers >> 2) + index] = glc.createTexture();
+  for (let index = 0; index < count; index++) {
+    I32[(pointers >> 2) + index] = nameOf("texture", glc.createTexture());
+  }
 }
 function Java_org_lwjgl_opengl_GL11_nglDeleteTextures(lib, count, pointers) {
-  for (let index = 0; index < count; index++) gl().deleteTexture(I32[(pointers >> 2) + index]);
+  for (let index = 0; index < count; index++) {
+    const name = I32[(pointers >> 2) + index];
+    const object = handles.texture.get(name);
+    if (object !== undefined) { gl().deleteTexture(object); dropHandle("texture", name); }
+  }
 }
-function Java_org_lwjgl_opengl_GL11_glBindTexture(lib, target, texture) { gl().bindTexture(target, texture || null); }
+function Java_org_lwjgl_opengl_GL11_glBindTexture(lib, target, texture) {
+  gl().bindTexture(target, texture ? objectOf("texture", texture) : null);
+}
 function Java_org_lwjgl_opengl_GL11_glTexParameteri(lib, target, name, value) { gl().texParameteri(target, name, value); }
 function Java_org_lwjgl_opengl_GL11_glTexParameterf(lib, target, name, value) { gl().texParameterf(target, name, value); }
 function Java_org_lwjgl_opengl_GL11_glTexImage2D(lib, target, level, internalFormat, width, height, border,
@@ -597,17 +690,24 @@ function Java_org_lwjgl_opengl_GL30_nglGetStringi(lib, name, index, pointer) {
   I32[pointer >> 2] = Java_org_lwjgl_opengl_GL30_glGetStringi(lib, name, index);
 }
 function Java_org_lwjgl_opengl_GL30_glBindFramebuffer(lib, target, framebuffer) {
-  gl().bindFramebuffer(target, framebuffer || null);
+  gl().bindFramebuffer(target, framebuffer ? objectOf("framebuffer", framebuffer) : null);
 }
 function Java_org_lwjgl_opengl_GL30_nglGenFramebuffers(lib, count, pointers) {
   const glc = gl();
-  for (let index = 0; index < count; index++) I32[(pointers >> 2) + index] = glc.createFramebuffer();
+  for (let index = 0; index < count; index++) {
+    I32[(pointers >> 2) + index] = nameOf("framebuffer", glc.createFramebuffer());
+  }
 }
 function Java_org_lwjgl_opengl_GL30_nglDeleteFramebuffers(lib, count, pointers) {
-  for (let index = 0; index < count; index++) gl().deleteFramebuffer(I32[(pointers >> 2) + index]);
+  for (let index = 0; index < count; index++) {
+    const name = I32[(pointers >> 2) + index];
+    const object = handles.framebuffer.get(name);
+    if (object !== undefined) { gl().deleteFramebuffer(object); dropHandle("framebuffer", name); }
+  }
 }
 function Java_org_lwjgl_opengl_GL30_glFramebufferTexture2D(lib, target, attachment, texTarget, texture, level) {
-  gl().framebufferTexture2D(target, attachment, texTarget, texture, level);
+  gl().framebufferTexture2D(target, attachment, texTarget,
+                            texture ? objectOf("texture", texture) : null, level);
 }
 function Java_org_lwjgl_opengl_GL30_glCheckFramebufferStatus(lib, target) {
   const status = gl().checkFramebufferStatus(target);
@@ -623,13 +723,16 @@ function Java_org_lwjgl_opengl_GL30_glRenderbufferStorage(lib, target, format, w
 }
 function Java_org_lwjgl_opengl_GL30_nglGenRenderbuffers(lib, count, pointers) {
   const glc = gl();
-  for (let index = 0; index < count; index++) I32[(pointers >> 2) + index] = glc.createRenderbuffer();
+  for (let index = 0; index < count; index++) {
+    I32[(pointers >> 2) + index] = nameOf("renderbuffer", glc.createRenderbuffer());
+  }
 }
 function Java_org_lwjgl_opengl_GL30_glBindRenderbuffer(lib, target, renderbuffer) {
-  gl().bindRenderbuffer(target, renderbuffer || null);
+  gl().bindRenderbuffer(target, renderbuffer ? objectOf("renderbuffer", renderbuffer) : null);
 }
 function Java_org_lwjgl_opengl_GL30_glFramebufferRenderbuffer(lib, target, attachment, renderbufferTarget, renderbuffer) {
-  gl().framebufferRenderbuffer(target, attachment, renderbufferTarget, renderbuffer);
+  gl().framebufferRenderbuffer(target, attachment, renderbufferTarget,
+                               renderbuffer ? objectOf("renderbuffer", renderbuffer) : null);
 }
 function Java_org_lwjgl_opengl_GL32_glBlendEquationSeparate(lib, rgb, alpha) { gl().blendEquationSeparate(rgb, alpha); }
 function Java_org_lwjgl_opengl_GL32_glBlendFuncSeparate(lib, r, g, b, a) { gl().blendFuncSeparate(r, g, b, a); }
@@ -686,6 +789,7 @@ function Java_org_lwjgl_system_WebMC_arenaCapacity(lib) { return HEAP_BYTES; }
 
 // what the harness reads to prove the frame happened
 window.webmc = {
+  handles: () => Object.fromEntries(HANDLE_KINDS.map((kind) => [kind, handles[kind].size])),
   frames: () => state.swapCount,
   arenaUsed: () => bump,
   arenaCapacity: () => HEAP_BYTES,
