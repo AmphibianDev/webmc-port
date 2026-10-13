@@ -116,8 +116,13 @@ def prebuilt_ports(path: pathlib.Path | None = None) -> dict:
             # serves raw bytes as text/plain - which looks like a broken game but is a download
             "served_as": client.get("served_as"),
         }
-        # the port's own id and any id Mojang uses for the same version
+        # The port's own id and any id Mojang uses for the same version. A version can have several
+        # entries - a real deployment and a mirror that only downloads - and the one that plays must win,
+        # whichever order they appear in the file.
         for version_id in [group["version"]] + list(group.get("aliases") or []):
+            current = ports.get(version_id)
+            if current and current.get("served_as") == "html" and entry.get("served_as") != "html":
+                continue
             ports[version_id] = entry
     return ports
 
@@ -237,13 +242,25 @@ def main() -> int:
                         help="the prebuilt builds to offer as playable ports")
     parser.add_argument("--strict-urls", action="store_true",
                         help="never keep a url that came from --client-urls (CI uses this)")
+    parser.add_argument("--offline", action="store_true",
+                        help="rebuild from state.json alone: no version list, no version documents")
     parser.add_argument("--client-urls", default=None,
                         help="json file of version -> {jar_url, main_class} to use instead of resolving from Mojang")
     args = parser.parse_args()
 
     state_path = pathlib.Path(args.state)
     state = read_state(state_path)
-    manifest = version_tools.load_manifest(args.manifest)
+    if args.offline:
+        # a manifest shaped from the catalogue: id, type and date are all plan.py needs, and the client
+        # urls are already in the catalogue from whichever run resolved them
+        manifest = {"versions": [
+            {"id": entry["id"], "type": entry.get("type") or version_tools.kind_of(entry),
+             "releaseTime": entry.get("released") or entry.get("releaseTime"), "url": None}
+            for entry in state.get("catalog", [])
+        ]}
+        print(f"offline: rebuilt the manifest from {len(manifest['versions'])} catalogued versions")
+    else:
+        manifest = version_tools.load_manifest(args.manifest)
     engines = planner.load_engines(pathlib.Path(args.ports))
 
     fresh = version_tools.changed_since(manifest, set(state["seen"]), tuple(args.kinds.split(",")),
@@ -267,6 +284,11 @@ def main() -> int:
     jvm = state.get("jvm") or {}
     built = state.get("built") or {}
     links = planner.engine_links(engines)
+    if args.offline:
+        # keep every jar url the catalogue already resolved
+        client_urls = {entry["id"]: {"jar_url": entry["jar_url"], "main_class": entry.get("main_class"),
+                                     "meta_url": entry.get("meta_url"), "asset_index": entry.get("asset_index")}
+                       for entry in state.get("catalog", []) if entry.get("jar_url")}
     fixture_urls = json.loads(pathlib.Path(args.client_urls).read_text()) if args.client_urls else None
     client_urls = resolved_client_urls(manifest, rows, fixture_urls)
     if client_urls:

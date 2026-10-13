@@ -211,6 +211,14 @@ def main() -> int:
     check("the Java 21 range says CheerpX cannot help either",
           "32-bit" in roadmap["cheerpj-java21"]["blocked_by"], roadmap["cheerpj-java21"]["blocked_by"][:90])
 
+    print("\nwhen a version has two links, the one that plays wins")
+    ports = update_module.prebuilt_ports()
+    check("a mirrored download does not displace a playable link",
+          ports.get("1.20.4", {}).get("served_as") == "html",
+          str(ports.get("1.20.4", {}).get("url")))
+    check("a version with only a download still gets it",
+          ports.get("1.17.1", {}).get("served_as") == "download")
+
     print("\nthe build list")
     builds_doc = _json.loads((ROOT / "builds.json").read_text())
     builds = {group["version"]: group["files"] for group in builds_doc["versions"]}
@@ -236,10 +244,12 @@ def main() -> int:
     # Exactly the release assets (EaglerPorts' seven) have no size until fetched; every file in a
     # repository does. So this asserts the split rather than a number that drifts.
     unknown = [e["url"] for e in entries if not e.get("bytes")]
-    # A release asset has no size until it is fetched, and a Pages deployment does not send a
-    # content-length for its index either. Both are "unknown until fetched", which is honest.
+    # A release asset has no size until it is fetched, a Pages deployment does not send a content-length
+    # for its index, and a raw file on github.com does not either. All three are "unknown until fetched",
+    # which is honest; what would be dishonest is a size invented for them.
     check("only links that cannot know their size lack one",
-          all("/releases/" in url or ".github.io/" in url for url in unknown) and with_size >= 5,
+          all("/releases/" in url or ".github.io/" in url or "/raw/" in url for url in unknown)
+          and with_size >= 5,
           f"{with_size} known, {len(unknown)} unknown: {[u.split('github.com/')[-1][:40] for u in unknown]}")
     check("no pre-modded client is catalogued",
           not any(word in entry["url"].lower() for entry in entries

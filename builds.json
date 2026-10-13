@@ -1,24 +1,206 @@
 {
- "note": "Every browser build this project catalogs, all of them from GitHub. Clients that already ship a mod loader, or that are pre-modded (the EaglerForge build and the hacked clients: Astra, WurstX, Resent, DragonX, GX-Client, Pixel) are deliberately absent: mods here come from this project's own injector, so a second loader in the same page would only fight it. Versions with no verifiable GitHub build - 1.18.2 (empty repository) and 1.21.5 / 1.21.11 (no single-file client published that could be checked) - are absent too. Dead sources are removed when their repository disappears; the 26.2/26.3 entries were dropped when the repo that hosted them was deleted.",
+ "note": "Every browser build this project catalogs, all of them from GitHub. Clients that already ship a mod loader, or that are pre-modded (the EaglerForge build and the hacked clients: Astra, WurstX, Resent, DragonX, GX-Client, Pixel) are deliberately absent: mods here come from this project's own injector, so a second loader in the same page would only fight it. Versions with no verifiable GitHub build - 1.18.2 (empty repository) and 1.21.5 / 1.21.11 (no single-file client published that could be checked) - are absent too. Dead sources are removed when their repository disappears; the 26.2/26.3 entries were dropped when the repo that hosted them was deleted. Ports are found by searching GitHub for per-version browser builds and by probing each one: a link is only catalogued when it serves text/html (a page that plays) or, failing that, when it serves a file (a download, and the launcher says so).",
  "routes_note": "A version can be served three ways, and the order of preference is: real Java (a JVM in the page runs the official jar, no copy of the game anywhere) > compiled by us from the official source (ahead-of-time, mods baked in) > a prebuilt Eaglercraft-family client, which exists because somebody already did that compile for that version. The prebuilt builds are not 'instead of' the official versions: they *are* those versions, ported to run in a browser, which is why they can be downloaded and played without a JVM.",
  "verified_note": "verified means: fetched over the network, sniffed for the shape of a browser client, and recorded with a size and a sha256 in work/builds/manifest.json.",
  "versions": [
   {
+   "era": "legacy",
+   "files": [
+    {
+     "bytes": 14656278,
+     "fallback_url": "https://github.com/UserArham/1.13.1-Eaglercraft-UNFORKED/raw/HEAD/bootstrap.js",
+     "name": "bootstrap.js",
+     "role": "entry",
+     "served_as": "html",
+     "url": "https://userarham.github.io/1.13.1-Eaglercraft-UNFORKED/"
+    },
+    {
+     "bytes": 14656279,
+     "fallback_url": "https://github.com/UserArham/1.13.1-Eaglercraft-UNFORKED/raw/HEAD/classes.js",
+     "name": "classes.js",
+     "role": "client",
+     "served_as": "html",
+     "url": "https://userarham.github.io/1.13.1-Eaglercraft-UNFORKED/"
+    },
+    {
+     "bytes": 18087886,
+     "fallback_url": "https://github.com/UserArham/1.13.1-Eaglercraft-UNFORKED/raw/HEAD/assets.epk",
+     "name": "assets.epk",
+     "role": "assets",
+     "served_as": "html",
+     "url": "https://userarham.github.io/1.13.1-Eaglercraft-UNFORKED/"
+    }
+   ],
+   "folder": "1.13.1",
+   "label": "1.13.1",
+   "notes": "a bundle: an entry script, the client classes and the asset pack",
+   "source_repo": "UserArham/1.13.1-Eaglercraft-UNFORKED",
+   "version": "1.13.1"
+  },
+  {
+   "aliases": [
+    "1.14.4",
+    "1.14"
+   ],
+   "era": "modern",
+   "files": [
+    {
+     "name": "index.html",
+     "role": "client",
+     "served_as": "html",
+     "url": "https://jqi123456.github.io/Eaglercraft-Java-1.14/"
+    }
+   ],
+   "folder": "1_14_4",
+   "label": "Minecraft 1.14.4",
+   "notes": "serves a page, so it plays in the tab",
+   "source_repo": "jqi123456/Eaglercraft-Java-1.14",
+   "version": "1.14.4"
+  },
+  {
+   "aliases": [
+    "1.17.1"
+   ],
+   "era": "modern",
+   "files": [
+    {
+     "name": "index.html",
+     "role": "client",
+     "served_as": "download",
+     "url": "https://github.com/t1229414f/craft67/raw/HEAD/index.html"
+    }
+   ],
+   "folder": "1_17_1_alt",
+   "label": "Minecraft 1.17.1 (mirror)",
+   "notes": "no deployment: this one downloads rather than plays",
+   "source_repo": "t1229414f/craft67",
+   "version": "1.17.1-alt"
+  },
+  {
+   "aliases": [
+    "1.19.4"
+   ],
+   "era": "modern",
+   "files": [
+    {
+     "name": "index.html",
+     "role": "client",
+     "served_as": "download",
+     "url": "https://github.com/kiwinatra/beta-eagl/raw/HEAD/index.html"
+    }
+   ],
+   "folder": "1_19_4_alt",
+   "label": "Minecraft 1.19.4 (mirror)",
+   "notes": "no deployment: this one downloads rather than plays",
+   "source_repo": "kiwinatra/beta-eagl",
+   "version": "1.19.4-alt"
+  },
+  {
    "era": "classic",
    "files": [
     {
-     "fallback_url": "https://github.com/EaglerPorts/in-20100223/releases/latest/download/Eaglercraft_Offline_WASM.html",
+     "fallback_url": "https://github.com/EaglerPorts/1.2.5/releases/latest/download/Eaglercraft_Offline_WASM.html",
      "name": "Eaglercraft_Offline_WASM.html",
      "role": "client",
      "served_as": "html",
-     "url": "https://eaglerports.github.io/in-20100223/"
+     "url": "https://eaglerports.github.io/1.2.5/"
     }
    ],
-   "folder": "in-20100223",
-   "label": "Indev 2010-02-23",
+   "folder": "1.2.5",
+   "label": "Release 1.2.5",
    "notes": "official EaglerPorts release for this version",
-   "source_repo": "EaglerPorts/in-20100223",
-   "version": "in-20100223"
+   "source_repo": "EaglerPorts/1.2.5",
+   "version": "1.2.5"
+  },
+  {
+   "aliases": [
+    "1.20.1"
+   ],
+   "era": "modern",
+   "files": [
+    {
+     "name": "index.html",
+     "role": "client",
+     "served_as": "html",
+     "url": "https://kritikal-hit.github.io/Eagler-Craft/"
+    }
+   ],
+   "folder": "1_20_1",
+   "label": "Minecraft 1.20.1",
+   "notes": "serves a page, so it plays in the tab",
+   "source_repo": "Kritikal-Hit/Eagler-Craft",
+   "version": "1.20.1"
+  },
+  {
+   "aliases": [
+    "1.20.4"
+   ],
+   "era": "modern",
+   "files": [
+    {
+     "name": "index.html",
+     "role": "client",
+     "served_as": "html",
+     "url": "https://xxfluffyasherxx.github.io/Eaglercraft-1.20.4-Updated-/"
+    }
+   ],
+   "folder": "1_20_4",
+   "label": "Minecraft 1.20.4",
+   "notes": "the first port for this version that serves a real page",
+   "source_repo": "XxFluffyAsherxX/Eaglercraft-1.20.4-Updated-",
+   "version": "1.20.4"
+  },
+  {
+   "aliases": [
+    "1.20.4"
+   ],
+   "era": "modern",
+   "files": [
+    {
+     "name": "index.html",
+     "role": "client",
+     "served_as": "download",
+     "url": "https://github.com/unspeakfan/Eaglercraft-1.20.4/raw/HEAD/index.html"
+    }
+   ],
+   "folder": "1_20_4_alt",
+   "label": "Minecraft 1.20.4 (mirror)",
+   "notes": "no deployment: this one downloads rather than plays",
+   "source_repo": "unspeakfan/Eaglercraft-1.20.4",
+   "version": "1.20.4-alt"
+  },
+  {
+   "era": "newest",
+   "files": [
+    {
+     "bytes": 75576620,
+     "name": "index.html",
+     "role": "client",
+     "served_as": "download",
+     "url": "https://github.com/3lit3-Pl4y3r/eaglercraft-26.2/raw/HEAD/index.html"
+    }
+   ],
+   "folder": "26.2-alt",
+   "label": "26.2 (single file, other port)",
+   "source_repo": "3lit3-Pl4y3r/eaglercraft-26.2",
+   "version": "26.2-alt"
+  },
+  {
+   "era": "newest",
+   "files": [
+    {
+     "bytes": 77863500,
+     "fallback_url": "https://github.com/DhyeyBG/Eaglercraft-26.3/raw/HEAD/index.html",
+     "name": "index.html",
+     "role": "client",
+     "served_as": "html",
+     "url": "https://dhyeybg.github.io/Eaglercraft-26.3/"
+    }
+   ],
+   "folder": "26.3-alt",
+   "label": "26.3 (other port)",
+   "source_repo": "DhyeyBG/Eaglercraft-26.3",
+   "version": "26.3-alt"
   },
   {
    "era": "classic",
@@ -106,23 +288,6 @@
    "version": "b1.8.1"
   },
   {
-   "era": "classic",
-   "files": [
-    {
-     "fallback_url": "https://github.com/EaglerPorts/1.2.5/releases/latest/download/Eaglercraft_Offline_WASM.html",
-     "name": "Eaglercraft_Offline_WASM.html",
-     "role": "client",
-     "served_as": "html",
-     "url": "https://eaglerports.github.io/1.2.5/"
-    }
-   ],
-   "folder": "1.2.5",
-   "label": "Release 1.2.5",
-   "notes": "official EaglerPorts release for this version",
-   "source_repo": "EaglerPorts/1.2.5",
-   "version": "1.2.5"
-  },
-  {
    "aliases": [
     "b1.3_01"
    ],
@@ -143,71 +308,21 @@
    "version": "beta-1.3"
   },
   {
-   "era": "legacy",
+   "era": "classic",
    "files": [
     {
-     "bytes": 14656278,
-     "fallback_url": "https://github.com/UserArham/1.13.1-Eaglercraft-UNFORKED/raw/HEAD/bootstrap.js",
-     "name": "bootstrap.js",
-     "role": "entry",
-     "served_as": "html",
-     "url": "https://userarham.github.io/1.13.1-Eaglercraft-UNFORKED/"
-    },
-    {
-     "bytes": 14656279,
-     "fallback_url": "https://github.com/UserArham/1.13.1-Eaglercraft-UNFORKED/raw/HEAD/classes.js",
-     "name": "classes.js",
+     "fallback_url": "https://github.com/EaglerPorts/in-20100223/releases/latest/download/Eaglercraft_Offline_WASM.html",
+     "name": "Eaglercraft_Offline_WASM.html",
      "role": "client",
      "served_as": "html",
-     "url": "https://userarham.github.io/1.13.1-Eaglercraft-UNFORKED/"
-    },
-    {
-     "bytes": 18087886,
-     "fallback_url": "https://github.com/UserArham/1.13.1-Eaglercraft-UNFORKED/raw/HEAD/assets.epk",
-     "name": "assets.epk",
-     "role": "assets",
-     "served_as": "html",
-     "url": "https://userarham.github.io/1.13.1-Eaglercraft-UNFORKED/"
+     "url": "https://eaglerports.github.io/in-20100223/"
     }
    ],
-   "folder": "1.13.1",
-   "label": "1.13.1",
-   "notes": "a bundle: an entry script, the client classes and the asset pack",
-   "source_repo": "UserArham/1.13.1-Eaglercraft-UNFORKED",
-   "version": "1.13.1"
-  },
-  {
-   "era": "newest",
-   "files": [
-    {
-     "bytes": 75576620,
-     "name": "index.html",
-     "role": "client",
-     "served_as": "download",
-     "url": "https://github.com/3lit3-Pl4y3r/eaglercraft-26.2/raw/HEAD/index.html"
-    }
-   ],
-   "folder": "26.2-alt",
-   "label": "26.2 (single file, other port)",
-   "source_repo": "3lit3-Pl4y3r/eaglercraft-26.2",
-   "version": "26.2-alt"
-  },
-  {
-   "era": "newest",
-   "files": [
-    {
-     "bytes": 77863500,
-     "fallback_url": "https://github.com/DhyeyBG/Eaglercraft-26.3/raw/HEAD/index.html",
-     "name": "index.html",
-     "role": "client",
-     "served_as": "html",
-     "url": "https://dhyeybg.github.io/Eaglercraft-26.3/"
-    }
-   ],
-   "folder": "26.3-alt",
-   "label": "26.3 (other port)",
-   "source_repo": "DhyeyBG/Eaglercraft-26.3",
-   "version": "26.3-alt"
+   "folder": "in-20100223",
+   "label": "Indev 2010-02-23",
+   "notes": "official EaglerPorts release for this version",
+   "source_repo": "EaglerPorts/in-20100223",
+   "version": "in-20100223"
   }
  ]
 }
