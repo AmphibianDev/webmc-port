@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <title>loading…</title>
-<script src="https://cjrtnc.leaningtech.com/4.2/loader.js"></script>
+<script src="https://cjrtnc.leaningtech.com/4.3/loader.js"></script>
 <style>body { background: #111; color: #ddd; font: 14px monospace } canvas { border: 1px solid #333 }</style>
 </head>
 <body>
@@ -11,6 +11,7 @@
 <div id="result">running</div>
 <script type="module">
   // The loader's own test page: a real Java program against the shim, in a real browser.
+  import { natives, count } from "/natives/webmc-lwjgl3.js";
   //
   // It reports by POSTing to the server that served it, because a headless browser's console is not
   // readable from a shell - and because the Java program's own output is the thing worth reading when
@@ -37,11 +38,13 @@
       // mismatch is "Could not find or load main class", which cost three CI runs to decode. Which mode
       // a *game* needs depends on the game: 1.13 to 1.16 ask for Java 8, 1.17 and newer for 17.
       version: 17,
-      // the JavaScript natives live under this path, which is how CheerpJ finds an implementation for
-      // every `native` method the shim declares
-      javaProperties: ["java.library.path=/app/natives"],
+      // the implementations: JNI names to JavaScript functions, handed to CheerpJ here. java.library.path
+      // was the older way and does not register them in 4.x, which is why glfwInit answered with an
+      // UnsatisfiedLinkError naming its own implementation.
+      natives,
       status: "none",
     });
+    lines.push("registered " + count + " natives");
     window.webmcCanvasElement = document.getElementById("lwjgl");
     // if the class is not where the JVM is looking, say so with a status code rather than letting the
     // JVM report it as "could not find or load main class"
