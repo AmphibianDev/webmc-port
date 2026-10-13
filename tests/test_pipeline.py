@@ -339,6 +339,29 @@ def main() -> int:
     check("a version with no published build keeps the placeholder path",
           unpublished.get("url") == "clients/26.3.html", str(unpublished.get("url")))
 
+    # The reason the previous account was suspended, written down as a rule this repository cannot
+    # break by accident: GitHub's compute is for building and deploying this project, not for hosting
+    # or streaming a game. Making a repository private changes nothing about that - the violation is
+    # the resource use, not the visibility.
+    print("\nno workflow turns GitHub's runners into a game host")
+    forbidden = ("xvfb", "x11vnc", "novnc", "startx", "ffmpeg", "rtmp", "vnc.html", "cloudflared",
+                 "ngrok", "minecraft-server", "server.jar", "localtunnel", "serveo")
+    workflow_text = "\n".join(path.read_text().lower() for path in
+                              (ROOT / ".github" / "workflows").glob("*.yml"))
+    hits = [word for word in forbidden if word in workflow_text]
+    check("no display, streaming or tunnel tooling in any workflow", not hits, ", ".join(hits))
+    check("no workflow starts a long-lived game session",
+          "workflow_dispatch" in (ROOT / ".github" / "workflows" / "build-client.yml").read_text()
+          and "schedule" not in (ROOT / ".github" / "workflows" / "build-client.yml").read_text(),
+          "the long compile is manual only")
+    check("the game itself is never run on a runner: only compiled",
+          "run: python3 tools/vendor_libs.py" in workflow_text
+          or "vendor_libs" in workflow_text)
+    compliance = (ROOT / "COMPLIANCE.md").read_text().lower()
+    check("this rule is written down where a person will read it",
+          "private" in compliance and "circumvention" in compliance
+          and "not time-limited" in compliance)
+
     print()
     if FAILURES == 0:
         print("version pipeline tests passed")
