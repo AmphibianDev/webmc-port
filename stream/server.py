@@ -35,8 +35,10 @@ import hashlib
 import json
 import pathlib
 import secrets
+import shutil
 import socket
 import struct
+import subprocess
 import sys
 import threading
 import time
@@ -74,6 +76,45 @@ MAC_KEYCODES = {
 
 MOUSE_BUTTONS = {0: "left", 1: "middle", 2: "right"}
 
+# Windows virtual key codes: letters and digits are their ASCII values, which is why this table is
+# short. Used by the ctypes SendInput backend.
+WINDOWS_KEYS = {
+    "Escape": 0x1B, "Tab": 0x09, "Enter": 0x0D, "Backspace": 0x08, "Space": 0x20,
+    "ArrowLeft": 0x25, "ArrowUp": 0x26, "ArrowRight": 0x27, "ArrowDown": 0x28,
+    "ShiftLeft": 0xA0, "ShiftRight": 0xA1, "ControlLeft": 0xA2, "ControlRight": 0xA3,
+    "AltLeft": 0xA4, "AltRight": 0xA5, "MetaLeft": 0x5B, "MetaRight": 0x5C,
+    "CapsLock": 0x14, "PageUp": 0x21, "PageDown": 0x22, "End": 0x23, "Home": 0x24,
+    "Insert": 0x2D, "Delete": 0x2E, "Minus": 0xBD, "Equal": 0xBB, "BracketLeft": 0xDB,
+    "BracketRight": 0xDD, "Backslash": 0xDC, "Semicolon": 0xBA, "Quote": 0xDE,
+    "Comma": 0xBC, "Period": 0xBE, "Slash": 0xBF, "Backquote": 0xC0,
+}
+for _letter in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
+    WINDOWS_KEYS[f"Key{_letter}"] = ord(_letter)
+for _digit in "0123456789":
+    WINDOWS_KEYS[f"Digit{_digit}"] = ord(_digit)
+for _index in range(1, 13):
+    WINDOWS_KEYS[f"F{_index}"] = 0x6F + _index
+
+# X11 keysyms, as xdotool spells them. Enough for a game: movement, actions, chat, function keys.
+XDOTOOL_KEYS = {
+    "Escape": "Escape", "Tab": "Tab", "Enter": "Return", "Backspace": "BackSpace", "Space": "space",
+    "ArrowLeft": "Left", "ArrowRight": "Right", "ArrowUp": "Up", "ArrowDown": "Down",
+    "ShiftLeft": "Shift_L", "ShiftRight": "Shift_R", "ControlLeft": "Control_L",
+    "ControlRight": "Control_R", "AltLeft": "Alt_L", "AltRight": "Alt_R",
+    "MetaLeft": "Super_L", "MetaRight": "Super_R", "CapsLock": "Caps_Lock",
+    "PageUp": "Prior", "PageDown": "Next", "End": "End", "Home": "Home",
+    "Insert": "Insert", "Delete": "Delete", "Minus": "minus", "Equal": "equal",
+    "BracketLeft": "bracketleft", "BracketRight": "bracketright", "Backslash": "backslash",
+    "Semicolon": "semicolon", "Quote": "apostrophe", "Comma": "comma", "Period": "period",
+    "Slash": "slash", "Backquote": "grave",
+}
+for _letter in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
+    XDOTOOL_KEYS[f"Key{_letter}"] = _letter.lower()
+for _digit in "0123456789":
+    XDOTOOL_KEYS[f"Digit{_digit}"] = _digit
+for _index in range(1, 13):
+    XDOTOOL_KEYS[f"F{_index}"] = f"F{_index}"
+
 
 class Injector:
     """Turns the viewers' input events into real events on this machine."""
@@ -83,13 +124,39 @@ class Injector:
         self.dry_run = dry_run
         self.seen: list[dict] = []
         self._quartz = None
-        if enabled and not dry_run:
+        self._user32 = None
+        self._xdotool = None
+        self.backend = "none"
+        if not enabled or dry_run:
+            return
+
+        if sys.platform == "darwin":
             try:
-                import Quartz  # noqa: PLC0415 - only needed on macOS, only when injecting
+                import Quartz  # noqa: PLC0415 - macOS only
                 self._quartz = Quartz
+                self.backend = "quartz"
             except Exception as error:  # noqa: BLE001
-                print(f"  ! input injection unavailable ({error}); viewers can watch but not play")
-                self.enabled = False
+                print(f"  ! Quartz unavailable ({error})")
+        elif sys.platform.startswith("win"):
+            try:
+                import ctypes  # noqa: PLC0415 - Windows only
+                self._user32 = ctypes.WinDLL("user32", use_last_error=True)
+                self.backend = "sendinput"
+            except Exception as error:  # noqa: BLE001
+                print(f"  ! SendInput unavailable ({error})")
+        else:
+            # Linux and anything else with an X display: xdotool is the one tool that is everywhere
+            if shutil.which("xdotool"):
+                self._xdotool = "xdotool"
+                self.backend = "xdotool"
+            else:
+                print("  ! no xdotool: on Linux install it (apt install xdotool) for viewers to play")
+
+        if self.backend == "none":
+            print("  ! input injection unavailable; viewers can watch but not play")
+            self.enabled = False
+        else:
+            print(f"  input backend: {self.backend}")
 
     def handle(self, event: dict) -> None:
         self.seen.append(event)
@@ -109,18 +176,45 @@ class Injector:
             self._scroll(event.get("dx", 0), event.get("dy", 0))
 
     def _key(self, event: dict) -> None:
-        code = MAC_KEYCODES.get(str(event.get("code")))
-        if code is None:
-            return
-        quartz = self._quartz
+        name = str(event.get("code"))
         press = bool(event.get("down"))
-        if quartz is not None:
-            event_ref = quartz.CGEventCreateKeyboardEvent(None, code, press)
-            quartz.CGEventPost(quartz.kCGHIDEventTap, event_ref)
-        elif self.dry_run:
-            pass
+        if self._quartz is not None:
+            code = MAC_KEYCODES.get(name)
+            if code is None:
+                return
+            event_ref = self._quartz.CGEventCreateKeyboardEvent(None, code, press)
+            self._quartz.CGEventPost(self._quartz.kCGHIDEventTap, event_ref)
+        elif self._user32 is not None:
+            code = WINDOWS_KEYS.get(name)
+            if code is None:
+                return
+            # a KEYBDINPUT is 24 bytes of INPUT after the type and padding on 64-bit
+            import ctypes  # noqa: PLC0415
+            key_up = 0x0002
+            scan = self._user32.MapVirtualKeyW(code, 0)
+            buffer = ctypes.create_string_buffer(40)
+            ctypes.memset(buffer, 0, 40)
+            struct.pack_into("<I", buffer, 0, 1)                       # INPUT_KEYBOARD
+            struct.pack_into("<H", buffer, 8, code)                    # wVk
+            struct.pack_into("<H", buffer, 10, scan)                   # wScan
+            struct.pack_into("<I", buffer, 12, 0 if press else key_up)  # dwFlags
+            self._user32.SendInput(1, buffer, 40)
+        elif self._xdotool is not None:
+            key = XDOTOOL_KEYS.get(name)
+            if key is None:
+                return
+            subprocess.run([self._xdotool, "keydown" if press else "keyup", key],
+                           check=False, capture_output=True)
 
     def _mouse(self, action: str, x: float, y: float, button: int = 0) -> None:
+        if self._xdotool is not None:
+            subprocess.run([self._xdotool, "mousemove", "--sync", str(int(x)), str(int(y))],
+                           check=False, capture_output=True)
+            if action != "move":
+                name = MOUSE_BUTTONS.get(int(button), "left")
+                subprocess.run([self._xdotool, "mousedown" if action == "down" else "mouseup", str(button + 1)],
+                               check=False, capture_output=True)
+            return
         quartz = self._quartz
         if quartz is None:
             return
@@ -136,6 +230,9 @@ class Injector:
         quartz.CGEventPost(quartz.kCGHIDEventTap, event_ref)
 
     def _scroll(self, dx: float, dy: float) -> None:
+        if self._xdotool is not None:
+            subprocess.run([self._xdotool, "click", "4" if dy < 0 else "5"], check=False, capture_output=True)
+            return
         quartz = self._quartz
         if quartz is None or not dy:
             return

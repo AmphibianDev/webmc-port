@@ -175,6 +175,25 @@ def main() -> int:
         check("and it explains what to install when it is missing", "brew install --cask tailscale" in funnel_text)
 
         print()
+        print("input works on the machine that is sharing, whichever OS it is")
+        quiet = streamer.Injector(enabled=True, dry_run=True)
+        check("a dry run records events and touches nothing", quiet.seen == [])
+        quiet.handle({"t": "key", "code": "KeyW", "down": True})
+        quiet.handle({"t": "move", "x": 4, "y": 5})
+        check("and it counts them instead", len(quiet.seen) == 2)
+        check("macOS keys are mapped", streamer.MAC_KEYCODES.get("KeyW") == 13)
+        check("Windows keys are mapped", streamer.WINDOWS_KEYS.get("KeyW") == ord("W")
+              and streamer.WINDOWS_KEYS.get("ArrowUp") == 0x26)
+        check("X11 keys are mapped", streamer.XDOTOOL_KEYS.get("KeyW") == "w"
+              and streamer.XDOTOOL_KEYS.get("ArrowUp") == "Up")
+        check("every code one map knows, the others do too",
+              all(code in streamer.MAC_KEYCODES for code in ("KeyA", "Digit1", "Space", "Escape"))
+              and all(code in streamer.WINDOWS_KEYS for code in ("KeyA", "Digit1", "Space", "Escape"))
+              and all(code in streamer.XDOTOOL_KEYS for code in ("KeyA", "Digit1", "Space", "Escape")))
+        check("the injector reports which backend it found",
+              hasattr(quiet, "backend") and quiet.backend in ("none", "quartz", "sendinput", "xdotool"))
+
+        print()
         print("the handshake, relayed between two browsers")
         host = Client("127.0.0.1", PORT, "host")
         viewer = Client("127.0.0.1", PORT, "viewer")

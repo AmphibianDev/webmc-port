@@ -362,6 +362,9 @@ def main() -> int:
           "16 gb" in free_doc and "oracle" in free_doc and "24 gb" in free_doc)
     check("and it names what each provider forbids rather than guessing",
           "unlimited minutes" in free_doc and "no" in free_doc and "terms" in free_doc)
+    check("and the no-credit-card answer is there, with no workarounds that are fraud",
+          "no credit card at all" in free_doc and "fraud" in free_doc
+          and "azure for students" in free_doc)
     check("it separates building (allowed) from hosting a session (not)",
           "to *build*" in free_doc or "to build" in free_doc)
     desktop_doc = (ROOT / "stream" / "desktop" / "README.md").read_text().lower()

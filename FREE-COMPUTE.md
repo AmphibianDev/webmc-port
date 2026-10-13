@@ -31,6 +31,25 @@ to guess.
   (catalogue refresh, the 45-minute client compile on manual dispatch, Pages deploy), and it is why the
   suspension was about a *game session* and not about the builds.
 
+## No credit card at all
+
+Oracle and every other cloud require a card for identity verification, and the honest answer is that
+there is no way around that - a virtual or prepaid card that is not yours is fraud, not a workaround,
+and it takes the account with it when it is noticed. So the card-free options are:
+
+| option | card? | can it run the stream? |
+|---|---|---|
+| **the machine you already have** | no | **yes** - `stream/live.sh` on this Mac, `stream/desktop/session.sh` on any Linux box |
+| **a friend's PC** | no | **yes** - open the page on GitHub, press "Host this machine", run `python3 stream/server.py` next to it. Input works on macOS, Windows and Linux (Quartz, SendInput, xdotool). |
+| **an old laptop or desktop** | no | **yes**, if it can run the client - same as above |
+| **Azure for Students** (GitHub Student Pack) | **no card required** | yes - $100 of credit runs a 4 vCPU box for weeks; student verification instead of payment |
+| **GitHub Student Pack credits** (DigitalOcean etc.) | DigitalOcean takes **PayPal** | yes, if the credit is spent on a suitable VM |
+| **Codespaces, Colab, Spaces, Replit** | no | no - their terms forbid hosting, and they are too small |
+| **Oracle Cloud Always Free** | **card required** | yes, but only with a real card |
+
+The public address is free of charge and free of cards either way: a Tailscale funnel needs no payment
+method at all (free plan, three users), and it is what publishes a session from a machine you own.
+
 ## The rule, in one line
 
 A build farm is free because builds are cheap and predictable. A game stream is neither: it holds a
