@@ -15,6 +15,9 @@ to guess.
 | GitLab SaaS free | 400 compute minutes/month, 2 vCPU / 3.75 GB | **no** | same clause |
 | CircleCI free | a few thousand minutes at 2 vCPU / 4 GB | **no** | same clause |
 | Travis CI (open source) | 2 vCPU / 7.5 GB | **no** | same clause |
+| CircleCI free | 2 vCPU / 4 GB, a few thousand minutes | **no** | same clause, and 4 GB cannot run a client anyway |
+| GitLab CI/CD free | 400 compute minutes/month, 2 vCPU / 3.75 GB | **no** | same clause, and 400 minutes is seven hours of CI a month |
+| Cirun | nothing of its own | **no** | it provisions cloud VMs **in your own account** for CI jobs: you bring the cloud credentials, so it is a broker, not free compute |
 | GitHub Codespaces free | 120 core-hours/month (2-core / 8 GB) | **no** | explicitly for development; 16 GB needs a paid machine type |
 | Google Cloud free trial | $300 for 90 days, then paid | yes, but it ends | the Always Free e2-micro has **1 GB RAM** and cannot run a client; a working 4-vCPU box is about $0.20/hour and egress about $0.12/GB |
 | Colab / Kaggle / Hugging Face Spaces | big RAM, sometimes GPUs | **no** | notebook and model-demo platforms; CI-style hosting is against their terms |
@@ -49,6 +52,18 @@ and it takes the account with it when it is noticed. So the card-free options ar
 
 The public address is free of charge and free of cards either way: a Tailscale funnel needs no payment
 method at all (free plan, three users), and it is what publishes a session from a machine you own.
+
+## They are all the same shape
+
+Every CI provider - GitHub Actions, Azure Pipelines, CircleCI, GitLab, Travis, Cirun - exists to build,
+test and publish software, and every one of their terms says so. Running a game session on any of them
+is the same violation at a different vendor, and the thing that detects it is the same: hours-long jobs,
+a saturated core, gigabytes of egress. None of them is a loophole; they are the same door with a
+different name on it.
+
+Two of them are also simply too small: CircleCI's free executor is 2 vCPU / 4 GB, and GitLab's free
+tier is 400 minutes a month. Cirun is not even compute - it starts machines in *your* cloud account, so
+it needs the account (and the card) first.
 
 ## The rule, in one line
 
