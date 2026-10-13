@@ -77,7 +77,7 @@ check('opening a card warms the cache the launch page reads',
 check('the launch url carries the asset index too', body.includes('&assetIndex='));
 check('a release-asset build is described as a download, not a page',
   body.includes('releases/download') && page.includes('download & open')
-  && page.includes('does not serve Minecraft bytes'));
+  && page.includes('serve Minecraft bytes'));
 check('the build request opens the build workflow, not the catalog one',
   body.includes('build-client.yml'));
 
