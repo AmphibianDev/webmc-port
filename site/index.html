@@ -240,14 +240,24 @@
         external: true
       };
     }
-    if (version.play_kind === "built" || version.url || version.verdict === "build") {
+    if (version.play_kind === "built" || version.kind === "built" || version.url || version.verdict === "build") {
+      // A release asset is served with content-disposition: attachment, so it cannot be a page: the
+      // browser downloads it. That is deliberate - this project does not serve Minecraft bytes from
+      // its own site - and the file is standalone, so opening it runs the game.
+      var downloadable = /\/releases\/download\//.test(String(version.url || ""));
       return {
         kind: "built",
-        tag: "▶ our build",
+        tag: downloadable ? "⬇ download & open" : "▶ our build",
         label: "a client this project compiled",
-        why: version.engine_name
-          ? "Compiled from " + version.engine_name + " by our own build job."
-          : "Compiled by this project's build job.",
+        why: (version.engine_name
+                ? "Compiled from " + version.engine_name + " by our own build job."
+                : "Compiled by this project's build job.")
+           + (downloadable
+                ? " It is published as a file rather than served as a page, because this site does not "
+                  + "serve Minecraft bytes: your browser downloads it (about "
+                  + Math.round((version.built_bytes || 0) / 1048576) + " MB), and opening the file runs "
+                  + "the game — it is standalone."
+                : ""),
         play: version.url
       };
     }
