@@ -37,6 +37,34 @@ for.
 * `watch.html` - full-screen priority, input capture while you have control, live stats (resolution,
   frames per second, megabits received), and a clear message when the host stops sharing.
 
+## A real web address, without renting anything
+
+```sh
+brew install --cask tailscale     # one time, free plan, sign in from the menu bar
+./stream/live.sh --funnel
+```
+
+That publishes this machine's stream server at `https://<this-mac>.<your-tailnet>.ts.net/` - a real
+HTTPS address anyone can open, on every Tailscale plan, no port forwarding, nothing to pay. The page it
+serves is the lobby; friends press join and play.
+
+Three things worth knowing about that address:
+
+* **Only the front door goes through it.** The video is peer to peer between the two browsers, so what
+  passes through the funnel is the handshake and the keystrokes - kilobytes per second. Tailscale
+  bandwidth-limits funnel traffic, and that limit is not what your frame rate depends on.
+* **The host page stays local.** `/host` answers only to `127.0.0.1`; anyone else gets a 403. Otherwise
+  the first stranger to open the public address could claim the host slot. They could not capture your
+  screen - capture happens in the browser of whoever presses the button - but they could hold the slot
+  and stop your friends from joining.
+* **The game still runs here.** Funnel publishes a service on a machine you own; it does not run
+  anything for you. That distinction is exactly what the earlier suspension was about: there, GitHub's
+  runners were the game host. Here they are not, and no repository visibility setting is involved.
+
+Cloudflare tunnels and ngrok can also publish a local port, but their free tiers are for development
+traffic, and a game stream is not that - which is the same trap in a different shape. A rent-a-VPS is
+honest but costs money: about $33/month for CPU-only software rendering, $1.25/hour for a real GPU.
+
 ## The honest limits
 
 * **One viewer of a fast action game at a time.** WebRTC sends a separate stream per viewer, so two
@@ -45,9 +73,9 @@ for.
   is focused on this machine. Don't leave it in control while you use the computer.
 * **macOS permissions are the usual friction.** Screen Recording for the browser, Accessibility for
   Python. If input does nothing, that permission is missing: System Settings, Privacy & Security.
-* **Public and permanent is still the wrong shape.** This is for you and a couple of friends. A public
-  service is a Mojang licensing question (their EULA: you must not make the game available to others)
-  and a bandwidth bill on any host you do not own.
+* **Public and permanent is still the wrong shape.** This is for you and a couple of friends. A
+  genuinely public service - anyone joins, nothing is private - is a Mojang licensing question (their
+  EULA says you must not make the game available to others), which no host choice changes.
 
 ## If you want it sharper later
 

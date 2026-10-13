@@ -143,6 +143,11 @@ class Injector:
         quartz.CGEventPost(quartz.kCGHIDEventTap, event_ref)
 
 
+def is_loopback(address: str) -> bool:
+    """Whether an address is this machine. The host page is only served to this machine."""
+    return address in ("127.0.0.1", "::1", "localhost") or address.startswith("127.")
+
+
 class Server(ThreadingHTTPServer):
     """An HTTP server that lets a socket go when it has become a WebSocket.
 
@@ -373,6 +378,9 @@ class Handler(BaseHTTPRequestHandler):
         if path in ("/watch", "/watch.html"):
             return self.reply_file("watch.html", "text/html; charset=utf-8")
         if path in ("/host", "/host.html"):
+            if not is_loopback(self.client_address[0]):
+                return self.reply_json({"error": "the host page is only served to the machine running "
+                                                 "the game; open it there"}, status=403)
             return self.reply_file("host.html", "text/html; charset=utf-8")
         if path == "/signal" and self.headers.get("Upgrade", "").lower() == "websocket":
             return self.upgrade()
@@ -429,6 +437,26 @@ class Handler(BaseHTTPRequestHandler):
         super().finish()
 
 
+def wifi_address() -> str | None:
+    """The address on the Wi-Fi interface, which is the one a friend in the house can use.
+
+    The routing-table address can be a VPN or a virtual interface (172.16.x.x on a machine with a
+    tunnel, for instance), which a phone on the same Wi-Fi cannot reach. So the physical interfaces
+    are asked first on macOS.
+    """
+    import subprocess  # noqa: PLC0415 - only needed here
+    for command in (["ipconfig", "getifaddr", "en0"], ["ipconfig", "getifaddr", "en1"],
+                    ["hostname", "-I"]):
+        try:
+            result = subprocess.run(command, capture_output=True, text=True, timeout=3)
+            address = (result.stdout or "").strip().split()[0] if result.stdout.strip() else ""
+            if address and not address.startswith("127."):
+                return address
+        except Exception:  # noqa: BLE001
+            continue
+    return None
+
+
 def lan_address() -> str | None:
     """This machine's address on the network - what a friend should actually be given.
 
@@ -449,7 +477,7 @@ def lan_address() -> str | None:
 def local_addresses() -> list[str]:
     """The addresses a friend on the same network (or the same tailnet) could use."""
     found = []
-    address = lan_address()
+    address = wifi_address() or lan_address()
     if address:
         found.append(address)
     try:

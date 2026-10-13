@@ -11,6 +11,7 @@ EXTRA=()
 for arg in "$@"; do
   case "$arg" in
     --tailscale) BIND="0.0.0.0"; EXTRA+=(--tailscale) ;;
+    --funnel) BIND="0.0.0.0"; WANT_FUNNEL=1 ;;
     *) EXTRA+=("$arg") ;;
   esac
 done
@@ -28,7 +29,7 @@ open "http://127.0.0.1:$PORT/host"
 sleep 1
 open "https://amphibiandev.github.io/webmc-port/#1.12.2" 2>/dev/null || true
 
-LAN="$(python3 -c 'import socket
+LAN="$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || python3 -c 'import socket
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 s.connect(("10.255.255.255", 1))
 a = s.getsockname()[0]
@@ -49,5 +50,8 @@ echo "  1. the launcher tab that just opened is the game - let 1.12.2 reach the 
 echo "  2. go fullscreen (green button), come back to the host page, press 'Share the screen'"
 echo "  3. send the friends link"
 echo
+if [ "$WANT_FUNNEL" = "1" ]; then
+  ./funnel.sh || true
+fi
 echo "  ctrl-c here stops the stream (the game tab keeps running)"
 wait $SERVER

@@ -64,8 +64,13 @@ afraid of nothing it is standard-library Python. See `stream/README.md` for the 
 honest ones: one action-game viewer at a time is comfortable, input goes to whatever window is focused,
 and macOS will ask for Screen Recording and Accessibility the first time.
 
-For friends outside your network, a tailnet (free for three users) is the quiet way to give them an
-address without opening a port to the internet; the local network works for anyone in the house.
+For friends outside your network there are two ways, both free:
+
+* **Tailnet only** - they install Tailscale and join yours (free for three users). Most private.
+* **Funnel** - `./stream/live.sh --funnel` publishes the lobby at a real HTTPS address,
+  `https://<machine>.<tailnet>.ts.net/`, for anyone to open. Funnel is on every Tailscale plan and is
+  built for publishing a local service; only the handshake and the keystrokes go through it, because
+  the video is peer to peer. The host page stays local-only either way.
 
 What this repository will not do, and `tests/test_pipeline.py` asserts it: no workflow may mention
 xvfb, x11vnc, noVNC, ffmpeg, rtmp, cloudflared, ngrok or a server jar, and the only long job stays

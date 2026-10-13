@@ -147,6 +147,21 @@ def main() -> int:
               'event.code === "Escape" && control' in watch_page)
 
         print()
+        print("the host controls belong to this machine, and only this machine")
+        check("loopback is recognised", streamer.is_loopback("127.0.0.1") and streamer.is_loopback("::1")
+              and streamer.is_loopback("127.0.0.5"))
+        check("and anything else is not", not streamer.is_loopback("172.16.200.110")
+              and not streamer.is_loopback("203.0.113.9"))
+        funnel = STREAM / "funnel.sh"
+        check("there is a way to get a real address without renting one", funnel.is_file())
+        funnel_text = funnel.read_text()
+        check("it uses the product built for publishing a local service",
+              "tailscale funnel" in funnel_text)
+        check("it says why the video is not affected by funnels bandwidth limits",
+              "peer to peer" in funnel_text and "bandwidth" in funnel_text.lower())
+        check("and it explains what to install when it is missing", "brew install --cask tailscale" in funnel_text)
+
+        print()
         print("the handshake, relayed between two browsers")
         host = Client("127.0.0.1", PORT, "host")
         viewer = Client("127.0.0.1", PORT, "viewer")
