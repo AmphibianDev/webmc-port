@@ -4,11 +4,17 @@
 <meta charset="utf-8" />
 <title>loading…</title>
 <script src="https://cjrtnc.leaningtech.com/4.3/loader.js"></script>
-<style>body { background: #111; color: #ddd; font: 14px monospace } canvas { border: 1px solid #333 }</style>
+<style>
+  body { background: #111; color: #ddd; font: 14px monospace }
+  canvas { border: 1px solid #333 }
+  a.go { display: inline-block; margin: 10px 0; background: #2a5c3a; color: #fff; padding: 10px 18px;
+         border-radius: 4px; text-decoration: none }
+</style>
 </head>
 <body>
 <canvas id="lwjgl" width="320" height="240"></canvas>
 <div id="result">running</div>
+<p><a class="go" href="play.html" target="_blank" rel="noopener">▶ start in a new tab, fullscreen</a></p>
 <script type="module">
   // The loader's own test page: a real Java program against the shim, in a real browser.
   //
