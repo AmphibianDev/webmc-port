@@ -21,6 +21,20 @@
   console.log = (...args) => { lines.push(args.map(String).join(" ")); originalLog(...args); };
   window.addEventListener("error", (event) => lines.push("window error: " + event.message));
 
+  let stage = "module";
+  let lastPayload = {};
+  // every stage change is posted, and a watchdog repeats the last one: when a page stops reporting, the
+  // question is always *where* it stopped, and a stuck await leaves no other trace
+  function at(nextStage) { stage = nextStage; post({ code: -1, stage }); }
+  function post(payload) {
+    lastPayload = payload;
+    return fetch("/result", { method: "POST", headers: { "content-type": "application/json" },
+                              body: JSON.stringify({ ...payload, log: lines.slice(-60) }) })
+      .catch(() => {});
+  }
+  setInterval(() => post({ code: -1, stage: stage + " (still, after " +
+    Math.round((performance.now() - startedAt) / 1000) + "s)" }), 15000);
+
   function report(payload) {
     payload = { ...payload, log: lines.slice(-80) };
     result.textContent = JSON.stringify(payload).slice(0, 800);
@@ -31,16 +45,17 @@
     }).catch(() => {});
   }
 
-  // tell the collector the module ran at all: "no report" and "reported a failure" are different
-  // problems, and the first version of this page could not tell them apart
-  await fetch("/result", { method: "POST", headers: { "content-type": "application/json" },
-                           body: JSON.stringify({ code: -1, stage: "module started" }) }).catch(() => {});
+  const startedAt = performance.now();
+  at("module started");
 
   try {
     // a dynamic import, inside the try: a static one fails before this code can report why
+    at("importing the shim");
     const shim = await import("/natives/webmc-lwjgl3.js");
+    at("shim imported: " + shim.count + " natives");
     const natives = shim.natives;
     const count = shim.count;
+    at("calling cheerpjInit");
     await cheerpjInit({
       // CheerpJ starts in Java 8 mode, and this shim is compiled for 17 - the JVM's message for that
       // mismatch is "Could not find or load main class", which cost three CI runs to decode. Which mode
@@ -53,6 +68,7 @@
       status: "none",
     });
     lines.push("registered " + count + " natives");
+    at("cheerpjInit returned");
     window.webmcCanvasElement = document.getElementById("lwjgl");
     // if the class is not where the JVM is looking, say so with a status code rather than letting the
     // JVM report it as "could not find or load main class"
@@ -60,6 +76,7 @@
     lines.push("app.jar over HTTP: " + probe);
     const started = performance.now();
     // the jar, not the directory: see the workflow's note
+    at("running webmc.BootTest");
     const code = await cheerpjRunMain("webmc.BootTest", "/app/app.jar");
     const seconds = (performance.now() - started) / 1000;
     document.title = "EXIT " + code;
@@ -73,6 +90,7 @@
     });
   } catch (error) {
     document.title = "EXIT 99";
+    lines.push("threw at stage " + stage + ": " + error);
     await report({ code: 99, threw: String(error && error.message ? error.message : error),
                    stack: String(error && error.stack ? error.stack.split("\n").slice(0, 6).join(" | ") : "") });
   }
