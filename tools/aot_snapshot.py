@@ -317,15 +317,25 @@ def prepare(version_id: str, engine: pathlib.Path, client_jar: pathlib.Path, doc
             entry: dict, fixups_path: pathlib.Path | None = None,
             bringup_path: pathlib.Path | None = None, log=print) -> dict:
     """Everything the engine needs for one version, written into the engine's own layout."""
-    profile = aot_profile.build(version_id, entry, document,
-                                aot_profile.version_json(client_jar),
-                                aot_profile.nearest_profile(find_engine_profile(engine), version_id)[1]
-                                if aot_profile.nearest_profile(find_engine_profile(engine), version_id)
-                                else None, log=log)
     target = find_engine_profile(engine) / f"{version_id}.json"
-    target.write_text(json.dumps(profile, indent=1) + "\n")
-    log(f"  wrote {target.relative_to(engine)} (Java {profile['javaVersion']}, "
-        f"class file {profile['classFileVersion']})")
+    if target.is_file():
+        # A profile the engine already ships is that project's own work - curated patchers, storage
+        # namespacing, an assessed patch set - and a generated one must never replace it. This is also
+        # why preparing the newest *release* is cheap: the engine already knows it.
+        profile = json.loads(target.read_text())
+        log(f"  the engine already has a profile for {version_id} (Java {profile.get('javaVersion')}): "
+            f"left alone, it is the engine's own work")
+        generated_profile = False
+    else:
+        profile = aot_profile.build(version_id, entry, document,
+                                    aot_profile.version_json(client_jar),
+                                    aot_profile.nearest_profile(find_engine_profile(engine), version_id)[1]
+                                    if aot_profile.nearest_profile(find_engine_profile(engine), version_id)
+                                    else None, log=log)
+        target.write_text(json.dumps(profile, indent=1) + "\n")
+        log(f"  wrote {target.relative_to(engine)} (Java {profile['javaVersion']}, "
+            f"class file {profile['classFileVersion']})")
+        generated_profile = True
 
     fixups = apply_fixups(engine, version_id, fixups_path, log=log)
     bringup = bringup_list(engine, version_id, log=log, ours=bringup_path)
@@ -356,6 +366,7 @@ def prepare(version_id: str, engine: pathlib.Path, client_jar: pathlib.Path, doc
     return {
         "version": version_id,
         "profile": str(target.relative_to(engine)),
+        "generated_profile": generated_profile,
         "protocol_note": (f"{raw} (snapshot marker set, kept as the client reports it)"
                           if isinstance(raw, int) and raw & 0x40000000 else None),
         "java": profile["javaVersion"],

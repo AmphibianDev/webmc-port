@@ -87,15 +87,12 @@ def main() -> int:
     check("and enabling that engine makes the same version buildable",
           planner.verdict_for("26.3", "release", [dict(gaius, enabled=True)])["verdict"] == "build",
           planner.verdict_for("26.3", "release", [dict(gaius, enabled=True)])["why"])
+    generatable = planner.verdict_for("26.3-snapshot-7", "snapshot", [dict(gaius, enabled=True)])
     check("a version an engine can generate a profile for is buildable without a hand-written one",
-          planner.verdict_for("26.4-snapshot-4", "snapshot", [dict(gaius, enabled=True)])["verdict"]
-          == "build"
-          and planner.verdict_for("26.4-snapshot-4", "snapshot", [dict(gaius, enabled=True)]).get(
-              "generated_profile") is True,
-          str(planner.verdict_for("26.4-snapshot-4", "snapshot", [dict(gaius, enabled=True)]))[:160])
+          generatable["verdict"] == "build" and generatable.get("generated_profile") is True,
+          str(generatable)[:160])
     check("and the tool that generates it is named for the build job",
-          planner.verdict_for("26.4-snapshot-4", "snapshot", [dict(gaius, enabled=True)]).get(
-              "profile_tool") == "tools/aot_snapshot.py")
+          generatable.get("profile_tool") == "tools/aot_snapshot.py")
     check("a version the real-JVM route can run is launched, not built", rows["1.8.9"]["verdict"] == "launch",
           rows["1.8.9"]["verdict"] + " via " + str(rows["1.8.9"]["engine"]))
     check("a launch needs no compile time", rows["1.8.9"]["minutes"] == 0)
@@ -146,6 +143,17 @@ def main() -> int:
           snapshot.get("profile_tool") == "tools/aot_snapshot.py")
     check("with the caveat that its patches are not ported yet", bool(snapshot.get("caveat")),
           str(snapshot.get("caveat"))[:80])
+    # And where the range ends: 26.4-snapshot-4 replaced the render layer, so the engine's own prober
+    # refuses the jar. That is engine work, and the plan has to say so rather than offering a build.
+    blocked_snapshot = planner.verdict_for("26.4-snapshot-4", "snapshot", planner.load_engines(),
+                                           planner.load_roadmap())
+    check("a version past the engine's range is blocked, with the reason in its own words",
+          blocked_snapshot["verdict"] == "needs-port"
+          and "renderpearl" in blocked_snapshot["why"], str(blocked_snapshot)[:200])
+    check("and it names the work that unblocks it, not just the wall",
+          "renderpearl" in (blocked_snapshot.get("work") or ""), str(blocked_snapshot.get("work"))[:140])
+    check("the blocker comes from the engine that would otherwise have built it",
+          blocked_snapshot.get("engine_blocker") == "gaius")
     links_any = planner.engine_links(engines)
     check("a prebuilt client is still available as the fallback for classics",
           "Eaglercraft_Offline_WASM.html" in (links_any.get("b1.8.1") or ""), str(sorted(links_any))[:80])

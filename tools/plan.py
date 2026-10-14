@@ -35,6 +35,24 @@ def load_roadmap(path: pathlib.Path | None = None) -> list[dict]:
     return list(document.get("roadmap") or [])
 
 
+def engine_blocker_for(version_id: str, engine: dict) -> dict | None:
+    """A version range an engine cannot build yet, with the work that unblocks it.
+
+    Checked before `profile_rules`, because "we can generate a profile for this" and "the engine's own
+    code refuses this client" are both true for 26.4-snapshot-4, and the second one is the honest answer.
+    """
+    key = version_tools.version_key(version_id)
+    for blocker in engine.get("blockers") or []:
+        span = blocker.get("covers") or {}
+        if not isinstance(span, dict):
+            continue
+        low = version_tools.version_key(span.get("from") or "0")
+        high = version_tools.version_key(span.get("to") or "9999")
+        if low <= key <= high:
+            return blocker
+    return None
+
+
 def profile_rule_for(version_id: str, rules: list[dict]) -> dict | None:
     """A version range an engine can build without a hand-written profile.
 
@@ -122,6 +140,19 @@ def verdict_for(version_id: str, kind: str, engines: list[dict],
                 "minutes": requires.get("minutes"),
                 "mods": engine.get("mods"),
                 "build": engine.get("build"),
+            }
+        blocker = engine_blocker_for(version_id, engine)
+        if blocker:
+            return {
+                "verdict": "needs-port",
+                "engine": None,
+                "engine_name": None,
+                "why": f"blocked: {blocker['blocked_by']}",
+                "blocked_by": blocker["blocked_by"],
+                "engine_blocker": engine["id"],
+                "work": blocker.get("work"),
+                "roadmap": (roadmap_for(version_id, roadmap or []) or {}).get("id"),
+                "unlocks": blocker.get("unlocks"),
             }
         rule = profile_rule_for(version_id, engine.get("profile_rules") or [])
         if rule:
