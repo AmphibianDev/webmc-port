@@ -434,9 +434,21 @@ def test_page_contract(tmp: pathlib.Path, mods: list[dict]) -> None:
     check("the index carries nothing the launcher does not read", not unused, str(sorted(unused)))
 
 
+def with_libs(tmp: pathlib.Path, *versions: str) -> pathlib.Path:
+    """A vendored-library index for these versions, so a plan can be 'playable' in a test."""
+    directory = tmp / f"libs-{'-'.join(versions) or 'none'}"
+    directory.mkdir(parents=True, exist_ok=True)
+    for version in versions:
+        (directory / f"{version}.json").write_text(json.dumps({"classpath": ["libs/fake.jar"]}))
+    return directory
+
+
 def main() -> int:
     with tempfile.TemporaryDirectory() as scratch:
         tmp = pathlib.Path(scratch)
+        # every version in these tests is "deployed" unless a test says otherwise, so the assertions
+        # describe the plan rather than the state of a checkout
+        launchplan.LIBS_DIR = with_libs(tmp, "1.12.2", "1.8.9", "1.16.5", "26.3")
         test_matching()
         mods = test_mods(tmp)
         test_plans(mods)

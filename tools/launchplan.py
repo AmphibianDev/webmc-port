@@ -47,6 +47,11 @@ sys.path.insert(0, str(HERE))
 import fabric as fabric_tools  # noqa: E402
 
 FABRIC_META = "https://meta.fabricmc.net/v2"
+
+# Where a version's vendored libraries live. A module constant so a test can point it at a fixture
+# instead of depending on what a deployment happens to have published - the fact being described
+# ("this version's libraries are deployed") is real, so the test should control it rather than inherit it.
+LIBS_DIR = ROOT / "site" / "libs"
 LEGACY_FABRIC_META = "https://meta.legacyfabric.net/v2"
 
 # Minecraft's own libraries that must NOT be on the classpath of the shim row: the shim *is* those
@@ -328,7 +333,7 @@ def plan_version(version: dict, verdict: dict, mods: list[dict], sources: dict,
     client = {"url": verdict.get("jar_url"), "sha1": verdict.get("jar_sha1"),
               "bytes": verdict.get("jar_bytes")}
     row = route_of(verdict, client["url"])
-    libs_index = ROOT / "site" / "libs" / f"{version_id}.json"
+    libs_index = LIBS_DIR / f"{version_id}.json"
     plan = {
         "id": version_id,
         "type": version.get("type"),

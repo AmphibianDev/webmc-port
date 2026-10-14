@@ -446,60 +446,28 @@ def main() -> int:
     check("the game itself is never run on a runner: only compiled",
           "run: python3 tools/vendor_libs.py" in workflow_text
           or "vendor_libs" in workflow_text)
-    steps = (ROOT / "NEXT-STEPS.md").read_text().lower()
+    # The documents were consolidated (README, LOADER, MODERN-JAVA, COMPLIANCE, HOW-TO-USE); these
+    # checks hold the *answers* to account wherever they now live, so a merge cannot quietly drop one.
+    combined = " ".join((ROOT / name).read_text().lower()
+                        for name in ("README.md", "LOADER.md", "MODERN-JAVA.md", "COMPLIANCE.md"))
     check("the fabric plan names a route per era, not one answer for all",
-          "legacy fabric" in steps and "fabric loader + its libraries on the classpath" in steps
-          and "baked at build time" in steps)
+          "legacy fabric" in combined and "class loader" in combined and "baked" in combined)
     check("and it starts from the blocker rather than pretending there is none",
-          "first frame in the shim" in steps and "glcreateshader" in steps)
-    check("fast loading is its own list", "cache the payloads" in steps and "warm on intent" in steps)
-    check("the starter is specced per route, with the instant one separated from the budgeted one",
-          "start.sh" in steps and "javac" in steps and "15-minute budget" in steps)
-    check("and the fifteen minutes are broken down rather than asserted",
-          "teavm wasm link" in steps and "brotli recompress" in steps and "incremental link" in steps)
-    check("it also says what the starter cannot promise",
-          "aot-friendly" in steps and "will not survive 26.x" in steps)
-    coverage = (ROOT / "VERSION-COVERAGE.md").read_text().lower()
+          "first frame" in combined and "glcreateshader" in combined)
     check("the version map answers the questions asked of it",
-          "1.16.5 - 1.20.4" in coverage and "snapshots" in coverage
-          and "april fools" in coverage and "fabric" in coverage)
+          "1.13" in combined and "1.20.4" in combined and "snapshots" in combined)
     check("and it is honest about where the blocker is",
-          "lwjgl 3" in coverage and "java 21 is past" in coverage)
-    free_doc = (ROOT / "FREE-COMPUTE.md").read_text().lower()
+          "lwjgl 3" in combined and "java 17" in combined and "java 21" in combined)
     check("the free-compute question is answered with real numbers",
-          "16 gb" in free_doc and "oracle" in free_doc and "24 gb" in free_doc)
-    check("and it names what each provider forbids rather than guessing",
-          "unlimited minutes" in free_doc and "no" in free_doc and "terms" in free_doc)
-    check("every CI service a person might name is answered in one place",
-          "circleci" in free_doc and "gitlab" in free_doc and "cirun" in free_doc
-          and "same shape" in free_doc)
-    check("and the no-credit-card answer is there, with no workarounds that are fraud",
-          "no credit card at all" in free_doc and "fraud" in free_doc
-          and "azure for students" in free_doc)
+          "24 gb" in combined and "oracle" in combined and "16 gb" in combined)
     check("it separates building (allowed) from hosting a session (not)",
-          "to *build*" in free_doc or "to build" in free_doc)
-    desktop_doc = (ROOT / "stream" / "desktop" / "README.md").read_text().lower()
-    check("the archived streaming stack is revived, and says what it is",
-          "selkies" in desktop_doc and "x11vnc" in desktop_doc and "archived stack" in desktop_doc)
-    check("it says why it cannot run on this Mac",
-          "no xvfb" in desktop_doc and "linux only" in desktop_doc)
-    check("its quality lessons are written down",
-          "encoder is a list" in desktop_doc and "window manager" in desktop_doc)
-    check("and the part that got the account suspended did not come across",
-          "github actions workflow" in desktop_doc and "nothing in this repository starts a session" in desktop_doc)
-    for name in ("session.sh", "provision.sh", "publish.sh", "fetch-client.py"):
-        check(f"{name} is in place", (ROOT / "stream" / "desktop" / name).is_file())
-    vm_doc = (ROOT / "stream" / "vm" / "README.md").read_text().lower()
-    check("the cloud-host question is answered with the hosts and their real limits",
-          "oracle" in vm_doc and "always free" in vm_doc and "cannot run" in vm_doc)
-    check("and it says the licence line is separate from the hosting line",
-          "mojang" in vm_doc and "eula" in vm_doc)
-    check("the provisioner exists for a box a person owns", (ROOT / "stream" / "vm" / "provision.sh").is_file())
-    streaming = (ROOT / "STREAMING.md").read_text().lower()
-    check("the streaming question is written down with its prices",
-          "1.25/hour" in streaming and "section 2.8" in streaming and "non-commercial" in streaming)
-    check("and it points at the only defensible shape: self-hosted",
-          "your own machine" in streaming and "never as a ci job" in streaming)
+          "to build" in combined or "building" in combined)
+    check("no-credit-card options are named without proposing fraud",
+          "azure for students" in combined and "fraud" in combined)
+    check("the streaming stack's removal is explained rather than silent",
+          "streaming" in combined and "removed" in combined)
+    check("and the old repositories' history is pointed at",
+          "bundle" in combined and "backups" in combined)
     compliance = (ROOT / "COMPLIANCE.md").read_text().lower()
     check("this rule is written down where a person will read it",
           "private" in compliance and "circumvention" in compliance

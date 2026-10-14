@@ -46,3 +46,42 @@ This is the part that is most often wrong in advice passed around:
 `tests/test_pipeline.py` asserts these things: no workflow can mention display, streaming or tunnel
 tooling, and the long job stays manual. If that test fails, something has been added that would
 recreate the problem.
+
+## Where any of this may run
+
+Asked often enough to be written down once. The rule underneath: **building** this project is fine
+anywhere; running a *game session* on somebody else's compute is not.
+
+| Where | Runs the game? | Notes |
+| --- | --- | --- |
+| GitHub Actions (public repo) | **no** | 4 vCPU / 16 GB, unlimited minutes, and the terms cover building, testing, deploying and publishing *this software*. A runner as a game host is the unrelated activity that got the earlier account suspended. |
+| Azure Pipelines / GitLab SaaS / CircleCI / Travis / Codespaces | **no** | same clause, same shape; the smaller ones could not fit a client anyway |
+| Colab, Kaggle, Hugging Face Spaces, Vercel/Netlify/Cloudflare free tiers | **no** | notebook and static-hosting platforms; CI-style game hosting is against their terms |
+| **Oracle Cloud Always Free** | **yes** | a general-purpose VM you own: 4 ARM cores, 24 GB RAM, 200 GB disk, 10 TB egress/month, permanently. Needs a card for verification (not charged); "out of capacity" is common |
+| **Azure for Students** | **yes** | no card, student verification; credit runs a 4 vCPU box for weeks |
+| **a machine a person owns** (this Mac, a friend's PC, an old laptop) | **yes** | the only shape with no third party in the middle: open the page on that machine and let it host itself |
+| Google Cloud free trial | yes, but it ends | the Always Free e2-micro has 1 GB RAM and cannot run a client |
+
+No credit card at all? Then: the machine you already have, a friend's PC, or **Azure for Students**
+(student verification, no card). Signing up under a false identity, cycling through free trials, or
+"disguising" what a job does are fraud and circumvention - they are not workarounds this project
+describes, and they are the fastest way to lose an account and everything linked to it.
+
+Two consequences worth remembering: **a static host is always allowed** (the launcher, the boot screen,
+the downloads are just files, and the game runs in the visitor's tab), and **the CI job here only ever
+compiles** — it fetches nothing at play time and runs no session.
+
+## The streaming stack is gone, on purpose
+
+This repository used to carry a self-hosted desktop-streaming stack (`stream/`, plus its costs and host
+notes). It was removed: a streamed session needs a machine of your own or a paid host (≈ $33/month CPU,
+$1.25/hour GPU), it is the shape that costs an account, and the browser-native rows are strictly better
+for the person playing. The one thing worth keeping from that work was the answer to "where could it
+run at all", which is the table above.
+
+## The older repositories
+
+Three earlier attempts (`webmc`, `webmc-browser`, `webmc-fabric`) lived on an account GitHub suspended.
+Their working copies were deleted from this folder; **their complete git history is still here**, as
+bundles in `backups/`: `git clone <bundle> <dir>` restores any of them, and that folder is the only
+remaining copy. Nothing in the current project depends on them.

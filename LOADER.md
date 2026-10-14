@@ -93,6 +93,23 @@ Mods are **opt-out**, not opt-in: a version with compatible mods starts with the
 checkbox in the launcher card is how you turn them off. The choice is in the play link
 (`play.html?version=1.12.2&mode=fabric&mods=a,b`), so a launch is reproducible and can be pasted.
 
+## Where the real-Java route stands (the LWJGL 3 shim)
+
+The loader above is for versions a browser JVM can run. The range 1.13 - 1.20.4 needs one more thing: a
+JavaScript implementation of **LWJGL 3**, because CheerpJ ships LWJGL 2's natives and nothing for 3.
+`lwjgl3-webgl/` is that implementation, and its state is:
+
+* 216 native methods implemented, measured against real clients: `tools/lwjgl3_surface.py` reads every
+  `org.lwjgl` member out of a client jar's constant pool (458 members across 1.13, 1.16.5 and 1.20.4);
+* the boot test gets as far as a real JVM, a window, and a WebGL2 context through our JavaScript, then
+  stops at the first shader object - `glCreateShader` returns null, which is a bug in the bridge rather
+  than a missing capability;
+* it is the only route to 1.13 - 1.20.4 **vanilla** without compiling anything, and the only route at all
+  that keeps the official jar unmodified on those versions;
+* **Fabric is not fixed by it.** Fabric Loader's boot is reported to hang inside its ASM transformation
+  under CheerpJ (leaningtech/cheerpj-meta#231, open, vendor says it is not being worked on), so mods on
+  that range have to be applied at build time - the same bake the compiled row uses.
+
 ## What is verified here, and what is not
 
 Verified without a browser (`bash run-tests.sh`, 722 checks):
