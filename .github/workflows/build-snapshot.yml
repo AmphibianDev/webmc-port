@@ -141,6 +141,25 @@ jobs:
           swapon --show
           free -g | head -2
 
+      - name: Which kind of engine this is
+        # The two families are built differently: a profile-based engine (Gaius) is told which version to
+        # fetch and compile, while a workspace *is* the client source for its version and is built with its
+        # own gradle/npm commands. The prepare step below only makes sense for the first kind.
+        id: engine_kind
+        working-directory: ours
+        run: |
+          set -euo pipefail
+          KIND="$(python3 - "${{ steps.want.outputs.engine }}" <<'PY'
+          import json, pathlib, sys
+          wanted = sys.argv[1]
+          engines = json.loads(pathlib.Path("ports.json").read_text())["engines"]
+          found = next((e for e in engines if (e.get("repo") or "") == wanted), None)
+          print((found or {}).get("kind") or "unknown")
+          PY
+          )"
+          echo "kind=$KIND" >> "$GITHUB_OUTPUT"
+          echo "engine: ${{ steps.want.outputs.engine }} is a $KIND engine"
+
       - name: Tell the engine where the JDK is
         # The overlay/release scripts ask for a JDK 21+ explicitly and stop with "Set GAIUS_JAVA_HOME to a
         # compatible JDK installation" (build run 38592796753 for 1.21.10, after it had already patched
@@ -196,6 +215,7 @@ jobs:
           fi
 
       - name: Prepare the version for the engine
+        if: steps.engine_kind.outputs.kind != 'eaglercraft-workspace'
         # Profile from Mojang's metadata and the version.json inside the client jar, the previous
         # version's source overrides as a starting point, and a bring-up list. The client jar is
         # fetched here (its sha1 checked against Mojang's) because the profile needs the three numbers
@@ -313,7 +333,27 @@ jobs:
           fi
           exit "$STATUS"
 
+      - name: Compile a workspace engine
+        if: steps.engine_kind.outputs.kind == 'eaglercraft-workspace'
+        working-directory: engine
+        run: |
+          set -uo pipefail
+          {
+            echo "== the workspace compiles the client it already contains"
+            ./gradlew :game:compileJava --console=plain --no-daemon
+          } 2>&1 | tee -a /tmp/build.log
+          GRADLE_STATUS=${PIPESTATUS[0]}
+          echo "gradle exit: $GRADLE_STATUS"
+          [ "$GRADLE_STATUS" = "0" ] || exit "$GRADLE_STATUS"
+          {
+            echo "== and packages it as one page"
+            npm install --no-audit --no-fund
+            npm run build:single -- --output "dist/$VERSION.html"
+          } 2>&1 | tee -a /tmp/build.log
+          exit "${PIPESTATUS[0]}"
+
       - name: Compile, link and package the release
+        if: steps.engine_kind.outputs.kind != 'eaglercraft-workspace'
         working-directory: engine
         run: |
           set -uo pipefail
