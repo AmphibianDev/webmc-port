@@ -19,6 +19,21 @@
 name: Build the latest snapshot
 
 on:
+  # Callable, so build-client.yml can drive it instead of keeping a second copy of the engine chain.
+  workflow_call:
+    inputs:
+      version:
+        required: false
+        type: string
+        default: "latest-snapshot"
+      engine_repo:
+        required: false
+        type: string
+        default: "TypeThe0ry/Gaius"
+      bringup:
+        required: false
+        type: boolean
+        default: true
   workflow_dispatch:
     inputs:
       version:
@@ -36,10 +51,6 @@ on:
         required: false
         type: boolean
         default: true
-  push:
-    # A tag is a deliberate act, which is what a 55-minute job should take to start. Branch pushes do
-    # not compile anything: tools/workflow_lint.py refuses a build that runs on one.
-    tags: ["build-*"]
 
 permissions:
   contents: write

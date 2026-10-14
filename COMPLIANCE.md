@@ -79,6 +79,15 @@ $1.25/hour GPU), it is the shape that costs an account, and the browser-native r
 for the person playing. The one thing worth keeping from that work was the answer to "where could it
 run at all", which is the table above.
 
+## Engines have to be licensed
+
+Every compiled-client engine (a "workspace") is somebody else's source tree, and it ends up inside the
+build. So an engine is only wired up here if its licence allows it - MIT and Apache-2.0 do, with the
+notice kept - and a repository with **no licence file is not usable**, because the default is all rights
+reserved. `ports.json` carries the licence on each engine for exactly this reason, and one 26.2 workspace
+is disabled because of it. TeaVM itself is Apache-2.0, which is what makes writing our own engine a
+clean path.
+
 ## The older repositories
 
 Three earlier attempts (`webmc`, `webmc-browser`, `webmc-fabric`) lived on an account GitHub suspended.

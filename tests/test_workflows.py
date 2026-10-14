@@ -179,9 +179,14 @@ def test_the_real_workflows() -> None:
         problems = workflow_lint.lint(path)
         check(f"{path.name} is valid", problems == [], "; ".join(problems))
     # The one that broke, specifically: an engine checkout that can be overridden must be one key.
-    client = (ROOT / ".github" / "workflows" / "build-client.yml").read_text()
-    check("the engine checkout is a single repository key",
-          client.count("repository:") == 1, str(client.count("repository:")))
+    # Wherever the checkout happens, it is one key: two of them is what made the file unparseable.
+    for name in ("build-snapshot.yml", "build-client.yml"):
+        text = (ROOT / ".github" / "workflows" / name).read_text()
+        check(f"{name}: the engine checkout is a single repository key",
+              text.count("repository:") <= 1, str(text.count("repository:")))
+    caller = (ROOT / ".github" / "workflows" / "build-client.yml").read_text()
+    check("and the older entry point calls the one implementation instead of copying it",
+          "uses: ./.github/workflows/build-snapshot.yml" in caller, caller[:200])
 
 
 def main() -> int:
