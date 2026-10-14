@@ -98,6 +98,12 @@ only route that can give Fabric at play time on a modern version - and the three
 needs (an LWJGL 3 JNI layer in C over emscripten's GLFW 3/GLES 3/OpenAL, a JDK 25 port of the recipe,
 and a performance measurement before it is offered next to the compiled row).
 
+**The newest snapshot has a build job**: `.github/workflows/build-snapshot.yml` (a `build-*` tag or a
+dispatch) asks Mojang for the latest snapshot, generates its profile, copies the previous version's
+source overrides, applies `tools/aot_fixups.json` for whatever the snapshot changed, builds it with the
+engine, puts our boot screen in front and publishes it as a download - writing its report and log tail
+to a `build-log` branch so `python3 tools/snapshot_status.py` can read any attempt without a token.
+
 For the compiled row, two pieces of "supports the latest snapshot" are already here:
 
 ```sh

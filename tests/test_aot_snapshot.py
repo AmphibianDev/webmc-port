@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import json
 import pathlib
+import re
 import sys
 import tempfile
 import zipfile
@@ -306,6 +307,51 @@ def test_fixups(tmp: pathlib.Path) -> None:
               str({k: entry.get(k) for k in ("since", "until", "versions")}))
 
 
+def test_bringup(tmp: pathlib.Path) -> None:
+    print("\nbring-up: patches this project declares as not ported yet")
+    engine = fake_engine(tmp / "engine-bringup")
+    ours = tmp / "bringup.json"
+    ours.write_text(json.dumps({"entries": [
+        {"patch": "MinecraftClientPatcher.patchBuiltInRegistriesBrowserStartupYield",
+         "owner": "P8", "since": "26.4",
+         "why": "createContents was rewritten, so the entry lambda the patch hooks is gone (run 38545663119)"},
+        {"patch": "RenderPatches263.oldOnly", "owner": "P3", "until": "26.3",
+         "why": "only applies to the version it was written for"},
+    ]}))
+    lines: list[str] = []
+    report = aot_snapshot.bringup_list(engine, "26.4-snapshot-4", log=lines.append, ours=ours)
+    text = (engine / "port" / "tools" / "bringup" / "26.4-snapshot-4.txt").read_text()
+    check("our declared patch is in the list the engine reads",
+          "MinecraftClientPatcher.patchBuiltInRegistriesBrowserStartupYield" in text, text[-300:])
+    check("with its owner and its reason on the same line",
+          "| P8 |" in text and "entry lambda" in text, text[-300:])
+    check("the neighbour's own deferred patches come along too",
+          "RenderPatches263.menuBlur" in text and "step:LwjglPlatformGuard@lwjgl" in text)
+    check("an entry scoped to an older version is not carried forward",
+          "RenderPatches263.oldOnly" not in text)
+    check("the report counts ours and the neighbour's separately",
+          report["ours"] == 1 and report["entries"] >= 3, str(report))
+    check("and the log says which is which",
+          any("carried-over and 1 declared" in line for line in lines), str(lines[-1]))
+    check("the list explains where each group came from",
+          "Declared by this repository" in text and "Carried over from the neighbour" in text)
+
+    again = aot_snapshot.bringup_list(engine, "26.4-snapshot-4", log=lambda *_: None, ours=ours)
+    check("a second run leaves the list alone", again["path"] and
+          (engine / "port" / "tools" / "bringup" / "26.4-snapshot-4.txt").read_text() == text)
+
+    print("\nthe entries this repository ships")
+    shipped = json.loads((ROOT / "tools" / "aot_bringup.json").read_text())
+    check("each one names the patch, the owner and the reason",
+          all(all(entry.get(key) for key in ("patch", "owner", "why")) for entry in shipped["entries"]),
+          str(shipped["entries"])[:200])
+    check("the reason quotes the run that proved it",
+          any("run " in entry["why"] for entry in shipped["entries"]), str(shipped["entries"])[:200])
+    check("the owner is a work package the engine's own validator accepts",
+          all(re.fullmatch(r"P[1-9]", entry["owner"]) for entry in shipped["entries"]),
+          str([entry["owner"] for entry in shipped["entries"]]))
+
+
 def test_command_line(tmp: pathlib.Path) -> None:
     print("\nthe command")
     engine = fake_engine(tmp / "engine-cli")
@@ -336,6 +382,7 @@ def main() -> int:
         test_resolve()
         test_prepare(tmp)
         test_fixups(tmp)
+        test_bringup(tmp)
         test_command_line(tmp)
     print(f"\n{FAILURES} snapshot test(s) FAILED" if FAILURES else "\nsnapshot tests passed")
     return 1 if FAILURES else 0

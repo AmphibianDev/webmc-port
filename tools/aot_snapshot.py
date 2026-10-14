@@ -125,7 +125,32 @@ def copy_overrides(engine: pathlib.Path, version_id: str, log=print) -> dict:
     return report
 
 
-def bringup_list(engine: pathlib.Path, version_id: str, log=print) -> dict:
+def our_bringup_entries(path: pathlib.Path | None, version_id: str) -> list[dict]:
+    """The patches this project declares as not-yet-ported for a version, from our own file.
+
+    The engine's bring-up list is per-version and lives in the engine's tree. Writing our entries into it
+    at build time keeps the record in this repository, next to the fixups, with the reason and the run
+    that produced it - instead of a line somebody added to a clone and nobody can find again.
+    """
+    if path is None or not pathlib.Path(path).is_file():
+        return []
+    document = json.loads(pathlib.Path(path).read_text())
+    numbers = launchplan.version_key(version_id)[0]
+    wanted = []
+    for entry in document.get("entries") or []:
+        if entry.get("since") and numbers < launchplan.version_key(str(entry["since"]))[0]:
+            continue
+        if entry.get("until") and numbers > launchplan.version_key(str(entry["until"]))[0]:
+            continue
+        spec = entry.get("versions")
+        if spec and spec not in ("*", "any") and not launchplan.matches(spec, version_id):
+            continue
+        wanted.append(entry)
+    return wanted
+
+
+def bringup_list(engine: pathlib.Path, version_id: str, log=print,
+                 ours: pathlib.Path | None = None) -> dict:
     """Seed the engine's bring-up list from the nearest one.
 
     The list is the engine's documented way to build a version whose patches are still being ported:
@@ -134,7 +159,8 @@ def bringup_list(engine: pathlib.Path, version_id: str, log=print) -> dict:
     likely to be deferred on a 26.4 snapshot too - and the compiler is what proves it either way.
     """
     directory = engine / "port" / "tools" / "bringup"
-    report = {"path": None, "seeded_from": None, "entries": 0}
+    declared = our_bringup_entries(ours, version_id)
+    report = {"path": None, "seeded_from": None, "entries": 0, "ours": len(declared)}
     if not directory.is_dir():
         log(f"  ! {directory} does not exist: this engine has no bring-up mechanism, so every patch "
             f"must apply for the build to start")
@@ -150,6 +176,8 @@ def bringup_list(engine: pathlib.Path, version_id: str, log=print) -> dict:
         report["seeded_from"] = neighbour.name
         body = [line for line in neighbour.read_text().splitlines()
                 if line.strip() and not line.lstrip().startswith("#")]
+    own = [f"{entry['patch']} | {entry.get('owner', 'P0')} | {entry.get('why', 'not ported yet')}"
+           for entry in declared]
     header = [
         f"# Minecraft {version_id} bring-up list.",
         "#",
@@ -164,11 +192,14 @@ def bringup_list(engine: pathlib.Path, version_id: str, log=print) -> dict:
         header += ["#", "# Carried over from the neighbour - review every one: a patch that was deferred",
                    "# on that version may already apply here, and skipping it silently is worse than a",
                    "# failed build."]
-    else:
+    if own:
+        header += ["#", "# Declared by this repository (tools/aot_bringup.json), each one a patch that was",
+                   "# tried and did not apply to this version. The reason says which build said so."]
+    if not body and not own:
         header += ["#", "# Empty: every patch has to apply. Add a line only with a reason."]
-    target.write_text("\n".join(header + body) + "\n")
-    report["entries"] = len(body)
-    log(f"  wrote {report['path']} with {len(body)} carried-over entr(y/ies)")
+    target.write_text("\n".join(header + body + own) + "\n")
+    report["entries"] = len(body) + len(own)
+    log(f"  wrote {report['path']} with {len(body)} carried-over and {len(own)} declared entr(y/ies)")
     return report
 
 
@@ -283,7 +314,8 @@ def find_engine_profile(engine: pathlib.Path) -> pathlib.Path:
 
 
 def prepare(version_id: str, engine: pathlib.Path, client_jar: pathlib.Path, document: dict,
-            entry: dict, fixups_path: pathlib.Path | None = None, log=print) -> dict:
+            entry: dict, fixups_path: pathlib.Path | None = None,
+            bringup_path: pathlib.Path | None = None, log=print) -> dict:
     """Everything the engine needs for one version, written into the engine's own layout."""
     profile = aot_profile.build(version_id, entry, document,
                                 aot_profile.version_json(client_jar),
@@ -296,7 +328,7 @@ def prepare(version_id: str, engine: pathlib.Path, client_jar: pathlib.Path, doc
         f"class file {profile['classFileVersion']})")
 
     fixups = apply_fixups(engine, version_id, fixups_path, log=log)
-    bringup = bringup_list(engine, version_id, log=log)
+    bringup = bringup_list(engine, version_id, log=log, ours=bringup_path)
     # A snapshot marks its protocol with a high bit; the profile carries the plain number, and saying so
     # here means nobody has to wonder later why 1073742166 became 22.
     raw = aot_profile.version_json(client_jar).get("protocol_version")
@@ -347,6 +379,8 @@ def main(argv=None) -> int:
                         help="download the client jar (verify its sha1) when it is not given")
     parser.add_argument("--fixups", default=None,
                         help="a json file of source fixups for a version the engine has not ported")
+    parser.add_argument("--bringup", default=None,
+                        help="a json file of bring-up entries (patches not ported yet) to declare")
     parser.add_argument("--out", default=None, help="where to write the report json")
     parser.add_argument("--print", action="store_true")
     args = parser.parse_args(argv)
@@ -396,7 +430,8 @@ def main(argv=None) -> int:
 
     entry = {"type": resolved["type"], "released": resolved["released"]}
     report = prepare(version_id, engine, jar, document, entry,
-                     pathlib.Path(args.fixups) if args.fixups else None)
+                     pathlib.Path(args.fixups) if args.fixups else None,
+                     pathlib.Path(args.bringup) if args.bringup else None)
     report["metaless"] = not bool(resolved.get("meta_url"))
 
     print()
