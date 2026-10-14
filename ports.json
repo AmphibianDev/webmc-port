@@ -150,7 +150,7 @@
       "name": "Gaius (TeaVM, official client bytecode)",
       "repo": "TypeThe0ry/Gaius",
       "kind": "real-client",
-      "enabled": false,
+      "enabled": true,
       "disabled_why": "Kept only as a record: it compiles the official client for 1.21.11/26.2/26.3 with a fully headless CLI, but each version needs its own hand-written profile, and its support stops at the versions it ships. Disabled by request; the Eaglercraft workspaces above are the preferred engines.",
       "profiles": [
         "26.3",
@@ -170,7 +170,17 @@
         "remap": "cd engine && GAIUS_VERSION_PROFILE_PATH=versions/{version}.json bash port/scripts/remap-client.sh",
         "compile": "cd engine && GAIUS_VERSION_PROFILE_PATH=versions/{version}.json bash port/scripts/build-version-release.sh {version}",
         "output": "engine/port/web/dist/{version}/Gaius.html"
-      }
+      },
+      "profile_rules": [
+        {
+          "from": "26.1",
+          "to": "26.99",
+          "profile_tool": "tools/aot_snapshot.py",
+          "why": "it fetches whatever client version a profile names, patches it and compiles it, so a 26.x version - a snapshot included - needs a generated profile rather than new code",
+          "caveat": "a snapshot's patches are not ported yet by definition: the build starts with the previous version's source overrides and a bring-up list, and the log says which patches were skipped"
+        }
+      ],
+      "note": " Enabled for the 26.x range: tools/aot_snapshot.py generates the profile from Mojang's metadata, so a new snapshot is a dispatch rather than a code change."
     },
     {
       "id": "openjdk-wasm-client",

@@ -65,10 +65,13 @@ jobs:
       - name: Check out the engine
         uses: actions/checkout@v7
         with:
-          repository: CynTheSolveroftheabsolutefabric/Eaglercraft-26.2-Workspace
+          # One expression, not two keys: a duplicated key here made this workflow unparseable and
+          # every build for two days died in the same second with no jobs at all. tests/test_workflows.py
+          # exists so that cannot happen again.
           repository: ${{ inputs.engine_repo != '' && inputs.engine_repo || 'CynTheSolveroftheabsolutefabric/Eaglercraft-26.2-Workspace' }}
           path: engine
           fetch-depth: 1
+          lfs: true
 
       - uses: actions/setup-java@v6
         with:

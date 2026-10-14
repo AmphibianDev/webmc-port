@@ -1,0 +1,307 @@
+# Building the newest Minecraft snapshot for the browser, by ourselves.
+#
+# The launcher's other build job compiles a version an engine already has a profile for. This one
+# starts one step earlier: it asks Mojang for the newest snapshot, generates the version profile from
+# that version's own metadata (tools/aot_snapshot.py), copies the previous version's source overrides
+# as the starting point, seeds the engine's bring-up list, and then compiles the official client.
+# Nothing is downloaded prebuilt: the only client that goes in is the one Mojang serves, fetched here,
+# at build time, and the artifact that comes out is a compile of it.
+#
+# Two things are deliberately unusual, and both are because a 55-minute build on a runner whose logs
+# nobody can read is a waste of a day:
+#
+#   * **Every step tees to one log**, and a final `if: always()` step pushes a report plus the tail of
+#     that log to a `build-log` branch. Git is the channel: no token, no clicking through the web UI,
+#     and the next attempt can start from the actual error instead of a guess.
+#   * **The bring-up list is allowed** (`GAIUS_BRINGUP=1`), because a snapshot is by definition a
+#     version whose patch chain has not been brought up yet. Every skipped patch prints BRINGUP_SKIP
+#     and lands in the report, so "it built" can never quietly mean "it built with half the patches off".
+name: Build the latest snapshot
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Minecraft version, or latest-snapshot / latest-release"
+        required: false
+        type: string
+        default: "latest-snapshot"
+      engine_repo:
+        description: "The compiled-client engine to build with"
+        required: false
+        type: string
+        default: "TypeThe0ry/Gaius"
+      bringup:
+        description: "Allow the engine's bring-up list (skip patches whose port is not finished)"
+        required: false
+        type: boolean
+        default: true
+  push:
+    # A tag is a deliberate act, which is what a 55-minute job should take to start. Branch pushes do
+    # not compile anything: tools/workflow_lint.py refuses a build that runs on one.
+    tags: ["build-*"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: webmc-port-snapshot
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    name: Compile the newest snapshot
+    runs-on: ubuntu-latest
+    # The engine's own figure is ~55 minutes; the TeaVM link is the part that can stretch. The runner
+    # limit is six hours, and this leaves room for two attempts' worth of pain.
+    timeout-minutes: 350
+    steps:
+      - name: Which version, and with which engine
+        id: want
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            VERSION="${GITHUB_REF_NAME#build-}"
+            ENGINE="TypeThe0ry/Gaius"
+          else
+            VERSION="${{ inputs.version }}"
+            ENGINE="${{ inputs.engine_repo }}"
+          fi
+          [ -n "$VERSION" ] || VERSION="latest-snapshot"
+          [ -n "$ENGINE" ] || ENGINE="TypeThe0ry/Gaius"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "engine=$ENGINE" >> "$GITHUB_OUTPUT"
+          echo "building $VERSION with $ENGINE"
+
+      - name: Check out this repository
+        uses: actions/checkout@v7
+        with:
+          path: ours
+
+      - name: Check out the engine
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ steps.want.outputs.engine }}
+          path: engine
+          fetch-depth: 1
+          # The engine keeps part of its tree in Git LFS and its build reads it.
+          lfs: true
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Room to build in
+        # A 26.x client compile wants ~12 GB of disk on top of the toolchain the runner already has.
+        run: |
+          set -euo pipefail
+          df -h / | tail -1
+          # Not $AGENT_TOOLSDIRECTORY: the JDK and Node this job is already using live there.
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL \
+                      /usr/local/share/boost 2>/dev/null || true
+          df -h / | tail -1
+          command -v jq >/dev/null || sudo apt-get install -y jq
+          nproc; free -g | head -2
+
+      - name: Prepare the version for the engine
+        # Profile from Mojang's metadata and the version.json inside the client jar, the previous
+        # version's source overrides as a starting point, and a bring-up list. The client jar is
+        # fetched here (its sha1 checked against Mojang's) because the profile needs the three numbers
+        # only that file has.
+        working-directory: ours
+        run: |
+          set -euo pipefail
+          python3 tools/aot_snapshot.py --version "${{ steps.want.outputs.version }}" \
+            --engine ../engine --fetch --out /tmp/snapshot-report.json --print 2>&1 | tee /tmp/prepare.log
+          VERSION="$(python3 -c "import json;print(json.load(open('/tmp/snapshot-report.json'))['version'])")"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "resolved to $VERSION"
+
+      - name: Fetch the client, its libraries and its assets
+        working-directory: engine
+        run: |
+          set -uo pipefail
+          export GAIUS_VERSION_PROFILE_PATH="versions/$VERSION.json"
+          bash port/scripts/fetch-version.sh 2>&1 | tee -a /tmp/build.log
+          STATUS=${PIPESTATUS[0]}
+          echo "fetch exit: $STATUS"
+          exit "$STATUS"
+
+      - name: Remap the client if this version is obfuscated
+        working-directory: engine
+        run: |
+          set -uo pipefail
+          export GAIUS_VERSION_PROFILE_PATH="versions/$VERSION.json"
+          bash port/scripts/remap-client.sh 2>&1 | tee -a /tmp/build.log
+          STATUS=${PIPESTATUS[0]}
+          echo "remap exit: $STATUS"
+          exit "$STATUS"
+
+      - name: Build the overlays (the patch chain, bring-up allowed)
+        # GAIUS_BRINGUP=1 lets the engine's bring-up list skip patches whose port is not finished. Every
+        # skip prints BRINGUP_SKIP, and this step fails if the log shows one that the list does not
+        # declare - the engine's own check-build-log-skips.mjs does that, and it is run here.
+        working-directory: engine
+        run: |
+          set -uo pipefail
+          export GAIUS_VERSION_PROFILE_PATH="versions/$VERSION.json"
+          export GAIUS_BRINGUP="${{ inputs.bringup && '1' || '' }}"
+          [ "${GITHUB_REF_TYPE}" = "tag" ] && export GAIUS_BRINGUP=1
+          echo "bring-up: ${GAIUS_BRINGUP:-off}"
+          bash port/scripts/build-overlays.sh 2>&1 | tee -a /tmp/build.log
+          STATUS=${PIPESTATUS[0]}
+          echo "overlays exit: $STATUS"
+          if [ -f port/tools/bringup/"$VERSION".txt ]; then
+            node port/scripts/check-build-log-skips.mjs "$VERSION" /tmp/build.log 2>&1 | tail -30 || true
+          fi
+          exit "$STATUS"
+
+      - name: Compile, link and package the release
+        working-directory: engine
+        run: |
+          set -uo pipefail
+          export GAIUS_VERSION_PROFILE_PATH="versions/$VERSION.json"
+          export GRADLE_OPTS="-Xmx9g -Dorg.gradle.daemon=false -Dorg.gradle.parallel=true"
+          export NODE_OPTIONS="--max-old-space-size=6144"
+          ( while true; do sleep 60; free -g | awk 'NR==2 {print "  memory used " $3 " GB"; }'; done ) &
+          WATCH=$!
+          bash port/scripts/build-version-release.sh "$VERSION" 2>&1 | tee -a /tmp/build.log
+          STATUS=${PIPESTATUS[0]}
+          kill "$WATCH" 2>/dev/null || true
+          echo "release exit: $STATUS"
+          exit "$STATUS"
+
+      - name: What the engine produced
+        run: |
+          set -euo pipefail
+          {
+            echo "## Snapshot build: $VERSION"
+            echo '```'
+            find engine/port/web/dist -maxdepth 2 -type f -printf '%10s  %p\n' 2>/dev/null | sort -rn | head -12 || true
+            ls -la engine/port/web/dist/"$VERSION" 2>/dev/null | head -12 || true
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Put our boot screen in front of the client
+        # The engine ships its own launcher page. What a player sees first should be the loading screen
+        # the game itself draws, so ours goes in front of it and hands over on the first GL draw.
+        working-directory: ours
+        run: |
+          set -euo pipefail
+          CLIENT="$(find ../engine/port/web/dist -name '*.html' -size +1M | sort | head -1 || true)"
+          if [ -z "$CLIENT" ]; then echo "::warning::no client HTML to wrap"; exit 0; fi
+          echo "client: $CLIENT ($(du -h "$CLIENT" | cut -f1))"
+          python3 tools/aot_shell.py --client "$CLIENT" --check 2>&1 | tee /tmp/shell-check.txt || true
+          REMOVE="$(python3 - "$CLIENT" <<'PY'
+          import re, sys, pathlib
+          text = pathlib.Path(sys.argv[1]).read_text(errors="replace")
+          ids = re.findall(r'id="([\w-]+)"', text)
+          # Only ids whose own name says they are the engine's loading UI: removing anything else from
+          # somebody else's packager is how a client stops booting.
+          wanted = [i for i in ids if any(word in i.lower() for word in
+                     ("loading", "splash", "boot-overlay", "bootoverlay", "progress"))
+                     and not any(word in i.lower() for word in ("canvas", "game", "root", "gl"))]
+          print(",".join("#" + i for i in dict.fromkeys(wanted)))
+          PY
+          )"
+          echo "engine loading UI to replace: ${REMOVE:-none found}"
+          OUT="dist/$(basename "$CLIENT" .html)-webmc.html"
+          mkdir -p dist
+          python3 tools/aot_shell.py --client "$CLIENT" --out "$OUT" ${REMOVE:+--remove "$REMOVE"}
+          ls -la dist/
+
+      - name: Publish the client and record it
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          cd ours
+          ASSET="client-$VERSION.html"
+          CLIENT="$(find dist -name '*-webmc.html' -size +1M | sort | head -1 || true)"
+          [ -n "$CLIENT" ] || CLIENT="$(find ../engine/port/web/dist -name '*.html' -size +5M | sort | head -1 || true)"
+          if [ -z "$CLIENT" ]; then echo "::warning::nothing large enough to publish"; exit 0; fi
+          cp "$CLIENT" "/tmp/$ASSET"
+          echo "publishing $ASSET ($(du -h "/tmp/$ASSET" | cut -f1))"
+          gh release view built-clients >/dev/null 2>&1 || gh release create built-clients \
+            --title "Built browser clients" \
+            --notes "Compiled from the official client by this repository's build jobs." || true
+          gh release upload built-clients "/tmp/$ASSET" --clobber
+          python3 - "$VERSION" "$ASSET" <<'PY'
+          import hashlib, json, os, pathlib, sys, datetime
+          version, asset = sys.argv[1], sys.argv[2]
+          repo = os.environ.get("GITHUB_REPOSITORY", "")
+          url = f"https://github.com/{repo}/releases/latest/download/{asset}"
+          blob = pathlib.Path("/tmp", asset)
+          record = {"url": url, "bytes": blob.stat().st_size if blob.is_file() else None,
+                    "sha256": hashlib.sha256(blob.read_bytes()).hexdigest() if blob.is_file() else None,
+                    "at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "note": "compiled by build-snapshot.yml from the official client"}
+          state_path = pathlib.Path("state.json")
+          state = json.loads(state_path.read_text()) if state_path.is_file() else {"seen": [], "catalog": []}
+          state.setdefault("built", {})[version] = record
+          state_path.write_text(json.dumps(state, indent=2) + "\n")
+          print("state.json records the built client for", version)
+          PY
+          python3 tools/update.py --state state.json --write
+          git config user.name "webmc-port-bot"
+          git config user.email "webmc-port-bot@users.noreply.github.com"
+          git add state.json site/manifest.json
+          git diff --cached --quiet || git commit -m "catalog: $VERSION compiled from the official client"
+          # Explicit refspec: a tag-triggered run is on a detached HEAD, where a bare `git push` fails.
+          for attempt in 1 2 3; do
+            git push origin HEAD:main && break
+            git fetch origin main && git rebase origin/main || true
+          done
+
+      - name: Record what happened, where git can read it
+        # The point of the whole job: a 55-minute build whose log nobody can open is a wasted day. This
+        # pushes the report and the tail of the log to a `build-log` branch, so the next attempt starts
+        # from the real error.
+        if: always()
+        run: |
+          set -uo pipefail
+          cd ours
+          mkdir -p build-log
+          STATUS="${{ job.status }}"
+          python3 - "$STATUS" <<'PY'
+          import json, os, pathlib, datetime, re
+          report = {"job_status": None, "at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "run": f"{os.environ.get('GITHUB_REPOSITORY')}/actions/runs/{os.environ.get('GITHUB_RUN_ID')}"}
+          try:
+              report.update(json.loads(pathlib.Path("/tmp/snapshot-report.json").read_text()))
+          except Exception as error:  # noqa: BLE001
+              report["report_error"] = str(error)
+          log = pathlib.Path("/tmp/build.log")
+          text = log.read_text(errors="replace") if log.is_file() else ""
+          report["log_bytes"] = len(text)
+          interesting = [line for line in text.splitlines() if re.search(
+              r"BRINGUP_SKIP|PatchRegistry|Exception|Error|error:|FAILED|OutOfMemory|Killed|not found|"
+              r"exit \d+|BUILD ", line)]
+          report["interesting"] = interesting[-120:]
+          pathlib.Path("build-log/report.json").write_text(json.dumps(report, indent=1) + "\n")
+          pathlib.Path("build-log/last.log").write_text(text[-200000:])
+          print("\n".join(interesting[-40:]))
+          PY
+          echo "$STATUS" > build-log/status.txt
+          cp /tmp/prepare.log build-log/prepare.log 2>/dev/null || true
+          cp /tmp/shell-check.txt build-log/shell-check.txt 2>/dev/null || true
+          git add build-log
+          git -c user.name="webmc-port-bot" -c user.email="webmc-port-bot@users.noreply.github.com" \
+            commit -m "snapshot log: $(cat build-log/status.txt)" || echo "nothing to record"
+          git push origin HEAD:refs/heads/build-log --force || echo "::warning::could not push the log branch"
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: snapshot-${{ steps.want.outputs.version }}
+          path: |
+            ours/build-log
+            ours/dist
+            engine/port/web/dist
+          if-no-files-found: ignore

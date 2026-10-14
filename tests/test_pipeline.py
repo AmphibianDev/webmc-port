@@ -71,8 +71,31 @@ def main() -> int:
     check("a buildable entry says what it costs",
           rows["26.2"]["minutes"] and rows["26.2"]["ram_gb"] and rows["26.2"]["mods"],
           str({k: rows["26.2"][k] for k in ("minutes", "ram_gb", "mods")}))
-    check("a version whose only engine is disabled needs a port", rows["26.3"]["verdict"] == "needs-port",
-          rows["26.3"]["why"] + " (engine " + str(rows["26.3"]["engine"]) + ")")
+    # `enabled: false` means "documented, not a candidate". The engine that compiles a 26.x client is
+    # enabled now (it can generate a profile for a snapshot), so this checks the *rule* with the flag
+    # flipped rather than depending on any one engine's state today.
+    gaius = next(engine for engine in planner.load_engines(include_disabled=True) if engine["id"] == "gaius")
+    offline = next(e for e in planner.load_engines(include_disabled=True) if not e.get("enabled", True))
+    check("an engine with enabled: false is documentation, not a candidate",
+          offline["id"] not in {e["id"] for e in planner.load_engines()},
+          f"{offline['id']} is in the enabled list")
+    check("and including it is explicit",
+          offline["id"] in {e["id"] for e in planner.load_engines(include_disabled=True)})
+    check("so a version only a disabled engine could build still needs a port",
+          planner.verdict_for("26.3", "release", [])["verdict"] == "needs-port",
+          planner.verdict_for("26.3", "release", [])["why"])
+    check("and enabling that engine makes the same version buildable",
+          planner.verdict_for("26.3", "release", [dict(gaius, enabled=True)])["verdict"] == "build",
+          planner.verdict_for("26.3", "release", [dict(gaius, enabled=True)])["why"])
+    check("a version an engine can generate a profile for is buildable without a hand-written one",
+          planner.verdict_for("26.4-snapshot-4", "snapshot", [dict(gaius, enabled=True)])["verdict"]
+          == "build"
+          and planner.verdict_for("26.4-snapshot-4", "snapshot", [dict(gaius, enabled=True)]).get(
+              "generated_profile") is True,
+          str(planner.verdict_for("26.4-snapshot-4", "snapshot", [dict(gaius, enabled=True)]))[:160])
+    check("and the tool that generates it is named for the build job",
+          planner.verdict_for("26.4-snapshot-4", "snapshot", [dict(gaius, enabled=True)]).get(
+              "profile_tool") == "tools/aot_snapshot.py")
     check("a version the real-JVM route can run is launched, not built", rows["1.8.9"]["verdict"] == "launch",
           rows["1.8.9"]["verdict"] + " via " + str(rows["1.8.9"]["engine"]))
     check("a launch needs no compile time", rows["1.8.9"]["minutes"] == 0)
@@ -85,8 +108,11 @@ def main() -> int:
     check("a 1.13-1.20.4 version is blocked by the missing LWJGL 3 layer",
           rows["1.21.4"]["roadmap"] == "cheerpj-java21" and "Java 21" in rows["1.21.4"]["blocked_by"],
           str(rows["1.21.4"].get("blocked_by"))[:80])
-    check("a 26.x version is blocked by the Java version too", rows["26.3"]["roadmap"] == "cheerpj-java21")
-    check("the roadmap says what it would unlock", bool(rows["26.3"].get("unlocks")))
+    check("a 26.x version is still explained by the Java wall, even though an engine can compile it",
+          rows["26.3"]["roadmap"] == "cheerpj-java21" and "Java 21" in rows["26.3"]["blocked_by"],
+          str(rows["26.3"].get("blocked_by"))[:80])
+    check("the roadmap says what it would unlock",
+          bool(planner.roadmap_for("26.3", planner.load_roadmap()).get("unlocks")))
     check("a version that can be launched is not blocked", "blocked_by" not in rows["1.8.9"])
     lwjgl_gap = planner.roadmap_for("1.19.4", planner.load_roadmap())
     check("1.19.4 is in the LWJGL 3 range", lwjgl_gap and lwjgl_gap["id"] == "cheerpj-lwjgl3", str(lwjgl_gap))
@@ -110,7 +136,16 @@ def main() -> int:
           all(engine.get("profiles") or engine.get("versions") for engine in enabled))
     check("a real version with no profile needs a port", rows["1.21.4"]["verdict"] == "needs-port",
           rows["1.21.4"]["why"])
-    check("a fresh snapshot needs a port too", rows["26.3-snapshot-7"]["verdict"] == "needs-port")
+    # The point of profile_rules: a version nobody has brought up yet is buildable *by generating its
+    # profile*, which is what makes "support the latest snapshot" a dispatch rather than a code change.
+    snapshot = rows["26.3-snapshot-7"]
+    check("a fresh snapshot is buildable by the engine that generates profiles",
+          snapshot["verdict"] == "build" and snapshot.get("generated_profile") is True,
+          f"{snapshot['verdict']} via {snapshot.get('engine')}: {snapshot['why'][:80]}")
+    check("and the tool that generates its profile is named for the build job",
+          snapshot.get("profile_tool") == "tools/aot_snapshot.py")
+    check("with the caveat that its patches are not ported yet", bool(snapshot.get("caveat")),
+          str(snapshot.get("caveat"))[:80])
     links_any = planner.engine_links(engines)
     check("a prebuilt client is still available as the fallback for classics",
           "Eaglercraft_Offline_WASM.html" in (links_any.get("b1.8.1") or ""), str(sorted(links_any))[:80])
@@ -145,7 +180,12 @@ def main() -> int:
         saved = json.loads(state.read_text())
         check("it recorded every version it saw", len(saved["seen"]) >= 14, str(len(saved["seen"])))
         check("it queued the versions that need a port",
-              {entry["id"] for entry in saved["queued"]} >= {"1.21.4", "26.3-snapshot-7"}, str(saved["queued"]))
+              {entry["id"] for entry in saved["queued"]} >= {"1.21.4", "1.20.4"}, str(saved["queued"]))
+        check("and did not queue the ones an engine can now compile",
+              "26.3" not in {entry["id"] for entry in saved["queued"]}
+              and any(entry["id"] == "26.3" and entry["verdict"] == "build"
+                      for entry in saved["catalog"]),
+              str([entry["id"] for entry in saved["queued"]]))
         check("it catalogued the buildable ones",
               any(entry["id"] == "26.2" and entry["verdict"] == "build" for entry in saved["catalog"]))
         check("queued entries say why", all(entry.get("why") for entry in saved["queued"]))
@@ -312,7 +352,13 @@ def main() -> int:
     check("a LWJGL 3 version waits on one layer", states.get("1.16.5") == "one-layer", str(states.get("1.16.5")))
     check("a 26.x version is blocked by Java, not by us", states.get("26.2") == "ahead-of-time",
           str(states.get("26.2")))
-    check("and 1.21.11 is blocked outright", states.get("1.21.11") == "blocked")
+    check("and 1.21.11 is reachable as a compiled client now that an engine covers it",
+          states.get("1.21.11") == "ahead-of-time", str(states.get("1.21.11")))
+    # The other side of the same coin: a Java-21 version *outside* every engine's range is still a wall,
+    # and has to say so rather than looking buildable because a neighbouring range exists.
+    outside = planner.verdict_for("1.21.4", "release", planner.load_engines(), planner.load_roadmap())
+    check("a Java 21 version no engine covers is still blocked, and says why",
+          outside["verdict"] == "needs-port" and "Java 21" in outside["why"], str(outside)[:160])
     blocked_rows = [row for row in targets if row["state"] in ("blocked", "one-layer", "unknown")]
     check("every blocked version names a way forward",
           blocked_rows and all(row.get("alternatives") for row in blocked_rows),
