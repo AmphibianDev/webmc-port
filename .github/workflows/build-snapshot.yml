@@ -142,9 +142,17 @@ jobs:
         # 9,969 classes). setup-java puts one on PATH; this names it.
         run: |
           set -euo pipefail
-          echo "GAIUS_JAVA_HOME=$JAVA_HOME" >> "$GITHUB_ENV"
-          echo "GAIUS_NODE_HOME=$(dirname "$(command -v node)")/.." >> "$GITHUB_ENV"
-          java -version 2>&1 | head -2
+          # Derived from the java that is actually on PATH rather than from $JAVA_HOME: the engine checks
+          # for a JDK by looking for bin/javac next to bin/java, and a variable that points somewhere else
+          # (or nowhere) is exactly the failure the last three runs reported.
+          FOR_REAL="$(cd "$(dirname "$(command -v java)")/.." && pwd)"
+          echo "GAIUS_JAVA_HOME=$FOR_REAL" >> "$GITHUB_ENV"
+          echo "JAVA_HOME=$FOR_REAL" >> "$GITHUB_ENV"
+          echo "$FOR_REAL/bin" >> "$GITHUB_PATH"
+          echo "JAVA_HOME was: ${JAVA_HOME:-unset}; using: $FOR_REAL"
+          ls "$FOR_REAL/bin" | head -6
+          "$FOR_REAL/bin/javac" -version
+          "$FOR_REAL/bin/java" -version 2>&1 | head -1
 
       - name: Room to build in
         # A 26.x client compile wants ~12 GB of disk on top of the toolchain the runner already has.
