@@ -43,13 +43,16 @@ def real_java_verdict(version_id: str, row: dict) -> tuple[str, str]:
     if row["verdict"] == "launch":
         java = row.get("java") or 8
         return "real-java", f"Java {java} + LWJGL 2, both available in the browser"
+    # Order matters. A version an engine compiles is "ahead-of-time" *because* no browser JVM can run
+    # it, so the wall that explains that comes second: the row carries both facts, and the useful answer
+    # for a target list is "this is how you get it", not "this is why real Java cannot".
+    if row["verdict"] == "build":
+        return "ahead-of-time", f"{row['engine']} compiles it (real client, ahead-of-time)"
     blocked = row.get("blocked_by")
     if blocked:
         if "Java 21" in blocked or "Java 25" in blocked or "Java 2" in blocked:
             return "blocked", blocked
         return "one-layer", blocked
-    if row["verdict"] == "build":
-        return "ahead-of-time", f"{row['engine']} compiles it (real client, ahead-of-time)"
     if row["verdict"] == "reuse":
         return "prebuilt", f"{row['engine']} publishes a client for it"
     return "unknown", row.get("why", "")

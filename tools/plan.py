@@ -35,6 +35,24 @@ def load_roadmap(path: pathlib.Path | None = None) -> list[dict]:
     return list(document.get("roadmap") or [])
 
 
+def profile_rule_for(version_id: str, rules: list[dict]) -> dict | None:
+    """A version range an engine can build without a hand-written profile.
+
+    `profiles` is what an engine has built before; `profile_rules` is what it can build next, which is
+    how a snapshot becomes buildable the day Mojang publishes it instead of the day somebody writes a
+    JSON file. The tool that generates the profile is named in the rule so the build job knows to run it.
+    """
+    key = version_tools.version_key(version_id)
+    for rule in rules:
+        if not isinstance(rule, dict):
+            continue
+        low = version_tools.version_key(rule.get("from") or "0")
+        high = version_tools.version_key(rule.get("to") or "9999")
+        if low <= key <= high:
+            return rule
+    return None
+
+
 def roadmap_for(version_id: str, roadmap: list[dict]) -> dict | None:
     key = version_tools.version_key(version_id)
     for item in roadmap:
@@ -91,16 +109,40 @@ def verdict_for(version_id: str, kind: str, engines: list[dict],
             }
         if version_id in (engine.get("profiles") or []):
             requires = engine.get("requires") or {}
+            wall = roadmap_for(version_id, roadmap or [])
             return {
                 "verdict": "build",
                 "engine": engine["id"],
                 "engine_name": engine.get("name", engine["id"]),
                 "why": f"{engine['id']} has a profile for {version_id}",
+                "roadmap": (wall or {}).get("id"),
+                "blocked_by": (wall or {}).get("blocked_by"),
                 "java": requires.get("java_compile") or requires.get("java"),
                 "ram_gb": requires.get("ram_gb"),
                 "minutes": requires.get("minutes"),
                 "mods": engine.get("mods"),
                 "build": engine.get("build"),
+            }
+        rule = profile_rule_for(version_id, engine.get("profile_rules") or [])
+        if rule:
+            requires = engine.get("requires") or {}
+            wall = roadmap_for(version_id, roadmap or [])
+            return {
+                "verdict": "build",
+                "engine": engine["id"],
+                "engine_name": engine.get("name", engine["id"]),
+                "why": (f"{engine['id']} can generate a profile for {version_id} and build it: "
+                        + str(rule.get("why") or "a version in its supported range")),
+                "java": requires.get("java_compile") or requires.get("java"),
+                "ram_gb": requires.get("ram_gb"),
+                "minutes": requires.get("minutes"),
+                "mods": engine.get("mods"),
+                "build": engine.get("build"),
+                "profile_tool": rule.get("profile_tool"),
+                "generated_profile": True,
+                "caveat": rule.get("caveat"),
+                "roadmap": (wall or {}).get("id"),
+                "blocked_by": (wall or {}).get("blocked_by"),
             }
         if version_id in (engine.get("versions") or {}):
             return {

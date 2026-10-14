@@ -38,6 +38,9 @@ jobs:
   catalog:
     name: Version catalog and launcher page
     runs-on: ubuntu-latest
+    # A catalog run is seconds of work, but a step that hangs on a slow host should give the runner
+    # back rather than hold it: tools/workflow_lint.py requires this on every job.
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
 
