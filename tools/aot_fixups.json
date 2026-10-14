@@ -22,16 +22,16 @@
       "find": "    equal(metadata.pack_version?.resource_major,\n        expected.packVersions.resource.major, \"client resource pack major version\");\n    equal(metadata.pack_version?.resource_minor,\n        expected.packVersions.resource.minor, \"client resource pack minor version\");\n    equal(metadata.pack_version?.data_major,\n        expected.packVersions.data.major, \"client data pack major version\");\n    equal(metadata.pack_version?.data_minor,\n        expected.packVersions.data.minor, \"client data pack minor version\");",
       "replace": "    // 1.21.4 and earlier call these fields resource/data; 1.21.11 and later call them\n    // resource_major/data_major. Both shapes are read here, because the client is the authority and a\n    // version that predates the rename is not a broken profile.\n    equal(metadata.pack_version?.resource_major ?? metadata.pack_version?.resource,\n        expected.packVersions.resource.major, \"client resource pack major version\");\n    equal(metadata.pack_version?.resource_minor ?? 1,\n        expected.packVersions.resource.minor, \"client resource pack minor version\");\n    equal(metadata.pack_version?.data_major ?? metadata.pack_version?.data,\n        expected.packVersions.data.major, \"client data pack major version\");\n    equal(metadata.pack_version?.data_minor ?? 0,\n        expected.packVersions.data.minor, \"client data pack minor version\");",
       "count": 1,
-      "until": "1.21.4",
-      "why": "the profile check reads only the post-rename field names, so every 1.21.x version before the rename fails with 'client resource pack major version undefined does not match 46' even when the profile is right. Build run 38581076827 shows it for 1.21.4, whose own version.json says pack_version {resource: 46, data: 61}."
+      "why": "the profile check reads only the post-rename field names, so every 1.21.x version before the rename fails with 'client resource pack major version undefined does not match 46' even when the profile is right. Build run 38581076827 shows it for 1.21.4, whose own version.json says pack_version {resource: 46, data: 61}.",
+      "until": "1.21.11"
     },
     {
       "file": "port/tools/src/main/java/dev/gaius/tools/GuavaFutureStatePatcher.java",
       "find": "            var entry = jar.getEntry(CLASS_ENTRY);\n            if (entry == null) {\n                throw new IllegalStateException(CLASS_ENTRY + \" not found in \" + args[0]);\n            }",
       "replace": "            var entry = jar.getEntry(CLASS_ENTRY);\n            if (entry == null) {\n                // An older 1.21.x client ships a Guava without this class, so there is nothing to patch:\n                // the method this rewrites does not exist yet. Warning and returning is right - the\n                // patcher exists to swap one Guava implementation for another, not to require it.\n                System.err.println(\"GuavaFutureStatePatcher: \" + CLASS_ENTRY + \" is not in \" + args[0]\n                        + \" (this client's Guava predates it), nothing to patch\");\n                return;\n            }",
       "count": 1,
-      "until": "1.21.4",
-      "why": "the patcher throws when the class it rewrites is absent, and 1.21.4's Guava predates it: build run 38583471729 stopped with 'com/google/common/util/concurrent/AbstractFutureState.class not found'. Nothing to patch is a reason to skip, not to fail a build."
+      "why": "the patcher throws when the class it rewrites is absent, and 1.21.4's Guava predates it: build run 38583471729 stopped with 'com/google/common/util/concurrent/AbstractFutureState.class not found'. Nothing to patch is a reason to skip, not to fail a build.",
+      "until": "1.21.11"
     }
   ]
 }
