@@ -1,0 +1,13 @@
+{
+  "note": "Source fixups for versions an engine has not ported yet. Scope is `since`/`until` by version number (a snapshot sorts below its own release, so a `>=` matcher would miss exactly the versions these are written for). A Minecraft snapshot changes the client's API, and a compiled-client engine's browser code is written against the last version it built, so the build stops on a compile error that is nobody's bug - it is what a snapshot is. Each entry is one breakage: the file it is in, the exact text, what it becomes, the version it applies from, and why. tools/aot_snapshot.py applies them (and refuses to build if an anchor has moved, because a fixup that no longer matches means a person has to look). Anything here is a candidate for the engine upstream: this file is the honest record of what this project had to patch to run a version nobody has ported yet.",
+  "fixups": [
+    {
+      "file": "port/overrides/libraries/lwjgl-opengl/src/main/java/org/lwjgl/opengl/BrowserOpenGL.java",
+      "find": "jsonField(builder, \"visible\", widget.visible)",
+      "replace": "jsonField(builder, \"visible\", widget.isVisible())",
+      "count": 1,
+      "since": "26.4",
+      "why": "26.4-snapshot-4 made AbstractWidget.visible protected, so an overlay outside the client's package can no longer read the field. The public accessor is isVisible(), which the same code already uses for isFocused() two lines up. Seen in the build log of run 38543240894: 'error: visible has protected access in AbstractWidget'."
+    }
+  ]
+}

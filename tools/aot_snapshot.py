@@ -172,6 +172,73 @@ def bringup_list(engine: pathlib.Path, version_id: str, log=print) -> dict:
     return report
 
 
+def apply_fixups(engine: pathlib.Path, version_id: str, path: pathlib.Path, log=print) -> dict:
+    """Patch the engine's own source for a version it has not ported yet.
+
+    A snapshot changes the client's API, and the engine's browser code is written against the last
+    version it built: 26.4-snapshot-4 made `AbstractWidget.visible` protected, so the LWJGL overlay that
+    reads it stopped compiling. That is not a bug in either project - it is what a snapshot *is* - so it
+    is handled as data: `tools/aot_fixups.json` lists a find/replace per breakage, with the version
+    range it applies to and the reason, and this applies them.
+
+    Three rules, because a silent patch set is worse than no patch set:
+
+      * applying twice is a no-op (a build may be re-run in the same checkout);
+      * an anchor that is no longer there is a **failure**, not a skip: the file changed, so the fixup
+        needs a person, and continuing would produce a build that fails later for a worse reason;
+      * every change is reported with its reason, so the build log says what was patched and why.
+    """
+    report = {"file": None, "applied": [], "already": [], "failed": []}
+    if path is None:
+        return report
+    document = json.loads(pathlib.Path(path).read_text())
+    fixups = document.get("fixups") or []
+    report["file"] = str(pathlib.Path(path).name)
+    wanted = launchplan.version_key(version_id)
+    for fixup in fixups:
+        # Scope is `since`/`until` by version *number*, not the mod-style matcher: a snapshot sorts
+        # below its own release (so `>=26.4` would exclude 26.4-snapshot-4, which is exactly the
+        # version a fixup for 26.4 is written for). The numbers alone are what "26.4 and later" means.
+        numbers = launchplan.version_key(version_id)[0]
+        if fixup.get("since") and numbers < launchplan.version_key(str(fixup["since"]))[0]:
+            continue
+        if fixup.get("until") and numbers > launchplan.version_key(str(fixup["until"]))[0]:
+            continue
+        spec = fixup.get("versions")
+        if spec and spec not in ("*", "any") and not launchplan.matches(spec, version_id):
+            continue
+        relative = fixup.get("file")
+        target = engine / relative if relative else None
+        if not target or not target.is_file():
+            report["failed"].append(f"{relative}: no such file in the engine")
+            continue
+        text = target.read_text()
+        find, replace = fixup.get("find", ""), fixup.get("replace", "")
+        if replace and replace in text and find not in text:
+            report["already"].append(relative)
+            log(f"  fixup already applied: {relative}")
+            continue
+        count = text.count(find)
+        if count == 0:
+            report["failed"].append(
+                f"{relative}: the text this fixup anchors on is gone. The engine's source changed - "
+                f"review the fixup ({fixup.get('why')}) instead of building without it")
+            log(f"  ! fixup anchor missing in {relative}")
+            continue
+        expected = int(fixup.get("count", 1))
+        if count != expected:
+            report["failed"].append(
+                f"{relative}: the anchor matches {count} times, the fixup says {expected}")
+            log(f"  ! fixup anchor matches {count} times in {relative}, expected {expected}")
+            continue
+        target.write_text(text.replace(find, replace))
+        report["applied"].append({"file": relative, "why": fixup.get("why"), "matches": count})
+        log(f"  patched {relative}: {fixup.get('why')}")
+    if report["failed"]:
+        raise SystemExit("fixups that could not be applied:\n  " + "\n  ".join(report["failed"]))
+    return report
+
+
 def patcher_report(engine: pathlib.Path, version_id: str) -> dict:
     """Which patcher will run for this version: the one the nearest profile declares.
 
@@ -216,7 +283,7 @@ def find_engine_profile(engine: pathlib.Path) -> pathlib.Path:
 
 
 def prepare(version_id: str, engine: pathlib.Path, client_jar: pathlib.Path, document: dict,
-            entry: dict, log=print) -> dict:
+            entry: dict, fixups_path: pathlib.Path | None = None, log=print) -> dict:
     """Everything the engine needs for one version, written into the engine's own layout."""
     profile = aot_profile.build(version_id, entry, document,
                                 aot_profile.version_json(client_jar),
@@ -228,8 +295,14 @@ def prepare(version_id: str, engine: pathlib.Path, client_jar: pathlib.Path, doc
     log(f"  wrote {target.relative_to(engine)} (Java {profile['javaVersion']}, "
         f"class file {profile['classFileVersion']})")
 
-    overrides = copy_overrides(engine, version_id, log=log)
+    fixups = apply_fixups(engine, version_id, fixups_path, log=log)
     bringup = bringup_list(engine, version_id, log=log)
+    # A snapshot marks its protocol with a high bit; the profile carries the plain number, and saying so
+    # here means nobody has to wonder later why 1073742166 became 22.
+    raw = aot_profile.version_json(client_jar).get("protocol_version")
+    if isinstance(raw, int) and raw & 0x40000000 and raw != profile.get("protocolVersion"):
+        log(f"  protocol: snapshot marker stripped, {raw} -> {profile['protocolVersion']}")
+    overrides = copy_overrides(engine, version_id, log=log)
     patchers = patcher_report(engine, version_id)
     review = list(overrides["mentions_old_version"])
     if patchers["will_run"]:
@@ -250,11 +323,14 @@ def prepare(version_id: str, engine: pathlib.Path, client_jar: pathlib.Path, doc
     return {
         "version": version_id,
         "profile": str(target.relative_to(engine)),
+        "protocol_note": (f"snapshot marker stripped: {raw} -> {profile['protocolVersion']}"
+                          if isinstance(raw, int) and raw & 0x40000000 else None),
         "java": profile["javaVersion"],
         "classFileVersion": profile["classFileVersion"],
         "protocolVersion": profile["protocolVersion"],
         "worldVersion": profile["worldVersion"],
         "overrides": overrides,
+        "fixups": fixups,
         "bringup": bringup,
         "patchers": patchers,        "review": review,
     }
@@ -269,6 +345,8 @@ def main(argv=None) -> int:
     parser.add_argument("--meta", default=None, help="the version document, if it is already here")
     parser.add_argument("--fetch", action="store_true",
                         help="download the client jar (verify its sha1) when it is not given")
+    parser.add_argument("--fixups", default=None,
+                        help="a json file of source fixups for a version the engine has not ported")
     parser.add_argument("--out", default=None, help="where to write the report json")
     parser.add_argument("--print", action="store_true")
     args = parser.parse_args(argv)
@@ -317,7 +395,8 @@ def main(argv=None) -> int:
         return 2
 
     entry = {"type": resolved["type"], "released": resolved["released"]}
-    report = prepare(version_id, engine, jar, document, entry)
+    report = prepare(version_id, engine, jar, document, entry,
+                     pathlib.Path(args.fixups) if args.fixups else None)
     report["metaless"] = not bool(resolved.get("meta_url"))
 
     print()
