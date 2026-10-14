@@ -184,26 +184,28 @@ jobs:
       - name: Record what the shim did, where git can read it
         # The shim's whole point is that the failure is specific - a native that returned null, a Java
         # exception inside it, a stage it never reached - and reading that should not need an account.
+        # Every command here tolerates failure: a report with a gap in it beats no report.
         if: always()
         run: |
           set -uo pipefail
-          mkdir -p /tmp/shimlog
+          mkdir -p build-log
           {
             echo "# what the boot test reported"
-            python3 - <<'PY' 2>/dev/null || echo "(no result was posted)"
-          import json, pathlib
-          document = json.loads(pathlib.Path("/tmp/result.json").read_text())
-          print(json.dumps(document, indent=1)[:20000])
-          PY
-          } > /tmp/shimlog/report.md
-          {
+            echo '```'
+            python3 -c "import json,pathlib;print(json.dumps(json.loads(pathlib.Path('/tmp/result.json').read_text()), indent=1)[:20000])" 2>/dev/null \
+              || echo "(no result was posted)"
+            echo '```'
+            echo
             echo "# the browser's own log, last 400 lines"
-            tail -400 /tmp/chrome.log 2>/dev/null
-          } >> /tmp/shimlog/report.md
+            echo '```'
+            tail -400 /tmp/chrome.log 2>/dev/null || echo "(no browser log)"
+            echo '```'
+            echo
+            echo "report size: $(wc -c < /tmp/result.json 2>/dev/null || echo 0) bytes of result"
+          } > build-log/shim-report.md 2>&1
+          echo "shim report: $(wc -c < build-log/shim-report.md) bytes"
           git checkout -q --orphan shim-log-report
           git rm -r -q --cached . >/dev/null 2>&1 || true
-          mkdir -p build-log
-          cp /tmp/shimlog/report.md build-log/shim-report.md
           git add -f build-log/shim-report.md
           git -c user.name="webmc-port-bot" -c user.email="webmc-port-bot@users.noreply.github.com" \
             commit -q -m "shim log: $(date -u +%Y-%m-%dT%H:%M:%SZ)" || echo "nothing to record"

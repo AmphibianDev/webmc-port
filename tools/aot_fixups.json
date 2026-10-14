@@ -8,6 +8,14 @@
       "count": 1,
       "since": "26.4",
       "why": "26.4-snapshot-4 made AbstractWidget.visible protected, so an overlay outside the client's package can no longer read the field. The public accessor is isVisible(), which the same code already uses for isFocused() two lines up. Seen in the build log of run 38543240894: 'error: visible has protected access in AbstractWidget'."
+    },
+    {
+      "file": "port/scripts/fetch-version.sh",
+      "find": "    xargs -n 1 -P \"${GAIUS_FETCH_PARALLEL:-16}\" bash -c 'download_browser_asset \"$0\"'",
+      "replace": "    xargs -n 1 -P \"${GAIUS_FETCH_PARALLEL:-16}\" bash -c 'download_browser_asset \"$0\" || echo \"  ! this version has no such browser asset, skipping: $0\"'",
+      "count": 1,
+      "until": "1.21.11",
+      "why": "the browser sound/font/background staging is fatal on any 404, and the list is partly hardcoded (minecraft/sounds/ui/toast/*.ogg, minecraft/font/unifont.zip) - assets that older 1.21.x versions do not have, so every one of them stopped the build at the fetch step. A menu sound that does not exist cannot be a reason not to build a client, and the engine's own comment says these objects are only needed by the TeaVM asset packaging, not by the profile check or the overlay build."
     }
   ]
 }
