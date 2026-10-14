@@ -399,10 +399,14 @@ jobs:
           echo "$STATUS" > build-log/status.txt
           cp /tmp/prepare.log build-log/prepare.log 2>/dev/null || true
           cp /tmp/shell-check.txt build-log/shell-check.txt 2>/dev/null || true
-          git add build-log
+          # A dedicated branch, created from wherever HEAD is: the publish step may have committed the
+          # catalog update on the same HEAD and pushed it to main, and pushing *that* to build-log is how
+          # a successful run wiped its own report off the branch.
+          git checkout -q -B build-log
+          git add -f build-log
           git -c user.name="webmc-port-bot" -c user.email="webmc-port-bot@users.noreply.github.com" \
-            commit -m "snapshot log: $(cat build-log/status.txt)" || echo "nothing to record"
-          git push origin HEAD:refs/heads/build-log --force || echo "::warning::could not push the log branch"
+            commit -q -m "snapshot log: $(cat build-log/status.txt)" || echo "nothing to record"
+          git push -q -f origin refs/heads/build-log || echo "::warning::could not push the log branch"
 
       - uses: actions/upload-artifact@v7
         if: always()
