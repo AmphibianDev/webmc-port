@@ -234,6 +234,78 @@ def test_prepare(tmp: pathlib.Path) -> None:
           and aot_snapshot.version_of(pathlib.Path("26.3.txt")) == "26.3")
 
 
+def test_fixups(tmp: pathlib.Path) -> None:
+    print("\nfixups: patching the engine's own source for a version it has not ported")
+    engine = fake_engine(tmp / "engine-fixups")
+    broken = engine / "port" / "overrides" / "libraries" / "lwjgl-opengl" / "src" / "main" / "java"
+    broken = broken / "org" / "lwjgl" / "opengl" / "BrowserOpenGL.java"
+    broken.parent.mkdir(parents=True, exist_ok=True)
+    broken.write_text(
+        "class BrowserOpenGL {\n"
+        "    void describe(Object widget) {\n"
+        "        jsonField(builder, \"visible\", widget.visible).append(',');\n"
+        "    }\n}\n")
+    fixups = tmp / "fixups.json"
+    fixups.write_text(json.dumps({"fixups": [{
+        "file": "port/overrides/libraries/lwjgl-opengl/src/main/java/org/lwjgl/opengl/BrowserOpenGL.java",
+        "find": 'jsonField(builder, "visible", widget.visible)',
+        "replace": 'jsonField(builder, "visible", widget.isVisible())',
+        "since": "26.4",
+        "why": "26.4 made AbstractWidget.visible protected",
+    }]}))
+    jar = client_jar(tmp / "fix-client.jar")
+    lines: list[str] = []
+
+    report = aot_snapshot.prepare("26.4-snapshot-4", engine, jar, DOCUMENT, {"type": "snapshot"},
+                                  fixups, log=lines.append)
+    check("the fixup is applied to the engine's file",
+          "widget.isVisible()" in broken.read_text() and "widget.visible" not in broken.read_text())
+    check("and reported with its reason",
+          report["fixups"]["applied"] and "protected" in report["fixups"]["applied"][0]["why"], str(report["fixups"]))
+    check("the log says what was patched and why",
+          any("patched" in line and "protected" in line for line in lines), str(lines))
+
+    lines = []
+    again = aot_snapshot.prepare("26.4-snapshot-4", engine, jar, DOCUMENT, {"type": "snapshot"},
+                                 fixups, log=lines.append)
+    check("applying it twice is a no-op, not a second edit",
+          again["fixups"]["applied"] == [] and again["fixups"]["already"], str(again["fixups"]))
+    check("and the file is unchanged the second time",
+          broken.read_text().count("isVisible()") == 1)
+
+    print("\nfixups that no longer apply, and fixups for other versions")
+    older = aot_snapshot.prepare("26.3", engine, jar, DOCUMENT, {"type": "release"}, fixups,
+                                 log=lambda *_: None)
+    check("a fixup scoped to 26.4+ is not applied to 26.3",
+          older["fixups"]["applied"] == [] and older["fixups"]["already"] == [],
+          str(older["fixups"]))
+
+    moved = tmp / "moved.json"
+    moved.write_text(json.dumps({"fixups": [{
+        "file": "port/overrides/libraries/lwjgl-opengl/src/main/java/org/lwjgl/opengl/BrowserOpenGL.java",
+        "find": "jsonField(builder, \"gone\", widget.gone)",
+        "replace": "irrelevant()",
+        "since": "26.4",
+        "why": "the engine's file changed under us",
+    }]}))
+    try:
+        aot_snapshot.apply_fixups(engine, "26.4-snapshot-4", moved, log=lambda *_: None)
+        check("an anchor that has moved is a refusal, not a silent skip", False, "no error raised")
+    except SystemExit as error:
+        check("an anchor that has moved is a refusal, not a silent skip",
+              "review the fixup" in str(error), str(error)[:200])
+
+    print("\nthe fixup file this repository ships")
+    shipped = json.loads((ROOT / "tools" / "aot_fixups.json").read_text())
+    check("it is valid json with entries", isinstance(shipped.get("fixups"), list) and shipped["fixups"])
+    for entry in shipped["fixups"]:
+        check(f"each entry names a file, an anchor, a replacement and a reason ({entry.get('file', '?')[-30:]})",
+              all(entry.get(key) for key in ("file", "find", "replace", "why")))
+        check("and is scoped to a version range rather than applying everywhere",
+              entry.get("since") or entry.get("versions") not in (None, "*"),
+              str({k: entry.get(k) for k in ("since", "until", "versions")}))
+
+
 def test_command_line(tmp: pathlib.Path) -> None:
     print("\nthe command")
     engine = fake_engine(tmp / "engine-cli")
@@ -263,6 +335,7 @@ def main() -> int:
         tmp = pathlib.Path(scratch)
         test_resolve()
         test_prepare(tmp)
+        test_fixups(tmp)
         test_command_line(tmp)
     print(f"\n{FAILURES} snapshot test(s) FAILED" if FAILURES else "\nsnapshot tests passed")
     return 1 if FAILURES else 0

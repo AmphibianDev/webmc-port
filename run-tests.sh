@@ -9,6 +9,7 @@ echo; echo "== the boot screen (vanilla-styled, injected into a client)"; python
 echo; echo "== version profiles for any version, newest snapshot included"; python3 tests/test_aot_profile.py || failed=1
 echo; echo "== preparing the newest snapshot inside an engine"; python3 tests/test_aot_snapshot.py || failed=1
 echo; echo "== the workflows (a duplicate key cost two days of builds)"; python3 tests/test_workflows.py || failed=1
+echo; echo "== reading a snapshot build's outcome out of git"; python3 tests/test_snapshot_status.py || failed=1
 echo; echo "== the launch plan (rows, modes, mods)"; python3 tests/test_launchplan.py || failed=1
 echo; echo "== our own loader (java 8 jar: contract always, behaviour when a JDK is present)"; python3 tests/test_loader.py || failed=1
 echo; echo "== what Fabric supports"; python3 tests/test_fabric.py || failed=1

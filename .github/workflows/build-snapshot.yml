@@ -118,7 +118,8 @@ jobs:
         run: |
           set -euo pipefail
           python3 tools/aot_snapshot.py --version "${{ steps.want.outputs.version }}" \
-            --engine ../engine --fetch --out /tmp/snapshot-report.json --print 2>&1 | tee /tmp/prepare.log
+            --engine ../engine --fetch --fixups tools/aot_fixups.json \
+            --out /tmp/snapshot-report.json --print 2>&1 | tee /tmp/prepare.log
           VERSION="$(python3 -c "import json;print(json.load(open('/tmp/snapshot-report.json'))['version'])")"
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
           echo "resolved to $VERSION"
