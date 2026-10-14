@@ -187,6 +187,7 @@ jobs:
           cd ours
           mkdir -p build-log
           cp /tmp/snapshot-report.json build-log/report.json 2>/dev/null || true
+          cp /tmp/snapshot-report.json "build-log/report-$VERSION.json" 2>/dev/null || true
           echo "prepared" > build-log/status.txt
           git add build-log
           git -c user.name="webmc-port-bot" -c user.email="webmc-port-bot@users.noreply.github.com" \
@@ -413,6 +414,10 @@ jobs:
           report["interesting"] = interesting[-160:]
           report["log_tail"] = lines[-40:]
           pathlib.Path("build-log/report.json").write_text(json.dumps(report, indent=1) + "\n")
+          # Per version as well as "latest": one file overwritten by every run meant a version's own
+          # failure was erased by the next version's attempt.
+          version = report.get("version") or "unknown"
+          pathlib.Path(f"build-log/report-{version}.json").write_text(json.dumps(report, indent=1) + "\n")
           pathlib.Path("build-log/last.log").write_text(text[-200000:])
           print("\n".join(interesting[-40:]))
           PY
