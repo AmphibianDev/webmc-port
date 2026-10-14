@@ -100,7 +100,10 @@ jobs:
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: "25"
+          # 21, not 25: the engine's scripts ask for "JDK {javaVersion} or newer" per profile, and every
+          # profile in scope says 21. A newer JDK satisfies the comparison in theory and has twice now
+          # not satisfied it in practice, and there is nothing here that needs a newer javac.
+          java-version: "21"
 
       - uses: actions/setup-node@v6
         with:
@@ -146,6 +149,15 @@ jobs:
           # for a JDK by looking for bin/javac next to bin/java, and a variable that points somewhere else
           # (or nowhere) is exactly the failure the last three runs reported.
           FOR_REAL="$(cd "$(dirname "$(command -v java)")/.." && pwd)"
+          {
+            echo "command -v java: $(command -v java)"
+            echo "command -v javac: $(command -v javac || echo none)"
+            echo "JAVA_HOME inherited: ${JAVA_HOME:-unset}"
+            echo "derived home: $FOR_REAL"
+            java -version 2>&1 | head -2
+            javac -version 2>&1 | head -1
+          } > /tmp/jdk.txt 2>&1
+          cat /tmp/jdk.txt
           echo "GAIUS_JAVA_HOME=$FOR_REAL" >> "$GITHUB_ENV"
           echo "JAVA_HOME=$FOR_REAL" >> "$GITHUB_ENV"
           echo "$FOR_REAL/bin" >> "$GITHUB_PATH"
@@ -205,6 +217,16 @@ jobs:
           cd ours
           mkdir -p build-log
           cp /tmp/snapshot-report.json build-log/report.json 2>/dev/null || true
+          python3 - <<'PY' 2>/dev/null || true
+          import json, pathlib
+          path = pathlib.Path("build-log/report.json")
+          if path.is_file():
+              document = json.loads(path.read_text())
+              jdk = pathlib.Path("/tmp/jdk.txt")
+              if jdk.is_file():
+                  document["jdk"] = jdk.read_text().splitlines()
+              path.write_text(json.dumps(document, indent=1) + "\n")
+          PY
           cp /tmp/snapshot-report.json "build-log/report-$VERSION.json" 2>/dev/null || true
           echo "prepared" > build-log/status.txt
           git add build-log
