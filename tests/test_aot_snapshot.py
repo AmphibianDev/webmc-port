@@ -62,6 +62,9 @@ DOCUMENT = {
 
 VERSION_JSON = {"id": "26.4-snapshot-4", "world_version": 5037, "protocol_version": 779,
                 "pack_version": {"resource": 97, "data": 123}}
+VERSION_JSON_26_3 = {"id": "26.3", "world_version": 5023, "protocol_version": 777,
+                     "pack_version": {"resource": 97, "resource_minor": 1,
+                                      "data": 121, "data_minor": 0}}
 
 PROFILE_26_3 = {
     "id": "26.3", "releaseType": "release", "protocolVersion": 777, "worldVersion": 5023,
@@ -115,9 +118,9 @@ def fake_engine(root: pathlib.Path) -> pathlib.Path:
     return root
 
 
-def client_jar(path: pathlib.Path) -> pathlib.Path:
+def client_jar(path: pathlib.Path, version_json: dict | None = None) -> pathlib.Path:
     with zipfile.ZipFile(path, "w") as jar:
-        jar.writestr("version.json", json.dumps(VERSION_JSON))
+        jar.writestr("version.json", json.dumps(version_json or VERSION_JSON))
         jar.writestr("net/minecraft/client/Minecraft.class", b"\xca\xfe\xba\xbe")
     return path
 
@@ -307,28 +310,61 @@ def test_fixups(tmp: pathlib.Path) -> None:
               str({k: entry.get(k) for k in ("since", "until", "versions")}))
 
 
+def profile_document(asset_index_sha1: str) -> dict:
+    """26.3's version document, as Mojang publishes it (the engine's own profile is derived from this)."""
+    return {
+        "id": "26.3", "type": "release", "releaseTime": "2026-09-15T11:23:02+00:00",
+        "javaVersion": {"majorVersion": 25},
+        "assetIndex": {"id": "34", "sha1": asset_index_sha1},
+        "downloads": {"client": {"sha1": "e877b6a0"}, "server": {"sha1": "33680f5f"},
+                      "client_mappings": {"sha1": None}},
+    }
+
+
 def test_existing_profile(tmp: pathlib.Path) -> None:
-    print("\na profile the engine already has is left alone")
+    print("\na profile the engine already has is not replaced by a generated one")
     engine = fake_engine(tmp / "engine-existing")
-    jar = client_jar(tmp / "existing-client.jar")
+    jar = client_jar(tmp / "existing-client.jar", VERSION_JSON_26_3)
     curated = json.loads((engine / "port" / "versions" / "26.3.json").read_text())
     lines: list[str] = []
-    report = aot_snapshot.prepare("26.3", engine, jar, DOCUMENT, {"type": "release"}, None, None,
-                                  log=lines.append)
+
+    # the document that profile was written from: nothing should change
+    same = tmp / "26.3-up-to-date.json"
+    same.write_text(json.dumps(profile_document(curated["official"]["assetIndexSha1"])))
+    report = aot_snapshot.prepare("26.3", engine, jar, json.loads(same.read_text()),
+                                  {"type": "release"}, None, None, log=lines.append)
     after = json.loads((engine / "port" / "versions" / "26.3.json").read_text())
-    check("the engine's own profile is byte-for-byte unchanged", after == curated,
-          f"{sorted(set(after) ^ set(curated))}")
-    check("and the report says it was not generated here", report["generated_profile"] is False)
+    check("an up-to-date profile is left completely alone", after == curated)
+    check("and the report says no fact needed refreshing", report["refreshed_from_mojang"] == [],
+          str(report["refreshed_from_mojang"]))
     check("the patcher still comes from the engine's profile, not a neighbour's",
           report["patchers"]["will_run"] == "Minecraft263BrowserPatcher"
-          and report["patchers"]["profile"] == "26.3",
-          str(report["patchers"]))
-    check("and the log says whose work it is",
-          any("engine's own work" in line for line in lines), str(lines[:3]))
+          and report["patchers"]["profile"] == "26.3", str(report["patchers"]))
+    check("and it is not reported as a profile this tool generated", report["generated_profile"] is False)
 
-    print("\nbut a version the engine does not know yet is generated")
-    fresh = aot_snapshot.prepare("26.3.5", engine, jar, DOCUMENT, {"type": "release"}, None, None,
-                                 log=lambda *_: None)
+    print("\nbut a fact that drifted from Mojang is refreshed, and only that fact")
+    drifted = tmp / "26.3-drifted.json"
+    drifted.write_text(json.dumps(profile_document("e787e8afd149a4cefa89d341b91f5aed8f5d93a0")))
+    lines = []
+    report = aot_snapshot.prepare("26.3", engine, jar, json.loads(drifted.read_text()),
+                                  {"type": "release"}, None, None, log=lines.append)
+    after = json.loads((engine / "port" / "versions" / "26.3.json").read_text())
+    check("the version facts are refreshed from Mojang",
+          after["official"]["assetIndexSha1"] == "e787e8afd149a4cefa89d341b91f5aed8f5d93a0",
+          after["official"]["assetIndexSha1"])
+    check("and the report names exactly which facts changed",
+          report["refreshed_from_mojang"] == ["official"], str(report["refreshed_from_mojang"]))
+    check("while the engine's own decisions about how to build it survive",
+          after["patchSet"] == curated["patchSet"] and after["extraPatchers"] == curated["extraPatchers"]
+          and after["storage"] == curated["storage"] and after["worldgenTelemetryMode"]
+          == curated["worldgenTelemetryMode"],
+          str({k: after[k] for k in ("patchSet", "extraPatchers", "storage")}))
+    check("and the log says so instead of silently editing somebody's file",
+          any("refreshed from Mojang" in line for line in lines), str(lines))
+
+    print("\nand a version the engine does not know yet is generated")
+    fresh = aot_snapshot.prepare("26.3.5", engine, jar, json.loads(drifted.read_text()),
+                                 {"type": "release"}, None, None, log=lambda *_: None)
     check("a new version gets a profile generated for it",
           fresh["generated_profile"] is True
           and (engine / "port" / "versions" / "26.3.5.json").is_file())
