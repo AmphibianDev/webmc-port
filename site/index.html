@@ -95,7 +95,7 @@
   var MAVEN = "https://maven.fabricmc.net";
   var MAX_ROWS = 30;
 
-  var state = { catalog: null, plans: null, jars: new Map(), mains: new Map() };
+  var state = { catalog: null, plans: null, routes: null, jars: new Map(), mains: new Map() };
 
   // ---------------------------------------------------------------- catalog
 
@@ -113,9 +113,21 @@
         return response.ok ? response.json() : null;
       }).then(function (plans) {
         state.plans = plans;
-        return data;
+        return fetch("routes.json").then(function (response) {
+          return response.ok ? response.json() : null;
+        }).then(function (routes) {
+          state.routes = routes;
+          return data;
+        });
       }).catch(function () { return data; });
     });
+  }
+
+  /* How a version runs, from tools/route.py: the route, the engine, its licence, and whether a mod set
+   * can be baked in at all. The card says all four, because "mods: at play time" and "mods: only with an
+   * engine that has source hooks" are different promises. */
+  function routeInfo(id) {
+    return (state.routes && state.routes.versions && state.routes.versions[id]) || null;
   }
 
   function planOf(id) {
@@ -588,6 +600,14 @@
     ];
     var plan = planOf(id);
     if (plan && plan.java) { rows.push(["java", String(plan.java)]); }
+    var route = routeInfo(id);
+    if (route) {
+      rows.push(["how it runs", route.route + " — " + route.why]);
+      rows.push(["built by", (route.engine || "nothing yet")
+        + (route.engine_license ? " (" + route.engine_license + ")" : "")
+        + (route.engine_repo ? " · " + route.engine_repo : "")]);
+      rows.push(["mods", route.mods]);
+    }
     card.appendChild(facts(rows));
 
     /* What the plan says is unproven or broken on this version's row. Shown before the play button,

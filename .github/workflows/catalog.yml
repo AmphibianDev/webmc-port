@@ -133,6 +133,11 @@ jobs:
       - name: Update the state and the page's manifest
         run: python3 tools/update.py --strict-urls --write
 
+      - name: How each version runs, for the launcher
+        # One file the page reads next to the catalog: route (real Java / waiting on the shim / compiled),
+        # which engine builds it, that engine's licence, and whether it can take a mod set at all.
+        run: python3 tools/route.py --export site/routes.json --manifest site/manifest.json
+
       - name: Write the launch plans and stage the mods folder
         # Everything a launch needs, per version and per mode, as data. The page fetches one plan for
         # the one version being started, and the mod jars it names are copied out of mods/jars/ into

@@ -139,6 +139,9 @@ for (const [label, needle] of Object.entries({
   'a version waiting on the shim says so': 'needs LWJGL 3',
   'a compiled-row version points at the build, not at a JVM': 'needs a compiled build',
   'it shows what the plan says is unproven before you press play': 'plan.caveats',
+  'it reads how each version runs, not only whether it is playable': 'fetch("routes.json")',
+  'and says which engine builds it, with its licence': 'route.engine_license',
+  'and what the mod policy for that version is': 'route.mods',
 })) {
   check(label, page.includes(needle), needle);
 }
