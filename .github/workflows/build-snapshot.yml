@@ -118,6 +118,19 @@ jobs:
           echo "/opt/emsdk/upstream/emscripten" >> "$GITHUB_PATH"
           echo "/opt/emsdk" >> "$GITHUB_PATH"
 
+      - name: Swap, because the link step spikes past this runner
+        # The engine's own figures are a 14 GB heap on a 24 GB machine; a runner has 16 GB and no swap, and
+        # when it is the OOM killer that ends the job nothing after it runs - not even the step that records
+        # what happened. 16 GB of swap turns that into a slow build instead of a silent death.
+        run: |
+          set -euo pipefail
+          sudo fallocate -l 16G /mnt/swapfile || sudo dd if=/dev/zero of=/mnt/swapfile bs=1M count=16384
+          sudo chmod 600 /mnt/swapfile
+          sudo mkswap /mnt/swapfile
+          sudo swapon /mnt/swapfile
+          swapon --show
+          free -g | head -2
+
       - name: Room to build in
         # A 26.x client compile wants ~12 GB of disk on top of the toolchain the runner already has.
         run: |
@@ -145,6 +158,20 @@ jobs:
           VERSION="$(python3 -c "import json;print(json.load(open('/tmp/snapshot-report.json'))['version'])")"
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
           echo "resolved to $VERSION"
+
+      - name: Record what was prepared, before the expensive part
+        # If the compiler is killed later, this is what is left: which version, which patcher, which patches
+        # the bring-up list skipped, and the fixes that were applied. Pushing it now costs seconds.
+        run: |
+          set -uo pipefail
+          cd ours
+          mkdir -p build-log
+          cp /tmp/snapshot-report.json build-log/report.json 2>/dev/null || true
+          echo "prepared" > build-log/status.txt
+          git add build-log
+          git -c user.name="webmc-port-bot" -c user.email="webmc-port-bot@users.noreply.github.com" \
+            commit -m "snapshot log: prepared $VERSION" || true
+          git push origin HEAD:refs/heads/build-log --force || echo "::warning::could not push the early report"
 
       - name: Fetch the client, its libraries and its assets
         working-directory: engine
@@ -190,8 +217,10 @@ jobs:
         run: |
           set -uo pipefail
           export GAIUS_VERSION_PROFILE_PATH="versions/$VERSION.json"
-          export GRADLE_OPTS="-Xmx9g -Dorg.gradle.daemon=false -Dorg.gradle.parallel=true"
-          export NODE_OPTIONS="--max-old-space-size=6144"
+          # Deliberately below the engine's own 14 GB: the runner has 16 GB plus the swap added above, so
+          # the goal is to finish rather than to be fast. If this step dies with no log, it was memory.
+          export GRADLE_OPTS="-Xmx8g -Dorg.gradle.daemon=false -Dorg.gradle.parallel=true"
+          export NODE_OPTIONS="--max-old-space-size=5120"
           ( while true; do sleep 60; free -g | awk 'NR==2 {print "  memory used " $3 " GB"; }'; done ) &
           WATCH=$!
           bash port/scripts/build-version-release.sh "$VERSION" 2>&1 | tee -a /tmp/build.log
