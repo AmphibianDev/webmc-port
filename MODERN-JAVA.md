@@ -171,6 +171,50 @@ of this up:
   compares the profile against exactly that. "Tidying" it to 342 fails the check, which is a good thing
   for a validator to catch and an embarrassing thing for a generator to do.
 
+## Our own engine: the versions nobody licensed covers
+
+The borrowed engines cover 1.7.10, 1.8.x, 1.13–1.14.4 (unlicensed, used deliberately — see CREDITS.md) and
+1.21.11 / 26.2 / 26.3 (MIT). Nothing covers **1.16.5 – 1.20.4**, and nothing will cover **26.4+ snapshots**
+until somebody ports the new renderer. Those are ours to write, on **TeaVM** (Apache-2.0, so no licence
+question) — and the point of building it ourselves is that it is the version-coverage engine, not one more
+borrowed tree.
+
+### The ladder
+
+1. **Toolchain proof** (days): compile a trivial app to wasm with TeaVM, host it with our boot screen, and
+   prove the page shell, the packaging and the credits/branding path. No Minecraft.
+2. **1.16.5 first** (weeks): Java 8, LWJGL 3.2, the simplest modern renderer of the uncovered range, and the
+   version with the largest Fabric mod base. The work is mechanical and already measured:
+   * decompile/remap the official client (Mojang publishes official mappings from 1.14.4 on, which is what
+     makes 1.16.5+ a legal, repeatable target rather than a guess);
+   * replace what a browser does not have — windowing/input (GLFW), GL (GLES-over-WebGL), audio (OpenAL),
+     filesystem, network — as Java classes the client's own calls land on. `lwjgl3-webgl/surface/` already
+     contains the measured member list per version, which is the work order for this step;
+   * compile with TeaVM (`wasm-gc`), package one HTML, put our boot screen in front of it.
+   Success is a title screen; then in-game.
+3. **1.18.2 / 1.19.4 / 1.20.4** (repeat, cheaper): the same shape, Java 17, mostly reused patches.
+4. **Our own mod bake**: apply Fabric mods at build time (the loader in `mods/` already plans, prunes and
+   hooks a mod set) so the mods folder works on our own engine too — `mods/mods.json` is the manifest either
+   way.
+5. **26.4+ and the snapshots**: the renderer is the hard part and it changes when Mojang changes it. Nothing
+   about this ladder makes that cheap; it makes it *ours*.
+
+### Pre-releases, snapshots and the rest
+
+They are not a special case in this pipeline: `tools/plan.py`, `tools/jvm_route.py` and
+`tools/aot_snapshot.py` all classify by the version's own metadata (date, Java level, LWJGL generation), so
+a snapshot routes exactly like the release it leads to and a new one needs no edit here. What it needs is an
+engine whose patches match that client:
+
+| Era | Today | With our own engine |
+| --- | --- | --- |
+| Indev / Alpha / Beta | real Java (CheerpJ) — attempts, pre-shader GL is unverified | unchanged: they are Java 8-era, so they fit the same engine shape if needed |
+| 1.0 – 1.12.2 + snapshots | ✅ real Java, mods at play time | unchanged (no compile beats a compile) |
+| 1.13 – 1.14.4 + snapshots | borrowed 1.14 workspace | our engine replaces it |
+| 1.16.5 – 1.20.4 + snapshots | ❌ nothing | **the ladder above** |
+| 1.21.11 / 26.x releases | MIT engine (vanilla only) | our engine adds the mods |
+| 26.4+ snapshots | ❌ renderer | our engine, after the renderer port |
+
 ## What this project will not do
 
 * **No streaming.** A session on a server is a different product, and running one on CI is what got an
