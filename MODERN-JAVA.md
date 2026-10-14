@@ -156,6 +156,21 @@ So the snapshot path is automated and stops at a named wall, and `ports.json` re
 the 26.4+ range rather than promising a build. The newest *release* - which that engine does support -
 goes through the same job (`.github/workflows/build-snapshot.yml` with `latest-release`).
 
+### What preparing a version taught about whose data is whose
+
+Two of the five attempts failed on a *fact*, not on code, and both are worth knowing before wiring any
+of this up:
+
+* **The engine owns how, Mojang owns what.** The engine's own 26.3 profile carried an asset-index hash
+  that Mojang has since re-published, and the engine's check refused the build in two minutes. Keeping
+  the engine's profile is right for `patchSet`, `extraPatchers` and `storage` - decisions about how to
+  build that version - and wrong for `protocolVersion`, `packVersions` and the sha1s, which are facts
+  about the version. So a generated profile is *merged* into the engine's, and the report says which
+  fields changed.
+* **A snapshot's protocol number keeps its high bit.** `0x40000000 | 342` is `1073742166`, and the engine
+  compares the profile against exactly that. "Tidying" it to 342 fails the check, which is a good thing
+  for a validator to catch and an embarrassing thing for a generator to do.
+
 ## What this project will not do
 
 * **No streaming.** A session on a server is a different product, and running one on CI is what got an
