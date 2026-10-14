@@ -6,6 +6,8 @@ failed=0
 echo "== version pipeline"; python3 tests/test_pipeline.py || failed=1
 echo; echo "== launcher page"; node tests/test_site.mjs || failed=1
 echo; echo "== the boot screen (vanilla-styled, injected into a client)"; python3 tests/test_aot_shell.py || failed=1
+echo; echo "== a compiled client, packed into a page a player can open"; python3 tests/test_pack_client.py || failed=1
+echo; echo "== one version in, one route out"; python3 tests/test_workflows.py || failed=1
 echo; echo "== version profiles for any version, newest snapshot included"; python3 tests/test_aot_profile.py || failed=1
 echo; echo "== preparing the newest snapshot inside an engine"; python3 tests/test_aot_snapshot.py || failed=1
 echo; echo "== the workflows (a duplicate key cost two days of builds)"; python3 tests/test_workflows.py || failed=1

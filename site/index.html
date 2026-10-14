@@ -351,14 +351,19 @@
       // A release asset is served with content-disposition: attachment, so it cannot be a page: the
       // browser downloads it. That is deliberate - this project does not serve Minecraft bytes from
       // its own site - and the file is standalone, so opening it runs the game.
+      // A site-relative url is a page this site serves (chunks reassembled in the browser); a release
+      // url is a file the browser downloads. The tag says which, because they feel different.
+      var served = /^clients\//.test(String(version.url || ""));
       var downloadable = /\/releases\/download\//.test(String(version.url || ""));
       return {
         kind: "built",
-        tag: downloadable ? "⬇ download & open" : "▶ our build",
+        tag: served ? "▶ play" : (downloadable ? "⬇ download & open" : "▶ our build"),
         label: "a client this project compiled",
         why: (version.engine_name
                 ? "Compiled from " + version.engine_name + " by our own build job."
                 : "Compiled by this project's build job.")
+           + (served ? " It opens in this site as a page: the chunks are fetched, checked against their"
+                     + " hashes and assembled in your browser." : "")
            + (downloadable
                 ? " It is published as a file rather than served as a page, because this site does not "
                   + "serve Minecraft bytes: your browser downloads it (about "
