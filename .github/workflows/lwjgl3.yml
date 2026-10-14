@@ -36,7 +36,10 @@ jobs:
   surface:
     name: Measure the surface and compile the shim
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # A cold JVM in a headless browser plus the retry loops took more than thirty minutes, and a job that
+    # is killed by its own timeout never runs its `if: always()` steps - which is why three runs in a row
+    # failed without leaving a report anywhere.
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@v7
 
@@ -164,6 +167,28 @@ jobs:
           python3 -c "import json;d=json.load(open('/tmp/result.json'));print('\n'.join(d.get('log') or []))"
           echo "--- what the page reported ---"
           python3 -c "import json;print(json.dumps(json.load(open('/tmp/result.json')), indent=1)[:1200])"
+          # The report goes into git here, inside the step that has the answer, rather than in a later
+          # step that a timeout can skip. A shim failure is only useful if it is readable.
+          mkdir -p build-log
+          {
+            echo "# what the boot test reported"
+            echo '```'
+            python3 -c "import json,pathlib;print(json.dumps(json.loads(pathlib.Path('/tmp/result.json').read_text()), indent=1)[:20000])" 2>/dev/null || echo "(no result was posted)"
+            echo '```'
+            echo
+            echo "## the browser's own log, last 200 lines"
+            echo '```'
+            tail -200 /tmp/chrome.log 2>/dev/null || echo "(no browser log)"
+            echo '```'
+          } > build-log/shim-report.md 2>&1
+          echo "shim report: $(wc -c < build-log/shim-report.md) bytes"
+          git checkout -q --orphan shim-log-report 2>/dev/null || true
+          git rm -r -q --cached . >/dev/null 2>&1 || true
+          git add -f build-log/shim-report.md
+          git -c user.name="webmc-port-bot" -c user.email="webmc-port-bot@users.noreply.github.com" \
+            commit -q -m "shim log: $(date -u +%Y-%m-%dT%H:%M:%SZ)" || echo "nothing to record"
+          git push -q -f origin HEAD:refs/heads/shim-log || echo "::warning::could not push the shim log"
+
           if python3 -c "import json,sys;d=json.load(open('/tmp/result.json'));sys.exit(0 if d.get('code')==0 and d.get('frames',0)>0 else 1)"; then
             echo "::notice::the loader booted a JVM, opened a window and drew a frame in a real browser"
           else
@@ -180,36 +205,6 @@ jobs:
             echo "- generated classes: $(find lwjgl3-webgl/src/main/java -name '*.java' | wc -l | tr -d ' ')"
             echo "- members still to implement: $total"
           } | tee -a "$GITHUB_STEP_SUMMARY"
-
-      - name: Record what the shim did, where git can read it
-        # The shim's whole point is that the failure is specific - a native that returned null, a Java
-        # exception inside it, a stage it never reached - and reading that should not need an account.
-        # Every command here tolerates failure: a report with a gap in it beats no report.
-        if: always()
-        run: |
-          set -uo pipefail
-          mkdir -p build-log
-          {
-            echo "# what the boot test reported"
-            echo '```'
-            python3 -c "import json,pathlib;print(json.dumps(json.loads(pathlib.Path('/tmp/result.json').read_text()), indent=1)[:20000])" 2>/dev/null \
-              || echo "(no result was posted)"
-            echo '```'
-            echo
-            echo "# the browser's own log, last 400 lines"
-            echo '```'
-            tail -400 /tmp/chrome.log 2>/dev/null || echo "(no browser log)"
-            echo '```'
-            echo
-            echo "report size: $(wc -c < /tmp/result.json 2>/dev/null || echo 0) bytes of result"
-          } > build-log/shim-report.md 2>&1
-          echo "shim report: $(wc -c < build-log/shim-report.md) bytes"
-          git checkout -q --orphan shim-log-report
-          git rm -r -q --cached . >/dev/null 2>&1 || true
-          git add -f build-log/shim-report.md
-          git -c user.name="webmc-port-bot" -c user.email="webmc-port-bot@users.noreply.github.com" \
-            commit -q -m "shim log: $(date -u +%Y-%m-%dT%H:%M:%SZ)" || echo "nothing to record"
-          git push -q -f origin HEAD:refs/heads/shim-log || echo "::warning::could not push the shim log"
 
       - uses: actions/upload-artifact@v7
         with:
