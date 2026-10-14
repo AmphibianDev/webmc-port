@@ -229,8 +229,12 @@ def lint(path: pathlib.Path, log=print) -> list[str]:
         problems.append("no `on:` triggers could be read: GitHub would never run this file")
 
     for name, block in jobs(text).items():
-        if "timeout-minutes" not in block:
-            problems.append(f"job {name!r} has no timeout-minutes: a hung build holds a runner for six hours")
+        if "timeout-minutes" in block:
+            continue
+        if re.search(r"^\s+uses:\s*(\./)?\.github/workflows/", block, re.M):
+            # a caller job inherits the called workflow's timeout; GitHub does not allow this key there
+            continue
+        problems.append(f"job {name!r} has no timeout-minutes: a hung build holds a runner for six hours")
 
     for needle in FORBIDDEN:
         if needle.lower() in text.lower():

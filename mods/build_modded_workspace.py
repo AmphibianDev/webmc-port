@@ -180,10 +180,14 @@ def main() -> int:
     engine = None
     ports = json.loads((ROOT / "ports.json").read_text())
     for candidate in ports["engines"]:
-        if candidate.get("kind") == "eagler-workspace" and candidate.get("enabled", True):
+        if candidate.get("kind") == "eagler-workspace":
             engine = candidate
             break
     if engine:
+        if not engine.get("enabled", True):
+            # A disabled engine is not a build option, and saying so here is the point: the workspace
+            # lineage that this loader targets is the one whose licence has to be settled first.
+            print(f"  ! {engine['id']} is disabled: {engine.get('blocked_by', 'no reason given')}")
         for step in ("compile", "link", "package"):
             command = (engine.get("build") or {}).get(step)
             if command:
