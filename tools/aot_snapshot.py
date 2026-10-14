@@ -270,6 +270,33 @@ def apply_fixups(engine: pathlib.Path, version_id: str, path: pathlib.Path, log=
     return report
 
 
+# Fields that describe the *version* rather than the port: Mojang is the authority for these, and a
+# release's asset index can be re-published after the engine wrote its profile - which is exactly what
+# happened to 26.3 (the profile said abfaa525, Mojang's live document said e787e8af, and the engine's own
+# check refused the build in two minutes).
+VERSION_FIELDS = ("releaseType", "protocolVersion", "worldVersion", "javaVersion", "classFileVersion",
+                  "packVersions", "official")
+
+
+def merge_profile(existing: dict, generated: dict) -> tuple[dict, list[str]]:
+    """The engine's profile with this version's *facts* refreshed, and the port's own fields kept.
+
+    `patchSet`, `extraPatchers`, `storage` and the telemetry mode are decisions the engine made about how
+    to build that version, and a generator has no business overwriting them. Java level, protocol, pack
+    versions and sha1s are facts about the version, and a profile that disagrees with them fails the
+    engine's own check - so those are taken from Mojang.
+    """
+    merged = dict(existing)
+    changed = []
+    for field in VERSION_FIELDS:
+        if generated.get(field) is None:
+            continue
+        if merged.get(field) != generated[field]:
+            changed.append(field)
+            merged[field] = generated[field]
+    return merged, changed
+
+
 def patcher_report(engine: pathlib.Path, version_id: str) -> dict:
     """Which patcher will run for this version: the one the nearest profile declares.
 
@@ -318,20 +345,26 @@ def prepare(version_id: str, engine: pathlib.Path, client_jar: pathlib.Path, doc
             bringup_path: pathlib.Path | None = None, log=print) -> dict:
     """Everything the engine needs for one version, written into the engine's own layout."""
     target = find_engine_profile(engine) / f"{version_id}.json"
+    fresh = aot_profile.build(version_id, entry, document, aot_profile.version_json(client_jar),
+                              aot_profile.nearest_profile(find_engine_profile(engine), version_id)[1]
+                              if aot_profile.nearest_profile(find_engine_profile(engine), version_id)
+                              else None, log=log)
+    refreshed: list[str] = []
     if target.is_file():
-        # A profile the engine already ships is that project's own work - curated patchers, storage
-        # namespacing, an assessed patch set - and a generated one must never replace it. This is also
-        # why preparing the newest *release* is cheap: the engine already knows it.
-        profile = json.loads(target.read_text())
-        log(f"  the engine already has a profile for {version_id} (Java {profile.get('javaVersion')}): "
-            f"left alone, it is the engine's own work")
+        # The engine already ships a profile: its decisions about *how* to build this version stay, and
+        # the facts about the version are refreshed from Mojang. Both halves matter - the engine's
+        # patchers are its work, and a stale sha1 fails the engine's own check before anything compiles.
+        existing = json.loads(target.read_text())
+        profile, refreshed = merge_profile(existing, fresh)
         generated_profile = False
+        if refreshed:
+            target.write_text(json.dumps(profile, indent=1) + "\n")
+            log(f"  the engine's own profile for {version_id} stays, with {len(refreshed)} version "
+                f"fact(s) refreshed from Mojang: {', '.join(refreshed)}")
+        else:
+            log(f"  the engine already has a profile for {version_id} and it is up to date: left alone")
     else:
-        profile = aot_profile.build(version_id, entry, document,
-                                    aot_profile.version_json(client_jar),
-                                    aot_profile.nearest_profile(find_engine_profile(engine), version_id)[1]
-                                    if aot_profile.nearest_profile(find_engine_profile(engine), version_id)
-                                    else None, log=log)
+        profile = fresh
         target.write_text(json.dumps(profile, indent=1) + "\n")
         log(f"  wrote {target.relative_to(engine)} (Java {profile['javaVersion']}, "
             f"class file {profile['classFileVersion']})")
@@ -367,6 +400,7 @@ def prepare(version_id: str, engine: pathlib.Path, client_jar: pathlib.Path, doc
         "version": version_id,
         "profile": str(target.relative_to(engine)),
         "generated_profile": generated_profile,
+        "refreshed_from_mojang": refreshed,
         "protocol_note": (f"{raw} (snapshot marker set, kept as the client reports it)"
                           if isinstance(raw, int) and raw & 0x40000000 else None),
         "java": profile["javaVersion"],
