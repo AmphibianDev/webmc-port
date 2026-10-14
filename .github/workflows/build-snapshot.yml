@@ -455,7 +455,13 @@ jobs:
           git add state.json site/manifest.json
           git add -f "site/clients/$VERSION" 2>/dev/null || true
           git diff --cached --quiet || git commit -m "catalog: $VERSION compiled, packed and published"
-          git push origin HEAD:main || echo "::warning::could not push the catalog; the next run will"
+          {
+            echo "commit: $(git log -1 --oneline)"
+            echo "branch: $(git rev-parse --abbrev-ref HEAD)"
+            echo "parent: $(git log -2 --format='%h %s' | tail -1)"
+            echo "tracked client files: $(git diff --cached --name-only HEAD~1 2>/dev/null | grep -c '^site/clients' || echo 0)"
+            git push origin HEAD:main 2>&1 || echo "PUSH FAILED with $?"
+          } 2>&1 | tee /tmp/push.log
 
       - name: Record what happened, where git can read it
         # The point of the whole job: a 55-minute build whose log nobody can open is a wasted day. This
@@ -501,6 +507,8 @@ jobs:
           echo "$STATUS" > build-log/status.txt
           cp /tmp/prepare.log build-log/prepare.log 2>/dev/null || true
           cp /tmp/shell-check.txt build-log/shell-check.txt 2>/dev/null || true
+          cp /tmp/push.log build-log/push.log 2>/dev/null || true
+          cp /tmp/jdk.txt build-log/jdk.txt 2>/dev/null || true
           # An orphan branch, every time. Anything derived from HEAD can carry the commit the publish
           # step pushed to main - which is how a successful run once replaced its own report on this
           # branch with a catalog commit. An orphan has nothing but the log in it.
