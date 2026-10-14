@@ -31,6 +31,11 @@ on:
         required: false
         type: string
         default: "TypeThe0ry/Gaius"
+      mods:
+        description: "Mods to bake in, comma-separated ids from mods/mods.json (empty = vanilla)"
+        required: false
+        type: string
+        default: ""
       bringup:
         description: "Allow the engine's bring-up list (skip patches whose port is not finished)"
         required: false
@@ -143,6 +148,21 @@ jobs:
           command -v jq >/dev/null || sudo apt-get install -y jq
           nproc; free -g | head -2
 
+      - name: Which route this version is on
+        # The same answer the launcher gives a player, from the same tool: real Java in the page, waiting on
+        # the shim, or compiled. It also says whether the engine can take a mod set at all - which is the
+        # difference between a modded build and a build that silently ignored the mods.
+        working-directory: ours
+        run: |
+          set -euo pipefail
+          python3 tools/route.py --version "${{ steps.want.outputs.version }}" | tee /tmp/route.txt
+          if [ -n "${{ inputs.mods }}" ]; then
+            if grep -q "bakes_mods: false\|only when an engine" /tmp/route.txt; then
+              echo "::error::mods were requested (${REPO_MODS}) but the engine for this version cannot take a mod set"
+              exit 1
+            fi
+          fi
+
       - name: Prepare the version for the engine
         # Profile from Mojang's metadata and the version.json inside the client jar, the previous
         # version's source overrides as a starting point, and a bring-up list. The client jar is
@@ -172,6 +192,33 @@ jobs:
           git -c user.name="webmc-port-bot" -c user.email="webmc-port-bot@users.noreply.github.com" \
             commit -m "snapshot log: prepared $VERSION" || true
           git push origin HEAD:refs/heads/build-log --force || echo "::warning::could not push the early report"
+
+      - name: Bake the mod set, if one was asked for
+        # Mods on a compiled client can only go in before the compile. The bake needs an engine with source
+        # hooks; an engine that only patches a compiled client cannot take them, and the route step above
+        # has already refused that case rather than producing a vanilla client called modded.
+        if: ${{ inputs.mods != '' }}
+        working-directory: ours
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/mods
+          python3 - "${{ inputs.mods }}" <<'PY'
+          import json, pathlib, shutil, sys
+          wanted = [m.strip() for m in sys.argv[1].split(",") if m.strip()]
+          manifest = json.loads(pathlib.Path("mods/mods.json").read_text())
+          known = {mod["id"]: mod for mod in manifest["mods"]}
+          missing = [m for m in wanted if m not in known]
+          if missing:
+              raise SystemExit(f"not in mods/mods.json: {missing}")
+          for mod_id in wanted:
+              source = pathlib.Path("mods") / known[mod_id]["file"]
+              if not source.is_file():
+                  raise SystemExit(f"{mod_id}: {source} is not in this checkout (mods/jars is git-ignored)")
+              shutil.copyfile(source, pathlib.Path("/tmp/mods") / source.name)
+          print(f"mod set: {', '.join(wanted)}")
+          PY
+          python3 mods/build_modded_workspace.py --workspace ../engine --mods /tmp/mods \
+            --out /tmp/bake --dry-run 2>&1 | tail -30 | tee -a /tmp/build.log
 
       - name: Fetch the client, its libraries and its assets
         working-directory: engine

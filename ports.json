@@ -50,7 +50,8 @@
       ],
       "caveat": "LWJGL in JavaScript is described by its authors as partial. Browsercraft proves 1.2.5 and WebForge proves 1.6.4 with Forge; the Alpha/Beta/Indev ones use the same runtime path and older assets, so treat them as 'should work, test before advertising'.",
       "how": "Nothing is compiled and nothing is copied: the visitor's browser fetches the official jar from piston-data.mojang.com, CheerpJ runs it with the JS natives on java.library.path, and the main class is net.minecraft.client.Minecraft. Our site serves only code: CheerpJ's loader, cheerpj-natives (Apache-2.0) and the LWJGL jars (BSD).",
-      "license": "Apache-2.0"
+      "license": "Apache-2.0",
+      "bakes_mods": false
     },
     {
       "id": "eagler-workspace-26.2",
@@ -86,7 +87,8 @@
         "Audio needs FFmpeg 6.1.1 only if you rebuild the sound archives; a normal build does not."
       ],
       "blocked_by": "no licence: the repository has no licence file, which means all rights reserved rather than free to use. Its 26.2 build was replaced by the MIT-licensed gaius engine, which covers 1.21.11, 26.2 and 26.3. Its compiler also reads sounds.epk unconditionally, which is why tools/empty-epk.init.gradle.kts exists: a build from this lineage has to create an empty archive with the engine's own packager (and give the optional music-pack export a name it accepts) rather than ship Minecraft audio.",
-      "license_note": "no licence file: all rights reserved rather than free to use. Its 26.2 build was replaced by the MIT-licensed gaius engine; re-enabling it is a licence decision, and CREDITS.md records it."
+      "license_note": "no licence file: all rights reserved rather than free to use. Its 26.2 build was replaced by the MIT-licensed gaius engine; re-enabling it is a licence decision, and CREDITS.md records it.",
+      "bakes_mods": true
     },
     {
       "id": "eaglercraftx",
@@ -110,7 +112,8 @@
         "The release assets are the clients, and older mirrors of them are what the community plays; the repository itself is the engine."
       ],
       "license_note": "no licence file in lax1dude/eaglercraftx: all rights reserved. Not built from here; kept as the lineage reference for the workspaces, and credited in CREDITS.md.",
-      "credits": "lax1dude/eaglercraftx"
+      "credits": "lax1dude/eaglercraftx",
+      "bakes_mods": false
     },
     {
       "id": "eagler-ports",
@@ -134,7 +137,8 @@
       },
       "mods": "none",
       "license_note": "EaglerPorts repositories carry no licence file: all rights reserved. This engine only *links* other people's builds where they live; nothing is copied or rebuilt from it.",
-      "credits": "EaglerPorts"
+      "credits": "EaglerPorts",
+      "bakes_mods": false
     },
     {
       "id": "webforge",
@@ -152,7 +156,8 @@
       },
       "mods": "yes - real .jar files, loaded at runtime",
       "license_note": "no licence file in Cucuzacu/WebForge: all rights reserved. A real-JVM route (Forge 1.6.4 under CheerpJ) that is linked, not rebuilt, until its licence is settled.",
-      "credits": "Cucuzacu/WebForge"
+      "credits": "Cucuzacu/WebForge",
+      "bakes_mods": false
     },
     {
       "id": "gaius",
@@ -201,7 +206,8 @@
         }
       ],
       "license": "MIT",
-      "audio": "the client fetches its audio at play time; nothing in this repository ships Minecraft sound or music"
+      "audio": "the client fetches its audio at play time; nothing in this repository ships Minecraft sound or music",
+      "bakes_mods": false
     },
     {
       "id": "openjdk-wasm-client",
@@ -222,7 +228,8 @@
         "performance is unknown: Zero is an interpreter, so this is the route for correctness and mods, not for frames per second - the compiled rows stay ahead of it on speed"
       ],
       "note": "Kept disabled on purpose: it has no built client and a plan that offered it as playable would be lying. The route, the recipe and the link kit are real, and MODERN-JAVA.md is the account of what each remaining piece is.",
-      "license": "GPL-2.0 with the Classpath exception"
+      "license": "GPL-2.0 with the Classpath exception",
+      "bakes_mods": false
     },
     {
       "id": "eaglercraft-1.14-workspace",
@@ -256,7 +263,8 @@
         "package": "cd engine && npm install && npm run build:single -- --output dist/{version}.html",
         "output": "engine/dist/{version}.html"
       },
-      "build_note": "same lineage as the 26.2 workspace, so the same commands are the starting point; the exact task names and any missing audio archive (sounds.epk) are verified on the first build rather than assumed"
+      "build_note": "same lineage as the 26.2 workspace, so the same commands are the starting point; the exact task names and any missing audio archive (sounds.epk) are verified on the first build rather than assumed",
+      "bakes_mods": true
     },
     {
       "id": "eaglercraftx-1.8-workspace",
@@ -285,7 +293,8 @@
         "package": "cd engine && npm install && npm run build:single -- --output dist/{version}.html",
         "output": "engine/dist/{version}.html"
       },
-      "build_note": "the 1.8 lineage predates the 26.x workspaces; task names are verified on the first build"
+      "build_note": "the 1.8 lineage predates the 26.x workspaces; task names are verified on the first build",
+      "bakes_mods": true
     },
     {
       "id": "eaglercraft-1.7.10-workspace",
@@ -312,7 +321,8 @@
         "package": "cd engine && npm install && npm run build:single -- --output dist/{version}.html",
         "output": "engine/dist/{version}.html"
       },
-      "build_note": "verified on the first build, not assumed"
+      "build_note": "verified on the first build, not assumed",
+      "bakes_mods": true
     },
     {
       "id": "own-teavm-engine",
@@ -333,7 +343,9 @@
         }
       ],
       "blocked_by": "not written. Nothing licensed covers 1.16.5 - 1.20.4, and the borrowed workspaces stop at 1.14, so these versions need our own patch set: decompile the official client, replace LWJGL/GLFW/OpenAL/filesystem/network with browser implementations, compile with TeaVM. MODERN-JAVA.md has the milestone ladder.",
-      "work": "start at 1.16.5 (Java 8, LWJGL 3.2, simpler renderer) or 1.20.4 (last Java 17), reusing the measured LWJGL surface in lwjgl3-webgl/surface/, the boot screen, and the build job"
+      "work": "start at 1.16.5 (Java 8, LWJGL 3.2, simpler renderer) or 1.20.4 (last Java 17), reusing the measured LWJGL surface in lwjgl3-webgl/surface/, the boot screen, and the build job",
+      "bakes_mods": true,
+      "mods": "planned - build-time bake through mods/loader.py, the same manifest the other rows read"
     }
   ],
   "rules": {

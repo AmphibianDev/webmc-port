@@ -189,6 +189,74 @@ def test_the_real_workflows() -> None:
           str(sorted(p.name for p in (ROOT / ".github" / "workflows").glob("*build*.yml"))))
 
 
+def test_routes(tmp: pathlib.Path) -> None:
+    print("\none version in, one route out")
+    sys.path.insert(0, str(ROOT / "tools"))
+    import route  # noqa: E402
+    import plan as planner  # noqa: E402
+
+    engines = planner.load_engines(include_disabled=False)
+    state = {"jvm": {
+        "1.12.2": {"java": 8, "lwjgl": "2.9.4", "route": "cheerpj", "type": "release",
+                   "source": "document"},
+        "1.16.5": {"java": 8, "lwjgl": "3.2.1", "route": "needs-lwjgl3", "type": "release",
+                   "source": "document"},
+        "1.20.5": {"java": 21, "lwjgl": "3.3.3", "route": "needs-jvm", "type": "release",
+                   "source": "document"},
+    }, "manifest": {
+        "1.21.11": {"type": "release", "released": "2026-01-01T00:00:00+00:00"},
+        "b1.7.3": {"type": "old_beta", "released": "2011-07-01T00:00:00+00:00"},
+    }, "built": {"26.2": {"url": "https://example.invalid/client-26.2.html", "bytes": 1}}}
+
+    real = route.route_for("1.12.2", engines, state)
+    check("a LWJGL 2 client runs the official jar in the page",
+          real["route"] == "real-java" and real["engine"] == "cheerpj-unmodified", str(real)[:120])
+    check("and its mods load at play time, not at build time",
+          "play time" in real["mods"] and real["bakes_mods"] is False, str(real["mods"]))
+    shim = route.route_for("1.16.5", engines, state)
+    check("a LWJGL 3 client is waiting on the shim", shim["route"] == "needs-shim", shim["why"][:80])
+    modern = route.route_for("1.20.5", engines, state)
+    check("a Java 21 client can only be compiled", modern["route"] == "aot", modern["why"][:80])
+    guessed = route.route_for("1.21.11", engines, state)
+    check("a version whose document was not read routes by date, and says so",
+          guessed["route"] == "aot" and "guessed from the release date" in guessed["why"],
+          str(guessed["why"])[:100])
+    check("and the engine for it is the MIT one", guessed["engine"] == "gaius"
+          and guessed["engine_license"] == "MIT", f"{guessed['engine']} {guessed['engine_license']}")
+    check("an engine that cannot take a mod set says so rather than ignoring one",
+          guessed["bakes_mods"] is False and "only when an engine" in guessed["mods"], guessed["mods"])
+    built = route.route_for("26.2", engines, state)
+    check("a version with a build behind it is playable, and says where the build is",
+          built["playable"] and built["built"]["url"].startswith("https://"), str(built["built"]))
+    old_beta = route.route_for("b1.7.3", engines, state)
+    check("a beta routes as real Java with the pre-shader caveat",
+          old_beta["route"] == "real-java", str(old_beta)[:120])
+
+    (tmp / "state.json").write_text(json.dumps(state))
+    (tmp / "manifest.json").write_text(json.dumps({"versions": [
+        {"id": vid, "type": entry.get("type"), "released": entry.get("released")}
+        for vid, entry in state["manifest"].items()]}))
+    out = tmp / "routes.json"
+    code = route.main(["--export", str(out), "--state", str(tmp / "state.json"),
+                       "--manifest", str(tmp / "manifest.json"), "--ports",
+                       str(ROOT / "ports.json")])
+    check("the export writes the file the launcher reads", code == 0 and out.is_file())
+    if out.is_file():
+        exported = json.loads(out.read_text())
+        check("with a route for every version it was given",
+              "1.12.2" in exported["versions"] and "1.21.11" in exported["versions"],
+              str(sorted(exported["versions"])[:5]))
+        check("and the fields a card shows",
+              all(key in exported["versions"]["1.12.2"]
+                  for key in ("route", "why", "engine", "engine_license", "mods", "playable")))
+
+    summary = route.span("1.0", "1.21.11", engines, state)
+    check("a span counts every route it can see, including the guesses",
+          summary["counts"].get("real-java") and summary["counts"].get("aot"), str(summary["counts"]))
+    check("and shows examples, so the numbers can be checked",
+          all(summary["examples"].values()), str(summary["examples"]))
+
+
 def test_credits() -> None:
     print("\nthe credits ledger and the engine registry agree")
     ports = json.loads((ROOT / "ports.json").read_text())
@@ -216,11 +284,13 @@ def test_credits() -> None:
 
 def main() -> int:
     with tempfile.TemporaryDirectory() as scratch:
+        tmp = pathlib.Path(scratch)
         test_scan()
         test_triggers()
-        test_lint(pathlib.Path(scratch))
+        test_lint(tmp)
         test_the_real_workflows()
         test_credits()
+        test_routes(tmp)
     print(f"\n{FAILURES} workflow test(s) FAILED" if FAILURES else "\nworkflow tests passed")
     return 1 if FAILURES else 0
 
