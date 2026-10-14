@@ -82,7 +82,7 @@ check('a release-asset build is described as a download, not a page',
   body.includes('releases') && body.includes('download') && page.includes('download & open')
   && page.includes('serve Minecraft bytes'));
 check('the build request opens the build workflow, not the catalog one',
-  body.includes('build-client.yml'));
+  body.includes('build-snapshot.yml'));
 
 // Fewest clicks to be in the game: a row starts a version, Enter starts the top result, and a saved
 // session starts again with one click and no catalog fetch at all.
