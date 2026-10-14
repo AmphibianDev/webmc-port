@@ -48,6 +48,8 @@ on:
 
 permissions:
   contents: write
+  # to hand the packed client to the catalog job, which is the one that can put it on the site
+  actions: write
 
 concurrency:
   # Per version, not per workflow: a second queued run supersedes a pending one in the same group, so a
@@ -375,6 +377,27 @@ jobs:
             --title "Minecraft $VERSION" --chunk-mb 20
           du -sh "site/clients/$VERSION" | tee -a "$GITHUB_STEP_SUMMARY"
 
+      - name: Publish the packed client as a release asset
+        # The build job's git push is the least reliable part of it, and its release upload is the most
+        # reliable: so the packed page goes out as one archive named after the version, and the catalog
+        # job - which pushes without trouble - puts it on the site (tools/fetch_packed.py).
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          cd ours
+          if [ ! -d "site/clients/$VERSION" ]; then
+            echo "::warning::nothing was packed for $VERSION, so there is no page to publish"
+            exit 0
+          fi
+          tar -czf "/tmp/packed-$VERSION.tar.gz" -C site/clients "$VERSION"
+          ls -lh "/tmp/packed-$VERSION.tar.gz"
+          gh release view built-clients >/dev/null 2>&1 || gh release create built-clients \
+            --title "Built browser clients" \
+            --notes "Compiled from the official client by this repository's build job." || true
+          gh release upload built-clients "/tmp/packed-$VERSION.tar.gz" --clobber \
+            || echo "::warning::could not upload the packed client"
+
       - name: Record that it built and packed, before the publish step
         # The report is written to git here as well as at the end: a run that dies in the publish step (or
         # is killed) still leaves the answer to "did it build, and what is in it".
@@ -523,6 +546,19 @@ jobs:
           git -c user.name="webmc-port-bot" -c user.email="webmc-port-bot@users.noreply.github.com" \
             commit -q -m "snapshot log: $(cat build-log/status.txt)" || echo "nothing to record"
           git push -q -f origin HEAD:refs/heads/build-log || echo "::warning::could not push the log branch"
+
+      - name: Hand the packed client to the catalog job
+        # The build job's own push to main is the unreliable part (it failed on every run that got this
+        # far); the catalog job's push is ordinary. So the catalog job is asked to run, and it fetches
+        # what this run published as a release asset (tools/fetch_packed.py), records it, and deploys.
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          gh workflow run catalog.yml --ref main \
+            && echo "catalog job dispatched to pick up packed-$VERSION.tar.gz" \
+            || echo "::warning::could not dispatch the catalog job; the next scheduled run will pick it up"
 
       - uses: actions/upload-artifact@v7
         if: always()

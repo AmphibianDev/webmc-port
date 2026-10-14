@@ -133,6 +133,14 @@ jobs:
       - name: Update the state and the page's manifest
         run: python3 tools/update.py --strict-urls --write
 
+      - name: Put any packed clients on the site
+        # A packed client is published as a release asset by the build job (the one write channel that
+        # always works) and unpacked here, where pushing to main is ordinary.
+        run: |
+          set -euo pipefail
+          python3 tools/fetch_packed.py --all --record || echo "::warning::no packed client could be fetched"
+          ls -la site/clients 2>/dev/null | head -5 || true
+
       - name: How each version runs, for the launcher
         # One file the page reads next to the catalog: route (real Java / waiting on the shim / compiled),
         # which engine builds it, that engine's licence, and whether it can take a mod set at all.
@@ -152,6 +160,7 @@ jobs:
           git config user.name "webmc-port-bot"
           git config user.email "webmc-port-bot@users.noreply.github.com"
           git add state.json site/manifest.json site/fabric.json site/legacy-fabric.json
+          git add -f site/clients 2>/dev/null || true
           git diff --cached --quiet && echo "catalog unchanged" && exit 0
           git commit -m "catalog: refresh the version list"
           for attempt in 1 2 3; do
