@@ -174,13 +174,23 @@
       "profile_rules": [
         {
           "from": "26.1",
-          "to": "26.99",
+          "to": "26.3.99",
           "profile_tool": "tools/aot_snapshot.py",
-          "why": "it fetches whatever client version a profile names, patches it and compiles it, so a 26.x version - a snapshot included - needs a generated profile rather than new code",
+          "why": "it fetches whatever client version a profile names, patches it and compiles it, so a version in this range needs a generated profile rather than new code",
           "caveat": "a snapshot's patches are not ported yet by definition: the build starts with the previous version's source overrides and a bring-up list, and the log says which patches were skipped"
         }
       ],
-      "note": " Enabled for the 26.x range: tools/aot_snapshot.py generates the profile from Mojang's metadata, so a new snapshot is a dispatch rather than a code change."
+      "note": " Enabled for the 26.x range: tools/aot_snapshot.py generates the profile from Mojang's metadata, so a new snapshot is a dispatch rather than a code change. The 26.1 - 26.3 range is generatable; 26.4 and later need the renderpearl renderer ported first, which is recorded as a blocker rather than promised as a build.",
+      "blockers": [
+        {
+          "covers": {
+            "from": "26.4",
+            "to": "26.99"
+          },
+          "blocked_by": "26.4-snapshot-4 replaced the render layer: com/mojang/blaze3d/pipeline/RenderPipeline and ShaderSource are gone in favour of com/mojang/renderpearl/api/pipeline/*, and VertexFormat moved. The engine's symbol prober refuses a jar that has both, which is what its 26.3 patch chain produces on a 26.4 client (build run 38549140842: 'ModernSymbols: inconsistent client jar ... 26.2 render class ... is still present next to renderpearl').",
+          "work": "a browser patcher for the renderpearl renderer. This is engine work, not a profile: everything the generated profile can supply - java level, protocol, pack versions, sha1s, overrides, bring-up entries - was already supplied before that error."
+        }
+      ]
     },
     {
       "id": "openjdk-wasm-client",

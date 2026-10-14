@@ -133,9 +133,28 @@ python3 tools/snapshot_status.py --log 40                                  # rea
 6. **Every attempt writes its report and log tail to a `build-log` branch.** No token, no web UI:
    `tools/snapshot_status.py` reads it, which is how the fixups above were written.
 
-The first real attempt (2026-10-14, run 38543240894) reached the patch chain, built it, and stopped on
-`AbstractWidget.visible` becoming protected in 26.4-snapshot-4. That is the loop working: ten minutes
-per attempt, one line per failure, all of it visible in git.
+### How far the loop got, and where it stopped
+
+Four attempts on 2026-10-14, each about ten minutes, each visible in the `build-log` branch:
+
+| Attempt | Stopped at | What it took to fix |
+| --- | --- | --- |
+| 1 (38543240894) | `BrowserOpenGL.java:7095: error: visible has protected access in AbstractWidget` | a fixup: 26.4 made the field protected; use `isVisible()` |
+| 2 (38545663119) | `Patch MinecraftClientPatcher.patchBuiltInRegistriesBrowserStartupYield failed ... and is not listed in the bring-up list` | a bring-up entry: 26.4 rewrote `BuiltInRegistries.createContents`, so the patch's anchor is gone |
+| 3 (38547975838) | `Version profile check failed: client protocol version 1073742166 does not match 342` | reverting a "fix" of mine: the engine compares the profile against the client's raw protocol, marker and all |
+| 4 (38549140842) | `ModernSymbols: inconsistent client jar ... 26.2 render class com/mojang/blaze3d/pipeline/RenderPipeline is still present next to renderpearl` | **nothing: this is engine work** |
+
+Attempt four is the honest ceiling of this approach. **26.4-snapshot-4 replaced the render layer**:
+`com/mojang/blaze3d/pipeline/RenderPipeline` and `ShaderSource` are gone in favour of
+`com/mojang/renderpearl/api/pipeline/*`, `GlslCompiler` moved, and `VertexFormat` changed shape. The
+engine's symbol prober detects the new renderer and refuses a jar that contains both, which is what its
+26.3 patch chain produces on a 26.4 client. A browser patcher for renderpearl is a real porting job by
+somebody who knows that renderer - and everything a *generated profile* can supply (java level, protocol,
+pack versions, sha1s, source overrides, bring-up entries) was already supplied before that error.
+
+So the snapshot path is automated and stops at a named wall, and `ports.json` records it as a blocker on
+the 26.4+ range rather than promising a build. The newest *release* - which that engine does support -
+goes through the same job (`.github/workflows/build-snapshot.yml` with `latest-release`).
 
 ## What this project will not do
 

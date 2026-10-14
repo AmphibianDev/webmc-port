@@ -307,6 +307,37 @@ def test_fixups(tmp: pathlib.Path) -> None:
               str({k: entry.get(k) for k in ("since", "until", "versions")}))
 
 
+def test_existing_profile(tmp: pathlib.Path) -> None:
+    print("\na profile the engine already has is left alone")
+    engine = fake_engine(tmp / "engine-existing")
+    jar = client_jar(tmp / "existing-client.jar")
+    curated = json.loads((engine / "port" / "versions" / "26.3.json").read_text())
+    lines: list[str] = []
+    report = aot_snapshot.prepare("26.3", engine, jar, DOCUMENT, {"type": "release"}, None, None,
+                                  log=lines.append)
+    after = json.loads((engine / "port" / "versions" / "26.3.json").read_text())
+    check("the engine's own profile is byte-for-byte unchanged", after == curated,
+          f"{sorted(set(after) ^ set(curated))}")
+    check("and the report says it was not generated here", report["generated_profile"] is False)
+    check("the patcher still comes from the engine's profile, not a neighbour's",
+          report["patchers"]["will_run"] == "Minecraft263BrowserPatcher"
+          and report["patchers"]["profile"] == "26.3",
+          str(report["patchers"]))
+    check("and the log says whose work it is",
+          any("engine's own work" in line for line in lines), str(lines[:3]))
+
+    print("\nbut a version the engine does not know yet is generated")
+    fresh = aot_snapshot.prepare("26.3.5", engine, jar, DOCUMENT, {"type": "release"}, None, None,
+                                 log=lambda *_: None)
+    check("a new version gets a profile generated for it",
+          fresh["generated_profile"] is True
+          and (engine / "port" / "versions" / "26.3.5.json").is_file())
+    check("and the patcher it will run came from the nearest older profile's, via the copy",
+          fresh["patchers"]["will_run"] == "Minecraft263BrowserPatcher"
+          and fresh["patchers"]["profile"] == "26.3.5"
+          and fresh["overrides"]["copied_from"] == "26.3", str(fresh["patchers"]))
+
+
 def test_bringup(tmp: pathlib.Path) -> None:
     print("\nbring-up: patches this project declares as not ported yet")
     engine = fake_engine(tmp / "engine-bringup")
@@ -382,6 +413,7 @@ def main() -> int:
         test_resolve()
         test_prepare(tmp)
         test_fixups(tmp)
+        test_existing_profile(tmp)
         test_bringup(tmp)
         test_command_line(tmp)
     print(f"\n{FAILURES} snapshot test(s) FAILED" if FAILURES else "\nsnapshot tests passed")
