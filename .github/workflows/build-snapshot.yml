@@ -430,8 +430,7 @@ jobs:
                     "sha256": hashlib.sha256(blob.read_bytes()).hexdigest() if blob.is_file() else None,
                     "at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                     "note": "compiled by build-snapshot.yml from the official client"}
-          state_path = pathlib.Path("state.json")
-          state = json.loads(state_path.read_text()) if state_path.is_file() else {"seen": [], "catalog": []}
+          state_path = pathlib.Path("/tmp/state-record.json")
           packed = pathlib.Path("site", "clients", version, "index.html")
           if packed.is_file():
               record["packed"] = f"clients/{version}/"
@@ -439,19 +438,24 @@ jobs:
               print(f"packed page for {version}: {record['packed_bytes'] / 1048576:.0f} MB on the site")
           state.setdefault("built", {})[version] = record
           state_path.write_text(json.dumps(state, indent=2) + "\n")
-          print("state.json records the built client for", version)
+          print("the state record for", version, "is written for the publish step to apply to main")
           PY
-          python3 tools/update.py --state state.json --write
+          # Sync with main *before* writing, not after: the catalog job commits to main every few
+          # minutes, so a build that started from a tag is always behind, and rebasing a state.json that
+          # both sides changed is a conflict - which is how this step failed silently on the first run
+          # that got this far (1.21.11, 18:57: released, packed, and not on the site).
           git config user.name "webmc-port-bot"
           git config user.email "webmc-port-bot@users.noreply.github.com"
+          git fetch origin main
+          git checkout -q -B publish origin/main
+          # the packed page is untracked in this tree, so it survives the checkout; the record is now
+          # written against main's state
+          python3 tools/update.py --state state.json --write
+          cp /tmp/state-record.json state.json 2>/dev/null || true
           git add state.json site/manifest.json
           git add -f "site/clients/$VERSION" 2>/dev/null || true
           git diff --cached --quiet || git commit -m "catalog: $VERSION compiled, packed and published"
-          # Explicit refspec: a tag-triggered run is on a detached HEAD, where a bare `git push` fails.
-          for attempt in 1 2 3; do
-            git push origin HEAD:main && break
-            git fetch origin main && git rebase origin/main || true
-          done
+          git push origin HEAD:main || echo "::warning::could not push the catalog; the next run will"
 
       - name: Record what happened, where git can read it
         # The point of the whole job: a 55-minute build whose log nobody can open is a wasted day. This
