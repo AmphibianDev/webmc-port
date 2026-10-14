@@ -134,10 +134,16 @@ def build(version_id: str, entry: dict, document: dict, jar_version: dict, neare
     if nearest:
         storage["databaseName"] = storage["databaseName"].replace(
             f"-{nearest.get('id', '')}", "")
+    # A snapshot marks its protocol with a high bit (0x40000000) - 26.4-snapshot-4 reports 1073742166
+    # where the engine's own profiles carry the plain number, so the marker is stripped and the note
+    # travels in the report rather than being quietly lost.
+    raw_protocol = jar_version.get("protocol_version")
+    protocol = (raw_protocol & 0x3FFFFFFF
+                if isinstance(raw_protocol, int) and raw_protocol & 0x40000000 else raw_protocol)
     profile = {
         "id": version_id,
         "releaseType": entry.get("type") or document.get("type") or "release",
-        "protocolVersion": jar_version.get("protocol_version"),
+        "protocolVersion": protocol,
         "worldVersion": jar_version.get("world_version"),
         "javaVersion": java,
         "classFileVersion": CLASS_FILE_BASE + int(java),

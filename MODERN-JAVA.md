@@ -106,6 +106,37 @@ Each step is verifiable, and the first two do not depend on the runtime existing
    interface it needs. Then Fabric Loader, then a mod jar.
 9. Only then: is it fast enough to be worth offering next to the compiled row? Measure before claiming.
 
+## Building the newest snapshot, today
+
+The AOT row is a build system, and a build system can be pointed at a version nobody has ported yet.
+That is what `.github/workflows/build-snapshot.yml` does, on a tag (`build-*`) or by dispatch:
+
+```sh
+git tag build-latest-snapshot && git push origin build-latest-snapshot     # or the Actions button
+python3 tools/snapshot_status.py --log 40                                  # read what happened, from git
+```
+
+1. **The version is Mojang's own answer** - `latest-snapshot` in the default, so a new snapshot needs no
+   edit here.
+2. **`tools/aot_snapshot.py` prepares it**: the profile (from Mojang's document plus the `version.json`
+   inside the client jar: protocol, world and pack versions, class file 69 for Java 25), the previous
+   version's source overrides as a starting point, and a bring-up list seeded from its neighbour.
+3. **`tools/aot_fixups.json` patches what the snapshot broke.** A snapshot changes the client's API, so
+   the engine's browser code stops compiling in a place or two; each breakage is one entry with the
+   exact text, what it becomes, the version it applies from, and why. A moved anchor is a refusal, not a
+   skip.
+4. **The build runs the engine's own scripts** (fetch, remap, overlays, release) with the bring-up list
+   allowed, and `BRINGUP_SKIP` lines are recorded, so "it built" can never quietly mean "it built with
+   half the patches off".
+5. **Our boot screen goes in front**, the engine's own loading UI comes out, and the client is published
+   as a **download** (never served as a page - see COMPLIANCE.md).
+6. **Every attempt writes its report and log tail to a `build-log` branch.** No token, no web UI:
+   `tools/snapshot_status.py` reads it, which is how the fixups above were written.
+
+The first real attempt (2026-10-14, run 38543240894) reached the patch chain, built it, and stopped on
+`AbstractWidget.visible` becoming protected in 26.4-snapshot-4. That is the loop working: ten minutes
+per attempt, one line per failure, all of it visible in git.
+
 ## What this project will not do
 
 * **No streaming.** A session on a server is a different product, and running one on CI is what got an
