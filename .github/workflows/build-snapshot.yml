@@ -136,6 +136,16 @@ jobs:
           swapon --show
           free -g | head -2
 
+      - name: Tell the engine where the JDK is
+        # The overlay/release scripts ask for a JDK 21+ explicitly and stop with "Set GAIUS_JAVA_HOME to a
+        # compatible JDK installation" (build run 38592796753 for 1.21.10, after it had already patched
+        # 9,969 classes). setup-java puts one on PATH; this names it.
+        run: |
+          set -euo pipefail
+          echo "GAIUS_JAVA_HOME=$JAVA_HOME" >> "$GITHUB_ENV"
+          echo "GAIUS_NODE_HOME=$(dirname "$(command -v node)")/.." >> "$GITHUB_ENV"
+          java -version 2>&1 | head -2
+
       - name: Room to build in
         # A 26.x client compile wants ~12 GB of disk on top of the toolchain the runner already has.
         run: |
@@ -335,6 +345,35 @@ jobs:
           python3 tools/pack_client.py --client "$CLIENT" --out "site/clients/$VERSION" \
             --title "Minecraft $VERSION" --chunk-mb 20
           du -sh "site/clients/$VERSION" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Record that it built and packed, before the publish step
+        # The report is written to git here as well as at the end: a run that dies in the publish step (or
+        # is killed) still leaves the answer to "did it build, and what is in it".
+        run: |
+          set -uo pipefail
+          cd ours
+          mkdir -p build-log
+          python3 - "$VERSION" <<'PY' > build-log/report.json 2>&1
+          import datetime, json, pathlib, subprocess, sys
+          version = sys.argv[1]
+          report = {"version": version, "status_file": "packed",
+                    "at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "note": "written before the publish step, so a late failure still says this much"}
+          packed = pathlib.Path("site", "clients", version)
+          if packed.is_dir():
+              files = [path for path in packed.rglob("*") if path.is_file()]
+              report["packed_files"] = len(files)
+              report["packed_bytes"] = sum(path.stat().st_size for path in files)
+          print(json.dumps(report, indent=1))
+          PY
+          cp build-log/report.json "build-log/report-$VERSION.json" 2>/dev/null || true
+          echo "packed" > build-log/status.txt
+          git checkout -q --orphan build-log-packing 2>/dev/null || true
+          git rm -r -q --cached . >/dev/null 2>&1 || true
+          git add -f build-log
+          git -c user.name="webmc-port-bot" -c user.email="webmc-port-bot@users.noreply.github.com" \
+            commit -q -m "snapshot log: $VERSION packed" || echo "nothing to record"
+          git push -q -f origin HEAD:refs/heads/build-log || echo "::warning::could not push the report"
 
       - name: Publish the client and record it
         env:
