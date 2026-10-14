@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Minecraft</title>
+<!--
+  WebMC's boot screen: what is on screen between pressing play and the game's own first frame.
+
+  It exists because every compiled client ships its own loading UI, they all look different, and none
+  of them look like Minecraft. This one reproduces the loading screen the game itself draws, so the
+  handover is invisible:
+
+    * a black background, like LoadingOverlay does (guiGraphics.fill(0, 0, w, h, 0xFF000000));
+    * the progress text centred, in the game's own phrasing ("Loading..." / "Building terrain");
+    * a 200 x 2 pixel bar, centred, 10 pixels below the text - the size the game's overlay uses;
+    * a GUI scale computed the way the game computes it for small windows;
+    * a pixel-crisp font stack with the game's 1px drop shadow, because the real font is a bitmap
+      sheet that only the client has (see --font in tools/aot_shell.py: if a build can supply it, the
+      shell uses it, and without it this is the closest honest approximation).
+
+  Two engines use this one file:
+
+    * a compiled client (TeaVM/Gaius-style) - tools/aot_shell.py injects this overlay into the built
+      HTML and wires the progress contract below;
+    * a Java runtime in the page (an OpenJDK-for-wasm module) - this file is the kit's page shell, and
+      the #x11-wasm-root element below is where that runtime puts the X display.
+
+  The contract, in one place:
+    webmcBoot.progress(0..1, "Loading terrain")   show a determinate step
+    webmcBoot.note("one line under the bar")      a detail line, in the game's own log voice
+    webmcBoot.ready()                             fade out and hand over to the game
+    document.addEventListener("webmc:ready", ..)  the same thing from the client's side
+  Nothing here is required: a client that says nothing gets a bar that creeps and hides on first
+  paint, which is what a client with no progress reporting can honestly offer.
+-->
+<style>
+  :root {
+    /* LoadingOverlay's background, and the two colours it draws with. */
+    --webmc-bg: #000;
+    --webmc-text: #ffffff;
+    --webmc-shadow: #3f3f3f;
+    --webmc-bar-track: rgba(255, 255, 255, 0.22);
+    --webmc-bar-fill: #ffffff;
+    --webmc-scale: 2;
+    color-scheme: dark;
+  }
+  html, body { margin: 0; height: 100%; background: var(--webmc-bg); overflow: hidden; }
+  /* The window the game draws into. Empty until the engine mounts something. */
+  #x11-wasm-root { position: absolute; inset: 0; }
+  #webmc-boot {
+    position: fixed; inset: 0; z-index: 2147483646; background: var(--webmc-bg);
+    display: flex; align-items: center; justify-content: center;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace;
+    font-size: calc(8px * var(--webmc-scale));
+    line-height: calc(9px * var(--webmc-scale));
+    letter-spacing: 0; text-rendering: geometricPrecision; image-rendering: pixelated;
+    -webkit-font-smoothing: none; -moz-osx-font-smoothing: grayscale;
+    user-select: none; cursor: default; transition: opacity .25s linear; opacity: 1;
+  }
+  #webmc-boot.gone { opacity: 0; pointer-events: none; }
+  #webmc-boot .panel { text-align: center; }
+  #webmc-boot .status {
+    color: var(--webmc-text); text-shadow: calc(1px * var(--webmc-scale)) calc(1px * var(--webmc-scale)) 0 var(--webmc-shadow);
+    margin: 0 0 calc(10px * var(--webmc-scale));
+  }
+  /* 200 x 2 at the game's scale: a track with a fill, both crisp, no border radius, no animation
+     beyond a width change - the overlay the game draws has none either. */
+  #webmc-boot .bar {
+    width: calc(200px * var(--webmc-scale)); height: calc(2px * var(--webmc-scale));
+    margin: 0 auto; background: var(--webmc-bar-track); overflow: hidden;
+  }
+  #webmc-boot .bar > i { display: block; width: 0; height: 100%; background: var(--webmc-bar-fill); }
+  #webmc-boot .note {
+    color: var(--webmc-text); opacity: .55; margin: calc(8px * var(--webmc-scale)) 0 0;
+    font-size: calc(8px * var(--webmc-scale));
+    text-shadow: calc(1px * var(--webmc-scale)) calc(1px * var(--webmc-scale)) 0 var(--webmc-shadow);
+  }
+  /* The pre-1.13 screen, for anyone who prefers it: the dirt background. Drawn with CSS (a base tone,
+     a 16-pixel tile of two tones, and a sparse speckle) so no Mojang texture has to ship with this
+     file; a build that has the real texture passes --dirt and it replaces this one entirely. */
+  #webmc-boot.dirt {
+    background-color: #866043;
+    background-image:
+      var(--webmc-dirt, none),
+      repeating-conic-gradient(from 0deg, #79512f 0% 25%, #8b6547 25% 50%),
+      radial-gradient(circle at 30% 30%, #6f4a2b 1.5px, transparent 2px),
+      radial-gradient(circle at 70% 65%, #9a7250 1.5px, transparent 2px);
+    background-size: calc(16px * var(--webmc-scale)) calc(16px * var(--webmc-scale)),
+                     calc(8px * var(--webmc-scale)) calc(8px * var(--webmc-scale)),
+                     calc(16px * var(--webmc-scale)) calc(16px * var(--webmc-scale)),
+                     calc(16px * var(--webmc-scale)) calc(16px * var(--webmc-scale));
+    background-position: 0 0, 0 0, 0 0, calc(8px * var(--webmc-scale)) calc(4px * var(--webmc-scale));
+  }
+  #webmc-boot.dirt .status, #webmc-boot.dirt .note { color: #ffffff; }
+</style>
+</head>
+<body>
+<div id="x11-wasm-root"></div>
+<div id="webmc-boot">
+  <div class="panel">
+    <p class="status">Loading...</p>
+    <div class="bar"><i></i></div>
+    <p class="note"></p>
+  </div>
+</div>
+<script>
+(function () {
+  "use strict";
+  var root = document.getElementById("webmc-boot");
+  var fill = root.querySelector(".bar > i");
+  var status = root.querySelector(".status");
+  var note = root.querySelector(".note");
+  var style = document.documentElement.style;
+  var done = false;
+  var value = 0;
+  var creep = null;
+
+  /* The game's GUI scale, computed the way it computes it for a small window: the largest whole
+   * multiple that still leaves 320 x 240 logical pixels on screen, at least 1 and at most 4. */
+  function rescale() {
+    var scale = Math.max(1, Math.min(4, Math.floor(Math.min(window.innerWidth / 320, window.innerHeight / 240))));
+    style.setProperty("--webmc-scale", String(scale));
+  }
+
+  var api = {
+    show: function (text) {
+      root.hidden = false;
+      if (text) { status.textContent = text; }
+    },
+    progress: function (fraction, text) {
+      api.show();
+      value = Math.max(0, Math.min(1, Number(fraction) || 0));
+      fill.style.width = (value * 100).toFixed(2) + "%";
+      if (text) { status.textContent = text; }
+    },
+    note: function (text) { api.show(); note.textContent = text || ""; },
+    ready: function () {
+      if (done) { return; }
+      done = true;
+      if (creep) { clearInterval(creep); creep = null; }
+      api.progress(1);
+      /* The fade is the only animation, and it is short: the game's own title screen is what the
+       * player should be looking at, not this. */
+      root.classList.add("gone");
+      setTimeout(function () { root.hidden = true; }, 300);
+      document.dispatchEvent(new CustomEvent("webmc:booted"));
+    },
+    get progressValue() { return value; }
+  };
+
+  /* No progress reporting? Then the bar creeps toward -50%, which is what the game does while it has
+   * nothing to report either (its overlay has the same shape of lie: an indeterminate creep that
+   * stops short of the end). It must be replaced by webmcBoot.ready() to reach the end. */
+  function beginCreep() {
+    if (creep) { return; }
+    creep = setInterval(function () {
+      if (done) { return; }
+      value += (0.5 - value) * 0.02;
+      fill.style.width = (value * 100).toFixed(2) + "%";
+    }, 100);
+  }
+
+  document.addEventListener("webmc:ready", api.ready);
+  window.addEventListener("resize", rescale);
+  rescale();
+  api.show();
+  if (window.webmcBootHideOnLoad) { window.addEventListener("load", api.ready); }
+  beginCreep();
+  window.webmcBoot = api;
+})();
+</script>
+</body>
+</html>

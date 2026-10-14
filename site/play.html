@@ -258,6 +258,7 @@
         mode: requestedMode,
         row: plan.row,
         playable: false,
+        caveats: plan.caveats || [],
         blocker: plan.blocker || plan.note ||
           (offered.length
             ? `this version has no ${requestedMode} route; it offers ${offered.join(", ")}`
@@ -282,6 +283,7 @@
       natives: plan.natives || "lwjgl-natives",
       playable: plan.playable !== false,
       blocker: plan.blocker,
+      caveats: plan.caveats || [],
       main: run.main,
       // With no mods the loader is one class between the click and the title screen, and it is not
       // needed: the game's own main class starts directly.

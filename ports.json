@@ -171,6 +171,26 @@
         "compile": "cd engine && GAIUS_VERSION_PROFILE_PATH=versions/{version}.json bash port/scripts/build-version-release.sh {version}",
         "output": "engine/port/web/dist/{version}/Gaius.html"
       }
+    },
+    {
+      "id": "openjdk-wasm-client",
+      "kind": "real-jvm",
+      "enabled": false,
+      "repo": "wangyenshu/recipes",
+      "profiles": [],
+      "java": {
+        "java": 25,
+        "jvm": "openjdk-zero-wasm",
+        "heap_gb": 4,
+        "minutes": 90
+      },
+      "mods": "runtime - a real class loader, so Fabric Loader and its mixins are the ordinary ones. Unproven: the same Fabric boot that is reported to hang under CheerpJ has to be re-tried on this runtime, which is a different class-loading implementation.",
+      "blockers": [
+        "LWJGL 3's natives have to be compiled into the wasm module (GLFW 3, GLES3 over WebGL 2 and OpenAL all exist in emscripten; what is missing is the JNI layer that maps LWJGL's expected symbols onto them). tools/lwjgl3_surface.py already measures exactly which symbols that is.",
+        "the JDK 21 recipe needs porting to JDK 25 for the 26.x clients (Zero itself builds fine there)",
+        "performance is unknown: Zero is an interpreter, so this is the route for correctness and mods, not for frames per second - the compiled rows stay ahead of it on speed"
+      ],
+      "note": "Kept disabled on purpose: it has no built client and a plan that offered it as playable would be lying. The route, the recipe and the link kit are real, and MODERN-JAVA.md is the account of what each remaining piece is."
     }
   ],
   "rules": {
@@ -280,6 +300,28 @@
         "EaglerPorts/*",
         "Gaius (disabled)"
       ]
+    },
+    {
+      "id": "openjdk-zero-wasm",
+      "name": "OpenJDK (Zero) compiled to WebAssembly - emscripten-forge",
+      "kind": "jvm-in-the-page",
+      "java": [
+        21,
+        "25 via the same recipe"
+      ],
+      "license": "GPL-2.0 with the Classpath exception (the JDK), Apache-2.0 (the kit)",
+      "gives": "a real JVM with a real class loader, in a page: System.loadLibrary, JNI, reflection and Fabric's class transformation are the ordinary ones, not a reimplementation. Threads are real (pthreads + SharedArrayBuffer), AWT/Swing run on x11.wasm, and the whole thing is statically linked into one wasm module that a static host can serve in chunks.",
+      "limits": [
+        "Zero interpreter only: there is no JIT for wasm32 in this port, so a game can be correct and slow",
+        "no dynamic loader: every native method is answered from an emscripten_static_symbols table built at link time, so a native library must be compiled into the module",
+        "the recipe builds JDK 21; JDK 25 is the same port with a version bump, unproven here",
+        "posix_spawn does not exist, so anything that shells out has to be stubbed"
+      ],
+      "used_by": [
+        "wangyenshu/recipes (recipes_emscripten/openjdk21)",
+        "wangyenshu/openjdk21-kit (launcher, link script, page shell)"
+      ],
+      "note": "This is the only route found that runs Java 21+ bytecode in a browser at all. It is what the aot row is not: a class loader at play time, which is what Fabric needs."
     }
   ],
   "builds_file": "builds.json",

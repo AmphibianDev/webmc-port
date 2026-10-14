@@ -89,6 +89,27 @@ vanilla, starts our own mod door (`mods/mods.json`, `mods/jars/`).
 **`LOADER.md` is the full account** - the plan format, the loader's two modes, what is verified
 without a browser, and the two constraints that are measured rather than assumed.
 
+## Java 21 and 25, and the latest snapshot
+
+CheerpJ stops at Java 17, so the plan routes 1.20.5+ to a compiled client. `MODERN-JAVA.md` is the
+account of what else exists: an open-source **OpenJDK compiled to WebAssembly** (emscripten-forge's
+`openjdk21` recipe, Zero interpreter, threads, AWT on x11.wasm) which is a *real* JVM in a page - the
+only route that can give Fabric at play time on a modern version - and the three things it still
+needs (an LWJGL 3 JNI layer in C over emscripten's GLFW 3/GLES 3/OpenAL, a JDK 25 port of the recipe,
+and a performance measurement before it is offered next to the compiled row).
+
+For the compiled row, two pieces of "supports the latest snapshot" are already here:
+
+```sh
+python3 tools/aot_profile.py --version 26.4-snapshot-4 --fetch --from-nearest engine/port/versions --write
+python3 tools/aot_shell.py --client dist/26.4-snapshot-4.html --out dist/boot.html --remove '#splash'
+```
+
+The first turns Mojang's metadata and the version.json inside the client jar into the per-version
+profile an engine needs - which is why "it only supports three versions" was a missing tool, not a
+missing capability. The second puts a loading screen that matches the game's own in front of any
+compiled client, and takes that client's splash out.
+
 ### Adding an engine
 
 ```json
@@ -153,6 +174,8 @@ tools/jvm_route.py      which versions a browser JVM can run, from their own met
 tools/launchplan.py     the launch plan: rows, modes (vanilla/Fabric/Legacy Fabric), mods, classpath
 tools/build_loader.py   builds our own loader jar (Java 8, reproducible) from mods/loader-jvm
 tools/build_mods.py     builds the example mods against that jar
+tools/aot_profile.py    a version profile for any version (incl. the newest snapshot) from Mojang's own data
+tools/aot_shell.py      puts the vanilla-styled boot screen in front of a compiled client, and takes its own out
 tools/fabric.py         what both Fabrics support (modern meta + Legacy Fabric meta)
 tools/acquire.py        client jar + asset index, checksums, work/ only
 tools/update.py         the updater: what is new, what to queue, the page's manifest
@@ -164,6 +187,7 @@ mods/loader-jvm/        our loader: the plan reader, the mod door, the Fabric ha
 mods/                   the Fabric side: a build-time loader for ahead-of-time clients, the
                         shim layer, the mod scanner, and a README on what "injector" means here
 site/                   the launcher page and the launch page (Minecraft-launcher styled)
+site/boot/shell.html    the boot screen: the loading screen the game itself draws, for both engines
 state.json              the catalog's memory: every version seen, and what it needs
 targets.json            the versions this project is supposed to cover
 tests/                  offline tests: pipeline, launch plans, the pages' contracts, the loader
