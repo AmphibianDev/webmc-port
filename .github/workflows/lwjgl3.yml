@@ -200,13 +200,14 @@ jobs:
             echo "# the browser's own log, last 400 lines"
             tail -400 /tmp/chrome.log 2>/dev/null
           } >> /tmp/shimlog/report.md
-          git checkout -q -B shim-log
+          git checkout -q --orphan shim-log-report
+          git rm -r -q --cached . >/dev/null 2>&1 || true
           mkdir -p build-log
           cp /tmp/shimlog/report.md build-log/shim-report.md
           git add -f build-log/shim-report.md
           git -c user.name="webmc-port-bot" -c user.email="webmc-port-bot@users.noreply.github.com" \
             commit -q -m "shim log: $(date -u +%Y-%m-%dT%H:%M:%SZ)" || echo "nothing to record"
-          git push -q -f origin refs/heads/shim-log || echo "::warning::could not push the shim log"
+          git push -q -f origin HEAD:refs/heads/shim-log || echo "::warning::could not push the shim log"
 
       - uses: actions/upload-artifact@v7
         with:

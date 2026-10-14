@@ -419,14 +419,15 @@ jobs:
           echo "$STATUS" > build-log/status.txt
           cp /tmp/prepare.log build-log/prepare.log 2>/dev/null || true
           cp /tmp/shell-check.txt build-log/shell-check.txt 2>/dev/null || true
-          # A dedicated branch, created from wherever HEAD is: the publish step may have committed the
-          # catalog update on the same HEAD and pushed it to main, and pushing *that* to build-log is how
-          # a successful run wiped its own report off the branch.
-          git checkout -q -B build-log
+          # An orphan branch, every time. Anything derived from HEAD can carry the commit the publish
+          # step pushed to main - which is how a successful run once replaced its own report on this
+          # branch with a catalog commit. An orphan has nothing but the log in it.
+          git checkout -q --orphan build-log-report
+          git rm -r -q --cached . >/dev/null 2>&1 || true
           git add -f build-log
           git -c user.name="webmc-port-bot" -c user.email="webmc-port-bot@users.noreply.github.com" \
             commit -q -m "snapshot log: $(cat build-log/status.txt)" || echo "nothing to record"
-          git push -q -f origin refs/heads/build-log || echo "::warning::could not push the log branch"
+          git push -q -f origin HEAD:refs/heads/build-log || echo "::warning::could not push the log branch"
 
       - uses: actions/upload-artifact@v7
         if: always()

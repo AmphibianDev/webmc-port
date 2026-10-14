@@ -79,7 +79,8 @@ def version_json(jar: pathlib.Path) -> dict:
                      f"(a jar this old is also not a client the profile system can describe)")
 
 
-def nearest_profile(versions_dir: pathlib.Path, version_id: str) -> tuple[str, dict] | None:
+def nearest_profile(versions_dir: pathlib.Path, version_id: str,
+                    allow_newer: bool = False) -> tuple[str, dict] | None:
     """The existing profile closest to this version, which is where the port's own fields come from.
 
     Closeness is the version number, not the date: 26.4-snapshot-1 is nearer 26.3 than 1.21.11 is,
@@ -101,8 +102,15 @@ def nearest_profile(versions_dir: pathlib.Path, version_id: str) -> tuple[str, d
     if not candidates:
         return None
     wanted = launchplan.version_key(version_id)
-    return min(candidates, key=lambda pair: (abs(launchplan.version_key(pair[0])[0][0] - wanted[0][0]),
-                                             abs(launchplan.version_key(pair[0])[0][1] - wanted[0][1])))
+    older = [pair for pair in candidates if launchplan.version_key(pair[0])[0] <= wanted[0]]
+    pool = older or (candidates if allow_newer else [])
+    if not pool:
+        return None
+    # The nearest, by version number rather than by date: a 1.21.4 snapshot belongs with 1.21.11's
+    # patchers, not with 1.12.2's.
+    return min(pool, key=lambda pair: (abs(launchplan.version_key(pair[0])[0][0] - wanted[0][0]),
+                                       abs(launchplan.version_key(pair[0])[0][1] - wanted[0][1]),
+                                       abs(launchplan.version_key(pair[0])[0][2] - wanted[0][2])))
 
 
 def build(version_id: str, entry: dict, document: dict, jar_version: dict, nearest: dict | None,
