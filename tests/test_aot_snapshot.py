@@ -306,7 +306,8 @@ def test_fixups(tmp: pathlib.Path) -> None:
         check(f"each entry names a file, an anchor, a replacement and a reason ({entry.get('file', '?')[-30:]})",
               all(entry.get(key) for key in ("file", "find", "replace", "why")))
         check("and is scoped to a version range rather than applying everywhere",
-              entry.get("since") or entry.get("versions") not in (None, "*"),
+              any(entry.get(key) for key in ("since", "until"))
+              or entry.get("versions") not in (None, "*"),
               str({k: entry.get(k) for k in ("since", "until", "versions")}))
 
 
