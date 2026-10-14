@@ -90,7 +90,7 @@ Each step is verifiable, and the first two do not depend on the runtime existing
    splash by id, and hands over on the first OpenGL draw call - so no engine has to cooperate.
 3. **Fabric mods, baked** - already implemented here, and the plan now says so instead of implying
    runtime mods.
-4. Then one build per version, which is the 45-minute job in `build-client.yml`; a snapshot needs a
+4. Then one build per version, which is the 45-minute job in `build-snapshot.yml`; a snapshot needs a
    profile (step 1) and whatever source overrides that version's client needs.
 
 **The wasm-JVM row (this is what "a loader that runs Java 25" means):**

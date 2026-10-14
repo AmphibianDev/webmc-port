@@ -4,7 +4,7 @@
     python3 tests/test_workflows.py
 
 The reason this test exists is in the tool's own docstring: a duplicated YAML key made
-`.github/workflows/build-client.yml` unparseable, and GitHub's answer was a failed run in the same
+the build workflow unparseable, and GitHub's answer was a failed run in the same
 second with **no jobs and no logs**. Two days of dispatches died that way. So the fixtures here are the
 two halves of that lesson:
 
@@ -180,13 +180,12 @@ def test_the_real_workflows() -> None:
         check(f"{path.name} is valid", problems == [], "; ".join(problems))
     # The one that broke, specifically: an engine checkout that can be overridden must be one key.
     # Wherever the checkout happens, it is one key: two of them is what made the file unparseable.
-    for name in ("build-snapshot.yml", "build-client.yml"):
-        text = (ROOT / ".github" / "workflows" / name).read_text()
-        check(f"{name}: the engine checkout is a single repository key",
-              text.count("repository:") <= 1, str(text.count("repository:")))
-    caller = (ROOT / ".github" / "workflows" / "build-client.yml").read_text()
-    check("and the older entry point calls the one implementation instead of copying it",
-          "uses: ./.github/workflows/build-snapshot.yml" in caller, caller[:200])
+    text = (ROOT / ".github" / "workflows" / "build-snapshot.yml").read_text()
+    check("the engine checkout is a single repository key", text.count("repository:") <= 1,
+          str(text.count("repository:")))
+    check("and there is exactly one build workflow: a second one is a second thing to break",
+          len(list((ROOT / ".github" / "workflows").glob("*build*.yml"))) == 1,
+          str(sorted(p.name for p in (ROOT / ".github" / "workflows").glob("*build*.yml"))))
 
 
 def main() -> int:

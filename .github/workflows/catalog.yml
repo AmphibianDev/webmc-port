@@ -30,7 +30,7 @@ permissions:
 
 concurrency:
   # Fast, page-refreshing work: a newer push should replace an older run. The long compile lives in
-  # build-client.yml precisely so this can stay aggressive without killing a build.
+  # build-snapshot.yml precisely so this can stay aggressive without killing a build.
   group: webmc-port-catalog
   cancel-in-progress: true
 

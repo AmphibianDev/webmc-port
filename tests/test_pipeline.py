@@ -398,9 +398,8 @@ def main() -> int:
     check("publishing nothing is a warning rather than a silent green job",
           'echo "::warning::nothing large enough to publish"' in workflow
           or 'echo "::error::the toolchain produced no client' in workflow)
-    caller = (ROOT / ".github" / "workflows" / "build-client.yml").read_text()
-    check("and the older build entry point drives the same single implementation",
-          "uses: ./.github/workflows/build-snapshot.yml" in caller)
+    check("and a tag is what starts a build by hand",
+          'tags: ["build-*"]' in workflow)
 
     # The workspace lineage reads sounds.epk unconditionally and the job must create it with the engine's
     # own packager. That engine is disabled on licence grounds, so the requirement is recorded with it and

@@ -4,7 +4,7 @@
     python3 tools/workflow_lint.py                 # every workflow in .github/workflows
     python3 tools/workflow_lint.py --file x.yml --json
 
-Why this exists: on 2026-10-11 `.github/workflows/build-client.yml` grew a second `repository:` key in
+Why this exists: on 2026-10-11 the build workflow grew a second `repository:` key in
 the same `with:` block - a merge accident - and GitHub answered every push by creating a failed run
 **with no jobs**, in the same second, named after the file path. Nothing in the build was broken; the
 file simply could not be parsed. Two days of dispatches died that way and the logs could not say why,
