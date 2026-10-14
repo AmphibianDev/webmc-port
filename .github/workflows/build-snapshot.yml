@@ -236,7 +236,8 @@ jobs:
           echo "engine loading UI to replace: ${REMOVE:-none found}"
           OUT="dist/$(basename "$CLIENT" .html)-webmc.html"
           mkdir -p dist
-          python3 tools/aot_shell.py --client "$CLIENT" --out "$OUT" ${REMOVE:+--remove "$REMOVE"}
+          python3 tools/aot_shell.py --client "$CLIENT" --scan-brand
+          python3 tools/aot_shell.py --client "$CLIENT" --out "$OUT" --strip-brand ${REMOVE:+--remove "$REMOVE"}
           ls -la dist/
 
       - name: Publish the client and record it

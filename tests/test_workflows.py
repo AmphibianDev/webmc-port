@@ -16,6 +16,7 @@ two halves of that lesson:
 
 from __future__ import annotations
 
+import json
 import pathlib
 import sys
 import tempfile
@@ -188,12 +189,38 @@ def test_the_real_workflows() -> None:
           str(sorted(p.name for p in (ROOT / ".github" / "workflows").glob("*build*.yml"))))
 
 
+def test_credits() -> None:
+    print("\nthe credits ledger and the engine registry agree")
+    ports = json.loads((ROOT / "ports.json").read_text())
+    credits = (ROOT / "CREDITS.md").read_text()
+    engines = ports["engines"]
+    check("there is a credits file", bool(credits.strip()))
+    missing_licence = [e["id"] for e in engines if not e.get("license") and not e.get("license_note")]
+    check("every engine says what its licence is, or why it has none",
+          not missing_licence, str(missing_licence))
+    lowered = credits.lower()
+    no_credit = [e["id"] for e in engines
+                 if e.get("repo") and e["repo"].split("/")[0].lower() not in lowered]
+    check("every borrowed engine's owner is named in CREDITS.md",
+          not no_credit, str(no_credit))
+    unlicensed = [e["id"] for e in engines if not e.get("license")]
+    check("and each unlicensed one carries the risk in its own words",
+          all("no licence file" in (e.get("license_note") or e.get("blocked_by") or "")
+              for e in engines if e["id"] in unlicensed), str(unlicensed))
+    check("the credits file says Minecraft is not ours",
+          "not an official minecraft product" in credits.lower(),
+          "CREDITS.md must say the client is Mojang's and this is not an official product")
+    check("and that branding is stripped rather than hidden",
+          "--strip-brand" in credits and "branding" in credits)
+
+
 def main() -> int:
     with tempfile.TemporaryDirectory() as scratch:
         test_scan()
         test_triggers()
         test_lint(pathlib.Path(scratch))
         test_the_real_workflows()
+        test_credits()
     print(f"\n{FAILURES} workflow test(s) FAILED" if FAILURES else "\nworkflow tests passed")
     return 1 if FAILURES else 0
 

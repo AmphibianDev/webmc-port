@@ -163,6 +163,73 @@ def build(client: str, style: str, dirt: pathlib.Path | None, remove: list[str],
     return html, report
 
 
+# Names that belong to the engines we borrow rather than to this project. Credited in CREDITS.md, and
+# stripped from the page (not from the compiled code - see strip_brand for why).
+BRANDS = ("eaglercraft", "eagler", "lax1dude", "gaius", "typetheory", "browsercraft", "eaglerforge",
+          "resent", "koneclient")
+
+
+def brand_hits(client: str, brands: tuple = BRANDS) -> dict:
+    """Where borrowed branding appears, by context: ids/classes, visible text, and everything else."""
+    lower = client.lower()
+    hits = {"ids": [], "titles": [], "scripts": [], "other": []}
+    for brand in brands:
+        if brand not in lower:
+            continue
+        if f'id="{brand}' in lower or f'class="{brand}' in lower or f'{brand}-' in lower:
+            hits["ids"].append(brand)
+        for tag in ("title", "h1", "h2", "h3"):
+            for match in re.findall(rf"<{tag}[^>]*>([\s\S]{{0,200}}?)</{tag}>", client, re.I):
+                if brand in match.lower():
+                    hits["titles"].append(f"{tag}: {match.strip()[:60]}")
+        if re.search(rf"<script[^>]*>[\s\S]*?{re.escape(brand)}", client, re.I):
+            hits["scripts"].append(brand)
+        hits["other"].append(brand)
+    return {key: sorted(set(value)) for key, value in hits.items()}
+
+
+def strip_brand(client: str, brands: tuple = BRANDS, log=print) -> tuple[str, dict]:
+    """Take borrowed branding out of the *page*: titles, headings, and elements named after it.
+
+    What this deliberately does not do: rewrite the compiled JavaScript or wasm. A brand token inside
+    somebody else's code is often an identifier, a field name or part of a URL, and blind replacement
+    breaks the client - so those occurrences stay and CREDITS.md is what attributes them. The page is
+    what a player sees, and that is what can be made ours without lying about anything.
+    """
+    report = {"titles_cleared": 0, "ids": [], "left_in_code": 0}
+
+    def clear_tag(text: str, tag: str) -> str:
+        """Empty a title/heading whose text names somebody else's product; leave the tag in place."""
+        pattern = re.compile(rf"<{tag}([^>]*)>([\s\S]{{0,200}}?)</{tag}>", re.I)
+
+        def replace(match: re.Match) -> str:
+            inner = match.group(2)
+            if any(brand in inner.lower() for brand in brands):
+                report["titles_cleared"] += 1
+                return f"<{tag}{match.group(1)}></{tag}>"
+            return match.group(0)
+
+        return pattern.sub(replace, text)
+
+    html = client
+    for tag in ("title", "h1", "h2", "h3"):
+        html = clear_tag(html, tag)
+    for brand in brands:
+        for element_id in re.findall(rf'id="([\w-]*{brand}[\w-]*)"', html, re.I):
+            html, what = remove_element(html, "#" + element_id)
+            report["ids"].append(what)
+        for class_name in re.findall(rf'class="([^"]*{brand}[^"]*)"', html, re.I):
+            report["ids"].append(f"left the class {class_name!r}: removing one safely needs a parser")
+    heads = brand_hits(html, brands)
+    report["left_in_code"] = len(heads["scripts"]) + len(heads["other"])
+    if report["titles_cleared"]:
+        log(f"  branding: cleared {report['titles_cleared']} title/heading(s) that were not ours")
+    if heads["other"]:
+        log(f"  branding: {len(heads['other'])} name(s) still appear inside compiled code "
+            f"({', '.join(heads['other'][:4])}) - credited in CREDITS.md instead of rewritten")
+    return html, report
+
+
 def check(client: str, log=print) -> dict:
     """What this client would need, without changing it."""
     ids = re.findall(r'id="([\w-]+)"', client)
@@ -201,6 +268,12 @@ def main(argv=None) -> int:
     parser.add_argument("--shell-template", action="store_true",
                         help="write the shell as a page template for a wasm-JVM kit (@SCRIPT@ intact)")
     parser.add_argument("--check", action="store_true", help="report, change nothing")
+    parser.add_argument("--scan-brand", action="store_true",
+                        help="report which borrowed names are still on the page")
+    parser.add_argument("--strip-brand", action="store_true", default=True,
+                        help="remove borrowed branding from the page (default; --no-strip-brand to keep)")
+    parser.add_argument("--no-strip-brand", dest="strip_brand", action="store_false")
+    parser.add_argument("--brands", default="", help="comma-separated extra names to strip")
     parser.add_argument("--print", action="store_true")
     args = parser.parse_args(argv)
 
@@ -228,8 +301,16 @@ def main(argv=None) -> int:
     client = client_path.read_text(errors="replace")
 
     print(f"{client_path}")
+    brands = tuple(BRANDS) + tuple(b.strip().lower() for b in args.brands.split(",") if b.strip())
     if args.check:
         check(client)
+        if args.scan_brand:
+            hits = brand_hits(client, brands)
+            count = sum(len(value) for value in hits.values())
+            print(f"borrowed branding on this page: {count} hit(s)")
+            for key, value in hits.items():
+                if value:
+                    print(f"  {key}: {', '.join(str(v)[:60] for v in value[:6])}")
         return 0
 
     dirt = pathlib.Path(args.dirt) if args.dirt else None
@@ -238,6 +319,9 @@ def main(argv=None) -> int:
         return 2
     html, report = build(client, args.style, dirt, [s for s in args.remove.split(",") if s.strip()],
                          not args.no_hide_on_gl)
+    if args.strip_brand:
+        html, branding = strip_brand(html, brands)
+        report["branding"] = branding
 
     if args.out:
         out = pathlib.Path(args.out)

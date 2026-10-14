@@ -150,6 +150,56 @@ def test_inject(tmp: pathlib.Path) -> None:
         check("it refuses rather than writing a broken file", "<body>" in str(error), str(error))
 
 
+BRANDED = """<!DOCTYPE html><html><head><title>Eaglercraft 26.2</title></head>
+<body>
+<div id="eaglercraft-splash"><h1>Eaglercraft</h1><p>Powered by Eaglercraft</p></div>
+<div id="boot-overlay"></div>
+<canvas id="game"></canvas>
+<script>var EaglercraftVersion = "1.0"; // Eaglercraft runtime</script>
+</body></html>
+"""
+
+
+def test_branding(tmp: pathlib.Path) -> None:
+    print("\nborrowed branding: reported, stripped from the page, credited in the file")
+    hits = aot_shell.brand_hits(BRANDED)
+    check("the scan finds it in the title and the headings", hits["titles"], str(hits["titles"]))
+    check("and in element ids", hits["ids"] or any("eaglercraft" in i for i in hits["ids"]), str(hits["ids"]))
+    check("and in the compiled code, where it cannot be safely rewritten", hits["scripts"],
+          str(hits["scripts"][:3]))
+    check("plain text has nothing to report", aot_shell.brand_hits("<html><body>Loading...</body></html>")
+          == {"ids": [], "titles": [], "scripts": [], "other": []})
+
+    lines: list[str] = []
+    stripped, report = aot_shell.strip_brand(BRANDED, log=lines.append)
+    check("the title no longer names somebody else's product",
+          "Eaglercraft" not in stripped.split("</title>")[0], stripped.split("</title>")[0][:80])
+    check("and the sentences in the page are not somebody else's either",
+          "Powered by Eaglercraft" not in stripped and "Eaglercraft</h1>" not in stripped)
+    check("but the id is removed rather than left empty-handed",
+          "eaglercraft-splash" not in stripped, "the element should be gone")
+    check("the client's own script is untouched: rewriting it would break the client",
+          'var EaglercraftVersion = "1.0";' in stripped)
+    check("and the run says what it could not do", report["left_in_code"] >= 1, str(report))
+    check("with a line for the log", any("credited in CREDITS.md" in line for line in lines), str(lines))
+
+    out = tmp / "stripped.html"
+    code = aot_shell.main(["--client", str(tmp / "branded.html"), "--out", str(out), "--remove", "#boot-overlay"])
+    check("the command strips branding by default", code == 0 and out.is_file())
+    if out.is_file():
+        check("and the written file has none of it on the page",
+              "Eaglercraft</h1>" not in out.read_text(), out.read_text()[:120])
+        check("while the credit ledger is where attribution lives",
+              (ROOT / "CREDITS.md").is_file()
+              and "Eaglercraft" in (ROOT / "CREDITS.md").read_text())
+    check("--no-strip-brand keeps it, for a build that must not be altered",
+          aot_shell.main(["--client", str(tmp / "branded.html"), "--out", str(out),
+                          "--no-strip-brand"]) == 0
+          and "Eaglercraft</h1>" in out.read_text())
+    branded = tmp / "branded.html"
+    branded.write_text(BRANDED)
+
+
 def test_shell_template(tmp: pathlib.Path) -> None:
     print("\nthe same file as a wasm-JVM page shell")
     out = tmp / "shell.html"
@@ -184,6 +234,8 @@ def main() -> int:
         test_shell()
         test_check(tmp)
         test_inject(tmp)
+        (tmp / "branded.html").write_text(BRANDED)
+        test_branding(tmp)
         test_shell_template(tmp)
         test_command_line(tmp)
     print(f"\n{FAILURES} boot screen test(s) FAILED" if FAILURES else "\nboot screen tests passed")
