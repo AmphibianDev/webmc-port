@@ -215,6 +215,32 @@ engine whose patches match that client:
 | 1.21.11 / 26.x releases | MIT engine (vanilla only) | our engine adds the mods |
 | 26.4+ snapshots | ❌ renderer | our engine, after the renderer port |
 
+## How a mod set would reach a compiled 1.21.x client
+
+The mods folder works at play time on the 1.0 - 1.12.2 row (a real JVM is running). On a compiled row
+there is no class loader afterwards, so a mod has to be inside the client before TeaVM sees it. Three
+routes, in the order worth trying, and the engine decides which are open:
+
+1. **The engine's own patch chain** (the Gaius row). Its patchers are Java tools that rewrite the client
+   before the compile (`dev.gaius.tools.*Patcher`, driven by `extraPatchers` in the version profile), and
+   the engine compiles the client's decompiled sources plus a per-version override tree. A mod set can go
+   in the same way a patch does: an overlay **sourced from the mod**, plus a generated patcher that calls
+   the mod's entrypoint from the client's init. `mods/build_modded_workspace.py` already plans, prunes and
+   hooks a Fabric mod set for the workspace lineage - the work here is a generator that emits *this*
+   engine's patcher instead of that lineage's hook file, plus the classpath wiring so the mod's classes
+   are compiled into the client.
+2. **Our own engine**, where the hook layer is ours from the start: the mods manifest in `mods/` is
+   already the input, and the bake is a step in the same pipeline (`mods/loader.py` is the reference for
+   what the bake has to do: read `fabric.mod.json`, prune mixins whose target is not in this client,
+   shim the Fabric API modules the set uses, generate one entrypoint call per mod).
+3. **The real-JVM rows instead**, for anyone who wants Fabric *at play time*: 1.12.2 and older today, and
+   1.13 - 1.20.4 once the LWJGL 3 shim draws a frame. Those are the versions where "drop a jar in and it
+   loads" is true rather than baked.
+
+What none of them can do: a mod with native libraries, one that generates bytecode at runtime, or one
+whose mixins rewrite a class in a way the ahead-of-time compiler cannot see. The scanner says which of
+those a jar is (`mods/portscan.py`) before a 45-minute build finds out.
+
 ## What this project will not do
 
 * **No streaming.** A session on a server is a different product, and running one on CI is what got an
