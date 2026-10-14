@@ -127,12 +127,21 @@ def main() -> int:
     print("\nthe updater")
     with tempfile.TemporaryDirectory() as tmp:
         state = pathlib.Path(tmp) / "state.json"
+        # The updater writes the *deployed* manifest unless it is told otherwise. It used to be told
+        # nothing, so running the test suite replaced site/manifest.json with a manifest of fixture
+        # versions - and one of those got committed, which is what put a "27.0" release dated in the
+        # future on the live launcher. The test writes to a scratch file, and checks below that the
+        # deployed one is untouched.
+        page_manifest = pathlib.Path(tmp) / "manifest.json"
+        deployed_before = (ROOT / "site" / "manifest.json").read_bytes()
         code, output = run("tools/update.py", "--manifest", str(FIXTURE), "--state", str(state),
                            "--kinds", "release,snapshot", "--client-urls",
-                           str(ROOT / "fixtures" / "client-urls.json"), "--write")
+                           str(ROOT / "fixtures" / "client-urls.json"), "--out", str(page_manifest),
+                           "--write")
         check("it runs against the fixture", code == 0, output[-200:])
         check("it wrote a state file", state.is_file())
-        check("it wrote the page's manifest", (ROOT / "site" / "manifest.json").is_file())
+        check("it wrote a page manifest", page_manifest.is_file()
+              and len(json.loads(page_manifest.read_text())["versions"]) >= 3)
         saved = json.loads(state.read_text())
         check("it recorded every version it saw", len(saved["seen"]) >= 14, str(len(saved["seen"])))
         check("it queued the versions that need a port",
@@ -145,7 +154,8 @@ def main() -> int:
         before_urls = {entry["id"]: entry.get("jar_url") for entry in json.loads(state.read_text())["catalog"]
                        if entry.get("verdict") == "launch"}
         run("tools/update.py", "--manifest", str(FIXTURE), "--state", str(state),
-            "--kinds", "release,snapshot", "--write")   # deliberately without --client-urls
+            "--kinds", "release,snapshot", "--out", str(page_manifest),
+            "--write")   # deliberately without --client-urls
         after_urls = {entry["id"]: entry.get("jar_url") for entry in json.loads(state.read_text())["catalog"]
                       if entry.get("verdict") == "launch"}
         check("an offline refresh keeps the jar url it already knew",
@@ -154,7 +164,7 @@ def main() -> int:
               all(entry.get("jar_url_source") in ("fixture", "mojang")
                   for entry in json.loads(state.read_text())["catalog"] if entry.get("jar_url")))
         run("tools/update.py", "--manifest", str(FIXTURE), "--state", str(state), "--kinds",
-            "release,snapshot", "--strict-urls", "--write")
+            "release,snapshot", "--strict-urls", "--out", str(page_manifest), "--write")
         strict = {entry["id"]: entry.get("jar_url") for entry in json.loads(state.read_text())["catalog"]
                   if entry.get("verdict") == "launch"}
         check("a strict run drops test urls instead of publishing them",
@@ -163,7 +173,7 @@ def main() -> int:
         # a second run with nothing new must not add anything
         before = json.loads(state.read_text())
         code, output = run("tools/update.py", "--manifest", str(FIXTURE), "--state", str(state),
-                           "--kinds", "release", "--write")
+                           "--kinds", "release", "--out", str(page_manifest), "--write")
         after = json.loads(state.read_text())
         check("a second run finds nothing new", "nothing new" in output or len(after["queued"]) == len(before["queued"]))
 
@@ -175,10 +185,14 @@ def main() -> int:
         newer = pathlib.Path(tmp) / "manifest-next.json"
         newer.write_text(json.dumps(extra))
         code, output = run("tools/update.py", "--manifest", str(newer), "--state", str(state),
-                           "--client-urls", str(ROOT / "fixtures" / "client-urls.json"), "--write")
+                           "--client-urls", str(ROOT / "fixtures" / "client-urls.json"),
+                           "--out", str(page_manifest), "--write")
         check("a new release is noticed", "27.0" in output and code == 0)
         final = json.loads(state.read_text())
         check("and queued for a port", any(entry["id"] == "27.0" for entry in final["queued"]))
+        check("the deployed manifest was never touched by the tests",
+              (ROOT / "site" / "manifest.json").read_bytes() == deployed_before,
+              "a test run must not rewrite what the launcher serves")
 
     print("\nacquisition")
     code, output = run("tools/acquire.py", "--version", "26.2", "--manifest", str(FIXTURE), "--dry-run")

@@ -128,9 +128,18 @@ def main() -> int:
     print("the launch page and the launcher agree on this")
     page = (ROOT / "site" / "play.html").read_text()
     launcher = (ROOT / "site" / "index.html").read_text()
-    check("the launch page reads the vendored classpath", "libs/${version}.json" in page)
-    check("it still works without one, and says so",
-          "no vendored library set for this version" in page)
+    # The plan names the vendored set (tools/launchplan.py writes libs/<version>.json and checks the
+    # file is really there), and the page reads the classpath out of it. Two files, one decision.
+    plan_tool = (ROOT / "tools" / "launchplan.py").read_text()
+    check("the launch plan points at the version's vendored classpath",
+          'f"libs/{version_id}.json"' in plan_tool and '"libs_ready": libs_index.is_file()' in plan_tool)
+    check("the launch page reads that classpath and installs every jar in it",
+          "launch.libsIndex" in page and "index.classpath" in page and "launch.libs =" in page)
+    check("a version whose libraries are not vendored is marked not playable, with the reason",
+          'plan["playable"] = bool(client["url"]) and plan["libs_ready"]' in plan_tool
+          and "its own libraries are not deployed yet" in plan_tool)
+    check("and the page says what a missing classpath costs instead of failing silently",
+          "classpath unavailable" in page and "missing class" in page)
     check("the launcher passes the version's metadata url", "&meta=" in launcher)
     check("and warns when a link only downloads", "play_served_as" in launcher)
 

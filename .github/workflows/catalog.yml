@@ -49,6 +49,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 tests/test_pipeline.py
+          python3 tests/test_launchplan.py
           node tests/test_site.mjs
 
       - name: What the catalog says right now
@@ -101,30 +102,48 @@ jobs:
           cp site/loader-play.html site/loader/play.html
           ls -la site/loader site/loader/natives | head -12
 
+      - name: Build our own loader, and the example mod
+        # The one jar on the critical path that is our code: it starts a vanilla mod, and it is what
+        # tells Fabric where the game and the mods are. Java 8 bytecode, so the same jar runs in
+        # CheerpJ's Java 8 mode (the LWJGL 2 clients) and its 17 mode (1.13 - 1.20.4).
+        run: |
+          set -euo pipefail
+          python3 tools/build_loader.py
+          python3 tools/build_mods.py || echo "::warning::the example mod did not build; the manifest lists it and the launcher reports it as missing"
+          python3 tests/test_loader.py
+
       - name: Check that every play link is alive and servable
         run: |
           python3 tools/check_links.py --state state.json --write --limit 60 \
             || echo "::warning::link check did not finish"
 
-      - name: Refresh what Fabric supports (the launcher's Fabric column)
-        # Two meta calls cover the whole catalogue. If the meta is down the fixture from the last
-        # successful refresh is used, so the page degrades to slightly stale Fabric data instead of
-        # losing the column.
+      - name: Refresh what Fabric supports (the launcher's Fabric column, both Fabrics)
+        # Two meta calls cover the whole catalogue, and two more cover Legacy Fabric - which is the
+        # only Fabric the LWJGL 2 clients (1.8.9 - 1.12.2) have. If a meta is down the committed copy
+        # from the last successful refresh is kept, so the page degrades to slightly stale data.
         run: |
           set -euo pipefail
-          python3 tools/fabric.py --out site/fabric.json --print \
+          python3 tools/fabric.py --out site/fabric.json --legacy-out site/legacy-fabric.json --print \
             || { echo "::warning::fabric meta unreachable; keeping the committed site/fabric.json"; \
                  cp fixtures/fabric.json site/fabric.json; }
 
       - name: Update the state and the page's manifest
         run: python3 tools/update.py --strict-urls --write
 
+      - name: Write the launch plans and stage the mods folder
+        # Everything a launch needs, per version and per mode, as data. The page fetches one plan for
+        # the one version being started, and the mod jars it names are copied out of mods/jars/ into
+        # the deployed site (they are git-ignored: a mod jar is somebody else's binary).
+        run: |
+          set -euo pipefail
+          python3 tools/launchplan.py --write --stage site/mods --limit 40
+
       - name: Keep the catalog in the repository
         run: |
           set -euo pipefail
           git config user.name "webmc-port-bot"
           git config user.email "webmc-port-bot@users.noreply.github.com"
-          git add state.json site/manifest.json site/fabric.json
+          git add state.json site/manifest.json site/fabric.json site/legacy-fabric.json
           git diff --cached --quiet && echo "catalog unchanged" && exit 0
           git commit -m "catalog: refresh the version list"
           for attempt in 1 2 3; do

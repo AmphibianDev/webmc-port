@@ -13,3 +13,9 @@ site/libs/
 
 # the loader page CI builds for GitHub Pages: compiled classes and a jar, never committed
 site/loader/
+
+# the launch plans and the mods they name: derived, deployed, never committed. site/mods holds
+# third-party mod jars copied out of mods/jars/ by tools/launchplan.py --stage.
+site/launch.json
+site/plans/
+site/mods/

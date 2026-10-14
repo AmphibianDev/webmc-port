@@ -13,6 +13,8 @@ is why there is no input lag: nothing travels, nothing is encoded, nothing is re
 | --- | --- | --- |
 | Discovery | `tools/versions.py` | what exists (release, snapshot, old beta/alpha) and what it needs |
 | Verdict | `tools/plan.py` + `ports.json` | can it be **built**, is there a **prebuilt** client, or does it **need a port** |
+| Which row | `tools/jvm_route.py` | can a **browser JVM** run it, does it need our **LWJGL 3 shim**, or is it **Java 21+** (compiled) |
+| Launch plan | `tools/launchplan.py` | for each version and mode (vanilla / Fabric / Legacy Fabric): which class, which jars, in what order, from where |
 | Acquisition | `tools/acquire.py` | fetch the official client jar + asset index into `work/` (checksums verified) |
 | Build | the engine named in `ports.json` | compile the client for the web (Gaius: official bytecode → WebAssembly) |
 | Catalog | `tools/update.py` | record what is new, queue what has no port, write the page's manifest |
@@ -43,7 +45,7 @@ An engine compiles — or *runs* — a client for the web. This is the list `por
 
 | Engine | Versions | How it works | Textures | Mods |
 | --- | --- | --- | --- | --- |
-| **cheerpj-unmodified** (CheerpJ + cheerpj-natives) | 1.0 → **1.12.2** (the LWJGL 2 era) | **nothing is compiled and nothing is copied**: the visitor's browser fetches the official jar from `piston-data.mojang.com`, CheerpJ runs it with the JS natives on `java.library.path`, main class `net.minecraft.client.Minecraft` | **Mojang's, untouched** | ✅ real `.jar`s at runtime — it is a real JVM |
+| **cheerpj-unmodified** (CheerpJ + cheerpj-natives) | 1.0 → **1.12.2** (the LWJGL 2 era) | **nothing is compiled and nothing is copied**: the visitor's browser fetches the official jar from `piston-data.mojang.com`, CheerpJ runs it with the JS natives on `java.library.path`, main class `net.minecraft.client.Minecraft` | **Mojang's, untouched** | ✅ real `.jar`s at runtime — it is a real JVM: **Fabric** mods through Legacy Fabric, or our own loader's `webmc.mod.json` mods |
 | **browsercraft** (the reference implementation) | 1.2.5 | the CheerpJ team's own demo, Apache-2.0, Svelte UI; the pattern everything above copies | Mojang's, untouched | runtime |
 | **eagler-workspace-26.2** | 26.2 | Gradle + `wasm-toolchain/` node scripts compile the patched official source into one HTML | official resource overlay | ✅ compiled in via source hooks |
 | **eaglercraftx** | 1.5.2, 1.8.8, 1.12.2 | TeaVM builds, the tuned-performance route on the web | official assets | JS mod API |
@@ -72,6 +74,20 @@ Coverage is bounded by the LWJGL implementation: LWJGL **2** covers everything u
 JVM-in-page route for now. `cheerpj-natives` describes its LWJGL support as partial, so the two
 versions with public proof (1.2.5 via browsercraft, 1.6.4+Forge via WebForge) are marked
 `proven`, and everything else on that row carries that caveat onto its card.
+
+## Vanilla or Fabric, and the mods folder
+
+The launcher offers the loader a version can actually have, and the mods the repository has for it:
+Legacy Fabric on 1.3 - 1.13.2, modern Fabric from 1.14, and nothing where a wall is known to hold
+(1.13 - 1.20.4 waits for the LWJGL 3 shim; 1.20.5+ needs a compiled client).
+
+Everything that decides a launch is data in `site/launch.json` + `site/plans/<version>.json`, and the
+only code on the critical path that is ours is `webmc.loader.WebMcLoader` - a few kilobytes of Java 8
+on the classpath in front of the game. It starts Fabric with the properties Fabric reads, or, in
+vanilla, starts our own mod door (`mods/mods.json`, `mods/jars/`).
+
+**`LOADER.md` is the full account** - the plan format, the loader's two modes, what is verified
+without a browser, and the two constraints that are measured rather than assumed.
 
 ### Adding an engine
 
@@ -133,16 +149,25 @@ version list, writes two small files, and deploys a page.
 ports.json              which engine can build which version, and how
 tools/versions.py       version list parsing, classification, sorting
 tools/plan.py           verdicts: build / reuse / needs-port
+tools/jvm_route.py      which versions a browser JVM can run, from their own metadata
+tools/launchplan.py     the launch plan: rows, modes (vanilla/Fabric/Legacy Fabric), mods, classpath
+tools/build_loader.py   builds our own loader jar (Java 8, reproducible) from mods/loader-jvm
+tools/build_mods.py     builds the example mods against that jar
+tools/fabric.py         what both Fabrics support (modern meta + Legacy Fabric meta)
 tools/acquire.py        client jar + asset index, checksums, work/ only
 tools/update.py         the updater: what is new, what to queue, the page's manifest
 tools/targets.py        verdicts for the versions this project is meant to cover
 tools/lwjgl_surface.py  measures the LWJGL 3 gap (the one layer between us and 1.13-1.20.4)
+mods/mods.json          the mods folder's manifest: what each jar is and which versions it fits
+mods/jars/              drop-in jars (git-ignored: somebody else's binary)
+mods/loader-jvm/        our loader: the plan reader, the mod door, the Fabric hand-over
 mods/                   the Fabric side: a build-time loader for ahead-of-time clients, the
                         shim layer, the mod scanner, and a README on what "injector" means here
-site/                   the launcher page (Minecraft-launcher styled)
+site/                   the launcher page and the launch page (Minecraft-launcher styled)
 state.json              the catalog's memory: every version seen, and what it needs
 targets.json            the versions this project is supposed to cover
-tests/                  offline tests: pipeline (31 checks) and the page's contract (14)
+tests/                  offline tests: pipeline, launch plans, the pages' contracts, the loader
+tests/test_loader.py    the loader's contract (structural always; behaviourally when a JDK exists)
 fixtures/               a manifest to test against, so no test touches the network
 .github/workflows/      daily catalog + Pages, and a manual build job
 ```

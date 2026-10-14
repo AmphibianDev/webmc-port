@@ -1,0 +1,16 @@
+{
+  "note": "The repository's mods folder. Jars are dropped into mods/jars/ by hand (they are third-party binaries and git ignores them) and this file describes them, so the launcher can offer the right ones for a version and a mode. tools/launchplan.py reads this, checks every jar is really there, and stages the jars into the deployed site as site/mods/. Only add a mod you are licensed to redistribute.",
+  "mods": [
+    {
+      "id": "hello-webmc",
+      "name": "Hello WebMC",
+      "version": "1.0.0",
+      "file": "jars/hello-webmc.jar",
+      "entrypoint": "com.example.HelloMod",
+      "game": ["*"],
+      "loaders": ["vanilla"],
+      "side": "client",
+      "note": "Built from mods/examples/hello-webmc by tools/build_mods.py. Proves the loader's own mod door: no Minecraft classes, only the loader's API. It has to be built before it can be offered - a jar is never committed."
+    }
+  ]
+}
