@@ -52,6 +52,8 @@ REPORT = {
     "patchers": {"will_run": "Minecraft263BrowserPatcher", "profile": "26.4-snapshot-4"},
     "review": ["port/overrides/.../Font.java", "Minecraft263BrowserPatcher: a version-gated patcher ..."],
     "interesting": ["BRINGUP_SKIP RenderPatches263.menuBlur", "error: patch anchor not found"],
+    "errors": ["error: patch anchor not found", "java.lang.IllegalStateException: createContents entry lambda was not found"],
+    "bringup_skips": ["BRINGUP_SKIP RenderPatches263.menuBlur"],
     "log_bytes": 900000,
 }
 
@@ -109,8 +111,10 @@ def test_fetch(tmp: pathlib.Path) -> None:
     check("it says how many overrides came from where",
           "copied from 26.3: 6 file(s)" in output, output[:400])
     check("and how many still name the old version", "1 of them still name it" in output)
-    check("it shows the interesting lines of the log",
-          "BRINGUP_SKIP" in output and "anchor not found" in output, output[-400:])
+    check("it leads with what went wrong",
+          "what went wrong" in output and "createContents entry lambda" in output, output[-600:])
+    check("and lists the patches the bring-up list skipped",
+          "patches skipped by the bring-up list" in output and "menuBlur" in output, output[-600:])
     check("with the log size, so a truncated log is obvious", "log:" in output)
 
     code, output = run_tool(["--remote", str(remote), "--log", "3"])

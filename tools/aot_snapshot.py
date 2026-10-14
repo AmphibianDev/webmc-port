@@ -329,11 +329,12 @@ def prepare(version_id: str, engine: pathlib.Path, client_jar: pathlib.Path, doc
 
     fixups = apply_fixups(engine, version_id, fixups_path, log=log)
     bringup = bringup_list(engine, version_id, log=log, ours=bringup_path)
-    # A snapshot marks its protocol with a high bit; the profile carries the plain number, and saying so
-    # here means nobody has to wonder later why 1073742166 became 22.
+    # A snapshot marks its protocol with 0x40000000. That marker stays (the engine's profile check
+    # compares the profile against the client's raw value), but it is a thing a person will wonder
+    # about, so the report says it out loud next to the number.
     raw = aot_profile.version_json(client_jar).get("protocol_version")
-    if isinstance(raw, int) and raw & 0x40000000 and raw != profile.get("protocolVersion"):
-        log(f"  protocol: snapshot marker stripped, {raw} -> {profile['protocolVersion']}")
+    if isinstance(raw, int) and raw & 0x40000000:
+        log(f"  protocol: {raw} (snapshot marker set, kept as the client reports it)")
     overrides = copy_overrides(engine, version_id, log=log)
     patchers = patcher_report(engine, version_id)
     review = list(overrides["mentions_old_version"])
@@ -355,7 +356,7 @@ def prepare(version_id: str, engine: pathlib.Path, client_jar: pathlib.Path, doc
     return {
         "version": version_id,
         "profile": str(target.relative_to(engine)),
-        "protocol_note": (f"snapshot marker stripped: {raw} -> {profile['protocolVersion']}"
+        "protocol_note": (f"{raw} (snapshot marker set, kept as the client reports it)"
                           if isinstance(raw, int) and raw & 0x40000000 else None),
         "java": profile["javaVersion"],
         "classFileVersion": profile["classFileVersion"],

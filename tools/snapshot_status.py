@@ -75,15 +75,29 @@ def main(argv=None) -> int:
         print(f"  patcher: {report['patchers'].get('will_run')} "
               f"(declared by the profile for {report['patchers'].get('profile')})")
     if report.get("bringup"):
-        print(f"  bring-up list: {report['bringup'].get('path')} "
-              f"({report['bringup'].get('entries')} entr(y/ies) carried over)")
+        bringup = report["bringup"]
+        print(f"  bring-up list: {bringup.get('path')} "
+              f"({bringup.get('entries')} entr(y/ies): {bringup.get('ours', 0)} declared by this "
+              f"repository, the rest carried over from {bringup.get('seeded_from') or 'nothing'})")
     review = report.get("review") or []
     if review:
         print(f"  review before trusting it ({len(review)}):")
         for item in review[:10]:
             print(f"    - {item}")
+    errors = report.get("errors") or []
+    skips = report.get("bringup_skips") or []
+    if errors:
+        print(f"  what went wrong ({len(errors)} line(s), first few):")
+        for line in errors[:6]:
+            print(f"    {line.strip()[:160]}")
+    if skips:
+        print(f"  patches skipped by the bring-up list ({len(skips)}):")
+        for line in skips[:8]:
+            print(f"    {line.strip()[:160]}")
+        if len(skips) != len(set(line.strip() for line in skips[:8])):
+            print("    (the list is what the build reports; every skip has a reason there)")
     interesting = report.get("interesting") or []
-    if interesting:
+    if interesting and not errors:
         print(f"  from the log ({len(interesting)} interesting line(s)):")
         for line in interesting[-12:]:
             print(f"    {line}")

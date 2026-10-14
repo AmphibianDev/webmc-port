@@ -168,6 +168,22 @@ def test_build(tmp: pathlib.Path, jar: pathlib.Path) -> None:
           any("could not be read" in line and "protocolVersion" in line for line in lines), str(lines))
 
 
+def test_snapshot_protocol(tmp: pathlib.Path) -> None:
+    print("\na snapshot's protocol number is kept exactly as the client reports it")
+    snap = dict(VERSION_JSON, protocol_version=1073742166,   # 0x40000000 | 342
+                pack_version={"resource_major": 100, "resource_minor": 1,
+                              "data_major": 124, "data_minor": 0})
+    jar = write_jar(tmp / "snap-client.jar", snap)
+    profile = aot_profile.build("26.4-snapshot-4", {"type": "snapshot"}, VERSION_DOCUMENT,
+                                aot_profile.version_json(jar), None, log=lambda *_: None)
+    check("the high bit is not stripped: the engine's profile check compares it with the client",
+          profile["protocolVersion"] == 1073742166, str(profile["protocolVersion"]))
+    check("and the pack versions come out of the jar, minors included",
+          profile["packVersions"]["resource"] == {"major": 100, "minor": 1}
+          and profile["packVersions"]["data"] == {"major": 124, "minor": 0},
+          str(profile["packVersions"]))
+
+
 def test_java_levels() -> None:
     print("\nthe class file version is arithmetic, not a table")
     for java, expected in ((8, 52), (11, 55), (17, 61), (21, 65), (25, 69)):
@@ -233,6 +249,7 @@ def main() -> int:
         (versions / "26.3.json").write_text(json.dumps({"id": "26.3", **NEAREST_26_3}))
         jar = test_jar_reading(tmp)
         test_build(tmp, jar)
+        test_snapshot_protocol(tmp)
         test_java_levels()
         test_nearest(tmp)
         test_command_line(tmp, jar)
