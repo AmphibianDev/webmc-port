@@ -345,10 +345,20 @@ def prepare(version_id: str, engine: pathlib.Path, client_jar: pathlib.Path, doc
             bringup_path: pathlib.Path | None = None, log=print) -> dict:
     """Everything the engine needs for one version, written into the engine's own layout."""
     target = find_engine_profile(engine) / f"{version_id}.json"
+    versions_dir = find_engine_profile(engine)
+    neighbour = aot_profile.nearest_profile(versions_dir, version_id)
+    newer_than_every_profile = False
+    if neighbour is None:
+        # No older profile: this version predates everything the engine has brought up. The nearest
+        # *newer* one is still the right starting point (its patch chain is for the same client
+        # generation), and the report says that is what happened.
+        neighbour = aot_profile.nearest_profile(versions_dir, version_id, allow_newer=True)
+        newer_than_every_profile = neighbour is not None
+        if newer_than_every_profile:
+            log(f"  no profile older than {version_id}: starting from {neighbour[0]}'s, which is newer - "
+                f"its patchers are for this client generation, and every one has to agree")
     fresh = aot_profile.build(version_id, entry, document, aot_profile.version_json(client_jar),
-                              aot_profile.nearest_profile(find_engine_profile(engine), version_id)[1]
-                              if aot_profile.nearest_profile(find_engine_profile(engine), version_id)
-                              else None, log=log)
+                              neighbour[1] if neighbour else None, log=log)
     refreshed: list[str] = []
     if target.is_file():
         # The engine already ships a profile: its decisions about *how* to build this version stay, and
@@ -401,6 +411,7 @@ def prepare(version_id: str, engine: pathlib.Path, client_jar: pathlib.Path, doc
         "profile": str(target.relative_to(engine)),
         "generated_profile": generated_profile,
         "refreshed_from_mojang": refreshed,
+        "started_from_newer_profile": newer_than_every_profile,
         "protocol_note": (f"{raw} (snapshot marker set, kept as the client reports it)"
                           if isinstance(raw, int) and raw & 0x40000000 else None),
         "java": profile["javaVersion"],

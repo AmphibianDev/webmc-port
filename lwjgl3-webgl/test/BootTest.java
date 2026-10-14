@@ -48,7 +48,10 @@ public final class BootTest {
             GL20.glShaderSource(vertexShader, "attribute vec4 position; void main() { gl_Position = position; }");
             step("compiling it");
             GL20.glCompileShader(vertexShader);
-            if (GL20.glGetShaderi(vertexShader, GL20.GL_COMPILE_STATUS) == 0) {
+            step("compiled; asking for the status");
+            int vertexStatus = GL20.glGetShaderi(vertexShader, GL20.GL_COMPILE_STATUS);
+            step("status is " + vertexStatus);
+            if (vertexStatus == 0) {
                 throw new IllegalStateException("vertex shader: " + GL20.glGetShaderInfoLog(vertexShader, 4096));
             }
             step("creating the fragment shader");
@@ -57,7 +60,9 @@ public final class BootTest {
                 "precision mediump float; void main() { gl_FragColor = vec4(0.9, 0.2, 0.1, 1.0); }");
             step("compiling the fragment shader");
             GL20.glCompileShader(fragmentShader);
-            if (GL20.glGetShaderi(fragmentShader, GL20.GL_COMPILE_STATUS) == 0) {
+            int fragmentStatus = GL20.glGetShaderi(fragmentShader, GL20.GL_COMPILE_STATUS);
+            step("fragment status is " + fragmentStatus);
+            if (fragmentStatus == 0) {
                 throw new IllegalStateException("fragment shader: " + GL20.glGetShaderInfoLog(fragmentShader, 4096));
             }
             step("creating the program");

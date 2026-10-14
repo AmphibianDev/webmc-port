@@ -101,6 +101,12 @@ function guarded(name, body) {
   }
 }
 
+/** One line into the log the page, the Java side and CI all read. */
+function note(message) {
+  state.javaLog = state.javaLog || [];
+  if (state.javaLog.length < 400) state.javaLog.push(message);
+}
+
 function nameOf(kind, object) {
   if (object === null || object === undefined) {
     state.javaLog = state.javaLog || [];
@@ -528,18 +534,28 @@ function Java_org_lwjgl_opengl_GL20_nglGenBuffers(lib, count, pointers) {
   Java_org_lwjgl_opengl_GL11_nglGenBuffers(lib, count, pointers);
 }
 function Java_org_lwjgl_opengl_GL20_glCreateShader_inner(lib, type) {
+  // Logged in and out, because "returned 0" has three different causes (a bad enum, a lost context, or a
+  // value that never crossed back into the JVM) and the report has to say which one this is.
+  note("createShader(type=" + type + ", typeof=" + typeof type + ")");
   const shader = gl().createShader(type);
   if (!shader) {
-    state.javaLog = state.javaLog || [];
-    state.javaLog.push("createShader(" + type + ") returned null: glError=" + gl().getError()
+    note("createShader(" + type + ") returned null: glError=" + gl().getError()
       + " lost=" + (gl().isContextLost ? gl().isContextLost() : "?"));
   }
-  return nameOf("shader", shader);
+  const name = nameOf("shader", shader);
+  note("createShader -> handle " + name);
+  return name;
 }
 function Java_org_lwjgl_opengl_GL20_glShaderSource_inner(lib, shader, string) {
   // the Java side hands over a String, which arrives here as a JavaScript string or as a Java object
   // depending on how it was built; both have to end up as text
-  gl().shaderSource(objectOf("shader", shader), string === null || string === undefined ? "" : String(string));
+  const object = objectOf("shader", shader);
+  if (!object) {
+    note("shaderSource: no shader for handle " + shader + " - skipped (a handle of 0 means creation failed)");
+    return;
+  }
+  gl().shaderSource(object, string === null || string === undefined ? "" : String(string));
+  note("shaderSource: " + String(string).length + " characters");
 }
 function Java_org_lwjgl_opengl_GL20_nglShaderSource(lib, shader, count, strings, lengths) {
   const parts = [];
@@ -552,7 +568,14 @@ function Java_org_lwjgl_opengl_GL20_nglShaderSource(lib, shader, count, strings,
   gl().shaderSource(objectOf("shader", shader), parts.join(""));
 }
 function Java_org_lwjgl_opengl_GL20_glCompileShader_inner(lib, shader) {
-  gl().compileShader(objectOf("shader", shader));
+  const object = objectOf("shader", shader);
+  if (!object) {
+    note("compileShader: no shader for handle " + shader + " - skipped");
+    return;
+  }
+  note("compileShader: compiling");
+  gl().compileShader(object);
+  note("compileShader: done");
 }
 function Java_org_lwjgl_opengl_GL20_glDeleteShader(lib, shader) {
   const object = objectOf("shader", shader);
@@ -588,12 +611,24 @@ function Java_org_lwjgl_opengl_GL20_nglGetShaderiv(lib, shader, name, pointer) {
   I32[pointer >> 2] = typeof value === "number" ? value : (value ? 1 : 0);
 }
 function Java_org_lwjgl_opengl_GL20_glGetShaderi_inner(lib, shader, name) {
-  const value = gl().getShaderParameter(objectOf("shader", shader), name);
-  return typeof value === "number" ? value : (value ? 1 : 0);
+  // A null object here used to reach WebGL, which is where the boot test hung for 405 seconds: an
+  // unknown handle answers 0 instead, and the report says which handle it was.
+  const object = objectOf("shader", shader);
+  if (!object) {
+    note("getShaderi: no shader for handle " + shader + " (asked for " + name + ") - answering 0");
+    return 0;
+  }
+  note("getShaderi: asking for " + name);
+  const value = gl().getShaderParameter(object, name);
+  const answer = typeof value === "number" ? value : (value ? 1 : 0);
+  note("getShaderi(" + name + ") -> " + answer);
+  return answer;
 }
 function Java_org_lwjgl_opengl_GL20_glGetShaderInfoLog(lib, shader, maxLength) {
   // the client passes a buffer length it decided on; the whole log is what it wants back
-  return gl().getShaderInfoLog(objectOf("shader", shader)) || "";
+  const object = objectOf("shader", shader);
+  if (!object) return "";
+  return gl().getShaderInfoLog(object) || "";
 }
 function Java_org_lwjgl_opengl_GL20_nglGetProgramiv(lib, program, name, pointer) {
   const value = gl().getProgramParameter(objectOf("program", program), name);
