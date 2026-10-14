@@ -226,6 +226,9 @@ def test_plans(mods: list[dict]) -> None:
     plan_aot = launchplan.plan_version({"id": "26.3", "type": "release"}, modern, mods, fabric, {}, "0.19.5")
     check("the compiled row is not this page's job", plan_aot["playable"] is False
           and "Java 21" in plan_aot["note"] and plan_aot["modes"] == {})
+    check("and it says mods there are baked at build time, not loaded at play time",
+          any("build time" in caveat for caveat in plan_aot.get("caveats") or []),
+          str(plan_aot.get("caveats")))
 
     queued = verdict_for(version_document(8, "2.9.4"), "1.12.2", jar_url=None)
     plan_queued = launchplan.plan_version({"id": "1.12.2", "type": "release"}, queued, mods, fabric, {}, None)
@@ -391,6 +394,9 @@ def test_page_contract(tmp: pathlib.Path, mods: list[dict]) -> None:
     }.items():
         check(f"the launch page reads '{field}' ({why})", f".{field}" in launch_page)
     check("a playable plan does not claim a blocker", "blocker" not in plan, plan.get("blocker"))
+    check("but it does say that Fabric on this row is unproven",
+          any("cheerpj-meta#231" in caveat for caveat in plan.get("caveats") or []),
+          str(plan.get("caveats")))
     blocked_plan = launchplan.plan_version(
         {"id": "1.16.5", "type": "release"},
         verdict_for(version_document(17, "3"), "1.16.5"), mods, fabric, {}, "0.19.5")
@@ -409,6 +415,7 @@ def test_page_contract(tmp: pathlib.Path, mods: list[dict]) -> None:
         "modes": "to offer vanilla and Fabric",
         "java": "to say what runtime a version needs",
         "why": "to explain a version's verdict in its own words",
+        "caveats": "to warn about what is unproven on that row before somebody presses play",
     }.items():
         check(f"every index entry carries '{field}' ({why})", field in index["versions"]["1.12.2"])
     check("the launcher reads the index's version entries", "plan.modes" in launcher
@@ -422,7 +429,7 @@ def test_page_contract(tmp: pathlib.Path, mods: list[dict]) -> None:
           "missing" in index["loader"] and "starting the game class itself" in index["loader"]["missing"])
 
     # Fields a page never reads are fields nobody should have to maintain.
-    launcher_fields = {"row", "playable", "modes", "java", "why", "blocker", "note"}
+    launcher_fields = {"row", "playable", "modes", "java", "why", "blocker", "note", "caveats"}
     unused = set(index["versions"]["1.12.2"]) - launcher_fields
     check("the index carries nothing the launcher does not read", not unused, str(sorted(unused)))
 

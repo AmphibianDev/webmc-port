@@ -138,6 +138,7 @@ for (const [label, needle] of Object.entries({
   'the card offers a loader per version': 'function launchOptions',
   'a version waiting on the shim says so': 'needs LWJGL 3',
   'a compiled-row version points at the build, not at a JVM': 'needs a compiled build',
+  'it shows what the plan says is unproven before you press play': 'plan.caveats',
 })) {
   check(label, page.includes(needle), needle);
 }

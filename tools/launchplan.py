@@ -71,6 +71,30 @@ ROW_MODES = {
     "aot": (),
 }
 
+# Things a plan must say out loud rather than let a player discover. Each one is a fact with a source,
+# not a hedge: an honest plan is worth more than an optimistic one, because the optimistic one wastes a
+# person's evening.
+CAVEATS = {
+    # Reported July 2026, still open, and the vendor's own answer says it will not be looked at soon:
+    # Fabric Loader's boot hangs inside its ASM transformation under CheerpJ. That is *before* LWJGL
+    # matters, so it blocks Fabric on the row that has a real JVM, not just the graphics layer.
+    # https://github.com/leaningtech/cheerpj-meta/issues/231
+    "fabric-under-cheerpj": (
+        "Fabric on this row is unproven: Fabric Loader's boot is reported to hang inside its ASM "
+        "transformation under CheerpJ (leaningtech/cheerpj-meta#231, open, and the vendor says it is "
+        "not being worked on). Vanilla has no such report."),
+    "fabric-under-shim": (
+        "The same report applies here, and this row also waits for a JavaScript LWJGL 3: a Fabric mod "
+        "needs both to work."),
+    "aot-mods-are-baked": (
+        "Mods on this row are applied at build time, by a real Fabric Loader running in the build - not "
+        "loaded at play time. There is no class loader in a compiled client, so a jar cannot be added "
+        "afterwards; the build is what has one."),
+    "aot-what-bakes": (
+        "Only mods that survive ahead-of-time compilation bake in: anything reflection-heavy, or with "
+        "native libraries, or that generates bytecode at runtime, does not."),
+}
+
 
 # --------------------------------------------------------------------------- versions
 
@@ -334,9 +358,12 @@ def plan_version(version: dict, verdict: dict, mods: list[dict], sources: dict,
     elif row == "shim":
         plan["blocker"] = ("1.13 and newer need a JavaScript LWJGL 3, and ours has not drawn its first "
                            "frame yet: " + str(verdict.get("why") or ""))
+        if "fabric" in plan.get("modes", {}) or "legacyfabric" in plan.get("modes", {}):
+            plan.setdefault("caveats", []).append(CAVEATS["fabric-under-shim"])
     elif row == "aot":
         plan["note"] = ("no browser JVM runs this one: Java 21 or newer. The compiled build job "
                         "produces a client for it, and mods go in at build time.")
+        plan["caveats"] = [CAVEATS["aot-mods-are-baked"], CAVEATS["aot-what-bakes"]]
         return plan
     if row == "queued":
         plan["blocker"] = ("Mojang's metadata has no client jar for it" if not client["url"]
@@ -372,6 +399,9 @@ def plan_version(version: dict, verdict: dict, mods: list[dict], sources: dict,
 
     for mode, run in plan["modes"].items():
         run["mods"] = [mod["id"] for mod in mods_for(mods, version_id, mode)]
+    if row == "cheerpj" and ("fabric" in plan["modes"] or "legacyfabric" in plan["modes"]):
+        # A real JVM is not the same as a working Fabric: say which half is proven.
+        plan.setdefault("caveats", []).append(CAVEATS["fabric-under-cheerpj"])
     return plan
 
 
@@ -479,6 +509,8 @@ def index_of(document: dict) -> dict:
         for key in ("blocker", "note"):
             if plan.get(key):
                 entry[key] = plan[key]
+        if plan.get("caveats"):
+            entry["caveats"] = plan["caveats"]
         versions[version_id] = entry
     return {
         "note": document["note"],

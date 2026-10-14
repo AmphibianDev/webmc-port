@@ -95,14 +95,20 @@ checkbox in the launcher card is how you turn them off. The choice is in the pla
 
 ## What is verified here, and what is not
 
-Verified without a browser (`bash run-tests.sh`, 160+ checks):
+Verified without a browser (`bash run-tests.sh`, 722 checks):
 
 * the plan for every row, from real metadata: a playable version, a shim-blocked one, a Java-25 one;
 * Fabric's profile turned into a classpath, including Legacy Fabric's Maven;
 * mod matching, hashing, staging, and per-mode attachment;
-* the loader's contract, in a real JVM: a stub game, a stub mod that reads a game class, and a stub
-  Fabric entry class that asserts the properties it was handed (`tests/test_loader.py`);
-* both pages' contracts, including that the classpath order is loader → libraries → game → mods.
+* **the loader itself, in a real JVM** (`tests/test_loader.py`, run on 2026-10-14 with Temurin 21.0.12):
+  a stub game, a stub mod that reads a game class, and a stub Fabric entry class that asserts the
+  properties it was handed. The loader compiles to Java 8 bytecode, finds the mod, starts it, passes
+  the game its arguments, reports a jar that is not a mod, sets the five properties Fabric reads,
+  exits non-zero with a message when the plan is missing, and builds byte-identically twice - so the
+  hash pinned in `site/launch.json` means something. The example mod that ships in `mods/examples/`
+  was run through it the same way;
+* both pages' contracts, including that the classpath order is loader → libraries → game → mods; and
+  the boot screen's (the game's own loading screen shape, no network requests, an idempotent edit).
 
 **Not** verified, and this is the honest part: no browser has run this yet. CheerpJ has to load the
 jar, our loader has to find the game inside the JVM's filesystem, and Fabric has to remap and mixin

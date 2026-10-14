@@ -283,6 +283,7 @@
           why: (plan.why || "") + " Modes: " + modes.join(", ") + "."
              + (mods.length ? " " + mods.length + " mod(s) from the repository's mods folder are "
                               + "loaded with it; the loader reads them from a plan." : ""),
+        caveats: plan.caveats || [],
           play: playUrl(version.id, mode, mods),
           jar: version.jar_url,
           modes: modes,
@@ -293,6 +294,7 @@
         tag: plan.row === "shim" ? "needs LWJGL 3" : (plan.row === "aot" ? "needs a compiled build" : "needs a port"),
         label: plan.row === "shim" ? "a real JVM, waiting on this project's LWJGL 3"
              : (plan.row === "aot" ? "a client this project compiles" : "not playable in a browser yet"),
+        caveats: plan.caveats || [],
         why: plan.blocker || plan.note || plan.why || "no browser route yet",
         request: version.verdict === "build" ? DISPATCH : null,
       };
@@ -588,13 +590,23 @@
     if (plan && plan.java) { rows.push(["java", String(plan.java)]); }
     card.appendChild(facts(rows));
 
+    /* What the plan says is unproven or broken on this version's row. Shown before the play button,
+     * because "Fabric on this row is reported to hang under CheerpJ" is the kind of thing that saves
+     * an evening, and because a launcher that hides it is a launcher that lies. */
+    (plan && plan.caveats ? plan.caveats : []).forEach(function (caveat) {
+      var line = document.createElement("p");
+      line.className = "muted";
+      line.textContent = "⚠ " + caveat;
+      line.style.fontSize = "12.5px";
+      card.appendChild(line);
+    });
+
     // The launch options: which loader, and which of the repository's mods come along. They are
     // written to localStorage as they change, so the row in the list and the play button here can
     // never disagree about what "play this version" means.
     if (plan && plan.playable && route.modes && route.modes.length) {
       card.appendChild(launchOptions(version, route.modes));
     }
-
     var actions = document.createElement("div");
     actions.className = "actions";
     if (route.play) {

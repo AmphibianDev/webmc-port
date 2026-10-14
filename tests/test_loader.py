@@ -121,6 +121,7 @@ def write(path: pathlib.Path, text: str) -> pathlib.Path:
 
 
 def jar_up(target: pathlib.Path, classes: pathlib.Path, extras: dict[str, str] | None = None) -> pathlib.Path:
+    target.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as jar:
         for path in sorted(classes.rglob("*.class")):
             jar.write(path, str(path.relative_to(classes)))
