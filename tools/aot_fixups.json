@@ -24,6 +24,14 @@
       "count": 1,
       "until": "1.21.4",
       "why": "the profile check reads only the post-rename field names, so every 1.21.x version before the rename fails with 'client resource pack major version undefined does not match 46' even when the profile is right. Build run 38581076827 shows it for 1.21.4, whose own version.json says pack_version {resource: 46, data: 61}."
+    },
+    {
+      "file": "port/tools/src/main/java/dev/gaius/tools/GuavaFutureStatePatcher.java",
+      "find": "            var entry = jar.getEntry(CLASS_ENTRY);\n            if (entry == null) {\n                throw new IllegalStateException(CLASS_ENTRY + \" not found in \" + args[0]);\n            }",
+      "replace": "            var entry = jar.getEntry(CLASS_ENTRY);\n            if (entry == null) {\n                // An older 1.21.x client ships a Guava without this class, so there is nothing to patch:\n                // the method this rewrites does not exist yet. Warning and returning is right - the\n                // patcher exists to swap one Guava implementation for another, not to require it.\n                System.err.println(\"GuavaFutureStatePatcher: \" + CLASS_ENTRY + \" is not in \" + args[0]\n                        + \" (this client's Guava predates it), nothing to patch\");\n                return;\n            }",
+      "count": 1,
+      "until": "1.21.4",
+      "why": "the patcher throws when the class it rewrites is absent, and 1.21.4's Guava predates it: build run 38583471729 stopped with 'com/google/common/util/concurrent/AbstractFutureState.class not found'. Nothing to patch is a reason to skip, not to fail a build."
     }
   ]
 }
