@@ -13,7 +13,10 @@
 <!-- CheerpJ: a JVM compiled to WebAssembly. If this script is blocked (ad-blocker, offline, CSP,
      https-only extension) nothing below can run, which the page says out loud instead of failing
      with a reference error. -->
-<script src="https://cjrtnc.leaningtech.com/4.3/loader.js"></script>
+<!-- CheerpJ: the JVM this page runs Minecraft in. It is loaded by the script below with fallbacks,
+     because "CheerpJ is not on this page" has several causes - a runtime release being unavailable, an
+     ad-blocker, an offline network, a content-security policy - and trying each known release turns most
+     of them from a dead page into a slower one. The log says which URL answered. -->
 <style>
   body { margin: 0; background: #111; color: #ddd; font: 14px/1.5 monospace; }
   main { max-width: 880px; margin: 0 auto; padding: 16px; }
@@ -88,6 +91,40 @@
 
   const el = (id) => document.getElementById(id);
   const log = (message) => { el("log").textContent += message + "\n"; };
+
+  /* CheerpJ's releases, newest first. The first one that defines cheerpjInit is the one this launch uses;
+   * a launch that failed with "CheerpJ is not on this page" is why there is more than one. */
+  const CHEERPJ_URLS = [
+    "https://cjrtnc.leaningtech.com/4.3/loader.js",
+    "https://cjrtnc.leaningtech.com/4.2/loader.js",
+    "https://cjrtnc.leaningtech.com/3.1/cj3loader.js",
+  ];
+
+  function loadScript(url) {
+    return new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = url;
+      script.onload = () => resolve(url);
+      script.onerror = () => reject(new Error(url + " did not load"));
+      document.head.appendChild(script);
+    });
+  }
+
+  async function loadCheerpJ() {
+    if (typeof globalThis.cheerpjInit === "function") { return "already present"; }
+    const failures = [];
+    for (const url of CHEERPJ_URLS) {
+      try {
+        await loadScript(url);
+        if (typeof globalThis.cheerpjInit === "function") { return url; }
+        failures.push(url + " loaded but defines no cheerpjInit");
+      } catch (error) {
+        failures.push(error.message);
+      }
+    }
+    throw new Error("no CheerpJ runtime could be loaded: " + failures.join("; ") +
+      ". If you use an ad-blocker or a filtering DNS, allow cjrtnc.leaningtech.com.");
+  }
   const status = (message) => { el("status").textContent = message; };
   const progress = (fraction) => {
     el("bar-fill").style.width = Math.max(0, Math.min(1, fraction)) * 100 + "%";
@@ -413,12 +450,13 @@
       }
     }
 
+    // The runtime comes first: nothing below can start without it.
+    const runtime = await loadCheerpJ();
+    log(`CheerpJ runtime: ${runtime}`);
     const missing = ["cheerpjInit", "cheerpjRunMain", "cheerpjCreateDisplay"].filter(
       (name) => typeof globalThis[name] !== "function");
     if (missing.length) {
-      throw new Error(`CheerpJ is not on this page (missing ${missing.join(", ")}). The loader ` +
-                      `script from cjrtnc.leaningtech.com did not load: an ad-blocker, an offline ` +
-                      `network or a content-security policy will do that.`);
+      throw new Error(`CheerpJ loaded from ${runtime} but is incomplete (missing ${missing.join(", ")}).`);
     }
 
     // Properties that depend on paths this page chose. Fabric needs the game jar explicitly when the
