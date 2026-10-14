@@ -533,6 +533,18 @@ function Java_org_lwjgl_opengl_GL30_glBindVertexArray(lib, array) {
 function Java_org_lwjgl_opengl_GL20_nglGenBuffers(lib, count, pointers) {
   Java_org_lwjgl_opengl_GL11_nglGenBuffers(lib, count, pointers);
 }
+// ---------------------------------------------------------------------------- shaders
+//
+// Where the boot test stopped, and why every line here is logged twice.
+//
+// The report from CI said: glCreateShader, glShaderSource, glCompileShader and glGetShaderi entered, then
+// 405 seconds of nothing, with the Java side printing "vertex shader is 0" and then "compiling it". That
+// is three different bugs wearing one symptom - a bad enum, a lost context, or a value that never crossed
+// back into the JVM - and the report could not tell them apart because nothing logged in between.
+//
+// So each of these natives logs on the way in and on the way out, and a handle of 0 is answered here
+// rather than passed to WebGL as null: calling getShaderParameter(null, ...) is what a 405-second hang
+// looks like from the outside, and "the handle is 0" is a much better answer than "nothing happened".
 function Java_org_lwjgl_opengl_GL20_glCreateShader_inner(lib, type) {
   // Logged in and out, because "returned 0" has three different causes (a bad enum, a lost context, or a
   // value that never crossed back into the JVM) and the report has to say which one this is.
