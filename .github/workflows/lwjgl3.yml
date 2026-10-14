@@ -14,6 +14,9 @@ on:
         type: boolean
         default: false
   push:
+    # A branch filter, not just paths: path filters do not apply to tag pushes, so without this every
+    # `build-*` tag would also start the shim workflow and spend a runner for nothing.
+    branches: ["**"]
     paths:
       - "lwjgl3-webgl/**"
       - "tools/lwjgl3_surface.py"
