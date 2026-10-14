@@ -72,7 +72,7 @@ def main() -> int:
     check("nor does 1.12.2", fabric.annotate("1.12.2", data) is None)
     check("nor a version that does not exist", fabric.annotate("99.9", data) is None)
 
-    print("\nthe committed fixture, which is what the launcher reads")
+    print("\nthe fixture the launcher reads")
     fixture = json.loads((ROOT / "fixtures" / "fabric.json").read_text())
     check("it has a supported list", len(fixture.get("supported", [])) > 100, str(len(fixture.get("supported", []))))
     check("it names a newest loader", bool(fixture.get("newest_loader")), str(fixture.get("newest_loader")))
@@ -80,13 +80,39 @@ def main() -> int:
     check("and that Fabric never existed for 1.8.9", "1.8.9" not in fixture["supported"])
     check("it records where the data came from", "meta.fabricmc.net" in fixture.get("source", {}).get("game", ""))
 
+    print("\nthe other Fabric: Legacy Fabric, which is what 1.8.9 - 1.12.2 have")
+    legacy_games = [{"version": "1.12.2", "stable": True}, {"version": "1.8.9", "stable": True}]
+
+    def legacy_fetch(url: str):
+        if url.endswith("/versions/game"):
+            return legacy_games
+        if url.endswith("/versions/loader"):
+            return LOADERS
+        raise AssertionError(f"unexpected fetch: {url}")
+
+    legacy = fabric.build(fetch=legacy_fetch, meta=fabric.LEGACY_META, maven=fabric.LEGACY_MAVEN,
+                          first_supported="1.3")
+    check("the same two calls describe the legacy catalogue", len(legacy["supported"]) == 2)
+    check("and it knows 1.12.2, which modern Fabric does not", "1.12.2" in legacy["supported"])
+    check("its maven is named in the file, so a plan can point at it", "legacyfabric" in legacy["maven"])
+    legacy_calls: list[str] = []
+    fabric.build(fetch=lambda url: (legacy_calls.append(url), legacy_fetch(url))[1],
+                 meta=fabric.LEGACY_META, maven=fabric.LEGACY_MAVEN, first_supported="1.3")
+    check("the two calls go to the legacy meta, not the modern one",
+          len(legacy_calls) == 2 and all("meta.legacyfabric.net" in url for url in legacy_calls),
+          str(legacy_calls))
+
     print()
-    print("the launcher does not surface Fabric while the real-Java family is the focus")
+    print("the launcher offers Fabric through the plan, not by guessing")
     page = (ROOT / "site" / "index.html").read_text()
-    check("no Fabric panel is rendered", "fabricPanel" not in page and "fabricFor" not in page)
-    check("the launcher does not fetch the Fabric table", 'fetch("fabric.json")' not in page)
-    check("the data still exists for when it comes back", (ROOT / "site" / "fabric.json").is_file())
-    check("and the tool still refreshes it", "def build(" in (ROOT / "tools" / "fabric.py").read_text())
+    check("the launcher reads the pipeline's index", 'fetch("launch.json")' in page)
+    check("and does not fetch Fabric's meta itself: the plan already knows",
+          'fetch("fabric.json")' not in page)
+    check("it can offer vanilla and Fabric per version", "chosenMode" in page and "modesOf" in page)
+    check("and it carries the choice into the play link", "&mode=" in page and "&mods=" in page)
+    check("the data is still deployed, so the plan can be rebuilt offline",
+          (ROOT / "site" / "fabric.json").is_file())
+    check("and the tool refreshes both lists", "legacy_out" in (ROOT / "tools" / "fabric.py").read_text())
 
     print()
     if FAILURES == 0:

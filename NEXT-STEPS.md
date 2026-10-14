@@ -42,6 +42,24 @@ That is possible **only** under a real JVM, which is exactly why the shim matter
 6. **Snapshots and April Fools**: nothing new to build. They route by date through whichever of the three
    rows applies; the work is verifying a few of each on the way past.
 
+### Where these stand now
+
+* **Milestone 0 (first frame)** is unchanged and still the blocker in front of the middle row.
+* **Milestone 3 (manifest driven)** is built and tested offline: `site/launch.json` + `site/plans/`
+  describe every version and mode, `mods/mods.json` is the mod manifest, and our own loader
+  (`mods/loader-jvm/`, Java 8, reproducible) starts vanilla mods and hands Fabric the properties it
+  reads. `LOADER.md` is the account; `tests/test_launchplan.py` and `tests/test_loader.py` are the
+  proof that needs no browser. What is missing is the same thing milestone 1 is missing: a browser
+  that has run it.
+* **Milestone 4 (Legacy Fabric on 1.8.9 - 1.12.2)** needs no more code: Legacy Fabric's own profile
+  becomes the classpath, and its Maven was measured to send CORS through its redirect. The launcher
+  offers `fabric` and `legacyfabric` per version today, and starts refusing honestly where the wall is
+  real (1.13+ and the shim, 1.20.5+ and Java 21).
+* **Two constraints measured while wiring this up**, both of which bound what any row can do:
+  `resources.download.minecraft.net` sends no `access-control-allow-origin`, so asset *objects* cannot
+  be fetched by the page or by Java inside CheerpJ; and CheerpJ 4.3 tops out at Java 17, so the
+  compiled row is not a workaround, it is the only route for 1.20.5+.
+
 ## Fast loading, which is a separate list
 
 The long waits are downloads and JVM start, not the game:

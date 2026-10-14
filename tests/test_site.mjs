@@ -124,9 +124,85 @@ check('it can resolve any version\'s official jar from Mojang metadata',
 check('it downloads with a real progress bar and a saved file',
   body.includes('getReader') && body.includes('createObjectURL') && body.includes('a.download'));
 
+// The launcher reads the pipeline's own index (site/launch.json) on top of the version list, which is
+// where "this version can run vanilla or Fabric, with these mods" comes from.
+for (const [label, needle] of Object.entries({
+  'it reads the launch index the pipeline writes': 'fetch("launch.json")',
+  'a missing index degrades to the manifest-only route': 'state.plans = plans',
+  'it knows which modes a version has': 'function modesOf',
+  'it remembers which mode you chose': 'function chosenMode',
+  'mods are opt-out rather than opt-in': 'if (stored === null) { return offered; }',
+  'a version with a vanilla mod starts with the loader': 'modesOf(id)',
+  'the play link carries the mode and the mods': '&mode=" + encodeURIComponent(mode)',
+  'and the choice is part of the link, not hidden state': '&mods=" + encodeURIComponent(mods.join(","))',
+  'the card offers a loader per version': 'function launchOptions',
+  'a version waiting on the shim says so': 'needs LWJGL 3',
+  'a compiled-row version points at the build, not at a JVM': 'needs a compiled build',
+})) {
+  check(label, page.includes(needle), needle);
+}
+check('the mode choice is written where the row click can read it too',
+  body.includes('webmc.mode') && body.includes('webmc.mods.'),
+  'the picker and the row click must not disagree');
+check('the mods list is built from the plan, not from a hardcoded list',
+  body.includes('plan.modes[mode]') && body.includes('state.plans.mods'));
+
+// ------------------------------------------------------------------------------------------------
+// The launch page (site/play.html): the other half of the same contract. It is the page that turns a
+// plan into a running JVM, so what it gets wrong is not a bad label but a black canvas.
+// ------------------------------------------------------------------------------------------------
+const playPage = readFileSync(path.join(ROOT, 'site', 'play.html'), 'utf8');
+const playScripts = playPage.match(/<script(?![^>]*src=)[^>]*>([\s\S]*?)<\/script>/g) || [];
+check('the launch page has one inline script', playScripts.length === 1, String(playScripts.length));
+const playBody = (playScripts[0] || '').replace(/^<script[^>]*>/, '').replace(/<\/script>$/, '');
+const playScratch = path.join(mkdtempSync(path.join(tmpdir(), 'webmc-play-')), 'page.mjs');
+writeFileSync(playScratch, playBody);
+try {
+  execFileSync('node', ['--check', playScratch], { stdio: ['ignore', 'ignore', 'pipe'] });
+  check('the launch page parses', true);
+} catch (error) {
+  check('the launch page parses', false, String(error.stderr || error).slice(0, 300));
+}
+const playIds = [...new Set([...playBody.matchAll(/el\("([\w-]+)"\)/g)].map((m) => m[1]))];
+const playPresent = new Set([...playPage.matchAll(/id="([\w-]+)"/g)].map((m) => m[1]));
+const playMissing = playIds.filter((id) => !playPresent.has(id));
+check(`every element the launch page reads exists (${playIds.length})`, playMissing.length === 0, playMissing.join(', '));
+
+for (const [label, needle] of Object.entries({
+  'it fetches the plan for the one version being launched': 'plans/${encodeURIComponent(version)}.json',
+  'an old link with the client in the URL still works': 'falling back to the client in the URL',
+  'a version with no browser route is refused, not attempted': 'function refuse',
+  'and the refusal quotes the pipeline\'s own reason': 'launch.blocker',
+  'the mods come from this site\'s own mods folder': '/str/${mod.file}',
+  'Fabric mode is handed the game jar': 'fabric.gameJarPath=${clientPath}',
+  'and the mods, which live outside any ./mods directory': 'fabric.addMods=${modPaths.join(":")}',
+  'the loader is given a plan file to read': 'putFile("/str/webmc/plan.properties"',
+  'the loader\'s report reaches the page': 'Java_webmc_loader_WebMcLoader_nativeReport',
+  'the JVM version comes from the plan, not from a constant': 'cheerpjInit({ version: launch.java',
+  'downloads are cached for the next visit': 'webmc-clients-v2',
+  'and the page says who hosts what': 'hosts no Minecraft files',
+})) {
+  check(label, playPage.includes(needle), needle);
+}
+check('the classpath order is loader, libraries, game, mods',
+  playBody.includes('platform.concat(libraries, [clientPath], modDestinations).join(":")'),
+  'the only order that cannot be got wrong: nothing may shadow the game, and the game may not shadow the loader');
+check('the vanilla+mods case goes through our loader',
+  playBody.includes('useLoader') && playBody.includes('webmc.loader.WebMcLoader'));
+check('and a launch with nothing to load skips the loader',
+  playBody.includes('mods.length > 0 || run.loader === true'), 'one class fewer between the click and the title screen');
+check('the loader jar is fetched from this site, not from a CDN',
+  playBody.includes('loader/webmc-loader.jar'));
+check('the asset index is installed but its objects are named as unreachable',
+  playBody.includes('no access-control-allow-origin') || playPage.includes('no access-control-allow-origin'),
+  'measured: resources.download.minecraft.net sends no CORS header');
+check('the mode is visible before the game starts',
+  playBody.includes('launch.mode') && playPage.includes('id="subtitle"'));
+check('there is exactly one place that builds a classpath',
+  (playBody.match(/const classpath =/g) || []).length === 1);
+
 // Fabric: real meta data, a kit that can be built in the browser, and no pretending that a kit can
 // be launched here.
-// Fabric is parked by request and asserted absent in tests/test_fabric.py.
 check('a deep link opens one version directly', body.includes('window.location.hash'));
 check('clicking a version opens its install card', body.includes('openCard'));
 

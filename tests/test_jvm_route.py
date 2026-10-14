@@ -16,7 +16,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
 import jvm_route  # noqa: E402
-from update import catalog_entry  # noqa: E402
+from update import catalog_entry, classified_entries  # noqa: E402
 
 FAILURES = 0
 
@@ -123,6 +123,28 @@ def main() -> int:
     check("a blocked version stays unplayable", blocked["verdict"] == "needs-port")
     check("but carries the reason in Mojang\'s terms", "LWJGL 3" in (blocked.get("jvm_why") or ""))
     check("and has no jar url to offer", not blocked.get("jar_url"))
+
+    print()
+    print("classified versions reach the catalogue, so a verdict is not a dead end")
+    table["1.8.9"] = dict(table["1.12.2"], id="1.8.9", released="2016-03-01", type="release")
+    table["b1.8.1"] = dict(table["1.12.2"], id="b1.8.1", released="2011-09-15", type="old_beta")
+    table["1.16.5"] = dict(jvm_route.classify(document("1.16.5", "release", 8, "3.2.1")),
+                           id="1.16.5", released="2021-01-15", type="release",
+                           jar_url="https://piston-data.mojang.com/x/client.jar")
+    catalog: dict = {}
+    added = classified_entries(catalog, rows=[], jvm=table, engines=[], links={}, ports={}, built={},
+                               strict_urls=True)
+    check("every classified real-Java version is added",
+          {"1.12.2", "1.8.9", "b1.8.1"} <= set(catalog), str(sorted(catalog)))
+    check("a version the plan already had is left alone",
+          classified_entries({"1.12.2": {}}, rows=[{"id": "1.12.2"}], jvm={"1.12.2": table["1.12.2"]},
+                             engines=[], links={}, ports={}, built={}, strict_urls=True) == 0)
+    check("a blocked one is not added: it is not startable, and the plan already says why",
+          added >= 3 and "1.16.5" not in catalog, str(sorted(catalog)))
+    check("the added entry is a launch entry with Mojang's jar",
+          catalog["1.8.9"]["kind"] == "launch" and catalog["1.8.9"]["jar_url"].startswith("https://piston-data"))
+    check("and it says whether that version's libraries are deployed",
+          "libs_ready" in catalog["1.8.9"], str(catalog["1.8.9"].get("libs_ready")))
 
     print()
     if FAILURES == 0:

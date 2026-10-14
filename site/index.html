@@ -26,6 +26,9 @@
   #continue { margin: 16px 0 0; }
   #hint { flex: 1 0 100%; margin: 6px 0 0; font-size: 12.5px; }
   #kinds label { color: #999; margin-right: 10px; font-size: 13px; }
+  .panel label { display: block; margin: 3px 0; color: #ccc; }
+  .panel input { margin-right: 4px; }
+  .panel .mod { font-size: 13px; color: #bbb; }
   #results { margin: 12px 0 0; border-top: 1px solid #222; min-height: 1px; }
   .row { display: flex; gap: 10px; padding: 6px 2px; border-bottom: 1px solid #1c1c1f; cursor: pointer; }
   .row:hover { background: #17181b; }
@@ -92,10 +95,13 @@
   var MAVEN = "https://maven.fabricmc.net";
   var MAX_ROWS = 30;
 
-  var state = { catalog: null, jars: new Map(), mains: new Map() };
+  var state = { catalog: null, plans: null, jars: new Map(), mains: new Map() };
 
   // ---------------------------------------------------------------- catalog
 
+  // Two files, on purpose. manifest.json is the version list; launch.json is what the pipeline
+  // decided each version can do (row, playable, which modes, which mods). The second one is optional:
+  // without it the launcher still works, it just cannot offer Fabric or mods.
   function loadCatalog() {
     if (state.catalog) { return Promise.resolve(state.catalog); }
     return fetch("manifest.json").then(function (response) {
@@ -103,8 +109,62 @@
       return response.json();
     }).then(function (data) {
       state.catalog = data;
-      return data;
+      return fetch("launch.json").then(function (response) {
+        return response.ok ? response.json() : null;
+      }).then(function (plans) {
+        state.plans = plans;
+        return data;
+      }).catch(function () { return data; });
     });
+  }
+
+  function planOf(id) {
+    return (state.plans && state.plans.versions && state.plans.versions[id]) || null;
+  }
+
+  function modsOf(id, mode) {
+    var plan = planOf(id);
+    if (!plan || !plan.modes || !plan.modes[mode]) { return []; }
+    return plan.modes[mode].map(function (modId) {
+      var found = null;
+      ((state.plans && state.plans.mods) || []).forEach(function (mod) { if (mod.id === modId) { found = mod; } });
+      return found || { id: modId, name: modId, version: "" };
+    });
+  }
+
+  // The mode a click will use: what the visitor chose last, if this version offers it.
+  function modesOf(id) {
+    var plan = planOf(id);
+    if (!plan) { return ["vanilla"]; }
+    return Object.keys(plan.modes || {});
+  }
+
+  function chosenMode(id) {
+    var wanted = "vanilla";
+    try { wanted = window.localStorage.getItem("webmc.mode") || "vanilla"; } catch (error) { /* private mode */ }
+    var available = modesOf(id);
+    return available.indexOf(wanted) >= 0 ? wanted : (available[0] || "vanilla");
+  }
+
+  // Mods are opt-out rather than opt-in: the folder is the feature, so a version that has compatible
+  // mods starts with them on, and a checkbox is how you make it not.
+  function chosenMods(id, mode) {
+    var offered = modsOf(id, mode).map(function (mod) { return mod.id; });
+    var stored = null;
+    try { stored = window.localStorage.getItem("webmc.mods." + id + "." + mode); } catch (error) { stored = null; }
+    if (stored === null) { return offered; }
+    var wanted = stored.split(",").filter(Boolean);
+    return offered.filter(function (modId) { return wanted.indexOf(modId) >= 0; });
+  }
+
+  function rememberMods(id, mode, ids) {
+    try { window.localStorage.setItem("webmc.mods." + id + "." + mode, ids.join(",")); } catch (error) { /* fine */ }
+  }
+
+  function playUrl(id, mode, mods) {
+    var url = "play.html?version=" + encodeURIComponent(id) + "&mode=" + encodeURIComponent(mode);
+    if (mods) { url += "&mods=" + encodeURIComponent(mods.join(",")); }
+    return url;
   }
 
   function versionById(id) {
@@ -206,8 +266,37 @@
   // ---------------------------------------------------------------- routes
 
   // The same four routes the pipeline uses, decided here for one version. `tag` is what the list
-  // shows, `why` is the honest one-liner, `play` is where a click goes.
+  // shows, `why` is the honest one-liner, `play` is where a click goes. When the pipeline's own
+  // index (site/launch.json) is deployed, it wins: it is the file that knows about modes and mods.
   function routeOf(version) {
+    var plan = planOf(version.id);
+    if (plan) {
+      var modes = Object.keys(plan.modes || {});
+      var mode = chosenMode(version.id);
+      var mods = chosenMods(version.id, mode);
+      if (plan.playable && modes.length) {
+        return {
+          kind: "realjava",
+          tag: "▶ real Java" + (modes.indexOf("fabric") >= 0 || modes.indexOf("legacyfabric") >= 0
+                 ? " · fabric" : "") + (mods.length ? " · " + mods.length + " mod(s)" : ""),
+          label: "real Java, in the browser (" + modes.join(", ") + ")",
+          why: (plan.why || "") + " Modes: " + modes.join(", ") + "."
+             + (mods.length ? " " + mods.length + " mod(s) from the repository's mods folder are "
+                              + "loaded with it; the loader reads them from a plan." : ""),
+          play: playUrl(version.id, mode, mods),
+          jar: version.jar_url,
+          modes: modes,
+        };
+      }
+      return {
+        kind: plan.row === "aot" ? "built" : (plan.row === "shim" ? "shim" : "queued"),
+        tag: plan.row === "shim" ? "needs LWJGL 3" : (plan.row === "aot" ? "needs a compiled build" : "needs a port"),
+        label: plan.row === "shim" ? "a real JVM, waiting on this project's LWJGL 3"
+             : (plan.row === "aot" ? "a client this project compiles" : "not playable in a browser yet"),
+        why: plan.blocker || plan.note || plan.why || "no browser route yet",
+        request: version.verdict === "build" ? DISPATCH : null,
+      };
+    }
     if (version.jar_url) {
       return {
         kind: "realjava",
@@ -282,7 +371,6 @@
       request: version.verdict === "build" ? DISPATCH : null
     };
   }
-
   /* Opening a card is intent to play. The launch page reads its downloads out of the "webmc-clients-v1"
    * cache, so filling it here means the click that follows downloads nothing. Failures are silent by
    * design: this is an optimisation, never a requirement. */
@@ -399,6 +487,77 @@
     return p;
   }
 
+  // The mode chooser and the mods picker. Both are radio/checkbox groups rather than a menu, because
+  // there are never many of either and the whole point is that a choice is visible before you commit.
+  function launchOptions(version, modes) {
+    var id = version.id;
+    var mode = chosenMode(id);
+    var panel = document.createElement("div");
+    panel.className = "panel";
+
+    var heading = document.createElement("div");
+    heading.className = "muted";
+    heading.textContent = "loader";
+    panel.appendChild(heading);
+
+    var modeRow = document.createElement("div");
+    modeRow.id = "modes";
+    modes.forEach(function (name) {
+      var label = document.createElement("label");
+      var radio = document.createElement("input");
+      radio.type = "radio";
+      radio.name = "mode";
+      radio.checked = name === mode;
+      radio.addEventListener("change", function () {
+        try { window.localStorage.setItem("webmc.mode", name); } catch (error) { /* private mode */ }
+        openCard(id);
+      });
+      label.appendChild(radio);
+      label.appendChild(document.createTextNode(" " + name
+        + (name === "vanilla" ? " (the game on its own)" : " (" + name.replace("fabric", "Fabric") + " Loader)")));
+      modeRow.appendChild(label);
+    });
+    panel.appendChild(modeRow);
+
+    var offered = modsOf(id, mode);
+    var chosen = chosenMods(id, mode);
+    var modHeading = document.createElement("div");
+    modHeading.className = "muted";
+    modHeading.textContent = "mods · " + (offered.length
+      ? offered.length + " in the repository's mods folder for this version"
+      : "none for this version in " + mode + " mode");
+    modHeading.style.marginTop = "10px";
+    panel.appendChild(modHeading);
+
+    offered.forEach(function (mod) {
+      var label = document.createElement("label");
+      label.className = "mod";
+      var box = document.createElement("input");
+      box.type = "checkbox";
+      box.checked = chosen.indexOf(mod.id) >= 0;
+      box.addEventListener("change", function () {
+        var now = offered.map(function (item) { return item.id; }).filter(function (modId) {
+          if (modId === mod.id) { return box.checked; }
+          return chosen.indexOf(modId) >= 0;
+        });
+        rememberMods(id, mode, now);
+        openCard(id);
+      });
+      label.appendChild(box);
+      label.appendChild(document.createTextNode(" " + (mod.name || mod.id)
+        + (mod.version ? " " + mod.version : "") + (mod.note ? " — " + mod.note : "")));
+      panel.appendChild(label);
+    });
+
+    if (offered.length === 0) {
+      var hint = document.createElement("div");
+      hint.className = "muted";
+      hint.textContent = "Drop a jar into mods/jars/, describe it in mods/mods.json, and it appears here.";
+      panel.appendChild(hint);
+    }
+    return panel;
+  }
+
   function openCard(id) {
     var version = versionById(id);
     var card = el("card");
@@ -420,11 +579,21 @@
 
     var known = document.createElement("span");
     known.textContent = route.label;
-    card.appendChild(facts([
+    var rows = [
       ["released", released],
       ["route", known],
       ["what happens", route.why]
-    ]));
+    ];
+    var plan = planOf(id);
+    if (plan && plan.java) { rows.push(["java", String(plan.java)]); }
+    card.appendChild(facts(rows));
+
+    // The launch options: which loader, and which of the repository's mods come along. They are
+    // written to localStorage as they change, so the row in the list and the play button here can
+    // never disagree about what "play this version" means.
+    if (plan && plan.playable && route.modes && route.modes.length) {
+      card.appendChild(launchOptions(version, route.modes));
+    }
 
     var actions = document.createElement("div");
     actions.className = "actions";

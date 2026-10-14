@@ -5,6 +5,8 @@ cd "$(dirname "$0")"
 failed=0
 echo "== version pipeline"; python3 tests/test_pipeline.py || failed=1
 echo; echo "== launcher page"; node tests/test_site.mjs || failed=1
+echo; echo "== the launch plan (rows, modes, mods)"; python3 tests/test_launchplan.py || failed=1
+echo; echo "== our own loader (java 8 jar: contract always, behaviour when a JDK is present)"; python3 tests/test_loader.py || failed=1
 echo; echo "== what Fabric supports"; python3 tests/test_fabric.py || failed=1
 echo; echo "== what a browser JVM can run (the whole Java family)"; python3 tests/test_jvm_route.py || failed=1
 echo; echo "== vendored libraries and live links"; python3 tests/test_vendor_libs.py || failed=1
