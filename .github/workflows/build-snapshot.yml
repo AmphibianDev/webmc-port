@@ -462,6 +462,11 @@ jobs:
             echo "tracked client files: $(git diff --cached --name-only HEAD~1 2>/dev/null | grep -c '^site/clients' || echo 0)"
             git push origin HEAD:main 2>&1 || echo "PUSH FAILED with $?"
           } 2>&1 | tee /tmp/push.log
+          # The one write channel that works: release assets. The git push diagnostics go there so they
+          # are readable from anywhere without a token (the log branches cannot carry them, because the
+          # pushes they depend on are the thing that is failing).
+          gh release upload built-clients /tmp/push.log --clobber 2>/dev/null \
+            || echo "::warning::could not upload the push log"
 
       - name: Record what happened, where git can read it
         # The point of the whole job: a 55-minute build whose log nobody can open is a wasted day. This
