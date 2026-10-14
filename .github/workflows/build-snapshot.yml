@@ -290,10 +290,10 @@ jobs:
           set -uo pipefail
           export GAIUS_VERSION_PROFILE_PATH="versions/$VERSION.json"
           export GAIUS_BRINGUP="${{ inputs.bringup && '1' || '' }}"
-          # The patch chain spawns one JVM per library patch, in parallel, and each defaults to a
-          # quarter of the machine's RAM - four of them on a 16 GB runner is the OOM kill that left a
-          # build log ending mid-sentence with no error in it. Capped here, and lifted for the compile.
-          export JAVA_TOOL_OPTIONS="-Xmx2g"
+          # NOT JAVA_TOOL_OPTIONS: it makes every JVM print "Picked up JAVA_TOOL_OPTIONS: -Xmx2g", and the
+          # engine detects the JDK by parsing `javac -version` - so the cap made it reject the JDK it was
+          # given and fail with "requires JDK 21 or newer" on a machine that had one. The swap added
+          # earlier is what keeps the patch chain inside the runner's memory.
           [ "${GITHUB_REF_TYPE}" = "tag" ] && export GAIUS_BRINGUP=1
           echo "bring-up: ${GAIUS_BRINGUP:-off}"
           bash port/scripts/build-overlays.sh 2>&1 | tee -a /tmp/build.log
@@ -311,7 +311,6 @@ jobs:
           export GAIUS_VERSION_PROFILE_PATH="versions/$VERSION.json"
           # Deliberately below the engine's own 14 GB: the runner has 16 GB plus the swap added above, so
           # the goal is to finish rather than to be fast. If this step dies with no log, it was memory.
-          unset JAVA_TOOL_OPTIONS
           export GRADLE_OPTS="-Xmx8g -Dorg.gradle.daemon=false -Dorg.gradle.parallel=true"
           export NODE_OPTIONS="--max-old-space-size=5120"
           ( while true; do sleep 60; free -g | awk 'NR==2 {print "  memory used " $3 " GB"; }'; done ) &
