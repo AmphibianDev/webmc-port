@@ -114,9 +114,12 @@ def build(version_id: str, entry: dict, document: dict, jar_version: dict, neare
     asset_index = document.get("assetIndex") or {}
     pack = jar_version.get("pack_version") or {}
     if isinstance(pack, dict) and "resource" not in pack:
-        # 1.21 and newer call them resource_major/data_major inside pack_version
+        # 1.21 and newer call them resource_major/data_major (and _minor) inside pack_version, so the
+        # minor numbers come out of the jar too rather than being assumed
         pack = {"resource": pack.get("resource_major", pack.get("resource")),
-                "data": pack.get("data_major", pack.get("data"))}
+                "resource_minor": pack.get("resource_minor"),
+                "data": pack.get("data_major", pack.get("data")),
+                "data_minor": pack.get("data_minor")}
     copied = {field: (nearest or {}).get(field) for field in PORT_FIELDS}
     copied["extraPatchers"] = copied.get("extraPatchers") or []
     copied["patchSet"] = copied.get("patchSet") or "modern"
@@ -134,22 +137,22 @@ def build(version_id: str, entry: dict, document: dict, jar_version: dict, neare
     if nearest:
         storage["databaseName"] = storage["databaseName"].replace(
             f"-{nearest.get('id', '')}", "")
-    # A snapshot marks its protocol with a high bit (0x40000000) - 26.4-snapshot-4 reports 1073742166
-    # where the engine's own profiles carry the plain number, so the marker is stripped and the note
-    # travels in the report rather than being quietly lost.
-    raw_protocol = jar_version.get("protocol_version")
-    protocol = (raw_protocol & 0x3FFFFFFF
-                if isinstance(raw_protocol, int) and raw_protocol & 0x40000000 else raw_protocol)
+    # The protocol number is kept exactly as the client reports it, high bit and all: a snapshot sets
+    # 0x40000000 as a marker (26.4-snapshot-4 reports 1073742166), and the engine's own profile check
+    # compares the profile against that raw value - "client protocol version 1073742166 does not match
+    # 342" is what stripping it bought. The neighbours' plain numbers (777) are just releases.
     profile = {
         "id": version_id,
         "releaseType": entry.get("type") or document.get("type") or "release",
-        "protocolVersion": protocol,
+        "protocolVersion": jar_version.get("protocol_version"),
         "worldVersion": jar_version.get("world_version"),
         "javaVersion": java,
         "classFileVersion": CLASS_FILE_BASE + int(java),
         **{field: copied[field] for field in PORT_FIELDS},
-        "packVersions": {"resource": {"major": pack.get("resource"), "minor": 1},
-                         "data": {"major": pack.get("data"), "minor": 0}},
+        "packVersions": {"resource": {"major": pack.get("resource"),
+                                      "minor": pack.get("resource_minor", 1)},
+                         "data": {"major": pack.get("data"),
+                                  "minor": pack.get("data_minor", 0)}},
         "storage": storage,
         "official": {
             "releaseTime": entry.get("released") or document.get("releaseTime"),

@@ -282,10 +282,18 @@ jobs:
           log = pathlib.Path("/tmp/build.log")
           text = log.read_text(errors="replace") if log.is_file() else ""
           report["log_bytes"] = len(text)
-          interesting = [line for line in text.splitlines() if re.search(
+          lines = text.splitlines()
+          # The first thing a person wants: what actually went wrong, and what was skipped. Maven's
+          # "BUILD SUCCESS" lines are noise here, and the previous attempt's report was mostly them.
+          report["errors"] = [line for line in lines
+                              if re.search(r"error:|Exception|FAILED|ERROR\]|OutOfMemory|Killed|not found",
+                                           line) and "BUILD SUCCESS" not in line][:60]
+          report["bringup_skips"] = [line for line in lines if "BRINGUP_SKIP" in line][-60:]
+          interesting = [line for line in lines if re.search(
               r"BRINGUP_SKIP|PatchRegistry|Exception|Error|error:|FAILED|OutOfMemory|Killed|not found|"
-              r"exit \d+|BUILD ", line)]
-          report["interesting"] = interesting[-120:]
+              r"exit \d+|BUILD |Patched |Redirected |Compiling ", line)]
+          report["interesting"] = interesting[-160:]
+          report["log_tail"] = lines[-40:]
           pathlib.Path("build-log/report.json").write_text(json.dumps(report, indent=1) + "\n")
           pathlib.Path("build-log/last.log").write_text(text[-200000:])
           print("\n".join(interesting[-40:]))
