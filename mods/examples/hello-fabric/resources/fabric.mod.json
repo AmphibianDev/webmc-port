@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "id": "hello-fabric",
+  "name": "Hello Fabric",
+  "version": "1.0.0",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["com.example.HelloFabricMod"]
+  }
+}

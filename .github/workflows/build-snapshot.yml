@@ -260,8 +260,15 @@ jobs:
               shutil.copyfile(source, pathlib.Path("/tmp/mods") / source.name)
           print(f"mod set: {', '.join(wanted)}")
           PY
+          # The bake is the mod loader on the compiled row: it reads each jar's fabric.mod.json, prunes
+          # the mixins whose targets are not in this client, copies the classes and the Fabric API shims
+          # into the engine's source tree, and generates the entrypoint call the compiled client makes at
+          # startup. It runs *before* the compile, because there is no class loader afterwards.
           python3 mods/build_modded_workspace.py --workspace ../engine --mods /tmp/mods \
-            --out /tmp/bake --dry-run 2>&1 | tail -30 | tee -a /tmp/build.log
+            --out /tmp/bake 2>&1 | tee -a /tmp/build.log
+          echo "bake exit: ${PIPESTATUS[0]}"
+          # what the bake left in the workspace, so the compile step is not the first thing to notice
+          find ../engine -name '*EaglerFabricLoader*' -o -name 'webmc-baked-mods.txt' 2>/dev/null | head -5 || true
 
       - name: Fetch the client, its libraries and its assets
         working-directory: engine

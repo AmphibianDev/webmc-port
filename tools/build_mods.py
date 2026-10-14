@@ -15,6 +15,7 @@ A real mod is a jar somebody else built: drop it into mods/jars/ and describe it
 from __future__ import annotations
 
 import argparse
+import os
 import pathlib
 import subprocess
 import sys
@@ -42,7 +43,9 @@ def build_example(name: str, javac: str, loader_jar: pathlib.Path, out: pathlib.
     with tempfile.TemporaryDirectory() as scratch:
         classes = pathlib.Path(scratch) / "classes"
         classes.mkdir(parents=True)
-        classpath = str(loader_jar) if loader_jar.is_file() else str(build_loader.SOURCE)
+        # a mod may use the loader's API and/or the Fabric API shims the bake provides
+        classpath = os.pathsep.join([str(loader_jar) if loader_jar.is_file() else str(build_loader.SOURCE),
+                                     str(ROOT / "mods" / "shims")])
         command = [javac, "--release", "8", "-nowarn", "-cp", classpath,
                    "-d", str(classes)] + [str(source) for source in sources]
         result = subprocess.run(command, capture_output=True, text=True)

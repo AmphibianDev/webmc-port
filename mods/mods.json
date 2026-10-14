@@ -7,10 +7,31 @@
       "version": "1.0.0",
       "file": "jars/hello-webmc.jar",
       "entrypoint": "com.example.HelloMod",
-      "game": ["*"],
-      "loaders": ["vanilla"],
+      "game": [
+        "*"
+      ],
+      "loaders": [
+        "vanilla"
+      ],
       "side": "client",
       "note": "Built from mods/examples/hello-webmc by tools/build_mods.py. Proves the loader's own mod door: no Minecraft classes, only the loader's API. It has to be built before it can be offered - a jar is never committed."
+    },
+    {
+      "id": "hello-fabric",
+      "name": "Hello Fabric",
+      "version": "1.0.0",
+      "file": "jars/hello-fabric.jar",
+      "entrypoint": "com.example.HelloFabricMod",
+      "game": [
+        "*"
+      ],
+      "loaders": [
+        "fabric",
+        "legacyfabric",
+        "aot"
+      ],
+      "side": "client",
+      "note": "a Fabric mod built from mods/examples/hello-fabric. On a version with a real JVM it is started by Fabric Loader at play time; on a compiled version the bake applies it before the compile. The one kind of mod that cannot work anywhere is one with native libraries."
     }
   ]
 }
