@@ -36,7 +36,16 @@ def fetch_status(remote: str) -> dict:
     git("fetch", "-q", remote, BRANCH)
     status = git("show", f"FETCH_HEAD:{BRANCH}/status.txt", check=False).strip()
     report = git("show", f"FETCH_HEAD:{BRANCH}/report.json", check=False)
-    document = json.loads(report) if report.strip().startswith("{") else {}
+    document = {}
+    if report.strip().startswith("{"):
+        try:
+            document = json.loads(report)
+        except json.JSONDecodeError as error:
+            document = {"report_error": f"the report on {BRANCH} is not valid json: {error}"}
+    else:
+        # A run that failed before it could write one, or a branch that a publish step clobbered: both
+        # happened while this channel was being built, and neither is a reason to crash a status read.
+        document = {"report_error": f"no report.json on the {BRANCH} branch"}
     document["status_file"] = status or None
     return document
 

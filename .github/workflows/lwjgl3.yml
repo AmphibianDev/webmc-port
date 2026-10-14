@@ -24,7 +24,9 @@ on:
       - ".github/workflows/lwjgl3.yml"
 
 permissions:
-  contents: read
+  # write, for one reason: the test's result is pushed to a `shim-log` branch, so "where did the shim
+  # stop" is a question git can answer instead of one that needs CI log access.
+  contents: write
 
 concurrency:
   group: webmc-port-lwjgl3
@@ -178,6 +180,33 @@ jobs:
             echo "- generated classes: $(find lwjgl3-webgl/src/main/java -name '*.java' | wc -l | tr -d ' ')"
             echo "- members still to implement: $total"
           } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Record what the shim did, where git can read it
+        # The shim's whole point is that the failure is specific - a native that returned null, a Java
+        # exception inside it, a stage it never reached - and reading that should not need an account.
+        if: always()
+        run: |
+          set -uo pipefail
+          mkdir -p /tmp/shimlog
+          {
+            echo "# what the boot test reported"
+            python3 - <<'PY' 2>/dev/null || echo "(no result was posted)"
+          import json, pathlib
+          document = json.loads(pathlib.Path("/tmp/result.json").read_text())
+          print(json.dumps(document, indent=1)[:20000])
+          PY
+          } > /tmp/shimlog/report.md
+          {
+            echo "# the browser's own log, last 400 lines"
+            tail -400 /tmp/chrome.log 2>/dev/null
+          } >> /tmp/shimlog/report.md
+          git checkout -q -B shim-log
+          mkdir -p build-log
+          cp /tmp/shimlog/report.md build-log/shim-report.md
+          git add -f build-log/shim-report.md
+          git -c user.name="webmc-port-bot" -c user.email="webmc-port-bot@users.noreply.github.com" \
+            commit -q -m "shim log: $(date -u +%Y-%m-%dT%H:%M:%SZ)" || echo "nothing to record"
+          git push -q -f origin refs/heads/shim-log || echo "::warning::could not push the shim log"
 
       - uses: actions/upload-artifact@v7
         with:
