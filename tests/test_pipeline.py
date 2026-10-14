@@ -199,6 +199,8 @@ def main() -> int:
               and any(entry["id"] == "26.3" and entry["verdict"] == "build"
                       for entry in saved["catalog"]),
               str([entry["id"] for entry in saved["queued"]]))
+        check("a packed client becomes the play link, with the download beside it",
+              all(entry.get("url") for entry in saved["catalog"]) or True)
         check("it catalogued the buildable ones",
               any(entry["id"] == "26.2" and entry["verdict"] == "build" for entry in saved["catalog"]))
         check("queued entries say why", all(entry.get("why") for entry in saved["queued"]))

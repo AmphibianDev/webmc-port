@@ -215,7 +215,11 @@ def catalog_entry(row: dict, engines: list[dict], links: dict, client_urls: dict
         # publish step writes there, because the generated manifest is rebuilt from it on every run
         # (which is exactly how the first successful 26.2 build lost its link an hour after making it).
         published = (built or {}).get(row["id"]) or {}
-        entry["url"] = published.get("url") or f"clients/{row['id']}.html"
+        # A packed client is served as a page by this site (chunks + manifest + a start page), so it is
+        # the play link; the release asset stays beside it as the download fallback.
+        entry["url"] = published.get("packed") or published.get("url") or f"clients/{row['id']}.html"
+        if published.get("packed"):
+            entry["download"] = published.get("url")
         if port and port.get("served_as") != "html" and published:
             # a mirror that only downloads must not shadow a client this project compiled
             entry.pop("play_url", None)

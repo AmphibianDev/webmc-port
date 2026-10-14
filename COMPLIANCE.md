@@ -79,6 +79,14 @@ $1.25/hour GPU), it is the shape that costs an account, and the browser-native r
 for the person playing. The one thing worth keeping from that work was the answer to "where could it
 run at all", which is the table above.
 
+## Compiled clients are served as pages (a decision, with its risk)
+
+The launcher used to offer a compiled client only as a *download*, because serving a client is serving a
+build of the game. It now also serves one as a page: the client is split into chunks under
+`site/clients/<version>/` with a hash each, and a small start page reassembles it in the visitor's browser.
+That is the operator's decision, taken knowingly - the download is still published beside it, and the
+sections above about licences, attribution and what this repository may host still apply.
+
 ## Engines have to be licensed
 
 Every compiled-client engine (a "workspace") is somebody else's source tree, and it ends up inside the

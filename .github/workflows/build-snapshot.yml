@@ -316,6 +316,20 @@ jobs:
           python3 tools/aot_shell.py --client "$CLIENT" --out "$OUT" --strip-brand ${REMOVE:+--remove "$REMOVE"}
           ls -la dist/
 
+      - name: Pack the client as a page a player can open
+        # A 115 MB HTML file cannot be served as a page by any static host, so it is split into chunks
+        # with a hash each and a start page reassembles it in the browser. That page is what the launcher
+        # links: the player gets a tab, not a download.
+        working-directory: ours
+        run: |
+          set -euo pipefail
+          CLIENT="$(find dist -name '*-webmc.html' -size +1M | sort | head -1 || true)"
+          [ -n "$CLIENT" ] || CLIENT="$(find ../engine/port/web/dist -name '*.html' -size +5M | sort | head -1 || true)"
+          [ -n "$CLIENT" ] || { echo "::error::nothing to pack"; exit 1; }
+          python3 tools/pack_client.py --client "$CLIENT" --out "site/clients/$VERSION" \
+            --title "Minecraft $VERSION" --chunk-mb 20
+          du -sh "site/clients/$VERSION" | tee -a "$GITHUB_STEP_SUMMARY"
+
       - name: Publish the client and record it
         env:
           GH_TOKEN: ${{ github.token }}
@@ -344,6 +358,11 @@ jobs:
                     "note": "compiled by build-snapshot.yml from the official client"}
           state_path = pathlib.Path("state.json")
           state = json.loads(state_path.read_text()) if state_path.is_file() else {"seen": [], "catalog": []}
+          packed = pathlib.Path("site", "clients", version, "index.html")
+          if packed.is_file():
+              record["packed"] = f"clients/{version}/"
+              record["packed_bytes"] = sum(f.stat().st_size for f in pathlib.Path("site", "clients", version).rglob("*") if f.is_file())
+              print(f"packed page for {version}: {record['packed_bytes'] / 1048576:.0f} MB on the site")
           state.setdefault("built", {})[version] = record
           state_path.write_text(json.dumps(state, indent=2) + "\n")
           print("state.json records the built client for", version)
@@ -352,7 +371,8 @@ jobs:
           git config user.name "webmc-port-bot"
           git config user.email "webmc-port-bot@users.noreply.github.com"
           git add state.json site/manifest.json
-          git diff --cached --quiet || git commit -m "catalog: $VERSION compiled from the official client"
+          git add -f "site/clients/$VERSION" 2>/dev/null || true
+          git diff --cached --quiet || git commit -m "catalog: $VERSION compiled, packed and published"
           # Explicit refspec: a tag-triggered run is on a detached HEAD, where a bare `git push` fails.
           for attempt in 1 2 3; do
             git push origin HEAD:main && break

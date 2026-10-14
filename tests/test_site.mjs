@@ -139,6 +139,8 @@ for (const [label, needle] of Object.entries({
   'a version waiting on the shim says so': 'needs LWJGL 3',
   'a compiled-row version points at the build, not at a JVM': 'needs a compiled build',
   'it shows what the plan says is unproven before you press play': 'plan.caveats',
+  'a client this site serves is a play link, not a download': '▶ play',
+  'and it explains that the chunks are checked before they run': 'checked against their',
   'it reads how each version runs, not only whether it is playable': 'fetch("routes.json")',
   'and says which engine builds it, with its licence': 'route.engine_license',
   'and what the mod policy for that version is': 'route.mods',
