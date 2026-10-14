@@ -97,6 +97,23 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Emscripten
+        # The engine builds its shader toolchain (GLSL -> SPIR-V) with emcc, so a runner without
+        # Emscripten stops forty minutes in with "build-wasm-shader-toolchain: emcc not found" - which
+        # is what happened on run 38553252969. Installed from the emsdk repository itself rather than a
+        # third-party action, so there is one less thing between this file and the build.
+        run: |
+          set -euo pipefail
+          git clone --depth 1 https://github.com/emscripten-core/emsdk.git /opt/emsdk
+          cd /opt/emsdk
+          ./emsdk install latest
+          ./emsdk activate latest
+          source ./emsdk_env.sh
+          emcc --version | head -2
+          echo "EMSDK=/opt/emsdk" >> "$GITHUB_ENV"
+          echo "/opt/emsdk/upstream/emscripten" >> "$GITHUB_PATH"
+          echo "/opt/emsdk" >> "$GITHUB_PATH"
+
       - name: Room to build in
         # A 26.x client compile wants ~12 GB of disk on top of the toolchain the runner already has.
         run: |
