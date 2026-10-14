@@ -45,7 +45,11 @@ permissions:
   contents: write
 
 concurrency:
-  group: webmc-port-snapshot
+  # Per version, not per workflow: a second queued run supersedes a pending one in the same group, so a
+  # single group meant only one version could ever be waiting - dispatching another silently cancelled
+  # it. Different versions are independent builds and can share the machine pool; the same version twice
+  # still collapses to one.
+  group: webmc-port-snapshot-${{ inputs.version || github.ref_name }}
   cancel-in-progress: false
 
 jobs:
