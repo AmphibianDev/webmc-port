@@ -364,16 +364,16 @@ def bake(engine: pathlib.Path, version: str, mod_jars: list[pathlib.Path], mods_
     profile_path = engine / "port" / "versions" / f"{version}.json"
     if not profile_path.is_file():
         raise SystemExit(f"no profile at {profile_path} to add the patcher to")
-    profile = json.loads(profile_path.read_text())
-    patchers = [name for name in (profile.get("extraPatchers") or []) if name != PATCHER_CLASS]
-    patchers.append(PATCHER_CLASS)
-    profile["extraPatchers"] = patchers
-    profile_path.write_text(json.dumps(profile, indent=1) + "\n")
-    log(f"  {profile_path.relative_to(engine)}: extraPatchers = {patchers}")
+    # Not through `extraPatchers`: the engine's own validator refuses those outside the modern patch set
+    # ("extraPatchers is only supported by the modern patch set"), and 1.21.11 is on its legacy chain. The
+    # build job appends this patcher after the chain instead, through a fixup on build-overlays.sh, using
+    # the same `run_client_patcher` helper the chain uses.
+    log(f"  the patcher runs after the engine's chain (WEBMC_MOD_PATCHER={PATCHER_CLASS})")
 
     return {
         "version": version,
         "patcher": PATCHER_CLASS,
+        "patcher_env": f"WEBMC_MOD_PATCHER={PATCHER_CLASS}",
         "mods": mods,
         "mod_jars": shipped,
         "webmc_mods": ":".join(shipped),

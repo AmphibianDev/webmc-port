@@ -318,6 +318,7 @@ jobs:
             # the patcher reads this while the engine's patch chain runs, which is the next thing after
             # the fetch
             python3 -c "import json;print('WEBMC_MODS=' + (json.load(open('/tmp/bake.json')).get('webmc_mods') or ''))" >> "$GITHUB_ENV"
+            python3 -c "import json;print(json.load(open('/tmp/bake.json')).get('patcher_env') or '')" >> "$GITHUB_ENV"
             python3 -c "import json;d=json.load(open('/tmp/bake.json'));print('baked:', [m['id'] for m in d['mods']]);print('entrypoints:', d['entrypoints']);print('with mixins (not applied):', d['with_mixins'])" | tee -a /tmp/build.log
             # Pre-flight: compile the generated patcher here, with the ASM the engine fetches anyway, so a
             # Java mistake costs two minutes instead of the hour the build takes to reach it.

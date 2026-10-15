@@ -32,6 +32,14 @@
       "count": 1,
       "why": "the patcher throws when the class it rewrites is absent, and 1.21.4's Guava predates it: build run 38583471729 stopped with 'com/google/common/util/concurrent/AbstractFutureState.class not found'. Nothing to patch is a reason to skip, not to fail a build.",
       "until": "1.21.11"
+    },
+    {
+      "file": "port/scripts/build-overlays.sh",
+      "find": "for extra_patcher in $GAIUS_EXTRA_PATCHERS; do\n  run_client_patcher \"$extra_patcher\" \\\n    \"$client_output\" \\\n    \"$client_patch_classes\" \\\n    \"$version\"\ndone",
+      "replace": "for extra_patcher in $GAIUS_EXTRA_PATCHERS; do\n  run_client_patcher \"$extra_patcher\" \\\n    \"$client_output\" \\\n    \"$client_patch_classes\" \\\n    \"$version\"\ndone\n\n# WebMC's own mod bake, after the engine's chain: the build job sets WEBMC_MOD_PATCHER when a mod set was\n# asked for, and the patcher copies the mod's classes into the client and calls its entrypoint from the\n# client's static initialiser. It runs here rather than through `extraPatchers` because the profile\n# validator allows those only on the modern patch set, and this client is on the legacy one.\nif [[ -n \"${WEBMC_MOD_PATCHER:-}\" ]]; then\n  run_client_patcher \"$WEBMC_MOD_PATCHER\" \\\n    \"$client_output\" \\\n    \"$client_patch_classes\" \\\n    \"$version\"\nfi",
+      "count": 1,
+      "until": "1.21.11",
+      "why": "there is no other extension point for a patcher on the legacy-12111 chain: extraPatchers are rejected by the engine's own profile check, and this is the same helper the chain itself uses."
     }
   ]
 }

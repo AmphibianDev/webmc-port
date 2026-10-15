@@ -132,14 +132,14 @@ def test_bake(tmp: pathlib.Path) -> None:
     shim = engine / "port" / "overrides" / "client" / "src" / "versions" / "1.21.11" / "java" / "net" / "fabricmc" / "api" / "ClientModInitializer.java"
     check("the Fabric interface a mod compiles against is written from this repository's shim", shim.is_file())
 
+    # The engine's validator refuses extraPatchers outside the modern patch set, so the patcher is not
+    # listed there: the build job appends it after the chain with the engine's own helper.
     profile = json.loads((engine / "port" / "versions" / "1.21.11.json").read_text())
-    check("the profile runs the patcher at the tail of its chain",
-          profile["extraPatchers"] == ["Minecraft12111BrowserPatcher", bake_mods.PATCHER_CLASS],
-          str(profile["extraPatchers"]))
-    check("and a second bake does not add it twice",
-          bake_mods.bake(engine, "1.21.11", [one], jars, log=lambda *_: None)["patcher"] == bake_mods.PATCHER_CLASS
-          and json.loads((engine / "port" / "versions" / "1.21.11.json").read_text())["extraPatchers"]
-          == ["Minecraft12111BrowserPatcher", bake_mods.PATCHER_CLASS])
+    check("the profile is left exactly as the engine wrote it",
+          profile["extraPatchers"] == ["Minecraft12111BrowserPatcher"], str(profile["extraPatchers"]))
+    check("and the report names the patcher and the variable the chain reads",
+          report["patcher"] == bake_mods.PATCHER_CLASS
+          and report["patcher_env"].startswith("WEBMC_MOD_PATCHER="), str(report.get("patcher_env")))
 
     shipped = pathlib.Path(report["mod_jars"][0])
     check("the mod jars are copied to where the build will run", shipped.is_file()
