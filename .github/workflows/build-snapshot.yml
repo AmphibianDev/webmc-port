@@ -462,10 +462,14 @@ jobs:
           bash port/scripts/build-overlays.sh 2>&1 | tee -a /tmp/build.log
           STATUS=${PIPESTATUS[0]}
           if [ "$STATUS" != "0" ]; then
-            echo "== the patch chain failed; the last 200 lines go to the release =="
+            echo "== the patch chain failed; the last lines go to the release and to the check run =="
             tail -200 /tmp/build.log > /tmp/chain-failure.txt 2>/dev/null || true
-            gh release view built-clients >/dev/null 2>&1 || true
             gh release upload built-clients /tmp/chain-failure.txt --clobber 2>&1 || true
+            # Annotations are readable through the API (the job log is not, with this account's token), so the
+            # last lines of the failure are emitted as error annotations as well.
+            while IFS= read -r line; do
+              [ -n "$line" ] && echo "::error::$line"
+            done < <(tail -30 /tmp/build.log 2>/dev/null || true)
           fi
           # and what the chain left in the patched jar: the mod's own class, or nothing
           if [ -n "${WEBMC_MODS:-}" ]; then
