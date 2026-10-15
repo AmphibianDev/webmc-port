@@ -187,11 +187,36 @@ public final class __CLASS__ {
                 throw new IllegalStateException("the static initialiser of net/minecraft/client/Minecraft does "
                         + "not return, which this patcher does not know how to handle");
             }
-            // One instantiate-and-call per baked mod, written as bytecode rather than as generated Java: a
-            // source file would have to name the mod's package, and the engine compiles its sources before
-            // the patched classes are on its classpath - which is a compile error, not a shortcut.
+            // One call per baked mod, written as bytecode rather than as generated Java: a source file would have to
+            // name the mod's package, and the engine compiles its sources before the patched classes are on its
+            // classpath - which is a compile error, not a shortcut. The entrypoint's own methods are folded into
+            // this class first (see WebMcMixinApplier.mergeEntrypoint) where that is possible: a class that only a
+            // patch introduced did not survive to the compiled output, twice, while the jar had it both times.
             for (Entry entry : entries) {
-                method.instructions.insertBefore(exit, call(entry));
+                // Try to fold the mod's entrypoint into this class first: then the call is an INVOKESTATIC to a
+                // method of the class being compiled, which no reachability analysis can lose.
+                List<String> merged;
+                try {
+                    merged = WebMcMixinApplier.mergeEntrypoint(output, entry.owner(), "net/minecraft/client/Minecraft",
+                            System.out::println);
+                } catch (IOException error) {
+                    merged = List.of();
+                }
+                if (!merged.isEmpty()) {
+                    for (String signature : merged) {
+                        int split = signature.indexOf('(');
+                        String name = signature.substring(0, split);
+                        String descriptor = signature.substring(split);
+                        InsnList callMerged = new InsnList();
+                        callMerged.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "net/minecraft/client/Minecraft",
+                                name, descriptor, false));
+                        method.instructions.insertBefore(exit, callMerged);
+                    }
+                    System.out.println("__CLASS__: folded " + entry.owner().replace('/', '.') + " into the client class"
+                            + " (" + merged.size() + " method(s)): no new class has to reach the compiler");
+                } else {
+                    method.instructions.insertBefore(exit, call(entry));
+                }
                 injected = true;
                 calls++;
             }
