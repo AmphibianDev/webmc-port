@@ -319,6 +319,10 @@ jobs:
         working-directory: ours
         run: |
           set -euo pipefail
+          # GitHub runs this step's shell with -e, so a failing pipeline aborts the step before
+          # the lines below can read PIPESTATUS and report *why* it failed. That is how a broken
+          # patch chain stayed unreadable for four runs.
+          set +e
           mkdir -p /tmp/mods
           # the example mods are source in this repository - mods/jars is git-ignored - so a build that
           # wants to bake one has to compile it first, or the bake finds an empty folder and says so
@@ -409,6 +413,10 @@ jobs:
         working-directory: engine
         run: |
           set -uo pipefail
+          # GitHub runs this step's shell with -e, so a failing pipeline aborts the step before
+          # the lines below can read PIPESTATUS and report *why* it failed. That is how a broken
+          # patch chain stayed unreadable for four runs.
+          set +e
           export GAIUS_VERSION_PROFILE_PATH="versions/$VERSION.json"
           bash port/scripts/fetch-version.sh 2>&1 | tee -a /tmp/build.log
           STATUS=${PIPESTATUS[0]}
@@ -420,6 +428,10 @@ jobs:
         working-directory: engine
         run: |
           set -uo pipefail
+          # GitHub runs this step's shell with -e, so a failing pipeline aborts the step before
+          # the lines below can read PIPESTATUS and report *why* it failed. That is how a broken
+          # patch chain stayed unreadable for four runs.
+          set +e
           export GAIUS_VERSION_PROFILE_PATH="versions/$VERSION.json"
           bash port/scripts/remap-client.sh 2>&1 | tee -a /tmp/build.log
           STATUS=${PIPESTATUS[0]}
@@ -440,6 +452,10 @@ jobs:
         working-directory: engine
         run: |
           set -uo pipefail
+          # GitHub runs this step's shell with -e, so a failing pipeline aborts the step before
+          # the lines below can read PIPESTATUS and report *why* it failed. That is how a broken
+          # patch chain stayed unreadable for four runs.
+          set +e
           export GAIUS_VERSION_PROFILE_PATH="versions/$VERSION.json"
           export GAIUS_BRINGUP="${{ inputs.bringup && '1' || '' }}"
           # NOT JAVA_TOOL_OPTIONS: it makes every JVM print "Picked up JAVA_TOOL_OPTIONS: -Xmx2g", and the
@@ -491,6 +507,10 @@ jobs:
         working-directory: engine
         run: |
           set -uo pipefail
+          # GitHub runs this step's shell with -e, so a failing pipeline aborts the step before
+          # the lines below can read PIPESTATUS and report *why* it failed. That is how a broken
+          # patch chain stayed unreadable for four runs.
+          set +e
           {
             echo "== the workspace compiles the client it already contains"
             ./gradlew :game:compileJava --console=plain --no-daemon
@@ -510,6 +530,10 @@ jobs:
         working-directory: engine
         run: |
           set -uo pipefail
+          # GitHub runs this step's shell with -e, so a failing pipeline aborts the step before
+          # the lines below can read PIPESTATUS and report *why* it failed. That is how a broken
+          # patch chain stayed unreadable for four runs.
+          set +e
           export GAIUS_VERSION_PROFILE_PATH="versions/$VERSION.json"
           # Deliberately below the engine's own 14 GB: the runner has 16 GB plus the swap added above, so
           # the goal is to finish rather than to be fast. If this step dies with no log, it was memory.
