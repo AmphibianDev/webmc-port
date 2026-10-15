@@ -137,8 +137,23 @@ def test_pack(tmp: pathlib.Path) -> None:
           gw_manifest["gateway"] == "wss://relay.example/v1/connect")
     check("a build with no gateway leaves the client untouched",
           pack_client.pack(e26, tmp / "nogw", "26.3", 4, log=lambda *_: None)["gateway"] is None)
+
+    print("\nthe profile engine's own tunnel dialect")
+    gaius_page = ('<!doctype html><html><head><title>Minecraft 1.21.11</title></head><body>'
+                  '<script>var gaiusBridge = "__gaiusNettyBridge";</script></body></html>')
+    gaius_path = tmp / "gaius.html"
+    gaius_path.write_text(gaius_page)
+    packed_gaius = pack_client.pack(gaius_path, tmp / "gw-gaius", "Minecraft 1.21.11", 4,
+                                    gateway="wss://relay.example/v1/connect", log=lambda *_: None)
+    body = (tmp / "gw-gaius" / "data" / "client.0000").read_bytes().decode()
+    check("a profile-engine client is given the tunnel the way it asks for one",
+          "__gaiusBridgeUrls" in body and "wss://relay.example/v1/connect/tunnel" in body, body[:160])
+    check("and it is told before its own code runs, because it reads the setting at boot",
+          body.index("__gaiusBridgeUrls") < body.index("__gaiusNettyBridge"))
+    check("the manifest records it like any other gateway",
+          packed_gaius["gateway"] == "wss://relay.example/v1/connect")
     check("and a client that has no place to put one is refused rather than packed unconfigured",
-          "does not look like an Eagler26 client" in _error_of(
+          "nowhere to put a gateway" in _error_of(
               lambda: pack_client.pack(_plain_html(tmp), tmp / "bad", "x", 4, gateway="wss://a.example/v1")))
     check("the chunks are fetched in parallel, not one after another",
           "Promise.all(manifest.chunks.map" in page, "sequential fetches make the wait the sum of the parts")

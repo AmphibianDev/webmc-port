@@ -453,6 +453,114 @@ function handleSession(socket, request, head) {
   if (head && head.length) reader(head);
 }
 
+/**
+ * The profile engine's tunnel dialect, next to the goldproxy one.
+ *
+ * The client opens this endpoint and sends `{"type":"connect","host":…,"port":…}`. It expects
+ * `{"type":"connecting"}`, then `{"type":"connected","host":…,"port":…}` - and it *checks* that the host and port
+ * it gets back are the ones it asked for, refusing the connection if they are not (it calls that attestation).
+ * After that, binary frames are raw TCP bytes in both directions; the client owns Minecraft's framing, its
+ * compression and its encryption, so this side must not touch them.
+ */
+function handleTunnel(socket, request) {
+  if (sessions.size >= OPTIONS.maxSessions) {
+    socket.end('HTTP/1.1 503 Service Unavailable\r\nConnection: close\r\n\r\n');
+    return;
+  }
+  const protocol = (request.headers['sec-websocket-protocol'] || '').split(',').map((s) => s.trim());
+  const chosen = protocol.find((name) => name === 'gaius-tunnel' || name === '');
+  socket.write([
+    'HTTP/1.1 101 Switching Protocols',
+    'Upgrade: websocket',
+    'Connection: Upgrade',
+    `Sec-WebSocket-Accept: ${acceptKey(request.headers['sec-websocket-key'] || '')}`,
+    chosen ? `Sec-WebSocket-Protocol: ${chosen}` : null,
+    '', '',
+  ].filter((line) => line !== null).join('\r\n'));
+
+  const session = { address: request.socket.remoteAddress || 'unknown', finished: false, socket: null,
+                    opened: false, idle: null };
+  sessions.add(session);
+  const send = (text) => { if (!session.finished) socket.write(encodeFrame(0x1, Buffer.from(text))); };
+  const stop = (message) => {
+    if (session.finished) return;
+    session.finished = true;
+    sessions.delete(session);
+    clearTimeout(session.idle);
+    if (message) { try { socket.write(encodeFrame(0x8, closeCodeOf(1000, message))); } catch { /* gone */ } }
+    try { socket.end(); } catch { /* gone */ }
+    try { session.socket?.destroy(); } catch { /* gone */ }
+  };
+  const touch = () => {
+    clearTimeout(session.idle);
+    session.idle = setTimeout(() => stop('idle'), OPTIONS.idleTimeoutMs);
+    if (session.idle.unref) session.idle.unref();
+  };
+  touch();
+
+  async function dial(message) {
+    const host = String(message.host || '').trim();
+    const port = Number(message.port || DEFAULT_PORT);
+    const policy = checkDestination(host, port);
+    if (!policy.ok) { send(JSON.stringify({ type: 'error', code: policy.code, message: policy.msg })); stop(policy.msg); return; }
+    if (message.token !== undefined && message.token !== null && !verifyToken(message.token, host, port)) {
+      send(JSON.stringify({ type: 'error', code: 'UNAUTHORIZED', message: 'that token is for another server' }));
+      stop('unauthorized');
+      return;
+    }
+    send(JSON.stringify({ type: 'connecting' }));
+    let target = { host, port };
+    if (!net.isIP(host)) {
+      const record = await resolveSrv(host).catch(() => null);
+      if (record) { target = record; }
+    }
+    const connection = net.connect({ host: target.host, port: target.port, family: 0 });
+    const timer = setTimeout(() => connection.destroy(), OPTIONS.connectTimeoutMs);
+    connection.once('connect', () => {
+      clearTimeout(timer);
+      session.socket = connection;
+      // host and port as asked for, so the client's own check passes: it refuses a tunnel whose attestation does
+      // not match the target it requested.
+      send(JSON.stringify({ type: 'connected', host, port }));
+      connection.on('data', (data) => { if (!session.finished) socket.write(encodeFrame(0x2, data)); touch(); });
+    });
+    connection.once('error', (error) => {
+      clearTimeout(timer);
+      send(JSON.stringify({ type: 'error', code: error.code === 'ETIMEDOUT' ? 'CONNECT_TIMEOUT' : 'CONNECT_FAILED',
+                            message: String(error.code || error.message || 'connect failed') }));
+      stop('the server did not answer');
+    });
+    connection.once('close', () => { if (!session.finished) { send(JSON.stringify({ type: 'close' })); stop('server closed'); } });
+  }
+
+  const reader = createFrameReader((frame) => {
+    touch();
+    if (frame.opcode === 0x8) { stop('client closed'); return; }
+    if (frame.opcode === 0x9) { socket.write(encodeFrame(0xa, frame.payload)); return; }
+    if (frame.opcode === 0x1) {
+      let message;
+      try { message = JSON.parse(frame.payload.toString('utf8')); } catch { stop('protocol error'); return; }
+      if (!session.opened) {
+        if (message.type !== 'connect') { stop('the first frame must be a connect request'); return; }
+        session.opened = true;
+        dial(message).catch((error) => stop(String(error && error.message)));
+        return;
+      }
+      if (message.type === 'close') { stop('client closed'); return; }
+      if (message.type === 'ping') { send(JSON.stringify({ type: 'pong', id: message.id })); }
+      return;
+    }
+    if (frame.opcode === 0x2) {
+      if (!session.socket) { return; }   // buffered while the target is being dialled, like the client expects
+      session.socket.write(frame.payload);
+    }
+  }, (why) => stop(why), OPTIONS.maxFrameBytes);
+
+  socket.on('data', reader);
+  socket.on('error', () => stop('socket error'));
+  socket.on('close', () => { if (!session.finished) { session.finished = true; sessions.delete(session); clearTimeout(session.idle); try { session.socket?.destroy(); } catch { /* gone */ } } });
+}
+
 // ---------------------------------------------------------------------------------------------------- server
 
 // The client is a page, so its token request is a cross-origin POST with a JSON body - which means a preflight
@@ -547,12 +655,18 @@ function createGatewayServer(options = {}) {
       return json(req, res, 200, { token, expiresAt: new Date(Date.now() + 120000).toISOString(), host, port });
     }
 
-    if (url.pathname === '/v1/connect') {
+    if (url.pathname === '/v1/connect' || url.pathname === '/tunnel') {
+      // Two dialects, one pipe. The Eagler26/GoldHQ lineage speaks `goldproxy.v1`; the profile engine this
+      // repository compiles its own clients with speaks a tunnel whose control frames are
+      // {"type":"connect"|"connected"|"close"} and whose binary frames are raw TCP bytes. Its Java side owns
+      // Minecraft's framing and encryption, so raw piping is exactly right - and supporting it here means a
+      // client we build needs no patching at all, only an address to point at.
       if ((req.headers.upgrade || '').toLowerCase() !== 'websocket') {
-        return json(req, res, 426, { error: 'UPGRADE_REQUIRED', message: 'connect by WebSocket, subprotocol goldproxy.v1' });
+        return json(req, res, 426, { error: 'UPGRADE_REQUIRED',
+                                     message: 'connect by WebSocket: /v1/connect for goldproxy.v1, /tunnel for the profile engine' });
       }
       if (!originAllowed(req)) return json(req, res, 403, { error: 'ORIGIN_NOT_ALLOWED' });
-      return handleSession(req.socket, req, null);
+      return url.pathname === '/tunnel' ? handleTunnel(req.socket, req) : handleSession(req.socket, req, null);
     }
 
     if (url.pathname === '/') {
@@ -580,8 +694,15 @@ code,pre{background:#1e2128;padding:2px 6px;border-radius:4px}th,td{text-align:l
     const url = new URL(req.url, 'http://localhost');
     const readyState = socket;
     readyState.setTimeout?.(0);
-    if (url.pathname !== '/v1/connect') { socket.end('HTTP/1.1 404 Not Found\r\nConnection: close\r\n\r\n'); return; }
+    if (url.pathname !== '/v1/connect' && url.pathname !== '/tunnel') {
+      socket.end('HTTP/1.1 404 Not Found\r\nConnection: close\r\n\r\n');
+      return;
+    }
     if (!originAllowed(req)) { socket.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n'); return; }
+    // An upgrade never reaches the request handler: node holds it back until the (empty) body arrives, which for
+    // an upgrade means never, so both dialects are dispatched from here. Routing the second one in the request
+    // handler instead is what made it answer 404 to every client.
+    if (url.pathname === '/tunnel') { handleTunnel(socket, req); return; }
     handleSession(socket, req, head);
   });
 

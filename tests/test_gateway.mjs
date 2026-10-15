@@ -244,6 +244,49 @@ async function main() {
       });
       check('a name is judged by the address it resolves to later, not by its spelling',
         domainTry.status === 200, 'a name is only as private as its records; the gateway re-checks after DNS');
+  // --- the second dialect: the one the clients we compile ourselves speak --------------------------------
+  // {"type":"connect",host,port} -> {"type":"connecting"} -> {"type":"connected",host,port}, then raw bytes. The
+  // client checks the host and port it gets back (its own "attestation"), so getting them wrong is a refusal on
+  // the far side with no useful error - worth pinning here.
+  const tunnel = await new Promise((resolve) => {
+    const socket = new WebSocket(`ws://127.0.0.1:${gatewayPort}/tunnel`);
+    socket.binaryType = 'arraybuffer';
+    const seen = { control: [], binary: [], opened: false };
+    const timer = setTimeout(() => resolve({ seen, socket }), 8000);
+    socket.onopen = () => { seen.opened = true; socket.send(JSON.stringify({ type: 'connect', host: '127.0.0.1', port: target.port })); };
+    socket.onmessage = ({ data }) => {
+      if (typeof data === 'string') {
+        const message = JSON.parse(data);
+        seen.control.push(message);
+        if (message.type === 'connected') { socket.send(Buffer.from([0x10, 0x00, 0x2f])); }
+      } else {
+        seen.binary.push(Buffer.from(data));
+        clearTimeout(timer);
+        resolve({ seen, socket });
+      }
+    };
+    socket.onerror = () => { clearTimeout(timer); resolve({ seen, socket, error: true }); };
+  });
+  check('the profile-engine dialect opens', tunnel.seen.opened === true);
+  check('it answers connecting before it dials', tunnel.seen.control.some((m) => m.type === 'connecting'),
+        JSON.stringify(tunnel.seen.control));
+  const connected = tunnel.seen.control.find((m) => m.type === 'connected') || {};
+  check('and connected with the host and port the client asked for, which it checks',
+        connected.host === '127.0.0.1' && connected.port === target.port, JSON.stringify(connected));
+  check('bytes go both ways over it', tunnel.seen.binary.length > 0 && Buffer.concat(target.state.received).length > 0);
+  try { tunnel.socket.close(); } catch { /* done */ }
+
+  const refusedTunnel = await new Promise((resolve) => {
+    const socket = new WebSocket(`ws://127.0.0.1:${gatewayPort}/tunnel`);
+    const seen = [];
+    socket.onopen = () => socket.send(JSON.stringify({ type: 'connect', host: '127.0.0.1', port: 3306 }));
+    socket.onmessage = ({ data }) => { if (typeof data === 'string') { seen.push(JSON.parse(data)); } };
+    socket.onclose = () => resolve(seen);
+    setTimeout(() => resolve(seen), 4000);
+  });
+  check('and it refuses a database port in its own words',
+        refusedTunnel.some((m) => m.code === 'PORT_BLOCKED'), JSON.stringify(refusedTunnel));
+
     } finally {
       strict.child.kill();
     }

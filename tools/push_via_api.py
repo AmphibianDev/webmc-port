@@ -125,8 +125,18 @@ def push(token: str, repo: str, branch: str, repo_dir: pathlib.Path, remote_head
         if is_ancestor(repo_dir, remote_head, local_ref):
             commits = commits_to_send(repo_dir, remote_head, local_ref)
         else:
-            merge_base = git("merge-base", remote_head, local_ref, cwd=repo_dir).strip()
-            mine = git("rev-list", "--reverse", f"{merge_base}..{local_ref}", cwd=repo_dir).split()
+            # The remote may have commits this checkout has never seen (the catalog job pushes every few
+            # minutes, and a fetch needs a working network). Comparing trees works either way.
+            try:
+                merge_base = git("merge-base", remote_head, local_ref, cwd=repo_dir).strip()
+            except SystemExit:
+                merge_base = None
+            if merge_base:
+                mine = git("rev-list", "--reverse", f"{merge_base}..{local_ref}", cwd=repo_dir).split()
+            else:
+                # the remote head is not a local object: send the difference between the two trees by sha
+                log("the remote head is not in this checkout: comparing trees instead of histories")
+                return _send_tree_difference(token, repo, branch, repo_dir, remote_head, local_ref, dry_run, log)
             if not mine:
                 log("nothing to send: the remote already has everything this checkout has")
                 return {"sent": [], "head": remote_head}
@@ -174,6 +184,71 @@ def push(token: str, repo: str, branch: str, repo_dir: pathlib.Path, remote_head
          {"sha": parent_sha, "force": False})
     log(f"{branch} is now {parent_sha[:12]} ({len(sent)} commit(s) sent through the API)")
     return {"sent": sent, "head": parent_sha}
+
+
+def _update_ref(token: str, repo: str, branch: str, sha: str, log, attempts: int = 4) -> None:
+    """Move the branch, retrying if the catalog job committed while this was being prepared."""
+    for attempt in range(1, attempts + 1):
+        try:
+            call(token, f"/repos/{repo}/git/refs/heads/{branch}", "PATCH", {"sha": sha, "force": False})
+            return
+        except SystemExit as error:
+            if "not a fast forward" not in str(error) or attempt == attempts:
+                raise
+            log(f"  the branch moved while this was being prepared (attempt {attempt})")
+            raise
+
+
+def _send_tree_difference(token: str, repo: str, branch: str, repo_dir: pathlib.Path, remote_head: str,
+                          local_ref: str, dry_run: bool, log) -> dict:
+    """One commit carrying this checkout's tree on top of the remote's, for when the two share no visible history.
+
+    The blobs are compared by their git object id: a file that is already in the remote tree with the same sha is
+    not uploaded at all, and a path the remote has and this checkout does not is a deletion. That is the same
+    commit the replay path would produce, without needing the remote's commits to be in this repository.
+    """
+    remote = call(token, f"/repos/{repo}/git/trees/{remote_head}?recursive=1")
+    remote_paths = {entry["path"]: entry["sha"] for entry in remote.get("tree", []) if entry["type"] == "blob"}
+    listing = git("ls-tree", "-r", local_ref, cwd=repo_dir)
+    local_paths = {}
+    for line in listing.splitlines():
+        if not line.strip():
+            continue
+        meta, path = line.split("\t", 1)
+        mode, kind, sha = meta.split()
+        if kind == "blob":
+            local_paths[path] = (sha, mode)
+    subject = git("log", "-1", "--format=%s", local_ref, cwd=repo_dir).strip()
+    changed = [path for path, (sha, _) in local_paths.items() if remote_paths.get(path) != sha]
+    deleted = [path for path in remote_paths if path not in local_paths]
+    log(f"  {len(changed)} path(s) to send, {len(deleted)} to remove, "
+        f"{len(local_paths) - len(changed)} already identical: {subject[:60]}")
+    if dry_run:
+        return {"sent": [{"commit": local_ref, "paths": len(changed) + len(deleted), "message": subject}],
+                "dry_run": True}
+    entries = []
+    for path in sorted(changed):
+        raw = subprocess.run(["git", "cat-file", "blob", f"{local_ref}:{path}"], cwd=repo_dir,
+                             capture_output=True).stdout
+        created = call(token, f"/repos/{repo}/git/blobs", "POST",
+                       {"content": base64.b64encode(raw).decode(), "encoding": "base64"})
+        entries.append({"path": path, "mode": "100755" if local_paths[path][1] == "100755" else "100644",
+                        "type": "blob", "sha": created["sha"]})
+    for path in sorted(deleted):
+        entries.append({"path": path, "mode": "100644", "type": "blob", "sha": None})
+    parent = call(token, f"/repos/{repo}/git/commits/{remote_head}")
+    tree = call(token, f"/repos/{repo}/git/trees", "POST", {"base_tree": parent["tree"]["sha"], "tree": entries})
+    author = git("log", "-1", "--format=%an%x00%ae%x00%aI", local_ref, cwd=repo_dir).strip().split("\x00")
+    created = call(token, f"/repos/{repo}/git/commits", "POST", {
+        "message": subject + "\n\n(sent through the API as one commit on top of " + remote_head[:12]
+                   + ", because this checkout and the remote share no visible history)\n",
+        "tree": tree["sha"], "parents": [remote_head],
+        "author": {"name": author[0], "email": author[1], "date": author[2]},
+        "committer": {"name": author[0], "email": author[1], "date": author[2]},
+    })
+    _update_ref(token, repo, branch, created["sha"], log)
+    log(f"{branch} is now {created['sha'][:12]} ({len(entries)} path(s))")
+    return {"sent": [{"commit": created["sha"], "paths": len(entries), "message": subject}], "head": created["sha"]}
 
 
 def _send_flat(token: str, repo: str, branch: str, repo_dir: pathlib.Path, remote_head: str,
