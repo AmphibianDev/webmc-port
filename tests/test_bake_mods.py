@@ -45,12 +45,13 @@ def check(label: str, ok: bool, detail: str = "") -> None:
 FAKE_CLASS = b"\xca\xfe\xba\xbe\x00\x00\x00\x41fake"
 
 
-def fake_engine(root: pathlib.Path, version: str = "1.21.11") -> pathlib.Path:
+def fake_engine(root: pathlib.Path, version: str = "1.21.11", patch_set: str = "legacy-12111") -> pathlib.Path:
     (root / "port" / "versions").mkdir(parents=True)
     (root / "port" / "versions" / f"{version}.json").write_text(json.dumps({
         "id": version, "releaseType": "release", "protocolVersion": 777, "worldVersion": 1,
         "javaVersion": 21, "classFileVersion": 65, "clientDistribution": "obfuscated-with-mappings",
-        "patchSet": "legacy-12111", "extraPatchers": ["Minecraft12111BrowserPatcher"],
+        "patchSet": patch_set,
+        "extraPatchers": ["Minecraft12111BrowserPatcher"] if patch_set.startswith("legacy") else [],
     }))
     (root / "port" / "tools" / "src" / "main" / "java" / "dev" / "gaius" / "tools").mkdir(parents=True)
     (root / "port" / "overrides" / "client" / "src" / "versions" / version / "java").mkdir(parents=True)
@@ -142,11 +143,27 @@ def test_bake(tmp: pathlib.Path) -> None:
     # The engine's validator refuses extraPatchers outside the modern patch set, so the patcher is not
     # listed there: the build job appends it after the chain with the engine's own helper.
     profile = json.loads((engine / "port" / "versions" / "1.21.11.json").read_text())
-    check("the profile is left exactly as the engine wrote it",
+    check("a legacy profile is left as the engine wrote it, apart from nothing",
           profile["extraPatchers"] == ["Minecraft12111BrowserPatcher"], str(profile["extraPatchers"]))
     check("and the report names the patcher and the variable the chain reads",
           report["patcher"] == bake_mods.PATCHER_CLASS
           and report["patcher_env"].startswith("WEBMC_MOD_PATCHER="), str(report.get("patcher_env")))
+    check("a legacy patch set routes through the chain hook, and says so",
+          report["patcher_route"] == "chain hook", str(report.get("patcher_route")))
+
+    # the other route: a modern patch set takes the patcher the documented way, in the profile
+    modern = fake_engine(tmp / "engine-modern", version="26.3", patch_set="modern")
+    modern_report = bake_mods.bake(modern, "26.3", [one], jars, log=lambda *_: None)
+    profile = json.loads((modern / "port" / "versions" / "26.3.json").read_text())
+    check("a modern patch set lists the patcher in the profile instead",
+          modern_report["patcher_route"] == "extraPatchers" and bake_mods.PATCHER_CLASS in profile["extraPatchers"],
+          str(profile.get("extraPatchers")))
+    check("and does not also set the chain hook, so the patcher runs once and not twice",
+          modern_report["patcher_env"] == "", repr(modern_report["patcher_env"]))
+    check("baking twice does not list it twice",
+          bake_mods.bake(modern, "26.3", [one], jars, log=lambda *_: None)["patcher_route"] == "extraPatchers"
+          and json.loads((modern / "port" / "versions" / "26.3.json").read_text())["extraPatchers"].count(
+              bake_mods.PATCHER_CLASS) == 1)
 
     shipped = pathlib.Path(report["mod_jars"][0])
     check("the mod jars are copied to where the build will run", shipped.is_file()
@@ -159,12 +176,19 @@ def test_bake(tmp: pathlib.Path) -> None:
     check("which the log says out loud too",
           any("will not be applied" in line for line in lines), str(lines))
 
+    print("\nwhat it does when the profile is not there yet")
+    # A generated profile may not exist when the bake runs: the bake does not need it except to decide how the
+    # patcher is called, and a build that refuses here would refuse every version whose profile is generated
+    # later in the job. So it warns, and takes the route that works without the profile.
+    lines.clear()
+    no_profile = bake_mods.bake(engine, "1.21.10", [one], jars, log=lines.append)
+    check("a version with no profile is not refused, it is routed through the chain hook",
+          no_profile["patcher_route"] == "chain hook" and no_profile["patch_set"] is None,
+          str(no_profile.get("patcher_route")))
+    check("and the log says why that is the route it took",
+          any("no profile" in line for line in lines), str(lines)[:300])
+
     print("\nwhat it refuses")
-    try:
-        bake_mods.bake(engine, "1.21.10", [one], jars, log=lambda *_: None)
-        check("a version with no profile in the engine is refused", False, "no error")
-    except SystemExit as error:
-        check("a version with no profile in the engine is refused", "no profile at" in str(error), str(error))
     empty = tmp / "not-an-engine"
     empty.mkdir()
     try:

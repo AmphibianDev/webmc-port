@@ -417,14 +417,34 @@ def bake(engine: pathlib.Path, version: str, mod_jars: list[pathlib.Path], mods_
         shim_target.write_text(shim.read_text())
         log(f"  wrote {shim_target.relative_to(engine)} (the interface a Fabric mod compiles against)")
 
+    # How the patcher gets called depends on which patch set the version is on, and the engine's own validator
+    # decides that, not us: `extraPatchers` is refused outside the modern patch set ("extraPatchers is only
+    # supported by the modern patch set"), and the 1.21 line is on a legacy chain. So:
+    #   modern  -> the documented way, the profile lists the patcher
+    #   legacy  -> a fixup appends it after the chain through build-overlays.sh, guarded by WEBMC_MOD_PATCHER,
+    #              using the same run_client_patcher helper the chain itself uses
     profile_path = engine / "port" / "versions" / f"{version}.json"
-    if not profile_path.is_file():
-        raise SystemExit(f"no profile at {profile_path} to add the patcher to")
-    # Not through `extraPatchers`: the engine's own validator refuses those outside the modern patch set
-    # ("extraPatchers is only supported by the modern patch set"), and 1.21.11 is on its legacy chain. The
-    # build job appends this patcher after the chain instead, through a fixup on build-overlays.sh, using
-    # the same `run_client_patcher` helper the chain uses.
-    log(f"  the patcher runs after the engine's chain (WEBMC_MOD_PATCHER={PATCHER_CLASS})")
+    patch_set = ""
+    if profile_path.is_file():
+        profile = json.loads(profile_path.read_text())
+        patch_set = str(profile.get("patchSet") or "")
+    else:
+        log(f"  ! no profile at {profile_path.relative_to(engine)}: if this version generates one, its patch set")
+        log("    decides how the patcher is called, and until it exists only the chain hook can be used")
+    modern = bool(patch_set) and not patch_set.startswith("legacy")
+    if modern:
+        profile["extraPatchers"] = [name for name in (profile.get("extraPatchers") or [])
+                                    if name != PATCHER_CLASS] + [PATCHER_CLASS]
+        profile_path.write_text(json.dumps(profile, indent=1) + "\n")
+        patcher_env = ""
+        route = "extraPatchers"
+        log(f"  {profile_path.relative_to(engine)}: extraPatchers = {profile['extraPatchers']} "
+            f"(patch set {patch_set})")
+    else:
+        patcher_env = f"WEBMC_MOD_PATCHER={PATCHER_CLASS}"
+        route = "chain hook"
+        log(f"  the patcher runs after the engine's chain (patch set {patch_set or 'unknown'}, "
+            f"{patcher_env})")
 
     real = [mod for mod in mods if not mod.get("is_library")]
     return {
@@ -433,7 +453,9 @@ def bake(engine: pathlib.Path, version: str, mod_jars: list[pathlib.Path], mods_
         "mod_ids": [mod["id"] for mod in real],
         "libraries": [mod["id"] for mod in libraries],
         "patcher": PATCHER_CLASS,
-        "patcher_env": f"WEBMC_MOD_PATCHER={PATCHER_CLASS}",
+        "patcher_env": patcher_env,
+        "patch_set": patch_set or None,
+        "patcher_route": route,
         "mods": mods,
         "mod_jars": shipped,
         "webmc_mods": ":".join(shipped),

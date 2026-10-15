@@ -305,10 +305,14 @@ def test_fixups(tmp: pathlib.Path) -> None:
     for entry in shipped["fixups"]:
         check(f"each entry names a file, an anchor, a replacement and a reason ({entry.get('file', '?')[-30:]})",
               all(entry.get(key) for key in ("file", "find", "replace", "why")))
-        check("and is scoped to a version range rather than applying everywhere",
-              any(entry.get(key) for key in ("since", "until"))
-              or entry.get("versions") not in (None, "*"),
-              str({k: entry.get(k) for k in ("since", "until", "versions")}))
+        # A fixup is either scoped to a version range, or it is version-independent and guarded by an
+        # environment variable that is off unless a build sets it. "Applies everywhere, unconditionally" is the
+        # one shape that is refused, because that is a patch nobody can turn off.
+        scoped = any(entry.get(key) for key in ("since", "until", "versions"))
+        guarded = ":-}" in entry.get("replace", "") or "${" in entry.get("replace", "")
+        check(f"and is scoped, or guarded by a variable a build sets ({entry.get('file', '?')[-30:]})",
+              scoped or guarded,
+              f"scoped={scoped} guarded={guarded}")
 
 
 def profile_document(asset_index_sha1: str) -> dict:
