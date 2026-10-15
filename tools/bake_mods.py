@@ -338,6 +338,9 @@ def read_mod(jar: pathlib.Path) -> dict:
         entrypoint = str(first).split("::")[0] if isinstance(first, str) else None
     return {
         "file": jar.name,
+        # A jar with no descriptor is not a mod: it is classes the mods need (the mixin callback stubs, for one).
+        # It is copied into the client like any other jar, but it is not something to name on a loading screen.
+        "is_library": "fabric.mod.json" not in names,
         "id": descriptor.get("id") or jar.stem,
         "name": descriptor.get("name") or descriptor.get("id") or jar.stem,
         "version": descriptor.get("version"),
@@ -395,12 +398,12 @@ def bake(engine: pathlib.Path, version: str, mod_jars: list[pathlib.Path], mods_
     if stale.is_file():
         stale.unlink()
         log(f"  removed {stale.relative_to(engine)} (superseded by bytecode injection)")
-    shim_only = [mod for mod in mods if not mod.get("entrypoint")]
-    if len(shim_only) == len(mods):
+    libraries = [mod for mod in mods if mod.get("is_library")]
+    if libraries:
+        log("  " + str(len(libraries)) + " jar(s) are libraries rather than mods (no descriptor, nothing to call): "
+            + ", ".join(mod["id"] for mod in libraries))
+    if not any(mod.get("entrypoint") for mod in mods):
         log("  no client entrypoint in the mod set: the patcher will copy classes and call nothing")
-    elif shim_only:
-        log(f"  {len(shim_only)} jar(s) carry only classes to copy (no entrypoint): "
-            + ", ".join(mod["id"] for mod in shim_only))
     else:
         log("  each entrypoint is called from the client's static initialiser as bytecode")
 
@@ -420,8 +423,12 @@ def bake(engine: pathlib.Path, version: str, mod_jars: list[pathlib.Path], mods_
     # the same `run_client_patcher` helper the chain uses.
     log(f"  the patcher runs after the engine's chain (WEBMC_MOD_PATCHER={PATCHER_CLASS})")
 
+    real = [mod for mod in mods if not mod.get("is_library")]
     return {
         "version": version,
+        # what a page may name: the mods, not the libraries that came along with them
+        "mod_ids": [mod["id"] for mod in real],
+        "libraries": [mod["id"] for mod in libraries],
         "patcher": PATCHER_CLASS,
         "patcher_env": f"WEBMC_MOD_PATCHER={PATCHER_CLASS}",
         "mods": mods,

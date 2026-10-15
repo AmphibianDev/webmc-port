@@ -129,6 +129,9 @@ def test_bake(tmp: pathlib.Path) -> None:
           'method.name.equals("<clinit>")' in source and "INVOKEVIRTUAL" in source)
 
     check("a hook source left by an older bake is deleted, not built on", not stale.is_file())
+    check("a jar with no descriptor is a library, not something to name on a loading screen",
+          report["libraries"] == [] and sorted(report["mod_ids"]) == ["hello-fabric", "mixed"],
+          str((report.get("libraries"), report.get("mod_ids"))))
     check("the report says which entrypoints will be called",
           sorted(call["class"] for call in report["calls"]) == ["com.example.HelloFabricMod", "com.example.Mixed"],
           str(report.get("calls")))

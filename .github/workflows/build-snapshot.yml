@@ -478,7 +478,7 @@ jobs:
           # the baked mod set goes into the page, so a modded build is modded where a player can see it
           BAKED=""
           if [ -f /tmp/bake.json ]; then
-            BAKED="$(python3 -c "import json;print(','.join(m['id'] for m in (json.load(open('/tmp/bake.json')).get('mods') or [])))" 2>/dev/null || true)"
+            BAKED="$(python3 -c "import json;print(','.join(json.load(open('/tmp/bake.json')).get('mod_ids') or []))" 2>/dev/null || true)"
           fi
           python3 tools/pack_client.py --client "$CLIENT" --out "site/clients/$VERSION" \
             --title "Minecraft $VERSION" --chunk-mb 20 ${BAKED:+--mods "$BAKED"}
