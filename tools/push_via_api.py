@@ -224,7 +224,20 @@ def main(argv: list[str] | None = None) -> int:
     except SystemExit:
         head = None
     print(f"{args.repo} {args.branch} is at {(head or 'nothing')[:12]} on the remote")
-    result = push(token, args.repo, args.branch, repo_dir, head, dry_run=args.dry_run)
+    # The catalog job commits to main every few minutes, so the head this read can move before the ref is
+    # updated - and GitHub then answers "Update is not a fast forward", which is correct and useless. Every
+    # attempt rebuilds from the head it just read, so retrying is the whole fix.
+    for attempt in range(1, 4):
+        try:
+            result = push(token, args.repo, args.branch, repo_dir, head, dry_run=args.dry_run)
+            break
+        except SystemExit as error:
+            if "not a fast forward" not in str(error) or attempt == 3:
+                raise
+            print(f"  the branch moved while this was being prepared (attempt {attempt}): reading it again")
+            head = call(token, f"/repos/{args.repo}/git/ref/heads/{args.branch}")["object"]["sha"]
+    else:
+        raise SystemExit("the branch kept moving; nothing was pushed")
     for entry in result["sent"]:
         print(f"  {'would send' if args.dry_run else 'sent'}: {entry['commit'][:8]} {entry['message'][:70]}")
     return 0

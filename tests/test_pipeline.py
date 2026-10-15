@@ -40,6 +40,11 @@ def run(*args: str) -> tuple[int, str]:
     return finished.returncode, finished.stdout + finished.stderr
 
 
+def rows_BY_ID(rows: dict, version: str) -> dict:
+    """One row of the plan by version, so a check about a version reads as a check about that version."""
+    return next(row for row in rows.values() if row.get("id") == version) if not isinstance(rows, dict) else rows[version]
+
+
 def main() -> int:
     manifest = version_tools.load_manifest(FIXTURE)
     engines = planner.load_engines()
@@ -67,23 +72,21 @@ def main() -> int:
                          planner.load_roadmap())}
     # v1 scope is the 1.21 line: 26.x is deliberately unsupported until an engine for that client
     # generation exists, and the plan says so rather than offering a build that cannot happen.
-    # 1.21.11 has no engine now: the one it had was rejected by the project owner because its multiplayer
-    # could not join a normal server from the browser. A row with no engine has to say so.
-    check("1.21.11 has no engine, and the plan says so rather than offering a build",
-          rows["1.21.11"]["verdict"] != "build" and not rows["1.21.11"].get("engine"),
-          str((rows["1.21.11"]["verdict"], rows["1.21.11"].get("engine"))))
-    check("and 26.2 is buildable by the Eaglercraft lineage, whose multiplayer works",
-          rows["26.2"]["verdict"] == "build" and rows["26.2"]["engine"] == "eagler-workspace-26.2",
-          str((rows["26.2"]["verdict"], rows["26.2"].get("engine"))))
-    check("and the rejected engine is still in the file as a record, with its reason",
-          any(e["id"] == "gaius" and not e.get("enabled") and "rejected" in (e.get("disabled_why") or "").lower()
-              for e in planner.load_engines(include_disabled=True)),
+    # One engine for three versions, and it is the one the GoldHQ builds are made from: vanilla is a plain
+    # ahead-of-time compile, Fabric is the same compile with the bake merging a mod set in first.
+    for version in ("1.21.11", "26.2", "26.3"):
+        check(f"{version} is buildable by the GoldHQ lineage engine",
+              rows_BY_ID(rows, version)["verdict"] == "build"
+              and rows_BY_ID(rows, version)["engine"] == "gaius",
+              str((rows_BY_ID(rows, version)["verdict"], rows_BY_ID(rows, version).get("engine"))))
+    check("and an engine that was set aside is still documented, with its reason",
+          all(e.get("disabled_why") for e in planner.load_engines(include_disabled=True) if not e.get("enabled")),
           "a disabled engine with no reason is a puzzle for the next person")
     # 26.2 is buildable by the Eaglercraft lineage - the engine whose multiplayer works, which is why the
     # project switched to it. The licence situation is the same as it always was for that repository (none),
     # and the route says so rather than hiding it.
-    check("a 26.x version is buildable by the Eaglercraft lineage",
-          rows["26.2"]["verdict"] == "build" and rows["26.2"]["engine"] == "eagler-workspace-26.2",
+    check("a 26.x version is buildable by the same engine as the 1.21 line",
+          rows["26.2"]["verdict"] == "build" and rows["26.2"]["engine"] == rows["1.21.11"]["engine"],
           str({k: rows["26.2"].get(k) for k in ("verdict", "engine", "why")})[:160])
     # The buildable row is 26.2 now, and a buildable row has to say what it costs and what the mods answer is.
     check("a buildable entry says what it costs",
@@ -138,8 +141,9 @@ def main() -> int:
     enabled = planner.load_engines()
     every = planner.load_engines(include_disabled=True)
     check("disabled engines are not candidates", {e["id"] for e in enabled} < {e["id"] for e in every})
-    check("the disabled one is still documented", any(e["id"] == "gaius" and e.get("disabled_why")
-                                                      for e in every))
+    check("a disabled engine is still documented, with the reason it was set aside",
+          all(e.get("disabled_why") for e in every if not e.get("enabled")),
+          str([e["id"] for e in every if not e.get("enabled") and not e.get("disabled_why")]))
     for engine in enabled:
         has_build = bool((engine.get("build") or {}).get("output")) and bool((engine.get("build") or {}).get("compile"))
         has_release = bool((engine.get("release") or {}).get("asset"))
@@ -160,8 +164,8 @@ def main() -> int:
           planner.verdict_for("1.21.4", "release", with_gaius + enabled,
                               planner.load_roadmap()).get("generated_profile") is True,
           "a rejected engine's machinery should still be testable")
-    check("and with the file as it stands the 1.21 line has no engine",
-          rows["1.21.11"]["verdict"] == "needs-port" and not rows["1.21.11"].get("engine"),
+    check("and with the file as it stands the 1.21 line is built by that same engine",
+          rows["1.21.11"]["verdict"] == "build" and rows["1.21.11"].get("engine") == "gaius",
           str((rows["1.21.11"]["verdict"], rows["1.21.11"].get("engine"))))
     # The point of profile_rules: a version nobody has brought up yet is buildable *by generating its
     # profile*, which is what makes "support the latest snapshot" a dispatch rather than a code change.
@@ -190,8 +194,8 @@ def main() -> int:
     links_any = planner.engine_links(engines)
     check("a prebuilt client is still available as the fallback for classics",
           "Eaglercraft_Offline_WASM.html" in (links_any.get("b1.8.1") or ""), str(sorted(links_any))[:80])
-    check("a compiled version with no engine is offered as needing a port, not as a build",
-          rows["1.21.11"]["verdict"] == "needs-port", rows["1.21.11"]["verdict"])
+    check("a compiled version with an engine is offered as a build",
+          rows["1.21.11"]["verdict"] == "build", rows["1.21.11"]["verdict"])
 
     print("\nprebuilt links are never hosted by us")
     links = planner.engine_links(engines)
@@ -401,11 +405,10 @@ def main() -> int:
     check("a LWJGL 3 version waits on one layer", states.get("1.16.5") == "one-layer", str(states.get("1.16.5")))
     check("26.2 is ahead-of-time: an engine covers it and ships a profile",
           states.get("26.2") == "ahead-of-time", str(states.get("26.2")))
-    check("26.3 is not, and says so rather than looking buildable",
-          states.get("26.3") == "blocked" or states.get("26.3") == "needs-port", str(states.get("26.3")))
-    check("the 1.21 line has no engine, so it is not called ahead-of-time",
-          states.get("1.21.11") != "ahead-of-time" and states.get("1.21.4") != "ahead-of-time",
-          f"1.21.11={states.get('1.21.11')} 1.21.4={states.get('1.21.4')}")
+    check("26.3 is ahead-of-time too: one engine covers all three of the versions this project is about",
+          states.get("26.3") == "ahead-of-time", str(states.get("26.3")))
+    check("the 1.21 line is ahead-of-time: the engine ships a profile for it",
+          states.get("1.21.11") == "ahead-of-time", f"1.21.11={states.get('1.21.11')}")
     # The other side of the same coin: a Java-21 version *outside* every engine's range is still a wall,
     # and has to say so rather than looking buildable because a neighbouring range exists.
     # 1.21.x is in scope now; what is *not* covered is anything past the engine's range.
