@@ -84,14 +84,23 @@ jobs:
               *"+"*) MODS="${RAW#*+}" ;;
               *) MODS="" ;;
             esac
-            ENGINE="TypeThe0ry/Gaius"
+            # The route decides which engine builds this version, and the two families are not
+            # interchangeable: a profile engine is told which version to fetch and patch, a workspace *is* the
+            # client source. This line used to hardcode one engine, so a dispatch of 26.2 built it with an
+            # engine that cannot build it - and failed an hour later, in the middle of a patch chain.
+            ENGINE="$(python3 tools/engine_for.py --version "$VERSION" --field repo 2>/dev/null || true)"
+            if [ -z "$ENGINE" ]; then
+              echo "::error::no enabled engine builds $VERSION"
+              python3 tools/engine_for.py --version "$VERSION" || true
+              exit 1
+            fi
           else
             VERSION="${{ inputs.version }}"
             MODS="${{ inputs.mods }}"
             ENGINE="${{ inputs.engine_repo }}"
           fi
           [ -n "$VERSION" ] || VERSION="latest-snapshot"
-          [ -n "$ENGINE" ] || ENGINE="TypeThe0ry/Gaius"
+          [ -n "$ENGINE" ] || { echo "::error::no engine for $VERSION"; exit 1; }
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "mods=$MODS" >> "$GITHUB_OUTPUT"
           echo "engine=$ENGINE" >> "$GITHUB_OUTPUT"
@@ -170,9 +179,12 @@ jobs:
           set -euo pipefail
           KIND="$(python3 - "${{ steps.want.outputs.engine }}" <<'PY'
           import json, pathlib, sys
+          # By repository or by id: the interactive path passes a repo, the tag path resolves one too, and the
+          # two families have to be told apart correctly or the wrong family's steps run (that is how a
+          # workspace build ended up running a profile engine's patch chain, and failed an hour in).
           wanted = sys.argv[1]
           engines = json.loads(pathlib.Path("ports.json").read_text())["engines"]
-          found = next((e for e in engines if (e.get("repo") or "") == wanted), None)
+          found = next((e for e in engines if (e.get("repo") or "") == wanted or (e.get("id") or "") == wanted), None)
           print((found or {}).get("kind") or "unknown")
           PY
           )"
