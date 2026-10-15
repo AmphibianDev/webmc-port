@@ -1,77 +1,93 @@
 # Where it stands
 
-Written to be read when nobody is watching the build queue. Everything below is either verified (with
-where to look) or explicitly marked as not.
+Written for whoever comes back and wants the state without reading a build queue. Every line is either
+verified (with where to look) or marked as not.
 
-## Live right now
+## Live now
 
-**https://amphibiandev.github.io/webmc-port/** — the launcher, with `routes.json`: **919 versions**, each
-saying how it runs, which engine would build it, that engine's licence, and what the mods policy is.
+**https://amphibiandev.github.io/webmc-port/clients/1.21.11/** — **Minecraft 1.21.11, playable in a page.**
+
+* compiled from the **official Mojang client jar** at build time (never committed),
+* by the MIT-licensed engine (Gaius), with our own boot screen in front of it — verified in the served
+  bytes: `id="webmc-boot"`, and the engine's own launcher page removed,
+* served as 6 chunks (108 MB) with a `manifest.json` and a start page that fetches them, **verifies each
+  chunk's sha256**, reassembles them in the browser and runs the client in a fullscreen-capable frame,
+* published as `packed-1.21.11.tar.gz` (81 MB) in the `built-clients` release; the catalog job unpacks it
+  onto the site, which is what uploading rather than pushing is for (see below).
+
+The launcher (**https://amphibiandev.github.io/webmc-port/**) lists **919 versions**, each with its route,
+the engine that would build it, that engine's licence, and the mod policy.
 
 | Route | Versions | What it means |
 | --- | --- | --- |
-| `real-java` | 349 | the official jar runs in a JVM in the page, **Fabric/Legacy Fabric mods load at play time** |
-| `needs-shim` | 398 | the same, waiting on the JavaScript LWJGL 3 (`lwjgl3-webgl/`) — it boots a JVM, opens a WebGL2 context, stops at the first shader |
-| `aot` | 172 | no browser JVM runs this client's Java, so an engine compiles it, mods baked in at build time |
+| `real-java` | 349 | official jar in a JVM in the page; **Fabric/Legacy Fabric load at play time** |
+| `needs-shim` | 398 | the same, waiting on the JavaScript LWJGL 3 |
+| `aot` | 172 | compiled by an engine; mods go in before the compile |
 
-## What works, and where the proof is
+## Fabric: where it works, and where it is being built
 
-| Thing | Proof |
-| --- | --- |
-| **1.21.11 compiles from the official jar** | `client-1.21.11.html`, 107 MB, in the `built-clients` release; the build log says `BUILD_EXIT=0` and `Portable Gaius HTML … (113005251 bytes)` |
-| **26.2 compiles** | `client-26.2.html`, 115 MB, same release |
-| **Packing a client into a page** | `tools/pack_client.py`; the 1.21.11 run reported `status: packed, packed: 113025295` |
-| **The loader's brain** | `tools/route.py` (routes every version) and `tools/fetch_packed.py` (puts a packed client on the site) |
-| **Our own JVM loader** | `mods/loader-jvm/`, verified in a real JVM: starts a mod, the mod reads a game class, sets the five properties Fabric reads, reproducible jar |
-| **The virtual machine the mods folder promised** | 1.0 – 1.12.2: real JVM, real jars, at play time |
-| **Offline checks** | `bash run-tests.sh` in `webmc-port` — 862 checks, no network, no JDK, no browser |
+| Versions | How a Fabric mod is loaded | State |
+| --- | --- | --- |
+| **1.0 – 1.12.2** | Fabric Loader at play time, in the page's JVM | ✅ works; the launch page now loads CheerpJ from 4.3 → 4.2 → 3.1 with fallbacks, because one CDN script failing used to end a launch |
+| **1.13 – 1.14.4** | our build-time bake into a workspace engine | wired (`tools/build_modded_workspace.py`), builds dispatched |
+| **1.21.11** | **our own bake** (`tools/bake_mods.py`): the mod's classes are copied into the client and its entrypoint is called from the client's own static initialiser | verified locally; a CI run is testing the whole chain now |
+| 1.16.5 / 1.19.2 / 1.20.4 | nothing can run these in a browser at all yet (no compiled engine exists; the browser JVM needs the LWJGL 3 shim) | ❌ |
+| April Fools snapshots | same route as the release they lead to; each needs its own patch fixes | 25w14craftmine and 24w14potato have been attempted and fail on version-specific patchers |
 
-## In flight / next
+### What the bake can and cannot do
 
-1. **1.21.11's page**: the build is re-running; when it finishes it uploads `packed-1.21.11.tar.gz` as a
-   release asset and asks the catalog job to run, which unpacks it to `site/clients/1.21.11/` and pushes.
-   Then `https://amphibiandev.github.io/webmc-port/clients/1.21.11/` is a playable page.
-   Check: `python3 tools/watch_builds.py`, then `curl -sI .../clients/1.21.11/`.
-2. **The shim's first frame**: `build-log/shim-report.md` on the `shim-log` branch is the report. It now
-   logs every shader native on the way in and out, and answers a handle of 0 directly, because the last
-   report said only "glGetShaderi entered, then 405 seconds of nothing".
-3. **1.21.4 / 1.21.10 / 1.21.11-pre5**: they build through the patch chain and fail on version-specific
-   patchers; three fixups exist (`tools/aot_fixups.json`) and each failure has been one line. Not needed
-   for v1 (1.21.11 is the target), but they are how the 1.21 line grows.
+A compiled client has **no class loader at play time**, so a mod cannot be loaded the way Fabric loads it.
+The bake therefore:
 
-## What is honestly not there yet
+1. reads each jar's `fabric.mod.json` for its client entrypoint,
+2. writes `WebMcModBakePatcher` into the engine's own patch chain (a Java class with
+   `main(jar, classOutputDir, version)`, exactly the contract the engine's patchers use),
+3. which copies every class out of the mod jars into the patch output the build merges over the client,
+4. and injects one call — `webmc/baked/WebMcBakedMods.initialize()` — at the end of
+   `net/minecraft/client/Minecraft`'s static initialiser,
+5. while `WebMcBakedMods.java` (a source override for that version) instantiates and calls each mod's
+   entrypoint, which is what Fabric Loader would have done.
 
-* **Fabric on a compiled version.** Every mod-capable engine is unlicensed, and the licensed one (Gaius,
-  MIT) has no mod hooks at all. `MODERN-JAVA.md` has the three ways in, in the order worth trying; the
-  build job **refuses** a mod set rather than producing a vanilla client called modded.
-* **1.13 – 1.20.4.** No engine exists for those clients anywhere on GitHub that is licensed, and the
-  LwJGL 3 shim that would let the real JVM run them has not drawn a frame.
-* **26.x.** Out of scope by decision: Java 25 plus a rewritten renderer (`blaze3d/pipeline/*` →
-  `com/mojang/renderpearl/*`). `ports.json` records it as a blocker with the reason, and the plan says
-  "out of scope" rather than offering a build that cannot happen.
-* **Snapshots of the 1.21 line** route correctly and have a generated profile, but none has been built
-  yet — the same patcher work as the releases.
+**Mixins are not applied yet.** A mod whose behaviour is mixins needs those transformed into the client at
+build time, which is a bigger job; the bake reports which mods carry them so nobody is surprised.
 
-## Things that cost time and are written down so they do not again
+That this works is not a hope: `tests/test_bake_mods.py` compiles the generated patcher with a real
+`javac`, runs it against a client jar it builds itself, and reads the result back with `javap` — the class
+copied, the `<clinit>` rewritten, the `invokestatic` on the way out. 933 checks pass in total, offline.
 
-* A duplicated YAML key in a workflow made GitHub reject the whole file: every dispatch died in the same
-  second with no jobs. `tools/workflow_lint.py` exists because of it.
-* `JAVA_TOOL_OPTIONS` makes every JVM print a "Picked up …" line, which breaks any tool that parses
-  `javac -version` — the engine's JDK detection did exactly that, and five runs failed with "requires JDK
-  21 or newer" on a machine that had a JDK 21.
-* A runner has 16 GB and no swap: the TeaVM link and a parallel patch chain both die there. The build job
-  adds 16 GB of swap.
-* Every git push from a tag-triggered build run failed while every release upload worked. The build now
-  publishes and hands off to the catalog job, which pushes.
-
-## Commands
+## Starting a build (no token needed)
 
 ```sh
-cd ~/devspace/WebMC/webmc-port
-bash run-tests.sh                         # everything offline: 862 checks
-python3 tools/watch_builds.py             # the build queue, and the last report
-python3 tools/route.py --version 1.21.11  # how one version runs
-python3 tools/route.py --span 1.0 1.21.11 # the coverage, by route
-python3 tools/fetch_packed.py --all --record   # put packed clients on the site (what the catalog job does)
-git tag build-1.21.11 && git push origin build-1.21.11   # build one version (≈45–75 min)
+git tag build-1.21.11                     && git push origin build-1.21.11              # vanilla
+git tag build-1.21.11+hello-fabric        && git push origin build-1.21.11+hello-fabric   # with a mod set
+python3 tools/watch_builds.py                                                            # the queue, and the last report
 ```
+
+The mod set travels in the tag name because a tag is the one way to start a build without a token. A
+modded build compiles the example mods from `mods/examples/`, copies the set out of `mods/`, pre-flights the
+generated patcher with `javac` (2 minutes, instead of discovering a Java mistake an hour in), bakes, then
+compiles, packs and publishes.
+
+## Four things that cost a full build each, now written down and tested
+
+1. **`case "$RAW" in *+)` never matches**, so a mod set in a tag name was silently dropped and the build
+   produced a healthy vanilla client. `tests/test_workflows.py` now runs the workflow's own parsing lines
+   with four tags.
+2. **`JAVA_TOOL_OPTIONS` breaks JDK detection**: it makes every `javac` print "Picked up …", and any tool
+   parsing `javac -version` then sees an unparsable version. Five runs failed with "requires JDK 21 or
+   newer" on a machine that had one.
+3. **A 16 GB runner with no swap** dies in the middle of the TeaVM link or a parallel patch chain, and a
+   job killed by the OOM killer never runs its `always()` steps: no report, no log. The build job adds
+   16 GB of swap.
+4. **Every git push from a tag-triggered run failed** while every release upload worked. So the build
+   publishes `packed-<version>.tar.gz` as a release asset and asks the catalog job to run, which fetches
+   it (`tools/fetch_packed.py`), records it in `state.json` and deploys — a division of labour that uses
+   only the channels that work.
+
+## Still not there
+
+* **Mixins at build time**, which is what turns "a mod's entrypoint is called" into "a real mod behaves".
+* **1.16.5 / 1.19.2 / 1.20.4**: no route exists. Either the LWJGL 3 shim (`lwjgl3-webgl/`, 216 natives,
+  the first shader still failing — its report is on the `shim-log` branch) or our own AOT engine.
+* **26.x**: out of scope by decision (Java 25 and a rewritten renderer).
+* **April Fools snapshots**: each is its own patch job against the engine's chain, like 1.21.4 and 1.21.10.
