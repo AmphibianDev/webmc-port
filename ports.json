@@ -58,8 +58,8 @@
       "name": "Eaglercraft 26.2 workspace (TeaVM + WASM-GC toolchain)",
       "repo": "CynTheSolveroftheabsolutefabric/Eaglercraft-26.2-Workspace",
       "kind": "eagler-workspace",
-      "enabled": false,
-      "note": "The Eaglercraft lineage for 26.x: the official client's source, patched with the browser platform layer, plus a real build system (Gradle for the Java, node scripts in wasm-toolchain/ for the link and the single-file package). Mods are compiled in through source hooks, so a mod set is a build.",
+      "enabled": true,
+      "note": "The Eaglercraft lineage for 26.x, and the engine this project uses for it: the official client's source, patched with the browser platform layer, plus a real build system. Its multiplayer is the Eaglercraft transport (a WebSocket to an Eaglercraft server, or a gateway for a normal Java server - see MULTIPLAYER.md), which is what the rejected engine could not do. The repository has no licence file: recorded in CREDITS.md as used knowingly rather than licensed.",
       "profiles": [
         "26.2"
       ],
@@ -88,7 +88,8 @@
       ],
       "blocked_by": "no licence: the repository has no licence file, which means all rights reserved rather than free to use. Its 26.2 build was replaced by the MIT-licensed gaius engine, which covers 1.21.11, 26.2 and 26.3. Its compiler also reads sounds.epk unconditionally, which is why tools/empty-epk.init.gradle.kts exists: a build from this lineage has to create an empty archive with the engine's own packager (and give the optional music-pack export a name it accepts) rather than ship Minecraft audio.",
       "license_note": "no licence file: all rights reserved rather than free to use. Its 26.2 build was replaced by the MIT-licensed gaius engine; re-enabling it is a licence decision, and CREDITS.md records it.",
-      "bakes_mods": true
+      "bakes_mods": true,
+      "disabled_why": null
     },
     {
       "id": "eaglercraftx",
@@ -164,8 +165,8 @@
       "name": "Gaius (TeaVM, official client bytecode)",
       "repo": "TypeThe0ry/Gaius",
       "kind": "real-client",
-      "enabled": true,
-      "disabled_why": "Kept only as a record: it compiles the official client for 1.21.11/26.2/26.3 with a fully headless CLI, but each version needs its own hand-written profile, and its support stops at the versions it ships. Disabled by request; the Eaglercraft workspaces above are the preferred engines.",
+      "enabled": false,
+      "disabled_why": "Rejected by the project owner: its multiplayer is a relay model that could not join a normal server from the browser, which is the one thing a browser client has to do. It also carries its own launcher chrome and loading screen, which had to be stripped. Kept as a record - the profile generation, the patch-chain hook and the mod bake built for it are all still in the tree and still tested, in case a future version behaves.",
       "profiles": [
         "1.21.11"
       ],
