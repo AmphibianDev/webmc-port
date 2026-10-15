@@ -120,21 +120,24 @@ def start_page(title: str, manifest_name: str = "manifest.json") -> str:
     go.disabled = true;
     try {{
       var manifest = await (await fetch(manifestName, {{ cache: "force-cache" }})).json();
-      var parts = [];
+      var parts = new Array(manifest.chunks.length);
       var seen = 0;
       if (window.webmcBoot) {{
+        window.webmcBoot.version(manifest.title);
         window.webmcBoot.progress(0, "Loading " + manifest.title);
       }}
-      for (var i = 0; i < manifest.chunks.length; i++) {{
-        var chunk = manifest.chunks[i];
+      /* Every chunk at once. They are independent files with a hash each, and fetching them in sequence
+       * made the wait the sum of the pieces when it can be the largest one: six chunks of ~18 MB take as
+       * long as one on a decent link. Progress is aggregated so the bar still moves smoothly. */
+      await Promise.all(manifest.chunks.map(async function (chunk, index) {{
         var bytes = await fetchChecked(chunk.path, chunk.sha256, chunk.path);
-        parts.push(bytes);
+        parts[index] = bytes;
         seen += bytes.length;
         if (window.webmcBoot) {{
           window.webmcBoot.progress(seen / manifest.total, "Loading " + manifest.title);
         }}
         why.textContent = (seen / 1048576).toFixed(1) + " / " + (manifest.total / 1048576).toFixed(1) + " MB";
-      }}
+      }}));
       var blob = new Blob(parts, {{ type: "text/html" }});
       if (await digest(await blob.arrayBuffer()) !== manifest.sha256 && manifest.sha256) {{
         throw new Error("the reassembled client does not match its hash");

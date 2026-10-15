@@ -70,7 +70,22 @@
     width: calc(200px * var(--webmc-scale)); height: calc(2px * var(--webmc-scale));
     margin: 0 auto; background: var(--webmc-bar-track); overflow: hidden;
   }
-  #webmc-boot .bar > i { display: block; width: 0; height: 100%; background: var(--webmc-bar-fill); }
+  #webmc-boot .bar { position: relative; }
+  #webmc-boot .bar > i {
+    display: block; width: 0; height: 100%;
+    /* the fill never goes backwards: the page uses the highest value it has seen, so a step that
+       reports less than the last one cannot make the bar jump back */
+    background: linear-gradient(90deg, var(--webmc-bar-fill), #d8f0da);
+    transition: width .18s linear;
+  }
+  #webmc-boot .logo {
+    font-size: calc(14px * var(--webmc-scale)); margin: 0 0 calc(14px * var(--webmc-scale));
+    color: var(--webmc-text); letter-spacing: calc(2px * var(--webmc-scale));
+    text-shadow: calc(2px * var(--webmc-scale)) calc(2px * var(--webmc-scale)) 0 var(--webmc-shadow);
+  }
+  #webmc-boot .version { color: #ffffff; opacity: .5; margin: calc(6px * var(--webmc-scale)) 0 0;
+    font-size: calc(8px * var(--webmc-scale));
+    text-shadow: calc(1px * var(--webmc-scale)) calc(1px * var(--webmc-scale)) 0 var(--webmc-shadow); }
   #webmc-boot .note {
     color: var(--webmc-text); opacity: .55; margin: calc(8px * var(--webmc-scale)) 0 0;
     font-size: calc(8px * var(--webmc-scale));
@@ -99,8 +114,10 @@
 <div id="x11-wasm-root"></div>
 <div id="webmc-boot">
   <div class="panel">
+    <p class="logo" id="webmc-boot-logo">MINECRAFT</p>
     <p class="status">Loading...</p>
     <div class="bar"><i></i></div>
+    <p class="version" id="webmc-boot-version"></p>
     <p class="note"></p>
   </div>
 </div>
@@ -128,11 +145,19 @@
       root.hidden = false;
       if (text) { status.textContent = text; }
     },
+    /* Monotonic: a step that reports less progress than the last one is ignored rather than shown, which
+     * is what "the bar went backwards" always is - two things reporting progress on different scales. */
     progress: function (fraction, text) {
       api.show();
-      value = Math.max(0, Math.min(1, Number(fraction) || 0));
+      var next = Math.max(0, Math.min(1, Number(fraction) || 0));
+      if (next > value) { value = next; }
       fill.style.width = (value * 100).toFixed(2) + "%";
       if (text) { status.textContent = text; }
+    },
+    /* The version being loaded, in the corner, because "Loading…" with no name is a worse wait. */
+    version: function (text) {
+      var line = document.getElementById("webmc-boot-version");
+      if (line) { line.textContent = text || ""; }
     },
     note: function (text) { api.show(); note.textContent = text || ""; },
     ready: function () {

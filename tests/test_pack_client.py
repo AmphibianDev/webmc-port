@@ -93,6 +93,15 @@ def test_pack(tmp: pathlib.Path) -> None:
           "not an official minecraft product" in page.lower())
     check("a corrupted transfer is reported, not ignored", "could not start:" in page)
     check("progress is shown while the chunks arrive", "webmcBoot.progress" in page)
+    check("the chunks are fetched in parallel, not one after another",
+          "Promise.all(manifest.chunks.map" in page, "sequential fetches make the wait the sum of the parts")
+    check("each chunk is still verified before it is used",
+          "fetchChecked(chunk.path, chunk.sha256" in page)
+    check("and the version being loaded is named on the boot screen",
+          "webmcBoot.version(manifest.title)" in page)
+    check("the bar cannot go backwards", "if (next > value) { value = next; }" in
+          (ROOT / "site" / "boot" / "shell.html").read_text(),
+          "a bar that jumps back is two progress reports on different scales")
     check("and the size comes from the manifest, not from a hardcoded number",
           "manifest.total" in page)
 
