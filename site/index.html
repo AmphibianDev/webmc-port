@@ -140,6 +140,14 @@
         <button id="gateway-check" type="button">Check</button>
         <span id="gateway-status" class="small muted"></span>
       </p>
+      <p class="small muted"><b>Already have a single-file client?</b> The 26.3 offline build from GoldHQ works
+        with this gateway as it is - its transport is the protocol our gateway speaks - so one command starts a
+        gateway and serves that client with the gateway already set inside it:</p>
+      <pre class="small"><code>python3 tools/play_local.py                      # newest client in ~/Downloads
+python3 tools/play_local.py --server mc.example.com   # and join a server on load</code></pre>
+      <p class="small muted">The patch is one script tag and nothing else; removing it gives your file back byte
+        for byte. A published client can carry the same setting, baked in by
+        <code>tools/pack_client.py --gateway</code>.</p>
       <p class="small muted">Stored in this browser only (<code>localStorage</code>), never sent to this site.
         A gateway you run yourself: <code>node gateway/server.js</code>, then put it behind TLS at
         <code>wss://your.host/v1/connect</code>. <a href="https://github.com/AmphibianDev/webmc-port/blob/main/MULTIPLAYER.md">MULTIPLAYER.md</a>

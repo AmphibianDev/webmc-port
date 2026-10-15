@@ -105,6 +105,11 @@ check('and a field for the gateway they run themselves, saved in their browser o
 check('with the gateway checks reading like something a player can act on',
   page.includes('private targets refused') && page.includes('not a gateway'));
 check('and self-hosting pointed at', page.includes('apps/bridge') && page.includes('GAIUS_RELAY_PUBLIC_URL'));
+check('a player who already has a single-file client is told the one command',
+  page.includes('tools/play_local.py') && page.includes('--server mc.example.com'),
+  'the client in ~/Downloads should not need a rewrite to join a server');
+check('and that the patch is one script tag, not a rehost',
+  page.includes('one script tag') && page.includes('byte'));
 check('and at our own gateway, with the file it lives in',
   page.includes('gateway/server.js') && page.includes('MULTIPLAYER.md'));
 
