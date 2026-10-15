@@ -86,16 +86,15 @@ def test_read_mod(tmp: pathlib.Path) -> None:
     check("a mod that carries mixins is flagged", mixed["needs_mixins"] is True, str(mixed))
     check("and its mixin configs are listed", mixed["mixin_configs"] == ["example.mixins.json"])
 
-    print("\nthe generated hook")
-    hook = bake_mods.hook_source([plain, bake_mods.read_mod(fake_mod(tmp / "lib.jar", "lib", None))])
-    check("it is a class in its own package", hook.startswith("package webmc.baked;"))
-    check("it has the method the patcher calls",
-          "public static void initialize()" in hook)
-    check("it instantiates and calls each entrypoint",
-          "new com.example.Plain().onInitializeClient();" in hook, hook[:400])
-    check("and it does not invent a call for a mod with no entrypoint",
-          hook.count("onInitializeClient()") == 1)
-    check("the class it declares matches its name", "class WebMcBakedMods" in hook)
+    print("\nthe patcher is told what to call, not what to compile against")
+    patcher = bake_mods.PATCHER_JAVA
+    check("the injection is bytecode, not generated Java",
+          "INVOKESPECIAL" in patcher and "INVOKEVIRTUAL" in patcher and "new TypeInsnNode" in patcher,
+          "generated Java would have to name the mod's package, which the engine's compiler cannot resolve")
+    check("there is no hook class left to write", "hook_source" not in dir(bake_mods)
+          and "WebMcBakedMods" not in patcher)
+    check("a declared entrypoint that is not in the jar is a clear error, not a NoClassDefFoundError later",
+          "declares the" in patcher and "is not in that jar" in patcher)
 
 
 def test_bake(tmp: pathlib.Path) -> None:
@@ -105,6 +104,11 @@ def test_bake(tmp: pathlib.Path) -> None:
     jars.mkdir()
     one = fake_mod(jars / "hello-fabric.jar", "hello-fabric", "com.example.HelloFabricMod")
     two = fake_mod(jars / "mixed.jar", "mixed", "com.example.Mixed", mixins=True)
+    # a hook source left behind by an older bake must be removed by this one: that file is exactly what broke
+    # the engine's compile ('package com.example does not exist'), so its absence is part of the contract
+    stale = engine / "port" / "overrides" / "client" / "src" / "versions" / "1.21.11" / "java" / "webmc" / "baked" / "WebMcBakedMods.java"
+    stale.parent.mkdir(parents=True, exist_ok=True)
+    stale.write_text("package webmc.baked; public class WebMcBakedMods { }\n")
     lines: list[str] = []
     report = bake_mods.bake(engine, "1.21.11", [one, two], jars, log=lines.append)
 
@@ -122,12 +126,12 @@ def test_bake(tmp: pathlib.Path) -> None:
     check("it copies classes rather than recompiling them",
           "Files.write(target, stream.readAllBytes())" in source)
     check("and it injects its call into the client's static initialiser",
-          'method.name.equals("<clinit>")' in source and "INVOKESTATIC" in source)
+          'method.name.equals("<clinit>")' in source and "INVOKEVIRTUAL" in source)
 
-    hook = engine / "port" / "overrides" / "client" / "src" / "versions" / "1.21.11" / "java" / "webmc" / "baked" / "WebMcBakedMods.java"
-    check("the hook is written as a source override for this version", hook.is_file())
-    check("and it mentions both mods' entrypoints", "com.example.HelloFabricMod" in hook.read_text()
-          and "com.example.Mixed" in hook.read_text())
+    check("a hook source left by an older bake is deleted, not built on", not stale.is_file())
+    check("the report says which entrypoints will be called",
+          sorted(call["class"] for call in report["calls"]) == ["com.example.HelloFabricMod", "com.example.Mixed"],
+          str(report.get("calls")))
 
     shim = engine / "port" / "overrides" / "client" / "src" / "versions" / "1.21.11" / "java" / "net" / "fabricmc" / "api" / "ClientModInitializer.java"
     check("the Fabric interface a mod compiles against is written from this repository's shim", shim.is_file())
@@ -258,13 +262,14 @@ def test_patcher_runs(tmp: pathlib.Path) -> None:
     disassembly = subprocess.run([javap, "-c", "-p", "-cp", str(output), "net.minecraft.client.Minecraft"],
                                  capture_output=True, text=True).stdout
     check("the client's static initialiser calls the baked mods",
-          "webmc/baked/WebMcBakedMods.initialize:()V" in disassembly,
-          disassembly[-300:])
+          "Method com/example/HelloFabricMod.\"<init>\":()V" in disassembly
+          and "Method com/example/HelloFabricMod.onInitializeClient:()V" in disassembly,
+          "the injection has to be a real instantiate-and-call, not a bare static call")
     # inside the static initialiser itself, not merely somewhere in the dump
     initialiser = disassembly.split("static {}", 1)[-1].split("\n}", 1)[0]
     check("and it calls it on the way out of the client's own initialisation, before returning",
-          "webmc/baked/WebMcBakedMods.initialize" in initialiser
-          and initialiser.index("webmc/baked/WebMcBakedMods.initialize") < initialiser.rindex("return"),
+          "com/example/HelloFabricMod.onInitializeClient" in initialiser
+          and initialiser.index("com/example/HelloFabricMod.onInitializeClient") < initialiser.rindex("return"),
           initialiser[-300:])
 
     print("\nand with no mods it does nothing, loudly")

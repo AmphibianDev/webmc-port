@@ -49,9 +49,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import org.objectweb.asm.ClassReader;
@@ -60,6 +62,8 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.InsnNode;
+import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
@@ -75,21 +79,23 @@ import org.objectweb.asm.tree.MethodNode;
  * <ul>
  *   <li>every class from the mod jars is copied into the client - the mod is then part of the same
  *       compile, which is the only way a mod can exist in an ahead-of-time compiled client;</li>
- *   <li>{@code webmc/baked/WebMcBakedMods.initialize()} is called at the end of the client's own static
+ *   <li>each mod's client entrypoint - the class Fabric Loader would instantiate - is instantiated and called
+ *       at the end of the client's own static
  *       initialiser, which runs once when the client class is first loaded - the closest thing to Fabric
  *       Loader's client entrypoint that a compiled client has.</li>
  * </ul>
  *
  * <p>The mod jars come from the {@code WEBMC_MODS} environment variable (a path-separated list), so this
- * class needs no knowledge of which mods are being baked.
+ * class needs no knowledge of which mods are being baked, and because the call is bytecode the engine's own
+ * compiler never has to resolve the mod's package.
  */
 public final class __CLASS__ {
 
-    /** The class this injects a call to; generated as a source override beside the client's sources. */
-    private static final String HOOK = "webmc/baked/WebMcBakedMods";
-    private static final String HOOK_METHOD = "initialize";
-    private static final String HOOK_DESCRIPTOR = "()V";
     private static final String CLIENT = "net/minecraft/client/Minecraft.class";
+
+    /** One baked entrypoint: the class to instantiate, and the method to call on the new instance. */
+    private record Entry(String owner, String method) {
+    }
 
     private __CLASS__() {
     }
@@ -108,11 +114,16 @@ public final class __CLASS__ {
             return;
         }
 
+        List<Entry> entries = new ArrayList<>();
         int copied = 0;
         for (Path mod : mods) {
-            copied += copyClasses(mod, output);
+            copied += copyClasses(mod, output, entries);
         }
         System.out.println("__CLASS__: copied " + copied + " class(es) from " + mods.size() + " mod jar(s)");
+        if (entries.isEmpty()) {
+            System.out.println("__CLASS__: no client entrypoint among those mods, so the client is left alone");
+            return;
+        }
 
         byte[] input;
         try (ZipFile client = new ZipFile(jar.toFile())) {
@@ -135,8 +146,13 @@ public final class __CLASS__ {
             // the end of the static initialiser, before its RETURN: the client class has been loaded,
             // and every class the mod needs is now real
             AbstractInsnNode last = method.instructions.getLast();
-            method.instructions.insertBefore(last, call());
-            injected = true;
+            // One instantiate-and-call per baked mod, written as bytecode rather than as generated Java: a
+            // source file would have to name the mod's package, and the engine compiles its sources before
+            // the patched classes are on its classpath - which is a compile error, not a shortcut.
+            for (Entry entry : entries) {
+                method.instructions.insertBefore(last, call(entry));
+                injected = true;
+            }
             break;
         }
         if (!injected) {
@@ -149,12 +165,19 @@ public final class __CLASS__ {
         Path target = output.resolve(CLIENT);
         Files.createDirectories(target.getParent());
         Files.write(target, writer.toByteArray());
-        System.out.println("__CLASS__: injected " + HOOK + "." + HOOK_METHOD + " into the client's static initialiser");
+        System.out.println("__CLASS__: injected " + entries.size()
+                + " baked entrypoint call(s) into the client's static initialiser");
+        for (Entry entry : entries) {
+            System.out.println("__CLASS__:   " + entry.owner().replace('/', '.') + "." + entry.method() + "()");
+        }
     }
 
-    private static InsnList call() {
+    private static InsnList call(Entry entry) {
         InsnList code = new InsnList();
-        code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, HOOK, HOOK_METHOD, HOOK_DESCRIPTOR, false));
+        code.add(new TypeInsnNode(Opcodes.NEW, entry.owner()));
+        code.add(new InsnNode(Opcodes.DUP));
+        code.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, entry.owner(), "<init>", "()V", false));
+        code.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, entry.owner(), entry.method(), "()V", false));
         return code;
     }
 
@@ -180,8 +203,9 @@ public final class __CLASS__ {
     }
 
     /** Copy every class of one mod into the client, and report what its descriptor says. */
-    private static int copyClasses(Path mod, Path output) throws IOException {
+    private static int copyClasses(Path mod, Path output, List<Entry> entries) throws IOException {
         Map<String, String> descriptor = new LinkedHashMap<>();
+        Set<String> copiedNames = new HashSet<>();
         int copied = 0;
         try (ZipFile archive = new ZipFile(mod.toFile())) {
             ZipEntry manifest = archive.getEntry("fabric.mod.json");
@@ -190,11 +214,12 @@ public final class __CLASS__ {
                     String text = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
                     descriptor.put("id", firstString(text, "id"));
                     descriptor.put("entrypoint", firstEntrypoint(text));
+                                        descriptor.put("main", Boolean.toString(text.contains((char) 34 + "main" + (char) 34)));
                 }
             }
-            var entries = archive.entries();
-            while (entries.hasMoreElements()) {
-                ZipEntry entry = entries.nextElement();
+            var zipEntries = archive.entries();
+            while (zipEntries.hasMoreElements()) {
+                ZipEntry entry = zipEntries.nextElement();
                 if (entry.isDirectory() || !entry.getName().endsWith(".class")) {
                     continue;
                 }
@@ -203,12 +228,28 @@ public final class __CLASS__ {
                 try (var stream = archive.getInputStream(entry)) {
                     Files.write(target, stream.readAllBytes());
                 }
+                copiedNames.add(entry.getName());
                 copied += 1;
             }
         }
         System.out.println("__CLASS__: " + copied + " class(es) from " + mod.getFileName()
                 + (descriptor.get("id") == null ? "" : " (id " + descriptor.get("id") + ")")
                 + (descriptor.get("entrypoint") == null ? "" : ", entrypoint " + descriptor.get("entrypoint")));
+
+        String raw = descriptor.get("entrypoint");
+        if (raw != null) {
+            int separator = raw.indexOf("::");
+            String owner = (separator < 0 ? raw : raw.substring(0, separator)).replace('.', '/');
+            String method = separator >= 0 ? raw.substring(separator + 2)
+                    : (Boolean.parseBoolean(descriptor.get("main")) ? "onInitialize" : "onInitializeClient");
+            if (!copiedNames.contains(owner + ".class")) {
+                // a descriptor that names a class the jar does not carry would otherwise become a
+                // NoClassDefFoundError in the middle of a build that takes an hour
+                throw new IllegalStateException("the descriptor of " + mod.getFileName() + " declares the "
+                        + "entrypoint " + owner.replace('/', '.') + ", which is not in that jar");
+            }
+            entries.add(new Entry(owner, method));
+        }
         return copied;
     }
 
@@ -285,38 +326,6 @@ def read_mod(jar: pathlib.Path) -> dict:
     }
 
 
-def hook_source(mods: list[dict]) -> str:
-    """The class the patcher calls: one instantiate-and-call per mod, as Fabric would do at play time."""
-    lines = [
-        "package webmc.baked;",
-        "",
-        "/**",
-        " * The baked mod set's entrypoints.",
-        " *",
-        " * Written by tools/bake_mods.py. A compiled client has no class loader, so a mod cannot be started",
-        " * the way Fabric Loader starts one; the engine's patch chain injects a call to this class into the",
-        " * client's own static initialiser instead, and each line below is what Fabric Loader would have",
-        " * done at play time.",
-        " */",
-        "public final class WebMcBakedMods {",
-        "",
-        "    private WebMcBakedMods() {",
-        "    }",
-        "",
-        "    public static void initialize() {",
-    ]
-    for mod in mods:
-        if not mod.get("entrypoint"):
-            lines.append(f"        // {mod['id']}: no client entrypoint declared, so there is nothing to call")
-            continue
-        lines.append(f"        // {mod['name']} {mod.get('version') or ''}".rstrip())
-        lines.append(f"        new {mod['entrypoint']}().onInitializeClient();")
-    lines.append("    }")
-    lines.append("}")
-    lines.append("")
-    return "\n".join(lines)
-
-
 def bake(engine: pathlib.Path, version: str, mod_jars: list[pathlib.Path], mods_dir: pathlib.Path | None,
          log=print) -> dict:
     """Write the patcher, the hook and the shim, and add the patcher to the version profile."""
@@ -349,10 +358,16 @@ def bake(engine: pathlib.Path, version: str, mod_jars: list[pathlib.Path], mods_
     log(f"  wrote {patcher.relative_to(engine)}")
 
     overrides = engine / "port" / "overrides" / "client" / "src" / "versions" / version / "java"
-    hook = overrides / "webmc" / "baked" / "WebMcBakedMods.java"
-    hook.parent.mkdir(parents=True, exist_ok=True)
-    hook.write_text(hook_source(mods))
-    log(f"  wrote {hook.relative_to(engine)} ({len(mods)} mod(s))")
+    # Earlier bakes wrote a hook class here. It has to go: it was Java that named the mod's package, and the
+    # engine compiles these sources before the patched classes are on its classpath.
+    stale = overrides / "webmc" / "baked" / "WebMcBakedMods.java"
+    if stale.is_file():
+        stale.unlink()
+        log(f"  removed {stale.relative_to(engine)} (superseded by bytecode injection)")
+    if not mods[0].get("entrypoint"):
+        log("  no client entrypoint in the mod set: the patcher will copy classes and call nothing")
+    else:
+        log("  each entrypoint is called from the client's static initialiser as bytecode")
 
     shim = SHIMS / "net" / "fabricmc" / "api" / "ClientModInitializer.java"
     if shim.is_file():
@@ -377,7 +392,7 @@ def bake(engine: pathlib.Path, version: str, mod_jars: list[pathlib.Path], mods_
         "mods": mods,
         "mod_jars": shipped,
         "webmc_mods": ":".join(shipped),
-        "hook": str(hook.relative_to(engine)),
+        "calls": [{"class": mod["entrypoint"], "id": mod["id"]} for mod in mods if mod.get("entrypoint")],
         "with_mixins": [mod["id"] for mod in mods if mod["needs_mixins"]],
         "entrypoints": [mod["id"] for mod in mods if mod["entrypoint"]],
     }
