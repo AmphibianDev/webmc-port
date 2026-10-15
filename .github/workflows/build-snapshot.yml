@@ -431,6 +431,12 @@ jobs:
         # GAIUS_BRINGUP=1 lets the engine's bring-up list skip patches whose port is not finished. Every
         # skip prints BRINGUP_SKIP, and this step fails if the log shows one that the list does not
         # declare - the engine's own check-build-log-skips.mjs does that, and it is run here.
+        #
+        # The log goes to the release *from this step*, on failure: the steps after it are skipped when it fails,
+        # so a failure here used to leave nothing to read anywhere - which is how a broken patch chain stayed a
+        # mystery for three builds.
+        env:
+          GH_TOKEN: ${{ github.token }}
         working-directory: engine
         run: |
           set -uo pipefail
@@ -455,6 +461,12 @@ jobs:
           } 2>&1 | tee -a /tmp/build.log
           bash port/scripts/build-overlays.sh 2>&1 | tee -a /tmp/build.log
           STATUS=${PIPESTATUS[0]}
+          if [ "$STATUS" != "0" ]; then
+            echo "== the patch chain failed; the last 200 lines go to the release =="
+            tail -200 /tmp/build.log > /tmp/chain-failure.txt 2>/dev/null || true
+            gh release view built-clients >/dev/null 2>&1 || true
+            gh release upload built-clients /tmp/chain-failure.txt --clobber 2>&1 || true
+          fi
           # and what the chain left in the patched jar: the mod's own class, or nothing
           if [ -n "${WEBMC_MODS:-}" ]; then
             {
