@@ -49,15 +49,25 @@ def shell_parts() -> tuple[str, str, str]:
     return style.group(1), markup, script.group(1)
 
 
-def start_page(title: str, manifest_name: str = "manifest.json") -> str:
-    """The page that fetches, verifies and runs the client."""
+def start_page(title: str, manifest_name: str = "manifest.json", mods: list[str] | None = None,
+               gateway: str | None = None) -> str:
+    """The page that fetches, verifies and runs the client.
+
+    The build's own facts go in as meta tags as well as in the manifest: a page that says what it is in its own
+    source can be checked from the outside (tools/verify_client.py does exactly that) without running it, and
+    "which mods are in this build" is a question worth being able to answer with curl.
+    """
     css, markup, script = shell_parts()
+    facts = "".join([
+        f'\n<meta name="webmc-mods" content="{",".join(mods)}" />' if mods else "",
+        f'\n<meta name="webmc-gateway" content="{gateway}" />' if gateway else "",
+    ])
     return f'''<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>{title}</title>
+<title>{title}</title>{facts}
 <!-- Written by tools/pack_client.py. The client itself is the chunks next to this page. -->
 <style>
 {css}
@@ -252,7 +262,7 @@ def pack(client: pathlib.Path, out: pathlib.Path, title: str, chunk_mb: int, gat
         "chunks": chunks,
     }
     (out / "manifest.json").write_text(json.dumps(manifest, indent=1) + "\n")
-    (out / "index.html").write_text(start_page(title))
+    (out / "index.html").write_text(start_page(title, mods=mods, gateway=gateway))
     log(f"  packed {client.name}: {len(data) / 1048576:.1f} MB in {len(chunks)} chunk(s) of "
         f"{chunk_mb} MB under {out}")
     return manifest
