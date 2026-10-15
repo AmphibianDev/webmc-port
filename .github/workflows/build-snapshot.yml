@@ -171,10 +171,13 @@ jobs:
         # third-party action, so there is one less thing between this file and the build.
         run: |
           set -euo pipefail
-          git clone --depth 1 https://github.com/emscripten-core/emsdk.git /opt/emsdk
+          git clone https://github.com/emscripten-core/emsdk.git /opt/emsdk
           cd /opt/emsdk
-          ./emsdk install latest
-          ./emsdk activate latest
+          # Pinned to the version the engine's shader toolchain checks for: `latest` is 6.0.12 and the engine
+          # refuses anything but 6.0.10 ("emscripten '6.0.12' is not the pinned 6.0.10"), which killed the 26.3
+          # compile thirty-four minutes in. A pinned toolchain is the engine's decision, and the runner follows it.
+          ./emsdk install 6.0.10
+          ./emsdk activate 6.0.10
           source ./emsdk_env.sh
           emcc --version | head -2
           echo "EMSDK=/opt/emsdk" >> "$GITHUB_ENV"
