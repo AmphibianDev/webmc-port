@@ -200,6 +200,30 @@ def gateway_script(url: str) -> str:
         "globalThis.__eaglerConfig || {});\n</script>\n")
 
 
+def gaius_script(url: str) -> str:
+    """The profile engine's own tunnel settings: one gateway, given to it the way it asks for one.
+
+    Its client reads `globalThis.__gaiusBridgeUrls` first, then a `?bridge=` parameter, then it derives a relay
+    from its own host - and it builds `/tunnel` itself. A gateway that speaks the tunnel dialect (ours does: see
+    gateway/server.js) is therefore one script tag, and the client needs no patching at all.
+    """
+    base = url.rstrip("/")
+    if base.endswith("/tunnel"):
+        base = base[: -len("/tunnel")]
+    import json as _json
+    return (
+        '<script data-webmc-bridge="' + url + '">/* WebMC: the tunnel this build should use. The client asks for a '
+        "relay node; this is ours, and it speaks the same dialect. */\n"
+        "globalThis.__gaiusBridgeUrl = " + _json.dumps(url.rstrip('/') + ('/tunnel' if not url.rstrip('/').endswith('/tunnel') else '')) + ";\n"
+        "globalThis.__gaiusBridgeUrls = [globalThis.__gaiusBridgeUrl];\n"
+        "</script>\n")
+
+
+def looks_like_gaius(html: bytes) -> bool:
+    head = html[:200000].decode("utf-8", "replace")
+    return "__gaius" in head or "gaius" in head.lower()
+
+
 def inject_gateway(html: bytes, url: str) -> bytes:
     """Put the gateway default into an Eagler26 build, using the client's own configuration merge.
 
@@ -207,11 +231,13 @@ def inject_gateway(html: bytes, url: str) -> bytes:
     before its module runs survives - and a value in `localStorage["eagler26.goldproxy"]` still wins over it.
     """
     text = html.decode("utf-8", errors="surrogateescape")
-    if GATEWAY_MARK in text:
+    if GATEWAY_MARK in text or "data-webmc-bridge" in text:
         return html  # already set by an earlier pass
+    if looks_like_gaius(html) and "__eaglerConfig" not in text:
+        return inject_bridge(html, url)
     if "__eaglerConfig" not in text and "eagler26-offline-meta" not in text:
-        raise SystemExit("this build does not look like an Eagler26 client: it has no client config to set "
-                         "a gateway in, so the address would be ignored")
+        raise SystemExit("this build has nowhere to put a gateway: it is neither an Eaglercraft26 (goldproxy) "
+                         "client nor a profile-engine one, so the address would be ignored")
     marker = "<head>"
     insertion = marker + "\n" + gateway_script(url)
     if marker in text:
@@ -219,6 +245,17 @@ def inject_gateway(html: bytes, url: str) -> bytes:
     else:
         text = gateway_script(url) + text
     return text.encode("utf-8", errors="surrogateescape")
+
+
+def inject_bridge(html: bytes, url: str) -> bytes:
+    """Put the tunnel setting into a profile-engine client, before any of its code runs."""
+    text = html.decode("utf-8", errors="surrogateescape")
+    if "data-webmc-bridge" in text:
+        return html
+    script = gaius_script(url)
+    if "<head>" in text:
+        return (text.replace("<head>", "<head>" + script, 1)).encode("utf-8", errors="surrogateescape")
+    return (script + text).encode("utf-8", errors="surrogateescape")
 
 
 def pack(client: pathlib.Path, out: pathlib.Path, title: str, chunk_mb: int, gateway: str | None = None,

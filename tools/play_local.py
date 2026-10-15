@@ -98,6 +98,11 @@ def patch_client(data: bytes, gateway: str, server: str | None = None) -> bytes:
         insertion = eaglercraftx_script(server)
     elif "__eaglerConfig" in text or "eagler26-offline-meta" in text:
         insertion = gateway_script(gateway)
+    elif "__gaius" in text or "gaius" in text[:200000].lower():
+        # the profile engine's own tunnel dialect: a relay node URL, and it appends /tunnel itself
+        insertion = ('<script data-webmc-bridge="' + gateway + '">/* WebMC: the tunnel this build should use. */\n'
+                     "globalThis.__gaiusBridgeUrl = " + json.dumps(gateway.rstrip("/") + "/tunnel") + ";\n"
+                     "globalThis.__gaiusBridgeUrls = [globalThis.__gaiusBridgeUrl];\n</script>\n")
     else:
         raise SystemExit("this build has nowhere to put a multiplayer setting: it is neither an Eagler26 "
                          "(goldproxy) build nor an EaglercraftX one, so nothing here can point it at a server")
