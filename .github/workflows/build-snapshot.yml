@@ -91,14 +91,9 @@ jobs:
             ENGINE="${{ inputs.engine_repo }}"
           fi
           [ -n "$VERSION" ] || VERSION="latest-snapshot"
-          if [ -z "$ENGINE" ]; then
-            ENGINE="$(python3 tools/engine_for.py --version "$VERSION" --field repo 2>/dev/null || true)"
-          fi
-          if [ -z "$ENGINE" ]; then
-            echo "::error::no enabled engine builds $VERSION"
-            python3 tools/engine_for.py --version "$VERSION" || true
-            exit 1
-          fi
+          # The engine is resolved *after* the checkout - the answer is in ports.json and routes.json, which are
+          # in the repository. A leftover copy of that resolution lived here and failed every dispatch in step 2,
+          # before the checkout it needed had run.
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "mods=$MODS" >> "$GITHUB_OUTPUT"
           echo "engine=$ENGINE" >> "$GITHUB_OUTPUT"
