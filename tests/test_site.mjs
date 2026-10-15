@@ -69,25 +69,32 @@ check('and the whole thing is dark, the way a launcher is',
 // ---------------------------------------------------------------- the data, not a version list
 check('it reads the routes the pipeline writes', page.includes('routes.json'));
 check('and the catalog', page.includes('manifest.json'));
-check('it does not carry a version list of its own',
-  !/\[[^\]]*("[0-9]+\.[0-9]+[^"]*"[^\]]*){2,}\]/.test(body.replace(/\/\/[^\n]*/g, '')),
-  'a hardcoded version list found in the script');
+// The launcher has a *scope* - three versions, written down once - and no catalogue of its own: everything a row
+// says beyond "it is in scope" comes from routes.json and manifest.json, so a version cannot be described here
+// that the pipeline does not agree with. Those are different things, and a test has to tell them apart.
+const versionLists = [...body.matchAll(/\[\s*("[0-9][^\]]*?)\]/gs)].map((match) => match[1]);
+check('the only version list in the launcher is its scope, and the scope is the three asked for',
+  versionLists.length === 1 && /^"1\.21\.11",\s*"26\.2",\s*"26\.3"$/.test(versionLists[0].trim()),
+  versionLists.join(' | ').slice(0, 120));
 
 // ---------------------------------------------------------------- only the playable ones
 check('the default view is the playable versions', /filter:\s*"playable"/.test(body));
 check('and the filter really asks the route whether a version can be played',
   /if \(state\.filter === "playable"\) \{ return row\.playable; \}/.test(body));
-check('"playable" is not "built": the real-Java rows count too',
-  body.includes('row.route === "java"') || body.includes('"real-java"'));
+check('"playable" means playable in the browser, not "a build exists"',
+  /playable: target\.kind === "page" \|\| target\.kind === "java"/.test(body),
+  "a download is not playable, and neither is a link to somebody else's site");
+check('the launcher offers three versions and says which', /var VERSIONS = \["1\.21\.11", "26\.2", "26\.3"\]/.test(body));
+check('and Fabric is one of the things it tells you about a version', body.includes('"Fabric"'));
 check('the rows that cannot be played are behind their own filter, which names the wall',
-  body.includes('Everything else') && body.includes('each row says which wall it is behind'));
+  body.includes('Not ready yet') && body.includes('each row says which wall it is behind'));
 // the data agrees with the claim: there is at least one playable version, and the non-playable ones are the
 // large majority - which is why hiding them by default is the whole point
 const playable = Object.values(routes).filter((route) => route.playable);
-check('the catalogue really has playable versions to list', playable.length > 0, String(playable.length));
-check('and a lot of versions that are not playable, which is why the default matters',
-  Object.values(routes).length - playable.length > playable.length,
-  `${playable.length} playable of ${Object.values(routes).length}`);
+check('the three versions the project is about are in the catalogue',
+  ['1.21.11', '26.2', '26.3'].every((id) => routes[id]), Object.keys(routes).length + ' routes');
+check('and the launcher lists those three and nothing else',
+  /var VERSIONS = \["1\.21\.11", "26\.2", "26\.3"\]/.test(body));
 
 // ---------------------------------------------------------------- the five answers
 for (const [label, needle] of [
@@ -143,6 +150,7 @@ function extract(name, kind = 'function') {
 }
 const harness = [
   'var PAGE_PROBE = {};',
+  'var VERSIONS = ' + (body.match(/var VERSIONS = (\[[^\]]*\]);/) || [null, '[]'])[1] + ';',
   extract('playTargetFor'),
   extract('buildRows'),
   'var FILTERS = ' + (body.match(/var FILTERS = (\[[\s\S]*?\]);/) || [null, '[]'])[1] + ';',
@@ -160,6 +168,15 @@ const harness = [
   '  builtKinds: rows.filter(function (r) { return r.built; }).map(function (r) { return r.id + ":" + r.target.kind; }),',
   '  javaKind: (rows.filter(function (r) { return r.route === "real-java"; })[0] || {target:{}}).target.kind,',
   '  noRoute: rows.filter(function (r) { return r.target.kind === "none"; }).length,',
+  // The rules, on inputs the three-version scope does not happen to contain: a launcher whose rules only hold
+  // for the rows that are in front of it is not a rule.
+  '  kinds: {',
+  '    java: playTargetFor("1.7.10", { route: "real-java" }, {}).kind,',
+  '    none: playTargetFor("9.9", { route: "aot", built: null, why: "no engine" }, {}).kind,',
+  '    external: playTargetFor("26.3", { route: "aot", built: null }, { url: "https://example.invalid/x" }).kind,',
+  '    ours: playTargetFor("1.21.11", { route: "aot", built: null }, { url: "https://github.com/AmphibianDev/webmc-port/releases/latest/download/client-1.21.11.html" }).kind,',
+  '    page: playTargetFor("26.2", { route: "aot", built: { url: "https://example.invalid/asset" } }, {}).kind',
+  '  },',
   '  missingId: rows.filter(function (r) { return !r.id; }).length,',
   '  newest: rows[0].id',
   '}));',
@@ -175,21 +192,25 @@ try {
         String(error.stderr || error).slice(0, 400));
 }
 if (behaviour) {
-  check('every version in the route index becomes a row', behaviour.total === Object.keys(routes).length,
-        `${behaviour.total} rows for ${Object.keys(routes).length} routes`);
+  check('the launcher lists exactly the three versions it is about', behaviour.total === 3,
+        `${behaviour.total} rows`);
   check('the default listing is exactly the playable ones, and nothing else',
         behaviour.listed === behaviour.playable && behaviour.listedAllPlayable,
         `${behaviour.listed} listed, ${behaviour.playable} playable`);
-  // Not a claim about how many: a claim that the default view is a *filter*. 351 of 919 are playable (the whole
-  // real-Java range plus the two built clients), so most of the catalogue is not - which is why a launcher that
-  // lists everything is a catalogue, and why "show me everything" is a switch and not the default.
-  check('which is a minority of the catalogue - the reason the default matters',
-        behaviour.playable < behaviour.total / 2, `${behaviour.playable} of ${behaviour.total}`);
+  check('the default view lists every one of them that can be played',
+        behaviour.listed <= behaviour.total && behaviour.listedAllPlayable,
+        `${behaviour.listed} listed of ${behaviour.total}`);
   check('a version with a built client opens a page this site serves',
         behaviour.builtKinds.every((entry) => entry.endsWith(':page')), JSON.stringify(behaviour.builtKinds));
-  check('a real-Java version opens the JVM page', behaviour.javaKind === 'java', behaviour.javaKind);
-  check('and the versions with no route say so instead of opening something',
-        behaviour.noRoute > 0, String(behaviour.noRoute));
+  check('a real-Java version opens the JVM page', behaviour.kinds.java === 'java', behaviour.kinds.java);
+  check('a version with a built client opens the page this site serves',
+        behaviour.kinds.page === 'page', behaviour.kinds.page);
+  check('a version with no route says so instead of opening something',
+        behaviour.kinds.none === 'none', behaviour.kinds.none);
+  check("somebody else's link is labelled as theirs, not as ours",
+        behaviour.kinds.external === 'other', behaviour.kinds.external);
+  check('and our own release asset is a download, which is not playable',
+        behaviour.kinds.ours === 'file', behaviour.kinds.ours);
   check('the newest version is first', Boolean(behaviour.newest));
 }
 
