@@ -56,11 +56,32 @@ def call(token: str, path: str, method: str = "GET", payload: dict | None = None
         raise SystemExit(f"{method} {path} -> {error.code}: {detail}") from None
 
 
+def is_ancestor(repo_dir: pathlib.Path, ancestor: str, descendant: str) -> bool:
+    return subprocess.run(["git", "merge-base", "--is-ancestor", ancestor, descendant], cwd=repo_dir).returncode == 0
+
+
 def commits_to_send(repo_dir: pathlib.Path, remote_ref: str, local_ref: str) -> list[str]:
     """The local commits the remote does not have, oldest first."""
-    have = git("rev-parse", remote_ref, cwd=repo_dir).strip()
-    revs = git("rev-list", "--reverse", f"{have}..{local_ref}", cwd=repo_dir).split()
-    return revs
+    return git("rev-list", "--reverse", f"{remote_ref}..{local_ref}", cwd=repo_dir).split()
+
+
+def flat_changes(repo_dir: pathlib.Path, merge_base: str, local_ref: str) -> list[tuple[str, str]]:
+    """Every path that differs between the two sides, as (path, status) - the "the remote moved on" case.
+
+    When somebody else has pushed (the catalogue does, every few minutes) the local commits cannot be replayed one
+    by one: their parents are not the remote's commits any more. What *is* still true is the difference between the
+    two trees, so that difference is sent as one commit on top of the remote head. It is the same content by
+    construction, and the message names the local commits it carries.
+    """
+    rows: list[tuple[str, str]] = []
+    for line in git("diff", "--name-status", "-M", merge_base, local_ref, cwd=repo_dir).splitlines():
+        parts = line.split("\t")
+        if len(parts) == 2:
+            rows.append((parts[1], parts[0][0]))
+        elif len(parts) == 3:  # a rename: the old path goes, the new one arrives
+            rows.append((parts[1], "D"))
+            rows.append((parts[2], "A"))
+    return rows
 
 
 def changed_paths(repo_dir: pathlib.Path, commit: str) -> list[tuple[str, str | None]]:
@@ -97,7 +118,20 @@ def blob_entry(token: str, repo: str, repo_dir: pathlib.Path, commit: str, path:
 
 def push(token: str, repo: str, branch: str, repo_dir: pathlib.Path, remote_head: str | None,
          local_ref: str = "HEAD", dry_run: bool = False, log=print) -> dict:
-    commits = commits_to_send(repo_dir, remote_head or "HEAD", local_ref)
+    if not remote_head:
+        commits = git("rev-list", "--reverse", local_ref, cwd=repo_dir).split()
+    else:
+        subprocess.run(["git", "fetch", "-q", "origin", branch], cwd=repo_dir, capture_output=True)
+        if is_ancestor(repo_dir, remote_head, local_ref):
+            commits = commits_to_send(repo_dir, remote_head, local_ref)
+        else:
+            merge_base = git("merge-base", remote_head, local_ref, cwd=repo_dir).strip()
+            mine = git("rev-list", "--reverse", f"{merge_base}..{local_ref}", cwd=repo_dir).split()
+            if not mine:
+                log("nothing to send: the remote already has everything this checkout has")
+                return {"sent": [], "head": remote_head}
+            log(f"the remote has moved on ({len(mine)} local commit(s) not on top of it): sending them as one")
+            return _send_flat(token, repo, branch, repo_dir, remote_head, local_ref, mine, dry_run, log)
     if not commits:
         log("nothing to send: the remote already has every local commit")
         return {"sent": [], "head": remote_head}
@@ -140,6 +174,32 @@ def push(token: str, repo: str, branch: str, repo_dir: pathlib.Path, remote_head
          {"sha": parent_sha, "force": False})
     log(f"{branch} is now {parent_sha[:12]} ({len(sent)} commit(s) sent through the API)")
     return {"sent": sent, "head": parent_sha}
+
+
+def _send_flat(token: str, repo: str, branch: str, repo_dir: pathlib.Path, remote_head: str,
+               local_ref: str, mine: list[str], dry_run: bool, log) -> dict:
+    """One commit carrying the whole difference, on top of whatever the remote has now."""
+    merge_base = git("merge-base", remote_head, local_ref, cwd=repo_dir).strip()
+    rows = flat_changes(repo_dir, merge_base, local_ref)
+    subject = git("log", "-1", "--format=%s", local_ref, cwd=repo_dir).strip()
+    listing = "\n".join("  " + git("log", "-1", "--format=%s", c, cwd=repo_dir).strip() for c in mine)
+    message = (subject + "\n\n" + f"(sent through the API on top of {remote_head[:12]}; carries {len(mine)} "
+               f"local commit(s))\n\n{listing}\n")
+    log(f"  {len(rows)} path(s) differ, sent as one commit: {subject[:70]}")
+    if dry_run:
+        return {"sent": [{"commit": local_ref, "paths": len(rows), "message": subject}], "dry_run": True}
+    parent = call(token, f"/repos/{repo}/git/commits/{remote_head}")
+    entries = [blob_entry(token, repo, repo_dir, local_ref, path, status) for path, status in rows]
+    tree = call(token, f"/repos/{repo}/git/trees", "POST", {"base_tree": parent["tree"]["sha"], "tree": entries})
+    author = git("log", "-1", "--format=%an%x00%ae%x00%aI", local_ref, cwd=repo_dir).strip().split("\x00")
+    created = call(token, f"/repos/{repo}/git/commits", "POST", {
+        "message": message, "tree": tree["sha"], "parents": [remote_head],
+        "author": {"name": author[0], "email": author[1], "date": author[2]},
+        "committer": {"name": author[0], "email": author[1], "date": author[2]},
+    })
+    call(token, f"/repos/{repo}/git/refs/heads/{branch}", "PATCH", {"sha": created["sha"], "force": False})
+    log(f"{branch} is now {created['sha'][:12]} ({len(rows)} path(s) in one commit)")
+    return {"sent": [{"commit": created["sha"], "paths": len(rows), "message": subject}], "head": created["sha"]}
 
 
 def main(argv: list[str] | None = None) -> int:
