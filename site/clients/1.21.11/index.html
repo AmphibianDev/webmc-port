@@ -42,7 +42,22 @@
     width: calc(200px * var(--webmc-scale)); height: calc(2px * var(--webmc-scale));
     margin: 0 auto; background: var(--webmc-bar-track); overflow: hidden;
   }
-  #webmc-boot .bar > i { display: block; width: 0; height: 100%; background: var(--webmc-bar-fill); }
+  #webmc-boot .bar { position: relative; }
+  #webmc-boot .bar > i {
+    display: block; width: 0; height: 100%;
+    /* the fill never goes backwards: the page uses the highest value it has seen, so a step that
+       reports less than the last one cannot make the bar jump back */
+    background: linear-gradient(90deg, var(--webmc-bar-fill), #d8f0da);
+    transition: width .18s linear;
+  }
+  #webmc-boot .logo {
+    font-size: calc(14px * var(--webmc-scale)); margin: 0 0 calc(14px * var(--webmc-scale));
+    color: var(--webmc-text); letter-spacing: calc(2px * var(--webmc-scale));
+    text-shadow: calc(2px * var(--webmc-scale)) calc(2px * var(--webmc-scale)) 0 var(--webmc-shadow);
+  }
+  #webmc-boot .version { color: #ffffff; opacity: .5; margin: calc(6px * var(--webmc-scale)) 0 0;
+    font-size: calc(8px * var(--webmc-scale));
+    text-shadow: calc(1px * var(--webmc-scale)) calc(1px * var(--webmc-scale)) 0 var(--webmc-shadow); }
   #webmc-boot .note {
     color: var(--webmc-text); opacity: .55; margin: calc(8px * var(--webmc-scale)) 0 0;
     font-size: calc(8px * var(--webmc-scale));
@@ -86,8 +101,10 @@
 </div>
 <div id="webmc-boot">
   <div class="panel">
+    <p class="logo" id="webmc-boot-logo">MINECRAFT</p>
     <p class="status">Loading...</p>
     <div class="bar"><i></i></div>
+    <p class="version" id="webmc-boot-version"></p>
     <p class="note"></p>
   </div>
 </div>
@@ -115,11 +132,19 @@
       root.hidden = false;
       if (text) { status.textContent = text; }
     },
+    /* Monotonic: a step that reports less progress than the last one is ignored rather than shown, which
+     * is what "the bar went backwards" always is - two things reporting progress on different scales. */
     progress: function (fraction, text) {
       api.show();
-      value = Math.max(0, Math.min(1, Number(fraction) || 0));
+      var next = Math.max(0, Math.min(1, Number(fraction) || 0));
+      if (next > value) { value = next; }
       fill.style.width = (value * 100).toFixed(2) + "%";
       if (text) { status.textContent = text; }
+    },
+    /* The version being loaded, in the corner, because "Loading…" with no name is a worse wait. */
+    version: function (text) {
+      var line = document.getElementById("webmc-boot-version");
+      if (line) { line.textContent = text || ""; }
     },
     note: function (text) { api.show(); note.textContent = text || ""; },
     ready: function () {
@@ -183,11 +208,19 @@
       root.hidden = false;
       if (text) { status.textContent = text; }
     },
+    /* Monotonic: a step that reports less progress than the last one is ignored rather than shown, which
+     * is what "the bar went backwards" always is - two things reporting progress on different scales. */
     progress: function (fraction, text) {
       api.show();
-      value = Math.max(0, Math.min(1, Number(fraction) || 0));
+      var next = Math.max(0, Math.min(1, Number(fraction) || 0));
+      if (next > value) { value = next; }
       fill.style.width = (value * 100).toFixed(2) + "%";
       if (text) { status.textContent = text; }
+    },
+    /* The version being loaded, in the corner, because "Loading…" with no name is a worse wait. */
+    version: function (text) {
+      var line = document.getElementById("webmc-boot-version");
+      if (line) { line.textContent = text || ""; }
     },
     note: function (text) { api.show(); note.textContent = text || ""; },
     ready: function () {
@@ -262,21 +295,24 @@
     go.disabled = true;
     try {
       var manifest = await (await fetch(manifestName, { cache: "force-cache" })).json();
-      var parts = [];
+      var parts = new Array(manifest.chunks.length);
       var seen = 0;
       if (window.webmcBoot) {
+        window.webmcBoot.version(manifest.title);
         window.webmcBoot.progress(0, "Loading " + manifest.title);
       }
-      for (var i = 0; i < manifest.chunks.length; i++) {
-        var chunk = manifest.chunks[i];
+      /* Every chunk at once. They are independent files with a hash each, and fetching them in sequence
+       * made the wait the sum of the pieces when it can be the largest one: six chunks of ~18 MB take as
+       * long as one on a decent link. Progress is aggregated so the bar still moves smoothly. */
+      await Promise.all(manifest.chunks.map(async function (chunk, index) {
         var bytes = await fetchChecked(chunk.path, chunk.sha256, chunk.path);
-        parts.push(bytes);
+        parts[index] = bytes;
         seen += bytes.length;
         if (window.webmcBoot) {
           window.webmcBoot.progress(seen / manifest.total, "Loading " + manifest.title);
         }
         why.textContent = (seen / 1048576).toFixed(1) + " / " + (manifest.total / 1048576).toFixed(1) + " MB";
-      }
+      }));
       var blob = new Blob(parts, { type: "text/html" });
       if (await digest(await blob.arrayBuffer()) !== manifest.sha256 && manifest.sha256) {
         throw new Error("the reassembled client does not match its hash");
