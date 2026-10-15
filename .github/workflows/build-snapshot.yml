@@ -345,6 +345,23 @@ jobs:
             fi
           fi
 
+      - name: Put the bake report and the log on the release
+        # The git push at the end of this job is the one step that keeps failing, and it is the step that
+        # carries the log to a branch. The release upload always works, so the report and the log go there too:
+        # a 55-minute build whose log nobody can open is a wasted day.
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          gh release view built-clients >/dev/null 2>&1 || gh release create built-clients \
+            --title "Built browser clients" \
+            --notes "Compiled from the official client by this repository's build jobs." || true
+          for file in /tmp/bake.json /tmp/build.log; do
+            [ -f "$file" ] && gh release upload built-clients "$file" --clobber 2>/dev/null || true
+          done
+          echo "uploaded: $(ls -la /tmp/bake.json /tmp/build.log 2>/dev/null | wc -l) file(s)"
+
       - name: Fetch the client, its libraries and its assets
         working-directory: engine
         run: |
@@ -380,8 +397,28 @@ jobs:
           # earlier is what keeps the patch chain inside the runner's memory.
           [ "${GITHUB_REF_TYPE}" = "tag" ] && export GAIUS_BRINGUP=1
           echo "bring-up: ${GAIUS_BRINGUP:-off}"
+          # What the mod bake asked this step to do, recorded before the step that has to do it: an empty
+          # WEBMC_MODS or a missing WEBMC_MOD_PATCHER here is a build that will come out unmodded, and that
+          # has to be visible in the log rather than inferred later from a wasm file.
+          {
+            echo "mods to bake: ${WEBMC_MODS:-<none>}"
+            echo "mod patcher: ${WEBMC_MOD_PATCHER:-<none>}"
+            for path in ${WEBMC_MODS//:/ }; do [ -f "$path" ] && echo "  present: $path" || echo "  MISSING: $path"; done
+            if [ -n "${WEBMC_MOD_PATCHER:-}" ]; then
+              grep -c "WEBMC_MOD_PATCHER" port/scripts/build-overlays.sh | sed "s/^/  chain hook references: /"
+            fi
+          } 2>&1 | tee -a /tmp/build.log
           bash port/scripts/build-overlays.sh 2>&1 | tee -a /tmp/build.log
           STATUS=${PIPESTATUS[0]}
+          # and what the chain left in the patched jar: the mod's own class, or nothing
+          if [ -n "${WEBMC_MODS:-}" ]; then
+            {
+              echo "== the patched client jar after the chain"
+              ls -la port/work/overlays/"$VERSION"/client-named-"$VERSION"-gaius.jar 2>/dev/null || echo "no patched jar"
+              unzip -l port/work/overlays/"$VERSION"/client-named-"$VERSION"-gaius.jar 2>/dev/null \
+                | grep -E "com/example|webmc" | head -10 || echo "no baked classes in the jar"
+            } 2>&1 | tee -a /tmp/build.log
+          fi
           echo "overlays exit: $STATUS"
           if [ -f port/tools/bringup/"$VERSION".txt ]; then
             node port/scripts/check-build-log-skips.mjs "$VERSION" /tmp/build.log 2>&1 | tail -30 || true
