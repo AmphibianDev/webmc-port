@@ -380,10 +380,12 @@ def bake(engine: pathlib.Path, version: str, mod_jars: list[pathlib.Path], mods_
     if not mods:
         raise SystemExit("no mod jars to bake")
     for mod in mods:
+        if mod.get("is_library"):
+            continue  # the mixin stubs are a library: counting their class names as "mixins" is a false alarm
         if mod["needs_mixins"]:
-            log(f"  ! {mod['id']} carries mixins ({len(mod['mixin_configs'])} config(s), "
-                f"{mod['mixin_classes']} mixin class(es)): this bake applies entrypoints only, so those "
-                f"mixins will not be applied")
+            log(f"  {mod['id']} carries mixins ({len(mod['mixin_configs'])} config(s), "
+                f"{mod['mixin_classes']} class(es) named like one): the applier merges them into the client "
+                f"before it is compiled, and the build log says what it applied and what it refused")
 
     # the mod jars are copied into the engine, so the patcher finds them where the build runs
     shipped_dir = engine / "port" / "work" / version / "webmc-mods"
@@ -391,7 +393,11 @@ def bake(engine: pathlib.Path, version: str, mod_jars: list[pathlib.Path], mods_
     shipped = []
     for mod, jar in zip(mods, [jar for jar in mod_jars if jar.is_file()]):
         target = shipped_dir / jar.name
-        shutil.copyfile(mods_dir / jar.name if mods_dir else jar, target)
+        # A jar may come from anywhere: the mods directory, or this repository's own build output (the mixin
+        # stubs live in mods/jars/ and are built there). Preferring mods_dir without checking is how a build
+        # failed on FileNotFoundError for a jar that was right there on disk.
+        candidate = mods_dir / jar.name if mods_dir else None
+        shutil.copyfile(candidate if candidate and candidate.is_file() else jar, target)
         shipped.append(str(target))
         mod["shipped"] = str(target)
 
@@ -478,8 +484,8 @@ def bake(engine: pathlib.Path, version: str, mod_jars: list[pathlib.Path], mods_
         "webmc_mods": ":".join(shipped),
         "calls": [{"class": mod["entrypoint"], "id": mod["id"]} for mod in mods if mod.get("entrypoint")],
         "mixin_applier": str(applier_target.relative_to(engine)),
-        "mods_with_mixins": [mod["id"] for mod in mods if mod["needs_mixins"]],
-        "with_mixins": [mod["id"] for mod in mods if mod["needs_mixins"]],
+        "mods_with_mixins": [mod["id"] for mod in real if mod["needs_mixins"]],
+        "with_mixins": [mod["id"] for mod in real if mod["needs_mixins"]],
         "entrypoints": [mod["id"] for mod in mods if mod["entrypoint"]],
     }
 

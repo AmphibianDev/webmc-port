@@ -284,7 +284,9 @@ jobs:
           # wants to bake one has to compile it first, or the bake finds an empty folder and says so
           python3 tools/build_mods.py 2>&1 | tail -3 | tee -a /tmp/build.log
           # the callback classes a mixin's code constructs have to exist in the client it is merged into
-          python3 tools/build_mixin_shims.py 2>&1 | tail -2 | tee -a /tmp/build.log
+          # into /tmp/mods with the rest: one directory for "the jars this build bakes", so no later step
+          # has to know that one of them came from somewhere else
+          python3 tools/build_mixin_shims.py --out /tmp/mods/webmc-mixin-shims.jar 2>&1 | tail -2 | tee -a /tmp/build.log
           python3 - "${{ steps.want.outputs.mods }}" <<'PY'
           import json, pathlib, shutil, sys
           wanted = [m.strip() for m in sys.argv[1].split(",") if m.strip()]
@@ -314,7 +316,7 @@ jobs:
             # the mixin stubs are not a mod: they carry the callback classes a mixin's code constructs, and the
             # client it is merged into needs them to compile. They ship with the client, listed last so a log
             # reads as "the mods, then the shims".
-            for jar in /tmp/mods/*.jar mods/jars/webmc-mixin-shims.jar; do
+            for jar in /tmp/mods/*.jar; do
               [ -f "$jar" ] && MOD_ARGS="$MOD_ARGS --mods $jar"
             done
             python3 tools/bake_mods.py --engine ../engine --version "$VERSION" --mods-dir /tmp/mods \

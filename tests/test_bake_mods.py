@@ -58,15 +58,18 @@ def fake_engine(root: pathlib.Path, version: str = "1.21.11", patch_set: str = "
     return root
 
 
-def fake_mod(path: pathlib.Path, mod_id: str, entrypoint: str | None, mixins: bool = False) -> pathlib.Path:
-    descriptor = {"schemaVersion": 1, "id": mod_id, "name": mod_id.upper(), "version": "1.0.0",
-                  "environment": "client"}
+def fake_mod(path: pathlib.Path, mod_id: str, entrypoint: str | None, mixins: bool = False,
+             descriptor: bool = True) -> pathlib.Path:
+    # the parameter and the dictionary must not share a name: they did, so "no descriptor" was always written
+    manifest = {"schemaVersion": 1, "id": mod_id, "name": mod_id.upper(), "version": "1.0.0",
+                "environment": "client"}
     if entrypoint:
-        descriptor["entrypoints"] = {"client": [entrypoint]}
+        manifest["entrypoints"] = {"client": [entrypoint]}
     if mixins:
-        descriptor["mixins"] = ["example.mixins.json"]
+        manifest["mixins"] = ["example.mixins.json"]
     with zipfile.ZipFile(path, "w") as jar:
-        jar.writestr("fabric.mod.json", json.dumps(descriptor))
+        if descriptor:
+            jar.writestr("fabric.mod.json", json.dumps(manifest))
         # a real mod's class sits at the path its descriptor names, which is what the hook then calls
         jar.writestr((entrypoint.replace(".", "/") if entrypoint else f"{mod_id}/Mod") + ".class", FAKE_CLASS)
         if mixins:
@@ -111,7 +114,17 @@ def test_bake(tmp: pathlib.Path) -> None:
     stale.parent.mkdir(parents=True, exist_ok=True)
     stale.write_text("package webmc.baked; public class WebMcBakedMods { }\n")
     lines: list[str] = []
-    report = bake_mods.bake(engine, "1.21.11", [one, two], jars, log=lines.append)
+    # a library jar that lives somewhere else than --mods-dir: this is how a real build failed on a jar that was
+    # in the repository's own output directory, and it must be copied from where it really is
+    (tmp / "elsewhere").mkdir(parents=True, exist_ok=True)
+    library = fake_mod(tmp / "elsewhere" / "webmc-mixin-shims.jar", "webmc-mixin-shims", None, descriptor=False)
+    report = bake_mods.bake(engine, "1.21.11", [one, two, library], jars, log=lines.append)
+    check("a jar outside the mods directory is copied from where it is",
+          any(path.endswith("webmc-mixin-shims.jar") for path in report["mod_jars"]),
+          str(report["mod_jars"]))
+    check("and a library is not read for mixin intent by its class names",
+          "webmc-mixin-shims" not in report["mods_with_mixins"] and "webmc-mixin-shims" in report["libraries"],
+          str((report["mods_with_mixins"], report["libraries"])))
 
     patcher = engine / "port" / "tools" / "src" / "main" / "java" / "dev" / "gaius" / "tools" / "WebMcModBakePatcher.java"
     check("the patcher source is written into the engine's tools package", patcher.is_file())
@@ -137,7 +150,8 @@ def test_bake(tmp: pathlib.Path) -> None:
 
     check("a hook source left by an older bake is deleted, not built on", not stale.is_file())
     check("a jar with no descriptor is a library, not something to name on a loading screen",
-          report["libraries"] == [] and sorted(report["mod_ids"]) == ["hello-fabric", "mixed"],
+          report["libraries"] == ["webmc-mixin-shims"]
+          and sorted(report["mod_ids"]) == ["hello-fabric", "mixed"],
           str((report.get("libraries"), report.get("mod_ids"))))
     check("the report says which entrypoints will be called",
           sorted(call["class"] for call in report["calls"]) == ["com.example.HelloFabricMod", "com.example.Mixed"],
@@ -177,10 +191,10 @@ def test_bake(tmp: pathlib.Path) -> None:
     check("and the environment list points at them", report["webmc_mods"] == ":".join(report["mod_jars"]))
     check("the report names the entrypoints that will be called",
           report["entrypoints"] == ["hello-fabric", "mixed"], str(report["entrypoints"]))
-    check("and names the mod whose mixins it cannot apply",
+    check("and names the mod whose mixins the applier will apply",
           report["with_mixins"] == ["mixed"], str(report["with_mixins"]))
-    check("which the log says out loud too",
-          any("will not be applied" in line for line in lines), str(lines))
+    check("which the log says out loud too, as work the applier will do",
+          any("the applier merges them into the client" in line for line in lines), str(lines))
 
     print("\nwhat it does when the profile is not there yet")
     # A generated profile may not exist when the bake runs: the bake does not need it except to decide how the
