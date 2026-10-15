@@ -206,6 +206,9 @@ def test_routes(tmp: pathlib.Path) -> None:
                    "source": "document"},
     }, "manifest": {
         "1.21.11": {"type": "release", "released": "2026-01-01T00:00:00+00:00"},
+        # 26.2 has to be in the manifest or the route has no metadata to work from and answers "unknown",
+        # which is what made this test disagree with the command line for an hour.
+        "26.2": {"type": "release", "released": "2026-06-01T00:00:00+00:00"},
         "b1.7.3": {"type": "old_beta", "released": "2011-07-01T00:00:00+00:00"},
     }, "built": {"26.2": {"url": "https://example.invalid/client-26.2.html", "bytes": 1}}}
 
@@ -222,16 +225,24 @@ def test_routes(tmp: pathlib.Path) -> None:
     check("a version whose document was not read routes by date, and says so",
           guessed["route"] == "aot" and "guessed from the release date" in guessed["why"],
           str(guessed["why"])[:100])
-    check("and the engine for it is the MIT one", guessed["engine"] == "gaius"
-          and guessed["engine_license"] == "MIT", f"{guessed['engine']} {guessed['engine_license']}")
-    # The engine that builds 1.21.11 *can* take a mod set now (our own bake), so the answer is that mods
-    # go in at build time - and an engine without that capability still has to say so rather than
-    # producing a vanilla client called modded.
+    # 1.21.11 has no engine now, and the reason is a decision rather than a gap: the engine it had (Gaius,
+    # MIT) was rejected because its multiplayer could not join a normal server from the browser, which is the
+    # one thing a browser client has to do.
+    check("and 1.21.11 has no engine", guessed["engine"] is None, f"{guessed['engine']}")
+
+    # 26.2 is the row the Eaglercraft lineage owns now: the engine whose multiplayer actually joins a server,
+    # which is the thing the rejected engine could not do.
+    workspace = route.route_for("26.2", engines, state)
+    check("26.2 is built by the Eaglercraft lineage", workspace["engine"] == "eagler-workspace-26.2",
+          str(workspace["engine"]))
+    check("and its missing licence file is visible in the route, not hidden",
+          workspace.get("engine_license") in (None, "no licence", "none"), str(workspace.get("engine_license")))
     check("a compiled version whose engine can bake says mods go in at build time",
-          guessed["bakes_mods"] is True and guessed["mods"] == "baked at build time", guessed["mods"])
-    without = route.route_for("1.21.11", [dict(engine, bakes_mods=False) for engine in engines], state)
+          bool(workspace.get("bakes_mods")) and workspace.get("mods") == "baked at build time",
+          str(workspace.get("mods")))
+    without = route.route_for("26.2", [dict(engine, bakes_mods=False) for engine in engines], state)
     check("and an engine that cannot take a mod set says so rather than ignoring one",
-          without["bakes_mods"] is False and "only when an engine" in without["mods"], without["mods"])
+          without["bakes_mods"] is False and "only when an engine" in without["mods"], str(without["mods"]))
     built = route.route_for("26.2", engines, state)
     check("a version with a build behind it is playable, and says where the build is",
           built["playable"] and built["built"]["url"].startswith("https://"), str(built["built"]))
