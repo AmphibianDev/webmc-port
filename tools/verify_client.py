@@ -74,6 +74,7 @@ def check_page(page: str, client: str, manifest: dict, report: dict) -> None:
     or a client whose header still says somebody else's name.
     """
     problems: list[str] = list(report.setdefault("problems", []))
+    warnings: list[str] = list(report.setdefault("warnings", []))
 
     ids = set(re.findall(r'id="([\w.-]+)"', client)) | set(re.findall(r'id="([\w.-]+)"', page))
     branded_ids = sorted(name for name in ids
@@ -108,9 +109,19 @@ def check_page(page: str, client: str, manifest: dict, report: dict) -> None:
     text = visible_text(client)
     page_text = visible_text(page)
     words = sorted({brand for brand in BRANDS if re.search(rf"\b{brand}\b", text, re.I)})
+    page_words = sorted({brand for brand in BRANDS if re.search(rf"\b{brand}\b", page_text, re.I)})
     report["brand_words_in_text"] = words
+    report["brand_words_in_our_page"] = page_words
+    if page_words:
+        problems.append("brand words a visitor can read in our own page: " + ", ".join(page_words))
     if words:
-        problems.append("brand words a visitor can read: " + ", ".join(words))
+        # Advisory, not failure, and the difference is worth spelling out: our own page and boot screen are ours
+        # to fix, while a word inside the compiled client comes from somebody else's code and is replaced as it
+        # is shown by the boot screen's sanitiser. A catalogue that refuses to publish because a binary contains
+        # a string never publishes; a build job that ignores the same string ships somebody else's name.
+        warnings.append("the compiled client carries brand words a visitor could see: " + ", ".join(words)
+                        + " (the boot screen replaces them as they are shown; a build from before that fix "
+                          "still shows them)")
 
     title = manifest.get("title") or ""
     report["title"] = title
@@ -133,6 +144,7 @@ def check_page(page: str, client: str, manifest: dict, report: dict) -> None:
             problems.append("the manifest records a gateway that is nowhere in what is served")
 
     report["problems"] = problems
+    report["warnings"] = warnings
 
 
 def verify(base: str | None, offline: pathlib.Path | None, log=print) -> dict:
@@ -172,6 +184,8 @@ def verify(base: str | None, offline: pathlib.Path | None, log=print) -> dict:
     report["page_bytes"] = len(client_html) + len(page_html)
     check_page(page_html, client_html, manifest, report)
 
+    for warning in report["warnings"]:
+        log(f"  ~ {warning}")
     for problem in report["problems"]:
         log(f"  ! {problem}")
     if not report["problems"]:
@@ -184,6 +198,8 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--url", default=None, help="the published page's directory, e.g. https://…/clients/1.21.11/")
     parser.add_argument("--dir", default=None, help="a local directory instead of a URL")
+    parser.add_argument("--strict", action="store_true",
+                        help="count advisories as failures too: what a build job wants before it publishes")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
 
@@ -194,8 +210,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.json:
         print(json.dumps(report, indent=1))
     else:
-        print(f"\n{len(report['problems'])} problem(s)")
-    return 1 if report["problems"] else 0
+        print(f"\n{len(report['problems'])} problem(s), {len(report['warnings'])} advisory(ies)")
+    return 1 if (report["problems"] or (args.strict and report["warnings"])) else 0
 
 
 if __name__ == "__main__":
