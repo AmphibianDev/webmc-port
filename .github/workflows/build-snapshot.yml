@@ -221,7 +221,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 tools/route.py --version "${{ steps.want.outputs.version }}" | tee /tmp/route.txt
-          if [ -n "${{ inputs.mods }}" ]; then
+          if [ -n "${{ steps.want.outputs.mods }}" ]; then
             if grep -q "bakes_mods: false\|only when an engine" /tmp/route.txt; then
               echo "::error::mods were requested (${REPO_MODS}) but the engine for this version cannot take a mod set"
               exit 1
@@ -280,7 +280,10 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p /tmp/mods
-          python3 - "${{ inputs.mods }}" <<'PY'
+          # the example mods are source in this repository - mods/jars is git-ignored - so a build that
+          # wants to bake one has to compile it first, or the bake finds an empty folder and says so
+          python3 tools/build_mods.py 2>&1 | tail -3 | tee -a /tmp/build.log
+          python3 - "${{ steps.want.outputs.mods }}" <<'PY'
           import json, pathlib, shutil, sys
           wanted = [m.strip() for m in sys.argv[1].split(",") if m.strip()]
           manifest = json.loads(pathlib.Path("mods/mods.json").read_text())
