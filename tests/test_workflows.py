@@ -228,15 +228,16 @@ def test_routes(tmp: pathlib.Path) -> None:
     # 1.21.11 has no engine now, and the reason is a decision rather than a gap: the engine it had (Gaius,
     # MIT) was rejected because its multiplayer could not join a normal server from the browser, which is the
     # one thing a browser client has to do.
-    check("and 1.21.11 has no engine", guessed["engine"] is None, f"{guessed['engine']}")
+    check("and 1.21.11 is built by the engine the GoldHQ builds come from",
+          guessed["engine"] == "gaius", f"{guessed['engine']}")
 
     # 26.2 is the row the Eaglercraft lineage owns now: the engine whose multiplayer actually joins a server,
     # which is the thing the rejected engine could not do.
     workspace = route.route_for("26.2", engines, state)
-    check("26.2 is built by the Eaglercraft lineage", workspace["engine"] == "eagler-workspace-26.2",
-          str(workspace["engine"]))
-    check("and its missing licence file is visible in the route, not hidden",
-          workspace.get("engine_license") in (None, "no licence", "none"), str(workspace.get("engine_license")))
+    check("26.2 is built by the same engine: one pipeline for the three versions",
+          workspace["engine"] == "gaius", str(workspace["engine"]))
+    check("and the engine's licence is visible in the route, not hidden",
+          bool(workspace.get("engine_license")), str(workspace.get("engine_license")))
     check("a compiled version whose engine can bake says mods go in at build time",
           bool(workspace.get("bakes_mods")) and workspace.get("mods") == "baked at build time",
           str(workspace.get("mods")))
@@ -356,7 +357,7 @@ def test_the_engine_comes_from_the_route() -> None:
           '(e.get("repo") or "") == wanted or (e.get("id") or "") == wanted' in workflow)
 
     # and the tool agrees with the data, version by version
-    for version, expected_kind in (("26.2", "eagler-workspace"),):
+    for version, expected_kind in (("26.2", "real-client"), ("26.3", "real-client")):
         result = subprocess.run(["python3", str(ROOT / "tools" / "engine_for.py"), "--version", version, "--json"],
                                 capture_output=True, text=True, cwd=ROOT)
         found = json.loads(result.stdout or "{}")
@@ -364,10 +365,15 @@ def test_the_engine_comes_from_the_route() -> None:
               found.get("kind") == expected_kind, str(found)[:160])
         check(f"and to the repository that engine lives in",
               bool(found.get("repo")) and "/" in (found.get("repo") or ""), str(found.get("repo")))
-    result = subprocess.run(["python3", str(ROOT / "tools" / "engine_for.py"), "--version", "1.21.11"],
+    result = subprocess.run(["python3", str(ROOT / "tools" / "engine_for.py"), "--version", "1.21.11", "--json"],
                             capture_output=True, text=True, cwd=ROOT)
-    check("and a version whose only engine is disabled resolves to no engine at all",
-          result.returncode != 0 and "engine: —" in result.stdout, result.stdout[:120])
+    found = json.loads(result.stdout or "{}")
+    check("and the three versions this project is about all resolve to the same engine",
+          found.get("engine") == "gaius", str(found.get("engine")))
+    missing = subprocess.run(["python3", str(ROOT / "tools" / "engine_for.py"), "--version", "1.20.4"],
+                             capture_output=True, text=True, cwd=ROOT)
+    check("a version no enabled engine covers resolves to none, so a build refuses before spending an hour",
+          missing.returncode != 0 and "engine: —" in missing.stdout, missing.stdout[:140])
 
 
 def test_the_jdk_follows_the_profile() -> None:

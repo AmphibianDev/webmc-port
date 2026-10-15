@@ -58,7 +58,7 @@
       "name": "Eaglercraft 26.2 workspace (TeaVM + WASM-GC toolchain)",
       "repo": "CynTheSolveroftheabsolutefabric/Eaglercraft-26.2-Workspace",
       "kind": "eagler-workspace",
-      "enabled": true,
+      "enabled": false,
       "note": "The Eaglercraft lineage for 26.x, and the engine this project uses for it: the official client's source, patched with the browser platform layer, plus a real build system. Its multiplayer is the Eaglercraft transport (a WebSocket to an Eaglercraft server, or a gateway for a normal Java server - see MULTIPLAYER.md), which is what the rejected engine could not do. The repository has no licence file: recorded in CREDITS.md as used knowingly rather than licensed.",
       "profiles": [
         "26.2"
@@ -89,7 +89,7 @@
       "blocked_by": "no licence: the repository has no licence file, which means all rights reserved rather than free to use. Its 26.2 build was replaced by the MIT-licensed gaius engine, which covers 1.21.11, 26.2 and 26.3. Its compiler also reads sounds.epk unconditionally, which is why tools/empty-epk.init.gradle.kts exists: a build from this lineage has to create an empty archive with the engine's own packager (and give the optional music-pack export a name it accepts) rather than ship Minecraft audio.",
       "license_note": "no licence file: all rights reserved rather than free to use. Its 26.2 build was replaced by the MIT-licensed gaius engine; re-enabling it is a licence decision, and CREDITS.md records it.",
       "bakes_mods": true,
-      "disabled_why": null
+      "disabled_why": "Kept as a record: it builds a 26.2 client whose multiplayer is the Eaglercraft lineage's own, and it has the source-hook Fabric path. Disabled because the project chose one engine for all three versions - the GoldHQ lineage - so that vanilla and Fabric are the same pipeline on 1.21.11, 26.2 and 26.3."
     },
     {
       "id": "eaglercraftx",
@@ -165,10 +165,12 @@
       "name": "Gaius (TeaVM, official client bytecode)",
       "repo": "TypeThe0ry/Gaius",
       "kind": "real-client",
-      "enabled": false,
-      "disabled_why": "Rejected by the project owner: its multiplayer is a relay model that could not join a normal server from the browser, which is the one thing a browser client has to do. It also carries its own launcher chrome and loading screen, which had to be stripped. Kept as a record - the profile generation, the patch-chain hook and the mod bake built for it are all still in the tree and still tested, in case a future version behaves.",
+      "enabled": true,
+      "disabled_why": null,
       "profiles": [
-        "1.21.11"
+        "1.21.11",
+        "26.2",
+        "26.3"
       ],
       "requires": {
         "java": 25,
@@ -200,7 +202,7 @@
           "caveat": "a version whose patch chain has moved on since the profile was written fails on a version-specific patcher and needs one line in tools/aot_fixups.json - that is what the fixups file is for, and why the log records each skip."
         }
       ],
-      "note": " Enabled for the 26.x range: tools/aot_snapshot.py generates the profile from Mojang's metadata, so a new snapshot is a dispatch rather than a code change. The 26.1 - 26.3 range is generatable; 26.4 and later need the renderpearl renderer ported first, which is recorded as a blocker rather than promised as a build. In this project's v1 scope it builds 1.21.11 and, through generated profiles, the rest of the 1.21 line. 26.x is deliberately out of scope.",
+      "note": "Enabled again, and this is the engine the three versions are built with: it is the lineage the GoldHQ builds are made from (`Enchantment-Niko/eag26-editor` describes itself as a tool for 'Gaius / GoldHQ WebGL2 Minecraft builds'), it fetches the client from Mojang itself, and it ships a profile for 1.21.11, 26.2 and 26.3. Vanilla is a plain ahead-of-time compile; Fabric is the same compile with this repository's bake merging a mod set into the client before it - the mods go in at build time because there is no class loader in the tab. Its multiplayer is the one weakness: it connects through a relay, and the plan is to give it the transport the GoldHQ builds use (a gateway, which this repository already implements as gateway/server.js).",
       "blockers": [
         {
           "covers": {
@@ -237,7 +239,8 @@
       "note": "Kept disabled on purpose: it has no built client and a plan that offered it as playable would be lying. The route, the recipe and the link kit are real, and MODERN-JAVA.md is the account of what each remaining piece is.",
       "license": "GPL-2.0 with the Classpath exception",
       "bakes_mods": false,
-      "profile_rules": []
+      "profile_rules": [],
+      "disabled_why": "Kept as a record: it compiles the official client for 1.21.11/26.2/26.3 with a fully headless CLI, but each version needs its own hand-written profile. Disabled by request; the GoldHQ lineage engine is the one this project builds with."
     },
     {
       "id": "eaglercraft-1.14-workspace",
@@ -353,7 +356,8 @@
       "blocked_by": "not written. Nothing licensed covers 1.16.5 - 1.20.4, and the borrowed workspaces stop at 1.14, so these versions need our own patch set: decompile the official client, replace LWJGL/GLFW/OpenAL/filesystem/network with browser implementations, compile with TeaVM. MODERN-JAVA.md has the milestone ladder.",
       "work": "start at 1.16.5 (Java 8, LWJGL 3.2, simpler renderer) or 1.20.4 (last Java 17), reusing the measured LWJGL surface in lwjgl3-webgl/surface/, the boot screen, and the build job",
       "bakes_mods": true,
-      "mods": "planned - build-time bake through mods/loader.py, the same manifest the other rows read"
+      "mods": "planned - build-time bake through mods/loader.py, the same manifest the other rows read",
+      "disabled_why": "Not written yet, and recorded as a plan rather than a piece: our own engine would remove the last borrowed piece, but it is a project, not a step."
     }
   ],
   "rules": {
