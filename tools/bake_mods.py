@@ -166,19 +166,34 @@ public final class __CLASS__ {
         ClassNode node = new ClassNode();
         new ClassReader(input).accept(node, 0);
         boolean injected = false;
+        int calls = 0;
         for (MethodNode method : node.methods) {
             if (!method.name.equals("<clinit>")) {
                 continue;
             }
-            // the end of the static initialiser, before its RETURN: the client class has been loaded,
-            // and every class the mod needs is now real
-            AbstractInsnNode last = method.instructions.getLast();
+            // Before the static initialiser's *return*, not before its last node: a compiled method often ends
+            // with a label (a local variable's end, an exception handler's target), so "the last node" is
+            // something after the return - which is unreachable, and an ahead-of-time compiler is entitled to
+            // drop it. That is not a theoretical hazard: it is how a baked mod came out of a build with its
+            // class in the jar and its code nowhere, while every step reported success.
+            AbstractInsnNode exit = null;
+            for (AbstractInsnNode node2 = method.instructions.getLast(); node2 != null; node2 = node2.getPrevious()) {
+                if (node2.getOpcode() >= Opcodes.IRETURN && node2.getOpcode() <= Opcodes.RETURN) {
+                    exit = node2;
+                    break;
+                }
+            }
+            if (exit == null) {
+                throw new IllegalStateException("the static initialiser of net/minecraft/client/Minecraft does "
+                        + "not return, which this patcher does not know how to handle");
+            }
             // One instantiate-and-call per baked mod, written as bytecode rather than as generated Java: a
             // source file would have to name the mod's package, and the engine compiles its sources before
             // the patched classes are on its classpath - which is a compile error, not a shortcut.
             for (Entry entry : entries) {
-                method.instructions.insertBefore(last, call(entry));
+                method.instructions.insertBefore(exit, call(entry));
                 injected = true;
+                calls++;
             }
             break;
         }
@@ -186,6 +201,8 @@ public final class __CLASS__ {
             throw new IllegalStateException("net/minecraft/client/Minecraft has no static initialiser to "
                     + "call the baked mods from; this client's shape is not the one this patcher knows");
         }
+        // and prove it, in the log: the injection happened into this method, this many times, before this opcode
+        System.out.println("__CLASS__: " + calls + " call(s) inserted before the static initialiser's return");
 
         ClassWriter writer = new ClassWriter(0);
         node.accept(writer);

@@ -128,6 +128,12 @@ def test_bake(tmp: pathlib.Path) -> None:
           "Files.write(target, stream.readAllBytes())" in source)
     check("and it injects its call into the client's static initialiser",
           'method.name.equals("<clinit>")' in source and "INVOKEVIRTUAL" in source)
+    check("before the return rather than before the last node",
+          "node2.getOpcode() >= Opcodes.IRETURN" in source and "instructions.getLast()" in source
+          and "instructions.insertBefore(exit" in source,
+          "a method that ends with a label has code after its return, and a compiler may drop it")
+    check("and it says in the log how many calls it inserted",
+          "call(s) inserted before the static initialiser's return" in source)
 
     check("a hook source left by an older bake is deleted, not built on", not stale.is_file())
     check("a jar with no descriptor is a library, not something to name on a loading screen",
@@ -289,6 +295,47 @@ def test_patcher_runs(tmp: pathlib.Path) -> None:
     check("the mod's own class is copied into the client's patch output",
           (output / "com" / "example" / "HelloFabricMod.class").is_file())
     check("and the client class is rewritten", (output / "net" / "minecraft" / "client" / "Minecraft.class").is_file())
+
+    # What a compiled method really looks like: javac ends <clinit> with a label after the return (for a local
+    # variable's scope, or an exception handler's target), and an ahead-of-time compiler may drop code that sits
+    # after a return. A patcher that inserts "before the last node" therefore inserts nothing that survives -
+    # which is exactly how a baked mod came out of a real build with its class in the jar and its code nowhere.
+    label_tool = tmp / "AppendLabel.java"
+    label_tool.write_text("""
+import java.nio.file.Files;
+import java.nio.file.Path;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.LabelNode;
+import org.objectweb.asm.tree.MethodNode;
+
+/** Adds a label after the return of a class's static initialiser, the way javac does. */
+public class AppendLabel {
+    public static void main(String[] args) throws Exception {
+        Path path = Path.of(args[0]);
+        ClassNode node = new ClassNode();
+        new ClassReader(Files.readAllBytes(path)).accept(node, 0);
+        for (MethodNode method : node.methods) {
+            if (method.name.equals("<clinit>")) {
+                method.instructions.add(new LabelNode());
+                System.out.println("added a trailing label to <clinit>");
+            }
+        }
+        ClassWriter writer = new ClassWriter(0);
+        node.accept(writer);
+        Files.write(path, writer.toByteArray());
+    }
+}
+""")
+    built_tool = subprocess.run([javac, "-nowarn", "-cp", asm, "-d", str(tmp / "label-tool"), str(label_tool)],
+                                capture_output=True, text=True)
+    check("a helper that adds a trailing label compiles", built_tool.returncode == 0, built_tool.stderr[-200:])
+    client_class = output / "net" / "minecraft" / "client" / "Minecraft.class"
+    labelled = subprocess.run([java, "-cp", os.pathsep.join([str(tmp / "label-tool"), asm]), "AppendLabel",
+                               str(client_class)], capture_output=True, text=True)
+    check("the client class's initialiser ends with a label after its return",
+          "added a trailing label" in labelled.stdout, labelled.stdout + labelled.stderr)
 
     disassembly = subprocess.run([javap, "-c", "-p", "-cp", str(output), "net.minecraft.client.Minecraft"],
                                  capture_output=True, text=True).stdout
