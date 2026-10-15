@@ -308,6 +308,23 @@ jobs:
             # the patcher reads this while the engine's patch chain runs, which is the next thing after
             # the fetch
             python3 -c "import json;print('WEBMC_MODS=' + (json.load(open('/tmp/bake.json')).get('webmc_mods') or ''))" >> "$GITHUB_ENV"
+            python3 -c "import json;d=json.load(open('/tmp/bake.json'));print('baked:', [m['id'] for m in d['mods']]);print('entrypoints:', d['entrypoints']);print('with mixins (not applied):', d['with_mixins'])" | tee -a /tmp/build.log
+            # Pre-flight: compile the generated patcher here, with the ASM the engine fetches anyway, so a
+            # Java mistake costs two minutes instead of the hour the build takes to reach it.
+            PATCHER_CLASS="$(python3 -c "import sys; sys.path.insert(0, 'tools'); import bake_mods; print(bake_mods.PATCHER_CLASS)")"
+            ASM="$(find ../engine -name 'asm-*.jar' 2>/dev/null | sort -u | tr '\n' ':')"
+            if [ -n "$ASM" ]; then
+              mkdir -p /tmp/patcher-check
+              if javac -nowarn -cp "${ASM%:}" -d /tmp/patcher-check \
+                   "../engine/port/tools/src/main/java/dev/gaius/tools/$PATCHER_CLASS.java" 2>&1 | tee -a /tmp/build.log; then
+                echo "the generated patcher compiles" | tee -a /tmp/build.log
+              else
+                echo "::error::the generated patcher does not compile (see the log above)"
+                exit 1
+              fi
+            else
+              echo "no ASM jar found to pre-check the patcher with; the engine's own build will compile it" | tee -a /tmp/build.log
+            fi
           fi
 
       - name: Fetch the client, its libraries and its assets
@@ -603,6 +620,7 @@ jobs:
           cp /tmp/prepare.log build-log/prepare.log 2>/dev/null || true
           cp /tmp/shell-check.txt build-log/shell-check.txt 2>/dev/null || true
           cp /tmp/push.log build-log/push.log 2>/dev/null || true
+          cp /tmp/bake.json build-log/bake.json 2>/dev/null || true
           cp /tmp/jdk.txt build-log/jdk.txt 2>/dev/null || true
           # An orphan branch, every time. Anything derived from HEAD can carry the commit the publish
           # step pushed to main - which is how a successful run once replaced its own report on this
