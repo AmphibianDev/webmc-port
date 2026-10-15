@@ -210,3 +210,30 @@ where the engine's own script looks the element up, because a null there is a cl
 The packed page fetches its chunks in parallel and its boot screen cannot go backwards. The bar is monotonic
 because two things reporting progress on different scales is what "the bar went backwards" always was. The screen
 names the version, and for a modded build it names the mod set: "Minecraft 1.21.11 - with hello-fabric baked in".
+
+## 2026-10-15 (late): the account was suspended, and what is kept instead
+
+Pushes to `AmphibianDev/webmc-port` stopped at 12:03 UTC with "Your account is suspended". The repository and the
+site kept serving (both answered 200 while this was written), the running build kept running, and every commit is
+in the local history - but nothing can be pushed to that remote until the suspension is resolved or the project
+moves.
+
+**The likely cause is visible in this repository's own history.** `site/clients/` held 108 MB of a compiled
+client in six chunks, and it was committed three times. `.git` grew to 259 MB (578 MB in a clone, before packing),
+and the largest blobs in the whole history were those chunks. That is a repository carrying a build of the game in
+every clone - the thing this project's COMPLIANCE.md says it does not do, and the pattern that ended the previous
+account. `site/clients/` is now in `.gitignore`, the tracked files are removed from the index, and COMPLIANCE.md
+records both the decision and that earlier revisions got it wrong.
+
+**What still works:** the release asset is the copy of record for a compiled client; the catalog job fetches it
+into the working tree it deploys (`tools/fetch_packed.py`), and the deploy uploads that tree rather than the git
+history - so the site serves the page and a clone of this repository does not carry it.
+
+**A clean history, ready to move.** `~/devspace/WebMC/backups/webmc-port-history-cleaned.bundle` is the whole
+project with the client chunks removed from *every* commit: 231 commits, 1.4 MB of history instead of 578 MB, and
+the full test suite passes on a fresh clone of it. That is the artifact to push to a new host; the local
+repository keeps its history as it is.
+
+**For a fresh clone to be green.** A missing third-party jar (the ASM jars in `work/asm`, a mod jar in
+`mods/samples`) is now a skip with a message, not a failed test. A suite that goes red on a clean checkout is a
+suite people learn to ignore.
