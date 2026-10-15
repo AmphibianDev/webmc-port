@@ -731,6 +731,29 @@ jobs:
             && echo "catalog job dispatched to pick up packed-$VERSION.tar.gz" \
             || echo "::warning::could not dispatch the catalog job; the next scheduled run will pick it up"
 
+      - name: Put the whole log on the release, whatever happened
+        # The end of the job is the only place the whole log exists, and a build that failed in the patch chain
+        # is exactly the build whose log matters. The release upload is the write channel that has never failed
+        # here, which is why the log goes there and not only to a branch.
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          if [ ! -f /tmp/build.log ]; then
+            echo "no /tmp/build.log to upload"
+            exit 0
+          fi
+          {
+            echo "== build.log tail =="
+            tail -120 /tmp/build.log
+          } > /tmp/build-log-tail.txt
+          gh release view built-clients >/dev/null 2>&1 || gh release create built-clients \
+            --title "Built browser clients" \
+            --notes "Compiled from the official client by this repository's build jobs." || true
+          gh release upload built-clients /tmp/build.log /tmp/build-log-tail.txt /tmp/bake.json \
+            --clobber 2>&1 || echo "::warning::could not upload the log"
+
       - uses: actions/upload-artifact@v7
         if: always()
         with:
