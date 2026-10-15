@@ -222,6 +222,12 @@ function text(node, value) { if (node) { node.textContent = value; } }
 
 /* ---- the data ------------------------------------------------------------------------------------------------ */
 
+/* A version is playable *in the browser* when there is a page to open: a client this site serves, or the launch
+ * page that runs the official jar in a browser JVM. A download is not playable - it is a file, and this launcher
+ * plays in the tab - and somebody else's site is not ours to call playable at all. That distinction is what the
+ * default view means by "playable". */
+var PAGE_PROBE = {};   /* id -> true when site/clients/<id>/manifest.json answered */
+
 function playTargetFor(id, route, catalog) {
   /* One function decides what pressing PLAY does, and it answers in five ways. Anything else is a page that
    * looks like a game and is not one. */
@@ -236,17 +242,18 @@ function playTargetFor(id, route, catalog) {
              url: "play.html?version=" + encodeURIComponent(id) + "&mode=" + mode,
              note: "the official jar runs in a JVM in the page; Fabric mods load at play time" };
   }
-  if (built && built.url) {
+  if ((built && built.url) || PAGE_PROBE[id]) {
     return { kind: "page", label: "Play in this browser", url: "clients/" + id + "/",
              note: "a page this site serves: the client is split into chunks and reassembled in the tab" };
   }
-  if (url) {
-    return { kind: "file", label: "Download the client", url: url, served: (built && built.served) || false,
-             note: "a compiled client as one file, published as a release asset" };
+  var ours = url && /(^|\/)AmphibianDev\/webmc-port\//.test(url);
+  if (url && ours) {
+    return { kind: "file", label: "Download the client", url: url, served: true,
+             note: "a compiled client as one file, published as a release asset - a download, not a page" };
   }
-  if (route && route.external) {
-    return { kind: "other", label: "Open where it lives", url: route.external,
-             note: "somebody else's link, not a build of ours" };
+  if (url || (route && route.external)) {
+    return { kind: "other", label: "Open where it lives", url: url || route.external,
+             note: "somebody else's site, not a build of ours: this launcher cannot say what is in it" };
   }
   return { kind: "none", label: "Not playable yet", url: null, note: (route && route.why) || "" };
 }
@@ -267,7 +274,7 @@ function buildRows(routes, catalog) {
       engine: route.engine || null,
       engineLicense: route.engine_license || null,
       mods: route.mods || "",
-      playable: Boolean(route.playable) && target.kind !== "none",
+      playable: target.kind === "page" || target.kind === "java",
       built: Boolean(route.built && route.built.url),
       target: target,
       why: route.why || "",
@@ -410,6 +417,19 @@ function subtitleFor(row) {
   return row.why || "No route yet.";
 }
 
+function probePages() {
+  /* For a compiled row, ask the site whether the page exists. `routes.json` records a build; only the page
+   * itself says whether a browser can open it, and a launcher that calls a download "playable" is the thing the
+   * project owner complained about. */
+  state.rows.filter(function (row) { return row.route === "aot" && !row.built && row.target.kind !== "page"; })
+    .forEach(function (row) {
+      fetch("clients/" + row.id + "/manifest.json", { method: "HEAD", cache: "no-store" })
+        .then(function (response) { if (response.ok) { PAGE_PROBE[row.id] = true; row.target = playTargetFor(row.id, row.route, state.byId[row.id]); row.playable = true; } })
+        .catch(function () { /* no page: it stays out of the playable list */ })
+        .finally(function () { if (PAGE_PROBE[row.id]) { renderFilters(); renderList(); } });
+    });
+}
+
 function openSelected() {
   var row = state.rows.filter(function (candidate) { return candidate.id === state.selected; })[0];
   if (!row || row.target.kind === "none" || !row.target.url) { return; }
@@ -420,26 +440,33 @@ function openSelected() {
 
 function panelHtml(name) {
   if (name === "multiplayer") {
+    /* Written from the lineage's own code, not from a guess. The Eaglercraft clients carry a server list
+     * (`getDefaultServerList`) and a relay list, and the address box turns a bare host into a WebSocket URL
+     * itself (`browser-ws.js`: no scheme means wss://). So the player's job is one line long, and the gateway is
+     * the *build's* job - a client that was built with one can reach normal Java servers too. */
     return "<div class='panel'><h2>Multiplayer</h2>" +
-      "<p>A browser cannot open a raw TCP connection - the API does not exist - so a typed server address is " +
-      "reached through a <b>gateway</b>: a small server that takes a WebSocket from your page and dials the " +
-      "address for you. Type <code>mc.example.com</code>, not <code>wss://...</code>: the client adds the scheme.</p>" +
-      "<p>The two client lineages here want different things, and handing one the other's value is exactly how a " +
-      "client ends up unable to connect:</p>" +
-      "<table><tr><th>lineage</th><th>what its address box takes</th></tr>" +
-      "<tr><td>EaglercraftX (1.8 – 1.21.x)</td><td>an <b>Eaglercraft server</b>, <code>wss://host</code>. It opens " +
-      "the WebSocket itself.</td></tr>" +
-      "<tr><td>Eagler26 (26.2, 26.3)</td><td>a <b>normal Java server</b>, <code>host:port</code>, through a " +
-      "gateway.</td></tr></table>" +
-      "<h3>Your gateway</h3>" +
-      "<div class='field'><input id='gateway-url' type='text' spellcheck='false' placeholder='wss://your.host/v1/connect' />" +
-      "<button class='btn' id='gateway-save'>Save</button><button class='btn' id='gateway-check'>Check</button></div>" +
-      "<p class='status' id='gateway-status'>Stored in this browser only, never sent to this site.</p>" +
-      "<h3>Running one yourself</h3>" +
+      "<p><b>In the game:</b> Multiplayer -> Add Server -> type the address -> Join. A bare host works; the " +
+      "client adds <code>wss://</code> itself. Eaglercraft servers (the ones that speak Minecraft over a " +
+      "WebSocket) connect as they are.</p>" +
+      "<p><b>Normal Java servers</b> work through a <b>gateway</b>: a browser cannot open a raw TCP connection, " +
+      "so a page asks a small server to dial the address for it. That is a property of the build, not something " +
+      "you configure: the gateway below is the one this build carries, and with it a plain " +
+      "<code>host:port</code> in the same box reaches an ordinary server.</p>" +
+      "<table><tr><th>what you type</th><th>what it reaches</th></tr>" +
+      "<tr><td><code>wss://host</code></td><td>an Eaglercraft server</td></tr>" +
+      "<tr><td><code>host</code> or <code>host:25565</code></td><td>a normal Java server, through the gateway " +
+      "this build carries</td></tr></table>" +
+      "<h3>This build's gateway</h3>" +
+      "<p class='status' id='gateway-status'>looking…</p>" +
+      "<h3>Running your own</h3>" +
       "<p><code>gateway/server.js</code> is this project's gateway: one file, no dependencies, and it speaks the " +
-      "protocol the 26.x clients already implement. <code>python3 tools/play_local.py</code> starts it and serves " +
-      "a downloaded client with the gateway already set inside it. <a href='https://github.com/AmphibianDev/webmc-port/blob/main/MULTIPLAYER.md'>MULTIPLAYER.md</a> " +
-      "has the protocol, the policy switches and an nginx block.</p></div>";
+      "protocol these clients already implement. <code>python3 tools/play_local.py</code> starts it and serves a " +
+      "client you downloaded with the gateway already set inside it. " +
+      "<a href='https://github.com/AmphibianDev/webmc-port/blob/main/MULTIPLAYER.md'>MULTIPLAYER.md</a> has the " +
+      "protocol, the policy switches and an nginx block.</p>" +
+      "<div class='field'><input id='gateway-url' type='text' spellcheck='false' placeholder='wss://your.host/v1/connect' />" +
+      "<button class='btn' id='gateway-save'>Use my own</button></div>" +
+      "<p class='status'>Stored in this browser only, never sent to this site.</p></div>";
   }
   if (name === "mods") {
     return "<div class='panel'><h2>Mods</h2>" +
@@ -523,6 +550,27 @@ function gatewayValue() {
 function wireGateway() {
   var input = el("gateway-url");
   if (input) { input.value = gatewayValue(); }
+  /* Say which gateway a build carries, and whether it answers. A player should not have to know the difference
+   * between "no gateway in this build" and "the gateway is down". */
+  var carried = (state.catalog && state.catalog.gateway) || null;
+  var status = el("gateway-status");
+  if (!carried && !gatewayValue()) {
+    text(status, "this build carries no gateway of its own: Eaglercraft servers work, and normal Java servers " +
+      "need one - the field below takes yours, or use a build that has one");
+  } else {
+    var url = gatewayValue() || carried;
+    text(status, "asking " + url + " …");
+    fetch(url.replace(/\/v1\/connect\/?$/, "/health"), { cache: "no-store" }).then(function (response) {
+      if (!response.ok) { throw new Error("HTTP " + response.status); }
+      return response.json();
+    }).then(function (info) {
+      text(status, (gatewayValue() ? "yours" : "this build's") + ": reachable, " + info.activeConnections + "/" +
+        info.maximumConnections + " sessions in use" +
+        (info.allowPrivateTargets ? ", private targets ALLOWED" : ""));
+    }).catch(function (error) {
+      text(status, (gatewayValue() ? "yours" : "this build's") + " (" + url + ") did not answer: " + error.message);
+    });
+  }
   el("gateway-save").addEventListener("click", function () {
     var value = (input.value || "").trim();
     if (value && !/^wss?:\/\//.test(value)) {
@@ -582,6 +630,7 @@ function start(routes, catalog) {
   var built = buildRows(routes, catalog);
   state.rows = built.rows;
   state.byId = built.byId;
+  state.catalog = catalog;
 
   var playable = state.rows.filter(function (row) { return row.playable; });
   var newestBuilt = playable.filter(function (row) { return row.built; })[0] || playable[0];
@@ -592,6 +641,7 @@ function start(routes, catalog) {
   renderFilters();
   renderList();
   select(newestBuilt ? newestBuilt.id : state.rows[0].id);
+  probePages();
 
   el("play").addEventListener("click", openSelected);
   el("play-bottom").addEventListener("click", openSelected);

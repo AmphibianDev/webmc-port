@@ -142,6 +142,7 @@ function extract(name, kind = 'function') {
   return found ? found[0] : '';
 }
 const harness = [
+  'var PAGE_PROBE = {};',
   extract('playTargetFor'),
   extract('buildRows'),
   'var FILTERS = ' + (body.match(/var FILTERS = (\[[\s\S]*?\]);/) || [null, '[]'])[1] + ';',
