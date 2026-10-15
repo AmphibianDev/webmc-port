@@ -134,7 +134,8 @@ def build(client: str, style: str, dirt: pathlib.Path | None, remove: list[str],
     report = {"removed": [], "injected": False, "bytes_before": len(client), "style": style}
 
     html = client
-    for selector in remove:
+    # the engine's own chrome first, then whatever the caller asked for
+    for selector in tuple(ENGINE_CHROME_REMOVE) + tuple(remove):
         html, what = remove_element(html, selector)
         report["removed"].append(what)
         log(f"  {what}")
@@ -149,6 +150,10 @@ def build(client: str, style: str, dirt: pathlib.Path | None, remove: list[str],
         markup = overlay(style, dirt)
         html = html[:open_body.end()] + "\n" + markup + html[open_body.end():]
         css = style_block(dirt)
+        # the engine's leftover chrome is hidden rather than removed where its own script looks for it, and
+        # the selector covers whatever it builds later with its marker attribute
+        css += ("<style>/* WebMC: the engine's own launcher chrome is not part of this page */\n"
+                + ENGINE_CHROME_SELECTOR + " { display: none !important; }</style>\n")
         html = html.replace("</head>", css + "</head>", 1) if "</head>" in html else css + html
         report["injected"] = True
         log(f"  injected the boot screen ({len(markup)} bytes of markup, {len(css)} bytes of style)")
@@ -167,6 +172,16 @@ def build(client: str, style: str, dirt: pathlib.Path | None, remove: list[str],
 # stripped from the page (not from the compiled code - see strip_brand for why).
 BRANDS = ("eaglercraft", "eagler", "lax1dude", "gaius", "typetheory", "browsercraft", "eaglerforge",
           "resent", "koneclient")
+
+# The engine's own chrome, by the ids it uses. Removed when it is a block of branding, hidden when it is
+# something the client's own script needs to find: taking an element out from under a script is a client
+# that stops on a null, so hiding is the safe half of the same idea.
+ENGINE_CHROME_REMOVE = ("#boot-brand",)          # the "GAIUS CLIENT" / "MOJANG STUDIOS" block
+ENGINE_CHROME_HIDE = ("#boot-screen",             # the engine's own boot overlay: ours is the loading screen
+                      "#gaius-shell-header", "#gaius-shell-footer", "#gaius-error-details",
+                      "#profile-kicker", "#profile-subtitle", "#profile-legal")
+# The hide rule uses the ids and the marker attribute the engine sets on anything it builds at run time.
+ENGINE_CHROME_SELECTOR = ", ".join(ENGINE_CHROME_HIDE) + ', [data-gaius-shell]' 
 
 
 def brand_hits(client: str, brands: tuple = BRANDS) -> dict:

@@ -43,6 +43,8 @@ CLIENT = """<!DOCTYPE html>
 <body>
 <div id="splash"><h1>Eaglercraft</h1><p>Loading 26.2&hellip;</p></div>
 <div id="boot-overlay" class="hidden"></div>
+<div id="boot-screen" aria-hidden="true"></div>
+<div id="boot-brand" aria-hidden="true">GAIUS<span>CLIENT</span></div>
 <canvas id="game" width="854" height="480"></canvas>
 <script>window.clientStarted = true;</script>
 </body></html>
@@ -111,6 +113,11 @@ def test_inject(tmp: pathlib.Path) -> None:
     check("the client's splash is gone", 'id="splash"' not in html and "<h1>Eaglercraft</h1>" not in html,
           "the element goes; a leftover CSS rule for it is harmless")
     check("its second overlay is gone too", 'id="boot-overlay"' not in html)
+    check("the engine's branding block is removed", 'id="boot-brand"' not in html and "GAIUS" not in html,
+          "this is the block that renders GAIUS CLIENT over the loading screen")
+    check("and its own boot overlay is hidden rather than removed",
+          'id="boot-screen"' in html and "#boot-screen" in html and "display: none !important" in html,
+          "the client's script looks that element up; hiding it is the same result without the null")
     check("the boot screen is in, once", html.count('id="webmc-boot"') == 1)
     check("it is inserted after <body>, so it paints first",
           html.index('id="webmc-boot"') > html.index("<body>"))
@@ -118,6 +125,10 @@ def test_inject(tmp: pathlib.Path) -> None:
     check("its canvas is still there", 'id="game"' in html)
     check("the style went into the head", html.index("--webmc-bg") < html.index("<body>"))
     check("the hand-over is wired to the first GL draw", "drawElements" in html and "clear" in html)
+    check("its branding block is hidden by our own stylesheet, so the page has one loading screen",
+          "#boot-screen" in html and "[data-gaius-shell]" in html and "display: none !important" in html,
+          "an element the client's script looks for is hidden rather than removed: a null there is a "
+          + "client that stops")
     check("it reports what it removed", any("removed the element with #splash" in line for line in lines),
           str(lines))
     check("and counts the bytes both ways", report["bytes_after"] > report["bytes_before"]
@@ -154,6 +165,8 @@ BRANDED = """<!DOCTYPE html><html><head><title>Eaglercraft 26.2</title></head>
 <body>
 <div id="eaglercraft-splash"><h1>Eaglercraft</h1><p>Powered by Eaglercraft</p></div>
 <div id="boot-overlay"></div>
+<div id="boot-screen" aria-hidden="true"></div>
+<div id="boot-brand" aria-hidden="true">GAIUS<span>CLIENT</span></div>
 <canvas id="game"></canvas>
 <script>var EaglercraftVersion = "1.0"; // Eaglercraft runtime</script>
 </body></html>
