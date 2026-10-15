@@ -512,6 +512,9 @@ jobs:
               INJECTED="$(javap -p -c -cp "$PATCHED" net.minecraft.client.Minecraft 2>/dev/null \
                 | grep -c -E 'HelloFabric|onInitializeClient' || true)"
               echo "injected calls in the client class: ${INJECTED:-0}"
+              # The numbers go out as annotations too: they are the only channel this account can read, and the
+              # question "did the mod reach the jar the compiler reads" has now cost two builds.
+              echo "::warning::bake check: ${MOD_CLASSES:-0} mod class(es), ${INJECTED:-0} injected call(s) in $PATCHED"
               if [ "${MOD_CLASSES:-0}" = "0" ] || [ "${INJECTED:-0}" = "0" ]; then
                 echo "::error::the mod set was requested and the patched jar has no trace of it"
               fi
