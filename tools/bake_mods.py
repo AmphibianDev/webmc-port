@@ -121,6 +121,20 @@ public final class __CLASS__ {
         }
 
         List<Entry> entries = new ArrayList<>();
+        // Fold every entrypoint into the client class *before* that class is read below: the file is rewritten
+        // with the mod's methods in it, and the read-modify-write that follows has to see them. Folding after the
+        // read is how TeaVM was handed a class whose injected call pointed at a method it could not find.
+        List<String> folded = new ArrayList<>();
+        for (Entry entry : entries) {
+            try {
+                folded.addAll(WebMcMixinApplier.mergeEntrypoint(output, entry.owner(),
+                        "net/minecraft/client/Minecraft", System.out::println));
+            } catch (IOException error) {
+                System.out.println("__CLASS__: could not fold " + entry.owner().replace('/', '.')
+                        + " into the client class: " + error);
+            }
+        }
+
         int copied = 0;
         int mixinClasses = 0;
         int mixinRefusals = 0;
@@ -192,33 +206,27 @@ public final class __CLASS__ {
             // classpath - which is a compile error, not a shortcut. The entrypoint's own methods are folded into
             // this class first (see WebMcMixinApplier.mergeEntrypoint) where that is possible: a class that only a
             // patch introduced did not survive to the compiled output, twice, while the jar had it both times.
+            if (!folded.isEmpty()) {
+                for (String signature : folded) {
+                    int split = signature.indexOf('(');
+                    String name = signature.substring(0, split);
+                    String descriptor = signature.substring(split);
+                    InsnList callMerged = new InsnList();
+                    callMerged.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "net/minecraft/client/Minecraft",
+                            name, descriptor, false));
+                    method.instructions.insertBefore(exit, callMerged);
+                    injected = true;
+                    calls++;
+                }
+                System.out.println("__CLASS__: " + folded.size() + " folded method(s) called from the client"
+                        + " class itself: no new class has to reach the compiler");
+            }
             for (Entry entry : entries) {
-                // Try to fold the mod's entrypoint into this class first: then the call is an INVOKESTATIC to a
-                // method of the class being compiled, which no reachability analysis can lose.
-                List<String> merged;
-                try {
-                    merged = WebMcMixinApplier.mergeEntrypoint(output, entry.owner(), "net/minecraft/client/Minecraft",
-                            System.out::println);
-                } catch (IOException error) {
-                    merged = List.of();
-                }
-                if (!merged.isEmpty()) {
-                    for (String signature : merged) {
-                        int split = signature.indexOf('(');
-                        String name = signature.substring(0, split);
-                        String descriptor = signature.substring(split);
-                        InsnList callMerged = new InsnList();
-                        callMerged.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "net/minecraft/client/Minecraft",
-                                name, descriptor, false));
-                        method.instructions.insertBefore(exit, callMerged);
-                    }
-                    System.out.println("__CLASS__: folded " + entry.owner().replace('/', '.') + " into the client class"
-                            + " (" + merged.size() + " method(s)): no new class has to reach the compiler");
-                } else {
+                if (folded.isEmpty()) {
                     method.instructions.insertBefore(exit, call(entry));
+                    injected = true;
+                    calls++;
                 }
-                injected = true;
-                calls++;
             }
             break;
         }
