@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Minecraft 1.21.11</title>
+<meta name="webmc-mods" content="hello-fabric" />
 <!-- Written by tools/pack_client.py. The client itself is the chunks next to this page. -->
 <style>
 
@@ -127,10 +128,25 @@
     style.setProperty("--webmc-scale", String(scale));
   }
 
+  /* The engine reports its progress with its own words, and its words carry its own name: a player read
+   * "Starting Gaius Client 1.21.11" on this screen, which is somebody else's product on our loading page. The
+   * engine's text is still useful - it says what it is doing - so the name is replaced rather than the message
+   * thrown away, and the version is left alone. */
+  var ENGINE_NAMES = /(?:gaius|eaglercraft(?:x)?|eagler|eaglerforge|lax1dude|typetheory|browsercraft)[a-z0-9_.-]*/gi;
+  var ATTRIBUTION = /not affiliated|independent project|independent browser software/i;
+  function clean(text) {
+    var line = String(text);
+    // An attribution sentence is not progress, and rewriting the name inside it produces a sentence that is
+    // worse than no sentence ("Minecraft is not affiliated with Mojang"). The credits live in CREDITS.md; the
+    // loading screen keeps the last real progress line instead.
+    if (ATTRIBUTION.test(line)) { return ""; }
+    return line.replace(ENGINE_NAMES, "Minecraft").replace(/\s+/g, " ").trim();
+  }
   var api = {
     show: function (text) {
       root.hidden = false;
-      if (text) { status.textContent = text; }
+      var line = text ? clean(text) : "";
+      if (line) { status.textContent = line; }
     },
     /* Monotonic: a step that reports less progress than the last one is ignored rather than shown, which
      * is what "the bar went backwards" always is - two things reporting progress on different scales. */
@@ -139,7 +155,8 @@
       var next = Math.max(0, Math.min(1, Number(fraction) || 0));
       if (next > value) { value = next; }
       fill.style.width = (value * 100).toFixed(2) + "%";
-      if (text) { status.textContent = text; }
+      var line = text ? clean(text) : "";
+      if (line) { status.textContent = line; }
     },
     /* The version being loaded, in the corner, because "Loading…" with no name is a worse wait. */
     version: function (text) {
@@ -203,10 +220,25 @@
     style.setProperty("--webmc-scale", String(scale));
   }
 
+  /* The engine reports its progress with its own words, and its words carry its own name: a player read
+   * "Starting Gaius Client 1.21.11" on this screen, which is somebody else's product on our loading page. The
+   * engine's text is still useful - it says what it is doing - so the name is replaced rather than the message
+   * thrown away, and the version is left alone. */
+  var ENGINE_NAMES = /(?:gaius|eaglercraft(?:x)?|eagler|eaglerforge|lax1dude|typetheory|browsercraft)[a-z0-9_.-]*/gi;
+  var ATTRIBUTION = /not affiliated|independent project|independent browser software/i;
+  function clean(text) {
+    var line = String(text);
+    // An attribution sentence is not progress, and rewriting the name inside it produces a sentence that is
+    // worse than no sentence ("Minecraft is not affiliated with Mojang"). The credits live in CREDITS.md; the
+    // loading screen keeps the last real progress line instead.
+    if (ATTRIBUTION.test(line)) { return ""; }
+    return line.replace(ENGINE_NAMES, "Minecraft").replace(/\s+/g, " ").trim();
+  }
   var api = {
     show: function (text) {
       root.hidden = false;
-      if (text) { status.textContent = text; }
+      var line = text ? clean(text) : "";
+      if (line) { status.textContent = line; }
     },
     /* Monotonic: a step that reports less progress than the last one is ignored rather than shown, which
      * is what "the bar went backwards" always is - two things reporting progress on different scales. */
@@ -215,7 +247,8 @@
       var next = Math.max(0, Math.min(1, Number(fraction) || 0));
       if (next > value) { value = next; }
       fill.style.width = (value * 100).toFixed(2) + "%";
-      if (text) { status.textContent = text; }
+      var line = text ? clean(text) : "";
+      if (line) { status.textContent = line; }
     },
     /* The version being loaded, in the corner, because "Loading…" with no name is a worse wait. */
     version: function (text) {
@@ -298,7 +331,8 @@
       var parts = new Array(manifest.chunks.length);
       var seen = 0;
       if (window.webmcBoot) {
-        window.webmcBoot.version(manifest.title);
+        window.webmcBoot.version(manifest.title + (manifest.mods && manifest.mods.length
+          ? " — with " + manifest.mods.join(", ") + " baked in" : ""));
         window.webmcBoot.progress(0, "Loading " + manifest.title);
       }
       /* Every chunk at once. They are independent files with a hash each, and fetching them in sequence
@@ -314,6 +348,11 @@
         why.textContent = (seen / 1048576).toFixed(1) + " / " + (manifest.total / 1048576).toFixed(1) + " MB";
       }));
       var blob = new Blob(parts, { type: "text/html" });
+      /* A build that had a mod set baked in says so before the client opens, because that is the difference
+       * between a modded build and a build that silently ignored the mods. */
+      if (manifest.mods && manifest.mods.length && window.webmcBoot) {
+        window.webmcBoot.progress(1, "Baked in: " + manifest.mods.join(", "));
+      }
       if (await digest(await blob.arrayBuffer()) !== manifest.sha256 && manifest.sha256) {
         throw new Error("the reassembled client does not match its hash");
       }
