@@ -109,6 +109,18 @@ def test_pack(tmp: pathlib.Path) -> None:
     check("a corrupted transfer is reported, not ignored", "could not start:" in page)
     check("progress is shown while the chunks arrive", "webmcBoot.progress" in page)
 
+    print("\nwhat the page says is inside the build")
+    modded = pack_client.pack(client, tmp / "modded", "Minecraft 1.21.11", chunk_mb=2,
+                              mods=["hello-fabric"], log=lambda *_: None)
+    modded_page = (tmp / "modded" / "index.html").read_text()
+    check("the mod set is in the manifest, from the bake report rather than from a guess",
+          modded["mods"] == ["hello-fabric"])
+    check("and the loading screen names it, so 'modded' is something a player can see",
+          "manifest.mods" in modded_page and "baked in" in modded_page)
+    check("a build with no mod set says nothing about mods",
+          pack_client.pack(client, tmp / "plain", "Minecraft 1.21.11", chunk_mb=2,
+                           log=lambda *_: None)["mods"] == [])
+
     print("\nthe gateway a packed client carries")
     e26 = tmp / "client.html"
     e26.write_text('<!doctype html><html><head><title>x</title></head><body>'
@@ -133,7 +145,7 @@ def test_pack(tmp: pathlib.Path) -> None:
     check("each chunk is still verified before it is used",
           "fetchChecked(chunk.path, chunk.sha256" in page)
     check("and the version being loaded is named on the boot screen",
-          "webmcBoot.version(manifest.title)" in page)
+          "webmcBoot.version(manifest.title" in page)
     check("the bar cannot go backwards", "if (next > value) { value = next; }" in
           (ROOT / "site" / "boot" / "shell.html").read_text(),
           "a bar that jumps back is two progress reports on different scales")

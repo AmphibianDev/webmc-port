@@ -123,7 +123,8 @@ def start_page(title: str, manifest_name: str = "manifest.json") -> str:
       var parts = new Array(manifest.chunks.length);
       var seen = 0;
       if (window.webmcBoot) {{
-        window.webmcBoot.version(manifest.title);
+        window.webmcBoot.version(manifest.title + (manifest.mods && manifest.mods.length
+          ? " — with " + manifest.mods.join(", ") + " baked in" : ""));
         window.webmcBoot.progress(0, "Loading " + manifest.title);
       }}
       /* Every chunk at once. They are independent files with a hash each, and fetching them in sequence
@@ -139,6 +140,11 @@ def start_page(title: str, manifest_name: str = "manifest.json") -> str:
         why.textContent = (seen / 1048576).toFixed(1) + " / " + (manifest.total / 1048576).toFixed(1) + " MB";
       }}));
       var blob = new Blob(parts, {{ type: "text/html" }});
+      /* A build that had a mod set baked in says so before the client opens, because that is the difference
+       * between a modded build and a build that silently ignored the mods. */
+      if (manifest.mods && manifest.mods.length && window.webmcBoot) {{
+        window.webmcBoot.progress(1, "Baked in: " + manifest.mods.join(", "));
+      }}
       if (await digest(await blob.arrayBuffer()) !== manifest.sha256 && manifest.sha256) {{
         throw new Error("the reassembled client does not match its hash");
       }}
@@ -206,7 +212,7 @@ def inject_gateway(html: bytes, url: str) -> bytes:
 
 
 def pack(client: pathlib.Path, out: pathlib.Path, title: str, chunk_mb: int, gateway: str | None = None,
-         log=print) -> dict:
+         mods: list[str] | None = None, log=print) -> dict:
     """Split the client, write the chunks, the manifest and the page. Returns the manifest."""
     data = client.read_bytes()
     head = data[:512].decode("utf-8", errors="replace").lower()
@@ -236,6 +242,9 @@ def pack(client: pathlib.Path, out: pathlib.Path, title: str, chunk_mb: int, gat
         "title": title,
         "client": client.name,
         "gateway": gateway or None,
+        # A build that had mods baked into it should say so where a player can see it, or "modded" is a word in
+        # a catalogue and nothing on the screen. The list comes from the bake report, not from a guess.
+        "mods": list(mods or []),
         "bytes": len(data),
         "total": len(data),
         "chunk_bytes": chunk_bytes,
@@ -257,13 +266,15 @@ def main(argv=None) -> int:
     parser.add_argument("--chunk-mb", type=int, default=DEFAULT_CHUNK_MB)
     parser.add_argument("--gateway", default=None,
                         help="wss://…/v1/connect to bake in as the multiplayer default (Eagler26 clients)")
+    parser.add_argument("--mods", default="", help="comma-separated ids baked into this build, for the page")
     args = parser.parse_args(argv)
 
     client = pathlib.Path(args.client)
     if not client.is_file():
         print(f"no such client: {client}", file=sys.stderr)
         return 2
-    manifest = pack(client, pathlib.Path(args.out), args.title, args.chunk_mb, args.gateway)
+    manifest = pack(client, pathlib.Path(args.out), args.title, args.chunk_mb, args.gateway,
+                    [m.strip() for m in args.mods.split(",") if m.strip()])
     hmm = [chunk for chunk in manifest["chunks"] if chunk["size"] > 100 * 1024 * 1024]
     if hmm:
         print("  ! a chunk is over 100 MB: GitHub Pages would refuse it", file=sys.stderr)

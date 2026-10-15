@@ -468,8 +468,13 @@ jobs:
           CLIENT="$(find dist -name '*-webmc.html' -size +1M | sort | head -1 || true)"
           [ -n "$CLIENT" ] || CLIENT="$(find ../engine/port/web/dist -name '*.html' -size +5M | sort | head -1 || true)"
           [ -n "$CLIENT" ] || { echo "::error::nothing to pack"; exit 1; }
+          # the baked mod set goes into the page, so a modded build is modded where a player can see it
+          BAKED=""
+          if [ -f /tmp/bake.json ]; then
+            BAKED="$(python3 -c "import json;print(','.join(m['id'] for m in (json.load(open('/tmp/bake.json')).get('mods') or [])))" 2>/dev/null || true)"
+          fi
           python3 tools/pack_client.py --client "$CLIENT" --out "site/clients/$VERSION" \
-            --title "Minecraft $VERSION" --chunk-mb 20
+            --title "Minecraft $VERSION" --chunk-mb 20 ${BAKED:+--mods "$BAKED"}
           du -sh "site/clients/$VERSION" | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Publish the packed client as a release asset
