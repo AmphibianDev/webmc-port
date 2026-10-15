@@ -27,10 +27,10 @@ on:
         type: string
         default: "latest-snapshot"
       engine_repo:
-        description: "The compiled-client engine to build with"
+        description: "The engine to build with. Empty means: ask the route, which is the usual answer"
         required: false
         type: string
-        default: "TypeThe0ry/Gaius"
+        default: ""
       mods:
         description: "Mods to bake in, comma-separated ids from mods/mods.json (empty = vanilla)"
         required: false
@@ -100,7 +100,14 @@ jobs:
             ENGINE="${{ inputs.engine_repo }}"
           fi
           [ -n "$VERSION" ] || VERSION="latest-snapshot"
-          [ -n "$ENGINE" ] || { echo "::error::no engine for $VERSION"; exit 1; }
+          if [ -z "$ENGINE" ]; then
+            ENGINE="$(python3 tools/engine_for.py --version "$VERSION" --field repo 2>/dev/null || true)"
+          fi
+          if [ -z "$ENGINE" ]; then
+            echo "::error::no enabled engine builds $VERSION"
+            python3 tools/engine_for.py --version "$VERSION" || true
+            exit 1
+          fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "mods=$MODS" >> "$GITHUB_OUTPUT"
           echo "engine=$ENGINE" >> "$GITHUB_OUTPUT"
