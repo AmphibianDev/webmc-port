@@ -241,7 +241,11 @@ def test_patcher_runs(tmp: pathlib.Path) -> None:
             archive.write(path, str(path.relative_to(classes)))
 
     patcher_classes = tmp / "patcher-classes"
-    built = subprocess.run([javac, "-nowarn", "-cp", asm, "-d", str(patcher_classes), str(patcher)],
+    # both files in dev.gaius.tools: the patcher calls the applier, so they compile together - which is also
+    # how the engine compiles them, since the bake writes them into the same directory
+    applier = engine / "port" / "tools" / "src" / "main" / "java" / "dev" / "gaius" / "tools" / "WebMcMixinApplier.java"
+    check("the mixin applier is written into the engine beside the patcher", applier.is_file())
+    built = subprocess.run([javac, "-nowarn", "-cp", asm, "-d", str(patcher_classes), str(patcher), str(applier)],
                            capture_output=True, text=True)
     check("the generated patcher compiles as it is written", built.returncode == 0, built.stderr[:400])
     if built.returncode != 0:

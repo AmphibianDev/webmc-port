@@ -40,6 +40,12 @@ The Eagler26 build's own metadata names its payload (`eagler26-offline-meta`): `
 prove any extraction against it; the file that was checked is the one downloaded to the project owner's
 machine, not a copy fetched by this repository.
 
+## Mixin (the annotations, not the tool)
+
+| Project | Licence | What we use | What we changed |
+| --- | --- | --- | --- |
+| [SpongePowered/Mixin](https://github.com/SpongePowered/Mixin) | **MIT** | the names and meanings of `@Mixin`, `@Inject`, `@Overwrite`, `@Shadow`, `@Unique`, `@At`, `CallbackInfo` and `CallbackInfoReturnable` | we ship compile-time **stubs** of those annotations (`mods/mixin-shims`) and our own build-time applier (`mods/mixin-applier`) that reads the same annotations out of compiled classes. Neither is Mixin: `MIXINS.md` lists exactly which shapes are applied and which are refused by name |
+
 ## The gateway
 
 A browser cannot open a TCP socket, so joining a Java server from a page needs a server-side gateway. Ours

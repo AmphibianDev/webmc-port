@@ -283,6 +283,8 @@ jobs:
           # the example mods are source in this repository - mods/jars is git-ignored - so a build that
           # wants to bake one has to compile it first, or the bake finds an empty folder and says so
           python3 tools/build_mods.py 2>&1 | tail -3 | tee -a /tmp/build.log
+          # the callback classes a mixin's code constructs have to exist in the client it is merged into
+          python3 tools/build_mixin_shims.py 2>&1 | tail -2 | tee -a /tmp/build.log
           python3 - "${{ steps.want.outputs.mods }}" <<'PY'
           import json, pathlib, shutil, sys
           wanted = [m.strip() for m in sys.argv[1].split(",") if m.strip()]
@@ -309,7 +311,12 @@ jobs:
             find ../engine -name '*EaglerFabricLoader*' 2>/dev/null | head -3 || true
           else
             MOD_ARGS=""
-            for jar in /tmp/mods/*.jar; do MOD_ARGS="$MOD_ARGS --mods $jar"; done
+            # the mixin stubs are not a mod: they carry the callback classes a mixin's code constructs, and the
+            # client it is merged into needs them to compile. They ship with the client, listed last so a log
+            # reads as "the mods, then the shims".
+            for jar in /tmp/mods/*.jar mods/jars/webmc-mixin-shims.jar; do
+              [ -f "$jar" ] && MOD_ARGS="$MOD_ARGS --mods $jar"
+            done
             python3 tools/bake_mods.py --engine ../engine --version "$VERSION" --mods-dir /tmp/mods \
               --report /tmp/bake.json $MOD_ARGS 2>&1 | tee -a /tmp/build.log
             BAKE_STATUS=${PIPESTATUS[0]}
@@ -319,7 +326,7 @@ jobs:
             # the fetch
             python3 -c "import json;print('WEBMC_MODS=' + (json.load(open('/tmp/bake.json')).get('webmc_mods') or ''))" >> "$GITHUB_ENV"
             python3 -c "import json;print(json.load(open('/tmp/bake.json')).get('patcher_env') or '')" >> "$GITHUB_ENV"
-            python3 -c "import json;d=json.load(open('/tmp/bake.json'));print('baked:', [m['id'] for m in d['mods']]);print('entrypoints:', d['entrypoints']);print('with mixins (not applied):', d['with_mixins'])" | tee -a /tmp/build.log
+            python3 -c "import json;d=json.load(open('/tmp/bake.json'));print('baked:', [m['id'] for m in d['mods']]);print('entrypoints:', d['entrypoints']);print('mixins to apply:', d.get('mods_with_mixins'))" | tee -a /tmp/build.log
             # Pre-flight: compile the generated patcher here, with the ASM the engine fetches anyway, so a
             # Java mistake costs two minutes instead of the hour the build takes to reach it.
             PATCHER_CLASS="$(python3 -c "import sys; sys.path.insert(0, 'tools'); import bake_mods; print(bake_mods.PATCHER_CLASS)")"

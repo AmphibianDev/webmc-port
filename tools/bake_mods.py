@@ -77,6 +77,9 @@ import org.objectweb.asm.tree.MethodNode;
  * <p>Two things happen here:
  *
  * <ul>
+ *   <li>a mod's mixins are applied to the client's own class files by {@link WebMcMixinApplier}, which runs
+ *       here because an ahead-of-time client has no class-loading moment for a mixin agent to hook. What it
+ *       applies, and what it refuses by name, is in that class and in MIXINS.md.</li>
  *   <li>every class from the mod jars is copied into the client - the mod is then part of the same
  *       compile, which is the only way a mod can exist in an ahead-of-time compiled client;</li>
  *   <li>each mod's client entrypoint - the class Fabric Loader would instantiate - is instantiated and called
@@ -116,8 +119,29 @@ public final class __CLASS__ {
 
         List<Entry> entries = new ArrayList<>();
         int copied = 0;
+        int mixinClasses = 0;
+        int mixinRefusals = 0;
         for (Path mod : mods) {
             copied += copyClasses(mod, output, entries);
+            try {
+                WebMcMixinApplier.Report mixins = WebMcMixinApplier.apply(mod, output, System.out::println);
+                mixinClasses += mixins.classes();
+                mixinRefusals += mixins.refusals().size();
+                if (!mixins.notApplied().isEmpty()) {
+                    System.out.println("__CLASS__: " + mixins.notApplied().size() + " mixin part(s) were not applied"
+                            + " in " + mod.getFileName() + ": a build log has to say what a mod is missing");
+                }
+            } catch (IOException error) {
+                throw new IllegalStateException("could not apply the mixins in " + mod.getFileName(), error);
+            }
+        }
+        if (mixinClasses > 0) {
+            System.out.println("__CLASS__: mixins touched " + mixinClasses + " client class(es)");
+        }
+        if (mixinRefusals > 0) {
+            throw new IllegalStateException(mixinRefusals + " mixin(s) could not be applied: the build log above "
+                    + "names each one. Half a mixin is a client that looks fine until it does not, so this is a "
+                    + "failed build rather than a quiet one.");
         }
         System.out.println("__CLASS__: copied " + copied + " class(es) from " + mods.size() + " mod jar(s)");
         if (entries.isEmpty()) {
@@ -351,6 +375,13 @@ def bake(engine: pathlib.Path, version: str, mod_jars: list[pathlib.Path], mods_
     tools_dir = engine / "port" / "tools" / "src" / "main" / "java" / "dev" / "gaius" / "tools"
     if not tools_dir.is_dir():
         raise SystemExit(f"{engine} does not look like a profile-based engine: no {tools_dir}")
+    applier_source = ROOT / "mods" / "mixin-applier" / "src" / "dev" / "gaius" / "tools" / "WebMcMixinApplier.java"
+    if not applier_source.is_file():
+        raise SystemExit(f"the mixin applier is missing: {applier_source}")
+    applier_target = tools_dir / "WebMcMixinApplier.java"
+    shutil.copyfile(applier_source, applier_target)
+    log(f"  wrote {applier_target.relative_to(engine)} (the mixin applier the patcher calls)")
+
     patcher = tools_dir / f"{PATCHER_CLASS}.java"
     # a named placeholder rather than %-formatting: the template is Java, and one stray percent sign in
     # it becomes a compile error forty-five minutes into a build
@@ -364,8 +395,12 @@ def bake(engine: pathlib.Path, version: str, mod_jars: list[pathlib.Path], mods_
     if stale.is_file():
         stale.unlink()
         log(f"  removed {stale.relative_to(engine)} (superseded by bytecode injection)")
-    if not mods[0].get("entrypoint"):
+    shim_only = [mod for mod in mods if not mod.get("entrypoint")]
+    if len(shim_only) == len(mods):
         log("  no client entrypoint in the mod set: the patcher will copy classes and call nothing")
+    elif shim_only:
+        log(f"  {len(shim_only)} jar(s) carry only classes to copy (no entrypoint): "
+            + ", ".join(mod["id"] for mod in shim_only))
     else:
         log("  each entrypoint is called from the client's static initialiser as bytecode")
 
@@ -393,6 +428,8 @@ def bake(engine: pathlib.Path, version: str, mod_jars: list[pathlib.Path], mods_
         "mod_jars": shipped,
         "webmc_mods": ":".join(shipped),
         "calls": [{"class": mod["entrypoint"], "id": mod["id"]} for mod in mods if mod.get("entrypoint")],
+        "mixin_applier": str(applier_target.relative_to(engine)),
+        "mods_with_mixins": [mod["id"] for mod in mods if mod["needs_mixins"]],
         "with_mixins": [mod["id"] for mod in mods if mod["needs_mixins"]],
         "entrypoints": [mod["id"] for mod in mods if mod["entrypoint"]],
     }
