@@ -213,6 +213,11 @@ var state = {
   showAll: false
 };
 
+/* The project's scope, in one place: three versions, in the browser, with Fabric where the engine can take a mod
+ * set. Everything else in the catalogue is still measured and still routes - it is simply not offered, because a
+ * launcher that lists 900 versions nobody asked for is a catalogue. */
+var VERSIONS = ["1.21.11", "26.2", "26.3"];
+
 var GATEWAY_KEY = "webmc.gateway";
 var PLAYER_KEY = "webmc.player";
 
@@ -232,7 +237,9 @@ function playTargetFor(id, route, catalog) {
   /* One function decides what pressing PLAY does, and it answers in five ways. Anything else is a page that
    * looks like a game and is not one. */
   var built = route && route.built;
-  var url = (built && built.url) || (catalog && catalog.play_url) || null;
+  /* `play_url` is what the packer records and `url` is what the catalog carries for a version whose build lives
+   * somewhere else. Reading only one of them is how a real row answered "nothing" while its own data had a link. */
+  var url = (built && built.url) || (catalog && (catalog.play_url || catalog.url)) || null;
   var mode = encodeURIComponent((catalog && catalog.mode) || "vanilla");
   if (route.route === "real-java") {
     /* The row that runs Mojang's jar in the page. It needs no url from the catalog: the launch page builds the
@@ -262,7 +269,8 @@ function buildRows(routes, catalog) {
   var byId = {};
   (catalog.versions || []).forEach(function (entry) { byId[entry.id] = entry; });
   var rows = [];
-  Object.keys(routes).forEach(function (id) {
+  VERSIONS.forEach(function (id) {
+    if (!routes[id]) { return; }
     var route = routes[id] || {};
     var entry = byId[id] || { id: id };
     var target = playTargetFor(id, route, entry);
@@ -274,6 +282,7 @@ function buildRows(routes, catalog) {
       engine: route.engine || null,
       engineLicense: route.engine_license || null,
       mods: route.mods || "",
+      bakesMods: Boolean(route.bakes_mods),
       playable: target.kind === "page" || target.kind === "java",
       built: Boolean(route.built && route.built.url),
       target: target,
@@ -298,16 +307,14 @@ function buildRows(routes, catalog) {
 /* ---- rendering ----------------------------------------------------------------------------------------------- */
 
 var FILTERS = [
-  { id: "playable", label: "Playable", note: "a page to open, or the official jar in a browser JVM" },
-  { id: "built", label: "Web Edition", note: "compiled ahead of time by this project's build jobs" },
-  { id: "java", label: "Java (real JVM)", note: "Mojang's jar in the page; Fabric mods load at play time" },
-  { id: "all", label: "Everything else", note: "not playable yet, and each row says which wall it is behind" }
+  { id: "playable", label: "Ready to play", note: "a page to open in this tab - no download" },
+  { id: "fabric", label: "With Fabric", note: "the build takes a mod set through the engine's source hooks" },
+  { id: "waiting", label: "Not ready yet", note: "each row says which wall it is behind" }
 ];
 
 function passesFilter(row) {
   if (state.filter === "playable") { return row.playable; }
-  if (state.filter === "built") { return row.built; }
-  if (state.filter === "java") { return row.route === "real-java"; }
+  if (state.filter === "fabric") { return Boolean(row.bakesMods); }
   return !row.playable;
 }
 
@@ -329,13 +336,12 @@ function renderFilters() {
                        "<span class='n'>" + countFor(filter.id) + "</span>";
     button.addEventListener("click", function () {
       state.filter = filter.id;
-      state.showAll = filter.id === "all";
       renderFilters();
       renderList();
     });
     box.appendChild(button);
   });
-  text(el("side-note"), state.filter === "all"
+  text(el("side-note"), state.filter === "waiting"
     ? "These versions have no route yet. Each one names the wall it is behind - a browser JVM that stops at Java 17, a shim that has not drawn a frame, or an engine that does not exist."
     : "Only versions with something to open are listed. This project never hosts game files: the client comes from Mojang, either in your browser or at build time.");
 }
@@ -380,9 +386,9 @@ function select(id) {
   var facts = el("facts");
   facts.innerHTML = "";
   var chips = [
-    ["route", row.route === "real-java" ? "real Java in the page" : (row.route === "aot" ? "compiled ahead of time" : row.route)],
-    ["engine", row.engine ? row.engine + (row.engineLicense ? " (" + row.engineLicense + ")" : " (no licence file)") : "none yet"],
-    ["mods", row.mods ? (row.built || row.route === "real-java" ? row.mods : row.mods) : "unknown"],
+    ["in the browser", row.playable ? "yes - no download" : "not yet"],
+    ["engine", row.engine ? row.engine : "none yet"],
+    ["Fabric", row.bakesMods ? "yes - a mod set is baked in at build time" : "not in this build"],
     ["released", row.released || "unknown"]
   ];
   chips.forEach(function (pair) {

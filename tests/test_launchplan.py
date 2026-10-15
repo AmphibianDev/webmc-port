@@ -423,7 +423,11 @@ def test_page_contract(tmp: pathlib.Path, mods: list[dict]) -> None:
     # (site/play.html) is where modes and mods belong: it is the page that has to fetch a mod's file, choose
     # vanilla or Fabric, and name what is unproven on that row before somebody presses play.
     check("the launcher reads the index for how a version runs and who builds it",
-          "routes.json" in launcher and "route.engine" in launcher and "route.playable" in launcher)
+          "routes.json" in launcher and "route.engine" in launcher and "route.bakes_mods" in launcher)
+    # ...and decides "playable" itself, because the index's `playable` means "a build exists" and a download is
+    # not something this launcher hands out: it plays in the tab.
+    check("the launcher decides what is playable from the target, not from the index's flag",
+          'target.kind === "page" || target.kind === "java"' in launcher)
     check("and the catalog for what version it is looking at", "manifest.json" in launcher)
     check("the launch page reads the plan for its modes", "plan.modes" in launch_page)
     check("and takes a mod set from the query string, which is what it fetches",
