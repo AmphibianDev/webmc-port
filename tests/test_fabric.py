@@ -103,13 +103,17 @@ def main() -> int:
           str(legacy_calls))
 
     print()
-    print("the launcher offers Fabric through the plan, not by guessing")
-    page = (ROOT / "site" / "index.html").read_text()
-    check("the launcher reads the pipeline's index", 'fetch("launch.json")' in page)
-    check("and does not fetch Fabric's meta itself: the plan already knows",
-          'fetch("fabric.json")' not in page)
-    check("it can offer vanilla and Fabric per version", "chosenMode" in page and "modesOf" in page)
-    check("and it carries the choice into the play link", "&mode=" in page and "&mods=" in page)
+    # The launcher lists versions and answers "can this be played". Modes and mods belong to the page a
+    # version *opens*: that page is the one that has to fetch a mod's jar and choose vanilla or Fabric, and
+    # putting the choice there keeps the launcher free of a second copy of the plan.
+    print("Fabric reaches the player through the plan, not by guessing")
+    launcher = (ROOT / "site" / "index.html").read_text()
+    page = (ROOT / "site" / "play.html").read_text()
+    check("neither page fetches Fabric's meta itself: the plan already knows",
+          'fetch("fabric.json")' not in launcher and 'fetch("fabric.json")' not in page)
+    check("the launch page offers vanilla and Fabric per version",
+          "modes" in page and "plan.modes" in page, "the plan carries the modes; the page shows them")
+    check("and the launcher links into it with a mode", "&mode=" in launcher)
     check("the data is still deployed, so the plan can be rebuilt offline",
           (ROOT / "site" / "fabric.json").is_file())
     check("and the tool refreshes both lists", "legacy_out" in (ROOT / "tools" / "fabric.py").read_text())

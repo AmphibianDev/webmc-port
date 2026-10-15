@@ -418,14 +418,16 @@ def test_page_contract(tmp: pathlib.Path, mods: list[dict]) -> None:
         "caveats": "to warn about what is unproven on that row before somebody presses play",
     }.items():
         check(f"every index entry carries '{field}' ({why})", field in index["versions"]["1.12.2"])
-    # The launcher reads the plan for which modes and mods a version has, and the index (site/routes.json)
-    # for how it runs and who builds it - two files, two jobs, and this is the seam between them.
-    check("the launcher reads the plan for its modes and mods",
-          "plan.modes" in launcher and "function modsOf" in launcher)
-    check("and the route index for how it runs and who builds it",
-          "route.engine" in launcher and "route.route" in launcher and "route.bakes_mods" in launcher)
-    check("the launcher reads a mod's file, which is what it fetches",
-          "mod.file" in launcher or "mod.id" in launcher)
+    # Two pages, two jobs, and this is the seam between them. The launcher lists versions and answers "can this
+    # be played, and how" - that is the index (site/routes.json) plus the catalog. The page a version *opens*
+    # (site/play.html) is where modes and mods belong: it is the page that has to fetch a mod's file, choose
+    # vanilla or Fabric, and name what is unproven on that row before somebody presses play.
+    check("the launcher reads the index for how a version runs and who builds it",
+          "routes.json" in launcher and "route.engine" in launcher and "route.playable" in launcher)
+    check("and the catalog for what version it is looking at", "manifest.json" in launcher)
+    check("the launch page reads the plan for its modes", "plan.modes" in launch_page)
+    check("and takes a mod set from the query string, which is what it fetches",
+          'requestedMods' in launch_page and 'params.has("mods")' in launch_page)
     check("the index names our loader and where to get it",
           index["loader"]["jar"] == "loader/webmc-loader.jar"
           and index["loader"]["class"] == "webmc.loader.WebMcLoader")

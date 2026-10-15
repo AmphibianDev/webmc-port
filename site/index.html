@@ -3,637 +3,628 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>WebMC — launcher</title>
+<title>WebMC — Minecraft in a browser</title>
+<meta name="description" content="Minecraft versions that run in the visitor's browser: real Java in the page where a JVM can, compiled ahead of time by this project's build jobs where it cannot. No streaming, no game files hosted." />
 <style>
-  /* A launcher, not a web page: the shape is the one people already know - a version list down the left,
-     one selected version's facts and a play button on the right - drawn with CSS so nothing here is
-     somebody else's artwork and nothing has to be fetched to draw a button. */
+  /* The shape is the launcher people already know: a rail of clients on the left, a hero and a list in the
+     middle, a status bar at the bottom with the account and the one button that matters. Everything is
+     driven by the project's own data files, so the page has no version list of its own. */
   :root {
-    --bg: #12141a; --panel: #191c24; --panel-2: #1f232c; --line: #2a2f3a;
-    --fg: #e8eaf0; --muted: #98a0b3; --accent: #4caf50; --accent-dark: #2f7d33;
-    --badge: #2c3140; --badge-fg: #cfd6e6; --warn: #e0a33e; --err: #e06c6c; --ok: #7fd18a;
+    --bg: #101013;
+    --panel: #1e1e22;
+    --panel-2: #26262c;
+    --panel-3: #2f2f36;
+    --line: #3a3a42;
+    --text: #f2f2f5;
+    --muted: #9d9daa;
+    --accent: #3f8e4f;
+    --accent-hi: #4aa85d;
+    --warn: #d8a45a;
+    --bad: #d4695f;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--fg);
-         font: 14px/1.5 "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif; }
-  a { color: #8ab4f8; }
-  .shell { display: grid; grid-template-columns: 300px 1fr; grid-template-rows: 52px 1fr 34px;
-           height: 100vh; }
-  /* top bar ------------------------------------------------------------------ */
-  header { grid-column: 1 / 3; display: flex; align-items: center; gap: 12px;
-           padding: 0 16px; background: var(--panel); border-bottom: 1px solid var(--line); }
-  header h1 { font-size: 17px; margin: 0; letter-spacing: .3px; }
-  header .spacer { flex: 1; }
-  header .pill { background: var(--badge); color: var(--badge-fg); border-radius: 12px;
-                 padding: 3px 10px; font-size: 12px; }
-  /* version column ----------------------------------------------------------- */
-  aside { background: var(--panel); border-right: 1px solid var(--line); overflow: auto; padding: 12px; }
-  .field { display: flex; gap: 8px; margin-bottom: 10px; }
-  input[type=text] { flex: 1; background: var(--panel-2); border: 1px solid var(--line); color: var(--fg);
-                     padding: 8px 10px; border-radius: 6px; font: inherit; }
-  input[type=text]:focus { outline: none; border-color: #3f5c8f; }
-  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 10px; }
-  .chip { background: var(--badge); border: 1px solid var(--line); color: var(--badge-fg);
-          border-radius: 14px; padding: 3px 10px; font-size: 12px; cursor: pointer; user-select: none; }
-  .chip.on { background: #2b3a2c; border-color: var(--accent-dark); color: #d9f2dc; }
-  .group { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .8px;
-           margin: 14px 0 4px; }
-  .v { display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 6px; cursor: pointer; }
-  .v:hover { background: var(--panel-2); }
-  .v.sel { background: #23304a; }
-  .v .name { font-weight: 600; }
-  .v .when { color: var(--muted); font-size: 12px; margin-left: auto; }
-  .v .tick { width: 16px; text-align: center; }
-  .more { margin-top: 10px; }
-  button { font: inherit; background: var(--panel-2); border: 1px solid var(--line); color: var(--fg);
-           padding: 7px 12px; border-radius: 6px; cursor: pointer; }
-  button:hover:not(:disabled) { background: #252a35; }
-  button:disabled { opacity: .5; cursor: default; }
-  button.go { background: var(--accent-dark); border-color: #3f8f43; font-weight: 600; font-size: 16px;
-              padding: 12px 34px; }
-  button.go:hover:not(:disabled) { background: var(--accent); }
-  /* detail column ------------------------------------------------------------ */
-  main { overflow: auto; padding: 22px 26px; }
-  main h2 { margin: 0 0 2px; font-size: 26px; }
-  main .sub { color: var(--muted); margin: 0 0 18px; }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px;
-          margin-bottom: 16px; }
-  table.facts { width: 100%; border-collapse: collapse; }
-  table.facts td { padding: 5px 10px 5px 0; vertical-align: top; border-bottom: 1px solid #22262f; }
-  table.facts td:first-child { color: var(--muted); width: 150px; white-space: nowrap; }
-  .badges { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
-  .badge { background: var(--badge); border: 1px solid var(--line); border-radius: 4px; padding: 2px 8px;
-           font-size: 12px; color: var(--badge-fg); }
-  .badge.play { border-color: var(--accent-dark); color: #d9f2dc; }
-  .badge.warn { border-color: #6b5320; color: var(--warn); }
-  .actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 6px 0 4px; }
-  .muted { color: var(--muted); }
-  .small { font-size: 12px; }
-  .ok { color: var(--ok); } .err { color: var(--err); }
-  h3 { font-size: 15px; margin: 0 0 8px; }
-  ul { margin: 6px 0 0 18px; padding: 0; }
-  li { margin: 3px 0; }
-  code { background: #0d0f14; border: 1px solid #22262f; border-radius: 3px; padding: 0 4px; }
-  footer { grid-column: 1 / 3; border-top: 1px solid var(--line); background: var(--panel);
-           display: flex; align-items: center; gap: 14px; padding: 0 16px; font-size: 12px;
-           color: var(--muted); }
-  @media (max-width: 860px) { .shell { grid-template-columns: 1fr; grid-template-rows: 52px auto 1fr 34px; }
-    aside { border-right: 0; border-bottom: 1px solid var(--line); max-height: 40vh; } }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--bg); color: var(--text);
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    display: grid; grid-template-rows: 56px 1fr 52px; height: 100vh; overflow: hidden;
+  }
+  a { color: inherit; }
+
+  /* ---- top ---- */
+  .topbar { display: flex; align-items: center; gap: 18px; padding: 0 18px; background: var(--panel);
+            border-bottom: 1px solid var(--line); }
+  .brand { font-weight: 800; letter-spacing: .16em; font-size: 15px; }
+  .brand span { color: var(--accent-hi); }
+  .tabs { display: flex; gap: 4px; }
+  .tab { background: none; border: 0; color: var(--muted); font: inherit; padding: 8px 14px; border-radius: 6px;
+         cursor: pointer; }
+  .tab:hover { color: var(--text); background: var(--panel-2); }
+  .tab.on { color: var(--text); background: var(--panel-3); }
+  .who { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .who input { background: var(--panel-2); border: 1px solid var(--line); color: var(--text); border-radius: 6px;
+               padding: 7px 10px; font: inherit; width: 12rem; }
+  .who .ver { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+
+  /* ---- middle ---- */
+  .shell { display: grid; grid-template-columns: 244px 1fr; min-height: 0; }
+  .sidebar { background: var(--panel); border-right: 1px solid var(--line); padding: 14px 10px; overflow: auto; }
+  .sidebar h2 { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted);
+                margin: 4px 8px 8px; font-weight: 700; }
+  .side { display: flex; align-items: center; width: 100%; gap: 8px; background: none; border: 0; color: var(--text);
+          font: inherit; text-align: left; padding: 9px 10px; border-radius: 6px; cursor: pointer; }
+  .side:hover { background: var(--panel-2); }
+  .side.on { background: var(--panel-3); }
+  .side .n { margin-left: auto; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .side small { display: block; color: var(--muted); font-size: 11px; }
+  .side-note { color: var(--muted); font-size: 12px; padding: 10px; line-height: 1.5; }
+
+  .centre { min-height: 0; display: grid; grid-template-rows: auto 1fr; }
+  .hero { padding: 22px 26px 18px; border-bottom: 1px solid var(--line);
+          background: radial-gradient(120% 140% at 12% 0%, #3a3f5c 0%, #23242c 45%, var(--panel) 100%); }
+  .hero h1 { margin: 0; font-size: 34px; letter-spacing: -.01em; }
+  .hero p { margin: 6px 0 0; color: #cfd0dc; max-width: 62rem; }
+  .hero .facts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .chip { background: rgba(0,0,0,.28); border: 1px solid var(--line); border-radius: 999px; padding: 4px 11px;
+          font-size: 12px; color: #dcdce6; }
+  .chip b { color: #fff; font-weight: 600; }
+  .hero .actions { margin-top: 16px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .play { background: var(--accent); border: 0; color: #fff; font: inherit; font-weight: 700; letter-spacing: .04em;
+          padding: 11px 34px; border-radius: 7px; cursor: pointer; }
+  .play:hover { background: var(--accent-hi); }
+  .play[disabled] { background: var(--panel-3); color: var(--muted); cursor: default; }
+  .ghost { background: var(--panel-3); border: 1px solid var(--line); color: var(--text); font: inherit;
+           padding: 10px 16px; border-radius: 7px; cursor: pointer; text-decoration: none; display: inline-block; }
+  .ghost:hover { background: var(--panel-2); }
+
+  .listwrap { min-height: 0; display: grid; grid-template-rows: auto 1fr; }
+  .listbar { display: flex; align-items: center; gap: 12px; padding: 10px 18px; border-bottom: 1px solid var(--line);
+             background: var(--panel); }
+  .listbar input { background: var(--panel-2); border: 1px solid var(--line); color: var(--text); border-radius: 6px;
+                   padding: 7px 10px; font: inherit; min-width: 15rem; }
+  .listbar span { color: var(--muted); font-size: 12px; }
+  .list { overflow: auto; padding: 6px 8px 30px; }
+  .row { display: grid; grid-template-columns: 1fr auto; gap: 4px 14px; align-items: center; width: 100%;
+         background: none; border: 0; border-radius: 7px; color: var(--text); font: inherit; text-align: left;
+         padding: 10px 12px; cursor: pointer; }
+  .row:hover { background: var(--panel); }
+  .row.on { background: var(--panel-2); box-shadow: inset 3px 0 0 var(--accent-hi); }
+  .row .id { font-weight: 600; }
+  .row .meta { color: var(--muted); font-size: 12px; }
+  .row .tag { font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px;
+              padding: 2px 9px; white-space: nowrap; }
+  .row .tag.ok { color: #bfe6c8; border-color: #35603f; }
+  .row .tag.no { color: #e8bcb8; border-color: #6a3a36; }
+  .empty { color: var(--muted); padding: 22px; }
+
+  /* ---- panels ---- */
+  .panels { position: fixed; inset: 56px 0 52px 0; background: rgba(16,16,19,.92); overflow: auto; display: none; }
+  .panels.on { display: block; }
+  .panel { max-width: 60rem; margin: 0 auto; padding: 30px 26px 60px; }
+  .panel h2 { margin: 0 0 6px; font-size: 24px; }
+  .panel h3 { margin: 26px 0 6px; font-size: 15px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+  .panel p, .panel li { color: #d7d7e0; }
+  .panel code, .panel pre { background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; }
+  .panel code { padding: 1px 6px; }
+  .panel pre { padding: 12px 14px; overflow: auto; }
+  .panel .field { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 10px 0; }
+  .panel input[type=text] { background: var(--panel-2); border: 1px solid var(--line); color: var(--text);
+                            border-radius: 6px; padding: 9px 11px; font: inherit; min-width: 22rem; }
+  .panel .btn { background: var(--panel-3); border: 1px solid var(--line); color: var(--text); font: inherit;
+                padding: 9px 15px; border-radius: 6px; cursor: pointer; }
+  .panel .btn:hover { background: var(--panel-2); }
+  .panel .status { color: var(--muted); font-size: 13px; }
+  .panel table { border-collapse: collapse; width: 100%; margin-top: 8px; }
+  .panel th, .panel td { text-align: left; padding: 7px 10px 7px 0; border-bottom: 1px solid var(--line);
+                         vertical-align: top; }
+  .panel th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+
+  /* ---- bottom ---- */
+  .bottombar { display: flex; align-items: center; gap: 18px; padding: 0 18px; background: var(--panel);
+               border-top: 1px solid var(--line); }
+  .bottombar .left { color: var(--muted); font-size: 12px; display: flex; gap: 14px; }
+  .bottombar .left a { color: var(--muted); text-decoration: none; }
+  .bottombar .left a:hover { color: var(--text); }
+  .bottombar .mid { margin: 0 auto; color: var(--muted); font-size: 12px; text-align: center; }
+  .bottombar .mid b { color: var(--text); font-weight: 600; }
+  .bottombar .right { display: flex; align-items: center; gap: 12px; }
+  .bottombar .acct { color: var(--muted); font-size: 12px; }
+  @media (max-width: 860px) {
+    .shell { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .hero h1 { font-size: 26px; }
+  }
 </style>
 </head>
 <body>
-<div class="shell">
-  <header>
-    <h1>WebMC</h1>
-    <span class="pill" id="counts">loading the catalogue…</span>
-    <span class="spacer"></span>
-    <span class="pill">Minecraft in your browser · nothing hosted here</span>
-  </header>
 
-  <aside>
-    <div class="field">
-      <input type="text" id="q" placeholder="Search versions" autocomplete="off" spellcheck="false" />
-      <button id="clear" title="clear the search">✕</button>
-    </div>
-    <div class="chips" id="kinds">
-      <span class="chip on" data-kind="release">releases</span>
-      <span class="chip on" data-kind="snapshot">snapshots</span>
-      <span class="chip" data-kind="old_beta">betas</span>
-      <span class="chip" data-kind="old_alpha">alphas</span>
-      <span class="chip on" data-kind="playable" title="only versions this launcher can start">startable</span>
-    </div>
-    <div id="list" data-state="empty"><p class="muted small">Type to search, or pick a group below.</p></div>
-    <div class="more">
-      <button id="show-all">show every version in the catalogue</button>
-    </div>
+<header class="topbar">
+  <div class="brand">WEB<span>MC</span></div>
+  <nav class="tabs" id="tabs">
+    <button class="tab on" data-tab="play">Play</button>
+    <button class="tab" data-tab="multiplayer">Multiplayer</button>
+    <button class="tab" data-tab="mods">Mods</button>
+    <button class="tab" data-tab="help">Help</button>
+  </nav>
+  <div class="who">
+    <input id="player" type="text" spellcheck="false" placeholder="Player name" aria-label="Player name" />
+    <span class="ver" id="version">v…</span>
+  </div>
+</header>
+
+<main class="shell">
+  <aside class="sidebar">
+    <h2>Clients</h2>
+    <div id="side-filters"></div>
+    <div class="side-note" id="side-note"></div>
   </aside>
 
-  <main id="card">
-    <h2>Minecraft in a browser</h2>
-    <p class="sub">Pick a version. Real ones run Mojang's jar in a JVM in this page; newer ones are
-      compiled ahead of time by this project's build jobs.</p>
-    <div class="card">
-      <h3>What this launcher does</h3>
-      <ul class="small">
-        <li><b>No game files are hosted here.</b> The client jar is fetched from Mojang by your browser, or
-          built from it by a job that runs on GitHub.</li>
-        <li><b>Real Java rows (1.0 – 1.12.2)</b> run the official jar unmodified in the page, and
-          <b>Fabric</b> mods from <code>mods/</code> load at play time.</li>
-        <li><b>Compiled rows (1.20.5 and up)</b> have no JVM at play time, so mods are baked into the client before the compile — the mod-set build job does that.</li>
-        <li><b>Multiplayer needs a relay.</b> A browser cannot open a raw TCP connection, so the client
-          tunnels through a WebSocket relay node; the relay list and a self-hosting guide are below.</li>
-      </ul>
+  <section class="centre">
+    <div class="hero">
+      <h1 id="title">Loading…</h1>
+      <p id="subtitle"></p>
+      <div class="facts" id="facts"></div>
+      <div class="actions">
+        <button class="play" id="play" disabled>PLAY</button>
+        <a class="ghost" id="secondary" hidden></a>
+      </div>
     </div>
-    <div class="card" id="multiplayer">
-      <h3>Multiplayer: how the connection actually happens</h3>
-      <p class="small muted">A browser cannot open a TCP socket, so a typed server address is reached through
-        a <b>gateway</b> (or a relay node, in the compiled client's own words): a small server that takes a
-        WebSocket from your page and dials the address for you. Type <code>mc.example.com</code> in the game's
-        address box, not <code>wss://…</code> — the client adds the scheme. This project's own gateway is
-        <code>gateway/server.js</code>, one file, no dependencies, and it speaks the protocol the 26.3 client
-        already implements.</p>
-      <p class="small">
-        <label for="gateway-url">Your gateway</label>
-        <input id="gateway-url" type="text" spellcheck="false" placeholder="wss://your.host/v1/connect"
-               autocomplete="off">
-        <button id="gateway-save" type="button">Save</button>
-        <button id="gateway-check" type="button">Check</button>
-        <span id="gateway-status" class="small muted"></span>
-      </p>
-      <p class="small muted"><b>Already have a single-file client?</b> The 26.3 offline build from GoldHQ works
-        with this gateway as it is - its transport is the protocol our gateway speaks - so one command starts a
-        gateway and serves that client with the gateway already set inside it:</p>
-      <pre class="small"><code>python3 tools/play_local.py                      # newest client in ~/Downloads
-python3 tools/play_local.py --server mc.example.com   # and join a server on load</code></pre>
-      <p class="small muted">The patch is one script tag and nothing else; removing it gives your file back byte
-        for byte. A published client can carry the same setting, baked in by
-        <code>tools/pack_client.py --gateway</code>.</p>
-      <p class="small muted">Stored in this browser only (<code>localStorage</code>), never sent to this site.
-        A gateway you run yourself: <code>node gateway/server.js</code>, then put it behind TLS at
-        <code>wss://your.host/v1/connect</code>. <a href="https://github.com/AmphibianDev/webmc-port/blob/main/MULTIPLAYER.md">MULTIPLAYER.md</a>
-        has the protocol, the policy switches, the nginx block and what not to do.</p>
-      <ul class="small">
-        <li>The compiled client's default node list lives in <code>relay-nodes.json</code> inside the build,
-          and the in-game <b>Relays</b> screen can add your own; the 26.3 client takes a gateway as
-          <code>?gateway=</code> or in <code>localStorage["eagler26.goldproxy"]</code>.</li>
-        <li>To run one yourself: the engine's <code>apps/bridge</code> is the relay (Node), with a systemd
-          unit and nginx configs in the same folder. Two environment variables
-          (<code>GAIUS_RELAY_PUBLIC_URL</code>, <code>GAIUS_ALLOW_PRIVATE_TARGETS=0</code>) and it is
-          serving <code>wss://your-host/tunnel</code>.</li>
-        <li>This launcher never sees your traffic: it opens the client, and the tunnel is between your
-          browser and the relay you chose.</li>
-      </ul>
+    <div class="listwrap">
+      <div class="listbar">
+        <input id="q" type="search" placeholder="Search versions" aria-label="Search versions" />
+        <button class="ghost" id="clear">Clear</button>
+        <span id="count"></span>
+      </div>
+      <div class="list" id="list"></div>
     </div>
-  </main>
+  </section>
+</main>
 
-  <footer>
-    <span>Each version's route comes from <code>tools/route.py</code>; the plans from
-      <code>tools/launchplan.py</code>.</span>
-    <span class="spacer" style="flex:1"></span>
-    <span>Not an official Minecraft product. Not approved by or associated with Mojang or Microsoft.</span>
-  </footer>
-</div>
+<footer class="bottombar">
+  <div class="left">
+    <a href="#credits" data-panel="credits">Credits</a>
+    <a href="#settings" data-panel="settings">Settings</a>
+  </div>
+  <div class="mid" id="latest">…</div>
+  <div class="right">
+    <span class="acct" id="account">guest</span>
+    <button class="play" id="play-bottom" disabled>PLAY</button>
+  </div>
+</footer>
+
+<div class="panels" id="panels"></div>
 
 <script>
-(function () {
-  "use strict";
-  var el = function (id) { return document.getElementById(id); };
-  var state = { catalog: null, plans: null, routes: null, selected: null, query: "", all: false };
-  var MAX_ROWS = 40;
+"use strict";
 
-  /* ---------------------------------------------------------------- catalogue */
+/* -----------------------------------------------------------------------------------------------------------------
+ * The page reads the project's own data and never invents a version. `site/routes.json` answers how each version
+ * runs, which engine builds it, and whether that engine can take a mod set; `site/manifest.json` is the catalog.
+ * A version is *playable* when there is something to open: a page this site serves, or the launch page that runs
+ * the official jar in a browser JVM. Everything else is listed only when the reader asks for it, with the wall it
+ * is behind - which is the difference between a launcher that offers things and one that offers false hope.
+ * -------------------------------------------------------------------------------------------------------------- */
+var state = {
+  rows: [],
+  byId: {},
+  filter: "playable",
+  query: "",
+  selected: null,
+  showAll: false
+};
 
-  function loadCatalog() {
-    if (state.catalog) { return Promise.resolve(state.catalog); }
-    return fetch("manifest.json").then(function (r) {
-      if (!r.ok) { throw new Error("no catalogue yet (HTTP " + r.status + ")"); }
-      return r.json();
-    }).then(function (catalog) {
-      state.catalog = catalog;
-      return Promise.all([
-        fetch("launch.json").then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }),
-        fetch("routes.json").then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
-      ]).then(function (both) {
-        state.plans = both[0];
-        state.routes = both[1];
-        return catalog;
-      });
+var GATEWAY_KEY = "webmc.gateway";
+var PLAYER_KEY = "webmc.player";
+
+function el(id) { return document.getElementById(id); }
+
+function text(node, value) { if (node) { node.textContent = value; } }
+
+/* ---- the data ------------------------------------------------------------------------------------------------ */
+
+function playTargetFor(id, route, catalog) {
+  /* One function decides what pressing PLAY does, and it answers in five ways. Anything else is a page that
+   * looks like a game and is not one. */
+  var built = route && route.built;
+  var url = (built && built.url) || (catalog && catalog.play_url) || null;
+  var mode = encodeURIComponent((catalog && catalog.mode) || "vanilla");
+  if (route.route === "real-java") {
+    /* The row that runs Mojang's jar in the page. It needs no url from the catalog: the launch page builds the
+     * classpath from the plan, and asking a version for a link it does not have is how a playable row ends up
+     * saying "not playable". */
+    return { kind: "java", label: "Play in this browser",
+             url: "play.html?version=" + encodeURIComponent(id) + "&mode=" + mode,
+             note: "the official jar runs in a JVM in the page; Fabric mods load at play time" };
+  }
+  if (built && built.url) {
+    return { kind: "page", label: "Play in this browser", url: "clients/" + id + "/",
+             note: "a page this site serves: the client is split into chunks and reassembled in the tab" };
+  }
+  if (url) {
+    return { kind: "file", label: "Download the client", url: url, served: (built && built.served) || false,
+             note: "a compiled client as one file, published as a release asset" };
+  }
+  if (route && route.external) {
+    return { kind: "other", label: "Open where it lives", url: route.external,
+             note: "somebody else's link, not a build of ours" };
+  }
+  return { kind: "none", label: "Not playable yet", url: null, note: (route && route.why) || "" };
+}
+
+function buildRows(routes, catalog) {
+  var byId = {};
+  (catalog.versions || []).forEach(function (entry) { byId[entry.id] = entry; });
+  var rows = [];
+  Object.keys(routes).forEach(function (id) {
+    var route = routes[id] || {};
+    var entry = byId[id] || { id: id };
+    var target = playTargetFor(id, route, entry);
+    rows.push({
+      id: id,
+      type: entry.type || route.type || "",
+      released: (entry.released || "").slice(0, 10),
+      route: route.route || "",
+      engine: route.engine || null,
+      engineLicense: route.engine_license || null,
+      mods: route.mods || "",
+      playable: Boolean(route.playable) && target.kind !== "none",
+      built: Boolean(route.built && route.built.url),
+      target: target,
+      why: route.why || "",
+      verdict: entry.verdict || ""
     });
-  }
-
-  function planOf(id) { return (state.plans && state.plans.versions && state.plans.versions[id]) || null; }
-  function routeOf(id) { return (state.routes && state.routes.versions && state.routes.versions[id]) || null; }
-
-  // The mode a click will use: vanilla unless the visitor chose otherwise, and only if this version has it.
-  function modesOf(id) {
-    var plan = planOf(id);
-    return plan ? Object.keys(plan.modes || {}) : ["vanilla"];
-  }
-  function chosenMode(id) {
-    var wanted = "vanilla";
-    try { wanted = window.localStorage.getItem("webmc.mode") || "vanilla"; } catch (error) { /* private mode */ }
-    var available = modesOf(id);
-    return available.indexOf(wanted) >= 0 ? wanted : (available[0] || "vanilla");
-  }
-  function modsOf(id, mode) {
-    var plan = planOf(id);
-    if (!plan || !plan.modes || !plan.modes[mode]) { return []; }
-    return plan.modes[mode].map(function (modId) {
-      var found = null;
-      ((state.plans && state.plans.mods) || []).forEach(function (mod) { if (mod.id === modId) { found = mod; } });
-      return found || { id: modId, name: modId, version: "" };
-    });
-  }
-  function chosenMods(id, mode) {
-    var offered = modsOf(id, mode).map(function (mod) { return mod.id; });
-    var stored = null;
-    try { stored = window.localStorage.getItem("webmc.mods." + id + "." + mode); } catch (error) { stored = null; }
-    if (stored === null) { return offered; }
-    var wanted = stored.split(",").filter(Boolean);
-    return offered.filter(function (modId) { return wanted.indexOf(modId) >= 0; });
-  }
-  function rememberMods(id, mode, ids) {
-    try { window.localStorage.setItem("webmc.mods." + id + "." + mode, ids.join(",")); } catch (error) { /* fine */ }
-  }
-
-  /* What a click on this version does. The three answers the launcher gives, in one place:
-   * a packed page this site serves, a client that launches a JVM in the page, or nothing yet. */
-  /* ---- the gateway field: this browser's own setting, and only that ---- */
-  var GATEWAY_KEY = "webmc.gateway";
-  function gateway() {
-    try { return localStorage.getItem(GATEWAY_KEY) || ""; } catch (e) { return ""; }
-  }
-  function showGateway() {
-    var input = el("gateway-url"), status = el("gateway-status");
-    if (input) { input.value = gateway(); }
-    if (status) {
-      status.textContent = gateway() ? "" : "no gateway set: singleplayer and the relays a build ships with still work";
+  });
+  rows.sort(function (a, b) {
+    /* newest first, and by version parts rather than as text: 1.10 comes after 1.9 */
+    var at = (a.type === "snapshot" ? 1 : 0) - (b.type === "snapshot" ? 1 : 0);
+    if (at !== 0) { return at; }
+    var av = a.id.split(/[.\-]/).map(Number), bv = b.id.split(/[.\-]/).map(Number);
+    for (var i = 0; i < Math.max(av.length, bv.length); i++) {
+      var x = av[i] || 0, y = bv[i] || 0;
+      if (x !== y) { return y - x; }
     }
-    var link = document.querySelector("#gateway-help a");
-    if (link && gateway()) { link.href = link.href; }
+    return a.id < b.id ? 1 : -1;
+  });
+  return { rows: rows, byId: byId };
+}
+
+/* ---- rendering ----------------------------------------------------------------------------------------------- */
+
+var FILTERS = [
+  { id: "playable", label: "Playable", note: "a page to open, or the official jar in a browser JVM" },
+  { id: "built", label: "Web Edition", note: "compiled ahead of time by this project's build jobs" },
+  { id: "java", label: "Java (real JVM)", note: "Mojang's jar in the page; Fabric mods load at play time" },
+  { id: "all", label: "Everything else", note: "not playable yet, and each row says which wall it is behind" }
+];
+
+function passesFilter(row) {
+  if (state.filter === "playable") { return row.playable; }
+  if (state.filter === "built") { return row.built; }
+  if (state.filter === "java") { return row.route === "real-java"; }
+  return !row.playable;
+}
+
+function countFor(filterId) {
+  var keep = state.filter;
+  state.filter = filterId;
+  var n = state.rows.filter(passesFilter).length;
+  state.filter = keep;
+  return n;
+}
+
+function renderFilters() {
+  var box = el("side-filters");
+  box.innerHTML = "";
+  FILTERS.forEach(function (filter) {
+    var button = document.createElement("button");
+    button.className = "side" + (state.filter === filter.id ? " on" : "");
+    button.innerHTML = "<span>" + filter.label + "<small>" + filter.note + "</small></span>" +
+                       "<span class='n'>" + countFor(filter.id) + "</span>";
+    button.addEventListener("click", function () {
+      state.filter = filter.id;
+      state.showAll = filter.id === "all";
+      renderFilters();
+      renderList();
+    });
+    box.appendChild(button);
+  });
+  text(el("side-note"), state.filter === "all"
+    ? "These versions have no route yet. Each one names the wall it is behind - a browser JVM that stops at Java 17, a shim that has not drawn a frame, or an engine that does not exist."
+    : "Only versions with something to open are listed. This project never hosts game files: the client comes from Mojang, either in your browser or at build time.");
+}
+
+function renderList() {
+  var list = el("list");
+  list.innerHTML = "";
+  var query = state.query.trim().toLowerCase();
+  var rows = state.rows.filter(function (row) {
+    if (!passesFilter(row)) { return false; }
+    if (query && row.id.toLowerCase().indexOf(query) === -1) { return false; }
+    return true;
+  });
+  if (!rows.length) {
+    var empty = document.createElement("div");
+    empty.className = "empty";
+    empty.textContent = state.filter === "all"
+      ? "Every version in the catalog is playable. That is the point."
+      : "Nothing here matches. Switch the filter on the left, or clear the search.";
+    list.appendChild(empty);
   }
-  function saveGateway() {
-    var value = (el("gateway-url").value || "").trim();
+  rows.slice(0, 400).forEach(function (row) {
+    var button = document.createElement("button");
+    button.className = "row" + (state.selected === row.id ? " on" : "");
+    var tag = row.built ? "<span class='tag ok'>built</span>"
+            : (row.route === "real-java" ? "<span class='tag ok'>java</span>"
+            : "<span class='tag no'>" + (row.route || "unknown") + "</span>");
+    button.innerHTML = "<span class='id'>" + row.id + "</span>" + tag +
+      "<span class='meta'>" + [row.type, row.released, row.engine ? "engine " + row.engine : null].filter(Boolean).join(" · ") + "</span>";
+    button.addEventListener("click", function () { select(row.id); });
+    list.appendChild(button);
+  });
+  text(el("count"), rows.length + " version" + (rows.length === 1 ? "" : "s") + (rows.length > 400 ? " (showing 400)" : ""));
+}
+
+function select(id) {
+  var row = state.rows.filter(function (candidate) { return candidate.id === id; })[0];
+  if (!row) { return; }
+  state.selected = id;
+  text(el("title"), "Minecraft " + row.id);
+  text(el("subtitle"), subtitleFor(row));
+  var facts = el("facts");
+  facts.innerHTML = "";
+  var chips = [
+    ["route", row.route === "real-java" ? "real Java in the page" : (row.route === "aot" ? "compiled ahead of time" : row.route)],
+    ["engine", row.engine ? row.engine + (row.engineLicense ? " (" + row.engineLicense + ")" : " (no licence file)") : "none yet"],
+    ["mods", row.mods ? (row.built || row.route === "real-java" ? row.mods : row.mods) : "unknown"],
+    ["released", row.released || "unknown"]
+  ];
+  chips.forEach(function (pair) {
+    if (!pair[1]) { return; }
+    var chip = document.createElement("span");
+    chip.className = "chip";
+    chip.innerHTML = pair[0] + ": <b>" + pair[1] + "</b>";
+    facts.appendChild(chip);
+  });
+  var play = el("play"), bottom = el("play-bottom"), secondary = el("secondary");
+  play.textContent = row.target.label.toUpperCase();
+  bottom.textContent = row.target.label.toUpperCase();
+  play.disabled = row.target.kind === "none";
+  bottom.disabled = row.target.kind === "none";
+  if (row.target.kind === "none") {
+    secondary.hidden = true;
+  } else if (row.target.kind === "page" || row.target.kind === "java") {
+    secondary.hidden = false;
+    secondary.textContent = "What is in this build";
+    secondary.href = "manifest.html#v=" + encodeURIComponent(row.id);
+  } else {
+    secondary.hidden = true;
+  }
+  renderList();
+}
+
+function subtitleFor(row) {
+  if (row.target.kind === "page") { return row.target.note + (row.built ? " - " + row.target.label.toLowerCase() : ""); }
+  if (row.target.kind === "java") { return row.target.note + " " + row.why; }
+  if (row.target.kind === "file") { return row.target.note + (row.target.served ? "" : " (a download, not a page)"); }
+  if (row.target.kind === "other") { return row.target.note; }
+  return row.why || "No route yet.";
+}
+
+function openSelected() {
+  var row = state.rows.filter(function (candidate) { return candidate.id === state.selected; })[0];
+  if (!row || row.target.kind === "none" || !row.target.url) { return; }
+  window.open(row.target.url, row.target.kind === "page" || row.target.kind === "java" ? "_self" : "_blank");
+}
+
+/* ---- the panels ---------------------------------------------------------------------------------------------- */
+
+function panelHtml(name) {
+  if (name === "multiplayer") {
+    return "<div class='panel'><h2>Multiplayer</h2>" +
+      "<p>A browser cannot open a raw TCP connection - the API does not exist - so a typed server address is " +
+      "reached through a <b>gateway</b>: a small server that takes a WebSocket from your page and dials the " +
+      "address for you. Type <code>mc.example.com</code>, not <code>wss://...</code>: the client adds the scheme.</p>" +
+      "<p>The two client lineages here want different things, and handing one the other's value is exactly how a " +
+      "client ends up unable to connect:</p>" +
+      "<table><tr><th>lineage</th><th>what its address box takes</th></tr>" +
+      "<tr><td>EaglercraftX (1.8 – 1.21.x)</td><td>an <b>Eaglercraft server</b>, <code>wss://host</code>. It opens " +
+      "the WebSocket itself.</td></tr>" +
+      "<tr><td>Eagler26 (26.2, 26.3)</td><td>a <b>normal Java server</b>, <code>host:port</code>, through a " +
+      "gateway.</td></tr></table>" +
+      "<h3>Your gateway</h3>" +
+      "<div class='field'><input id='gateway-url' type='text' spellcheck='false' placeholder='wss://your.host/v1/connect' />" +
+      "<button class='btn' id='gateway-save'>Save</button><button class='btn' id='gateway-check'>Check</button></div>" +
+      "<p class='status' id='gateway-status'>Stored in this browser only, never sent to this site.</p>" +
+      "<h3>Running one yourself</h3>" +
+      "<p><code>gateway/server.js</code> is this project's gateway: one file, no dependencies, and it speaks the " +
+      "protocol the 26.x clients already implement. <code>python3 tools/play_local.py</code> starts it and serves " +
+      "a downloaded client with the gateway already set inside it. <a href='https://github.com/AmphibianDev/webmc-port/blob/main/MULTIPLAYER.md'>MULTIPLAYER.md</a> " +
+      "has the protocol, the policy switches and an nginx block.</p></div>";
+  }
+  if (name === "mods") {
+    return "<div class='panel'><h2>Mods</h2>" +
+      "<p>Two rows, two rules, and the difference is not a detail:</p>" +
+      "<table><tr><th>row</th><th>how a mod gets in</th></tr>" +
+      "<tr><td>real Java in the page</td><td><b>at play time</b>, by Fabric Loader: a jar in <code>mods/</code> is " +
+      "loaded the way it is on the desktop, mixins and all.</td></tr>" +
+      "<tr><td>compiled clients</td><td><b>at build time</b>: a compiled client has no class loader to interrupt, " +
+      "so the build merges a mod's entrypoints and its mixins into the client before the compile. " +
+      "A mod that expects Fabric API at play time cannot load there yet, and the build log says so.</td></tr></table>" +
+      "<p><a href='https://github.com/AmphibianDev/webmc-port/blob/main/MIXINS.md'>MIXINS.md</a> lists exactly " +
+      "which mixin shapes are applied and which are refused by name.</p></div>";
+  }
+  if (name === "credits") {
+    return "<div class='panel'><h2>Credits</h2>" +
+      "<p>Minecraft is Mojang's. <b>This is not an official Minecraft product. It is not approved by or " +
+      "associated with Mojang or Microsoft.</b> The client is fetched from Mojang's own servers by the visitor's " +
+      "browser, or at build time by whoever runs the build, and is never redistributed here.</p>" +
+      "<h3>Engines</h3><ul>" +
+      "<li><b>Eaglercraft 26.2 workspace</b> - the Eaglercraft lineage for 26.x: the official client's source with " +
+      "a browser platform layer, and the engine this project uses for 26.2. No licence file in that repository; " +
+      "recorded in CREDITS.md as used knowingly.</li>" +
+      "<li><b>EaglercraftX workspaces</b> (1.8, 1.14, 1.7.10) - the lineage for the older compiled rows.</li>" +
+      "<li><b>CheerpJ</b> (Leaning Technologies) - the browser JVM that runs the official jar on the real-Java rows.</li>" +
+      "<li><b>SpongePowered/Mixin</b> (MIT) - the annotations and their meanings; this project ships stubs and a " +
+      "build-time applier, neither of which is Mixin.</li>" +
+      "</ul><p><a href='https://github.com/AmphibianDev/webmc-port/blob/main/CREDITS.md'>CREDITS.md</a> is the " +
+      "ledger: every borrowed piece, its licence, and what we changed.</p></div>";
+  }
+  if (name === "settings") {
+    return "<div class='panel'><h2>Settings</h2>" +
+      "<p>Everything this page stores lives in this browser and nothing is sent anywhere.</p>" +
+      "<div class='field'><input id='set-player' type='text' spellcheck='false' placeholder='Player name' />" +
+      "<button class='btn' id='set-save'>Save name</button></div>" +
+      "<div class='field'><input id='set-gateway' type='text' spellcheck='false' placeholder='wss://your.host/v1/connect' />" +
+      "<button class='btn' id='set-gateway-save'>Save gateway</button></div>" +
+      "<p class='status' id='set-status'></p></div>";
+  }
+  return "<div class='panel'><h2>Help</h2>" +
+    "<h3>Why some versions cannot run</h3>" +
+    "<table><tr><th>wall</th><th>what it means</th></tr>" +
+    "<tr><td>needs-shim</td><td>the client wants LWJGL 3, and the JavaScript layer that provides it has not drawn " +
+    "a frame yet. 1.13 - 1.20.4 wait on that.</td></tr>" +
+    "<tr><td>needs a port</td><td>no engine of ours builds it. Making one work means porting the client " +
+    "generation, not flipping a switch.</td></tr>" +
+    "<tr><td>Java too new</td><td>a browser JVM stops at Java 17, and later clients need 21 or 25, so they have " +
+    "to be compiled ahead of time instead.</td></tr></table>" +
+    "<h3>Building one</h3>" +
+    "<pre>git tag -f build-1.21.11 HEAD &amp;&amp; git push -f origin refs/tags/build-1.21.11</pre>" +
+    "<p>A build fetches the official client, patches it, compiles it, packs it into a page, verifies it and " +
+    "publishes it. <code>python3 tools/verify_client.py --url &lt;page&gt;</code> checks a published page the way " +
+    "a browser reads it.</p>" +
+    "<h3>Playing a client you already have</h3>" +
+    "<pre>python3 tools/play_local.py</pre>" +
+    "<p>It finds the newest single-file client in ~/Downloads, starts the gateway, and serves the client with the " +
+    "gateway already set inside it.</p></div>";
+}
+
+function openPanel(name) {
+  var panels = el("panels");
+  panels.innerHTML = panelHtml(name);
+  panels.classList.add("on");
+  Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (tab) {
+    tab.classList.toggle("on", tab.dataset.tab === name);
+  });
+  if (name === "multiplayer") { wireGateway(); }
+  if (name === "settings") { wireSettings(); }
+}
+
+function closePanels() {
+  el("panels").classList.remove("on");
+  Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (tab) {
+    tab.classList.toggle("on", tab.dataset.tab === "play");
+  });
+}
+
+function gatewayValue() {
+  try { return localStorage.getItem(GATEWAY_KEY) || ""; } catch (error) { return ""; }
+}
+
+function wireGateway() {
+  var input = el("gateway-url");
+  if (input) { input.value = gatewayValue(); }
+  el("gateway-save").addEventListener("click", function () {
+    var value = (input.value || "").trim();
     if (value && !/^wss?:\/\//.test(value)) {
-      el("gateway-status").textContent = "a gateway address starts with wss:// (or ws:// on a local page)";
+      text(el("gateway-status"), "a gateway address starts with wss:// (or ws:// on a local page)");
       return;
     }
-    try { value ? localStorage.setItem(GATEWAY_KEY, value) : localStorage.removeItem(GATEWAY_KEY); } catch (e) {}
-    el("gateway-status").textContent = value ? "saved for this browser" : "cleared";
-  }
-  function checkGateway() {
-    var status = el("gateway-status");
-    var url = (el("gateway-url").value || gateway()).trim();
-    if (!url) { status.textContent = "nothing to check yet"; return; }
-    // a gateway's JSON endpoints answer cross-origin on purpose, so the page can ask about its own setting
+    try { value ? localStorage.setItem(GATEWAY_KEY, value) : localStorage.removeItem(GATEWAY_KEY); } catch (error) {}
+    text(el("gateway-status"), value ? "saved for this browser" : "cleared");
+  });
+  el("gateway-check").addEventListener("click", function () {
+    var url = (input.value || gatewayValue()).trim();
+    if (!url) { text(el("gateway-status"), "nothing to check yet"); return; }
     var health = url.replace(/\/v1\/connect\/?$/, "/health");
-    status.textContent = "asking " + health + " …";
-    fetch(health, { cache: "no-store" }).then(function (res) {
-      if (!res.ok) { throw new Error("HTTP " + res.status); }
-      return res.json();
-    }).then(function (info) {
-      status.textContent = "reachable: protocol " + info.protocolVersion + ", sessions "
-        + info.activeConnections + "/" + info.maximumConnections
-        + (info.allowPrivateTargets ? ", private targets ALLOWED" : ", private targets refused");
-    }).catch(function (error) {
-      status.textContent = "no answer from " + health + " (" + error.message + ") — it may be down, or not a gateway";
-    });
-  }
-
-  function playTarget(version) {
-    var route = routeOf(version.id) || {};
-    var plan = planOf(version.id);
-    var mode = chosenMode(version.id);
-    var mods = chosenMods(version.id, mode);
-    var url = version.url || "";
-    if (/^clients\//.test(url)) {
-      // a page this site serves: chunks fetched and hashed in the browser, no JVM involved
-      return { kind: "page", label: "▶ play", why: "opens this site's page for the compiled client: the "
-        + "chunks are fetched, checked against their hashes and assembled in your browser.", url: url };
-    }
-    if (version.jar_url) {
-      return { kind: "java", label: "▶ play", url: "play.html?version=" + encodeURIComponent(version.id)
-        + "&mode=" + encodeURIComponent(mode) + "&mods=" + encodeURIComponent(mods.join(",")),
-        why: route.why || "the official jar, unmodified, in a JVM in this page" };
-    }
-    if (/\/releases\/download\//.test(url)) {
-      return { kind: "file", label: "⬇ download & open", url: url,
-        why: "compiled by this project's build job. It is published as a file, so your browser downloads "
-           + "it and opening it runs the game." };
-    }
-    if (url) {
-      var downloads = version.play_served_as === "download";
-      return { kind: "other", label: downloads ? "⬇ download & open (someone else's)" : "↗ open",
-        url: url,
-        why: (downloads ? "This host serves the client as a file rather than a page, so your browser will "
-                        + "save or show a very large file instead of running it. " : "")
-           + "Someone else's build of this version, linked where it lives"
-           + (version.play_repo ? " (" + version.play_repo + ")" : "") + "." };
-    }
-    return { kind: "none", label: "not playable yet", url: null,
-      why: (route.blocker || route.why || "no route for this version yet") };
-  }
-
-  function startable(version) { return Boolean(playTarget(version).url); }
-
-  /* ---------------------------------------------------------------- the list */
-
-  function kinds() {
-    var out = {};
-    var chips = el("kinds").querySelectorAll(".chip");
-    for (var i = 0; i < chips.length; i += 1) {
-      if (chips[i].classList.contains("on")) { out[chips[i].getAttribute("data-kind")] = true; }
-    }
-    return out;
-  }
-
-  // Startable first, then the newest: the launcher's list is about what a person can play.
-  function sorted(versions) {
-    return versions.slice().sort(function (a, b) {
-      var playable = (startable(b) ? 1 : 0) - (startable(a) ? 1 : 0);
-      if (playable !== 0) { return playable; }
-      return String(b.released || b.releaseTime || "").localeCompare(String(a.released || a.releaseTime || ""));
-    });
-  }
-
-  function filtered() {
-    var wanted = kinds();
-    var query = state.query;
-    var versions = (state.catalog && state.catalog.versions) || [];
-    var found = versions.filter(function (version) {
-      if (query && String(version.id).toLowerCase().indexOf(query) === -1) { return false; }
-      if (wanted.playable && !startable(version)) { return false; }
-      if (wanted[version.type]) { return true; }
-      // a curated list still shows a startable version whatever its kind
-      return !query && !wanted.playable && startable(version);
-    });
-    return sorted(found);
-  }
-
-  function render() {
-    var box = el("list");
-    box.textContent = "";
-    var matches = filtered();
-    var limit = state.all || state.query ? MAX_ROWS : 12;
-    var head = document.createElement("p");
-    head.className = "muted small";
-    var total = ((state.catalog && state.catalog.versions) || []).length;
-    head.textContent = state.query
-      ? matches.length + " match" + (matches.length === 1 ? "" : "es")
-      : (state.all ? "every version the catalogue knows (" + total + ")"
-                   : "the versions worth playing first");
-    box.appendChild(head);
-    if (!matches.length) {
-      var none = document.createElement("p");
-      none.className = "muted small";
-      none.textContent = "Nothing matches. Try a version number, or the beta/alpha filters.";
-      box.appendChild(none);
-      return;
-    }
-    matches.slice(0, limit).forEach(function (version) {
-      var row = document.createElement("div");
-      row.className = "v" + (state.selected === version.id ? " sel" : "");
-      var tick = document.createElement("span");
-      tick.className = "tick";
-      var target = playTarget(version);
-      tick.textContent = target.url ? "▶" : "·";
-      tick.style.color = target.url ? "var(--ok)" : "var(--muted)";
-      var name = document.createElement("span");
-      name.className = "name";
-      name.textContent = version.id;
-      var when = document.createElement("span");
-      when.className = "when";
-      when.textContent = String(version.released || version.releaseTime || "").slice(0, 10);
-      row.appendChild(tick); row.appendChild(name); row.appendChild(when);
-      row.addEventListener("click", function () { select(version.id); });
-      box.appendChild(row);
-    });
-    if (matches.length > limit) {
-      var more = document.createElement("p");
-      more.className = "muted small";
-      more.textContent = "+ " + (matches.length - limit) + " more — narrow the search, or show every version.";
-      box.appendChild(more);
-    }
-  }
-
-  /* ---------------------------------------------------------------- one version */
-
-  function facts(rows) {
-    var table = document.createElement("table");
-    table.className = "facts";
-    rows.forEach(function (pair) {
-      var tr = document.createElement("tr");
-      var key = document.createElement("td");
-      key.textContent = pair[0];
-      var value = document.createElement("td");
-      if (pair[1] instanceof Node) { value.appendChild(pair[1]); } else { value.textContent = pair[1]; }
-      tr.appendChild(key); tr.appendChild(value);
-      table.appendChild(tr);
-    });
-    return table;
-  }
-
-  function badge(text, className) {
-    var span = document.createElement("span");
-    span.className = "badge" + (className ? " " + className : "");
-    span.textContent = text;
-    return span;
-  }
-
-  function button(label, handler, className) {
-    var b = document.createElement("button");
-    b.textContent = label;
-    if (className) { b.className = className; }
-    b.addEventListener("click", function (event) { if (handler) { handler(event); } });
-    return b;
-  }
-
-  function select(id) {
-    state.selected = id;
-    window.location.hash = "#" + encodeURIComponent(id);
-    var version = ((state.catalog.versions || []).filter(function (v) { return v.id === id; })[0]) || { id: id };
-    var route = routeOf(id) || {};
-    var plan = planOf(id);
-    var target = playTarget(version);
-    var card = el("card");
-    card.textContent = "";
-
-    var h = document.createElement("h2");
-    h.textContent = id;
-    card.appendChild(h);
-    var sub = document.createElement("p");
-    sub.className = "sub";
-    sub.textContent = [version.type ? String(version.type).replace("old_", "") : "version",
-      String(version.released || version.releaseTime || "").slice(0, 10),
-      route.route ? route.route : ""].filter(Boolean).join(" · ");
-    card.appendChild(sub);
-
-    var badges = document.createElement("div");
-    badges.className = "badges";
-    badges.appendChild(badge(target.url ? "startable" : "not startable yet", target.url ? "play" : "warn"));
-    if (route.route) { badges.appendChild(badge(route.route)); }
-    if (route.engine) { badges.appendChild(badge("engine: " + route.engine
-      + (route.engine_license ? " (" + route.engine_license + ")" : ""))); }
-    if (route.bakes_mods) { badges.appendChild(badge("mods: baked at build time")); }
-    card.appendChild(badges);
-
-    var panel = document.createElement("div");
-    panel.className = "card";
-    var rows = [["what happens", target.why]];
-    if (route.why) { rows.push(["why this route", route.why]); }
-    rows.push(["mods", route.mods || "—"]);
-    if (route.engine_repo) { rows.push(["engine source", route.engine_repo]); }
-    if (plan && plan.java) { rows.push(["java", String(plan.java)]); }
-    if (route.built && route.built.url) { rows.push(["this build", route.built.url]); }
-    panel.appendChild(facts(rows));
-    card.appendChild(panel);
-
-    // The mods picker: only where a plan offers any, and the choice is remembered per version and mode.
-    var mode = chosenMode(id);
-    var offered = modsOf(id, mode);
-    if (offered.length) {
-      var modPanel = document.createElement("div");
-      modPanel.className = "card";
-      modPanel.appendChild(Object.assign(document.createElement("h3"), { textContent: "mods · " + mode }));
-      var chosen = chosenMods(id, mode);
-      offered.forEach(function (mod) {
-        var label = document.createElement("label");
-        label.className = "small";
-        label.style.display = "block";
-        var box = document.createElement("input");
-        box.type = "checkbox";
-        box.checked = chosen.indexOf(mod.id) >= 0;
-        box.addEventListener("change", function () {
-          rememberMods(id, mode, offered.map(function (item) { return item.id; }).filter(function (modId) {
-            return modId === mod.id ? box.checked : chosen.indexOf(modId) >= 0;
-          }));
-          select(id);
-        });
-        label.appendChild(box);
-        label.appendChild(document.createTextNode(" " + (mod.name || mod.id)
-          + (mod.version ? " " + mod.version : "")));
-        modPanel.appendChild(label);
-      });
-      card.appendChild(modPanel);
-    } else if (route.bakes_mods) {
-      var hint = document.createElement("div");
-      hint.className = "card small muted";
-      hint.textContent = "This engine can bake a mod set, and none is offered for this version yet: put a jar in "
-        + "mods/jars/, describe it in mods/mods.json, and run the build job with that mod set.";
-      card.appendChild(hint);
-    }
-
-    var actions = document.createElement("div");
-    actions.className = "actions";
-    if (target.url) {
-      actions.appendChild(button(target.label, function () {
-        try { window.localStorage.setItem("webmc.last", JSON.stringify({ id: id, url: target.url })); } catch (e) { /* fine */ }
-        window.open(target.url, "_blank", "noopener");
-      }, "go"));
-      if (target.kind === "java") {
-        actions.appendChild(badge(mode + (chosenMods(id, mode).length ? " + " + chosenMods(id, mode).length + " mod(s)" : "")));
-      }
-    } else {
-      // Offer the nearest version that does start, which is what a person actually wants from a dead end.
-      var nearest = nearest(id);
-      if (nearest) {
-        actions.appendChild(button("▶ play " + nearest.id + " instead", function () { select(nearest.id); }, "go"));
-      }
-      actions.appendChild(button("request a build (opens GitHub Actions)", function () {
-        window.open("https://github.com/AmphibianDev/webmc-port/actions/workflows/build-snapshot.yml", "_blank", "noopener");
-      }));
-      var note = document.createElement("p");
-      note.className = "small muted";
-      note.textContent = "A build runs on GitHub, from Mojang's own jar, and the client it produces is added to "
-        + "this launcher when it finishes. Dispatch one, or push a tag like build-" + id + ".";
-      card.appendChild(actions);
-      card.appendChild(note);
-      render();
-      return;
-    }
-    var hintNote = document.createElement("p");
-    hintNote.className = "small muted";
-    hintNote.textContent = "The jar is fetched from Mojang's servers into this browser.";
-    actions.appendChild(button("download the official client jar", function () { downloadJar(version, hintNote); }));
-    card.appendChild(actions);
-    card.appendChild(hintNote);
-    render();
-  }
-
-  function nearest(id) {
-    var routes = (state.routes && state.routes.versions) || {};
-    var versions = (state.catalog && state.catalog.versions) || [];
-    var family = String(id).split(".").slice(0, 2).join(".");
-    var best = null;
-    versions.forEach(function (version) {
-      if (version.id === id || !startable(version)) { return; }
-      if (String(version.id).split(".").slice(0, 2).join(".") === family) { best = best || version; }
-    });
-    if (best) { return best; }
-    // otherwise the newest startable one
-    var playable = versions.filter(startable);
-    return sorted(playable)[0] || null;
-  }
-
-  /* ---------------------------------------------------------------- download */
-
-  function baseName(url) { return String(url).split("?")[0].split("/").pop() || "client.jar"; }
-
-  function downloadJar(version, note) {
-    var url = version.jar_url;
-    if (!url) { note.textContent = "No Mojang metadata url for this version in the catalogue."; return; }
-    note.textContent = "downloading " + baseName(url) + " from Mojang…";
-    fetch(url).then(function (response) {
+    text(el("gateway-status"), "asking " + health + " …");
+    fetch(health, { cache: "no-store" }).then(function (response) {
       if (!response.ok) { throw new Error("HTTP " + response.status); }
-      return response.blob();
-    }).then(function (blob) {
-      var objectUrl = URL.createObjectURL(blob);
-      var a = document.createElement("a");
-      a.href = objectUrl;
-      a.download = version.id + ".jar";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(function () { URL.revokeObjectURL(objectUrl); }, 60000);
-      note.className = "small ok";
-      note.textContent = version.id + ".jar saved (" + (blob.size / 1048576).toFixed(1) + " MB).";
+      return response.json();
+    }).then(function (info) {
+      text(el("gateway-status"), "reachable: protocol " + info.protocolVersion + ", sessions " +
+        info.activeConnections + "/" + info.maximumConnections +
+        (info.allowPrivateTargets ? ", private targets ALLOWED" : ", private targets refused"));
     }).catch(function (error) {
-      note.className = "small err";
-      note.textContent = "could not fetch the jar: " + error.message;
+      text(el("gateway-status"), "no answer from " + health + " (" + error.message + ") - it may be down, or not a gateway");
     });
-  }
-
-  /* ---------------------------------------------------------------- wiring */
-
-  function go(query) {
-    state.query = query;
-    render();
-  }
-
-  var timer = null;
-  el("q").addEventListener("input", function () {
-    if (timer) { clearTimeout(timer); }
-    timer = setTimeout(function () { go(el("q").value.trim().toLowerCase()); }, 100);
   });
-  el("clear").addEventListener("click", function () { el("q").value = ""; go(""); });
-  el("kinds").addEventListener("click", function (event) {
-    var chip = event.target.closest ? event.target.closest(".chip") : null;
-    if (!chip) { return; }
-    chip.classList.toggle("on");
-    render();
-  });
-  el("show-all").addEventListener("click", function () {
-    state.all = true;
-    go(state.query);
-  });
+}
 
-  /* the gateway field: this browser's setting, read back on load */
-  showGateway();
-  el("gateway-save").addEventListener("click", saveGateway);
-  el("gateway-check").addEventListener("click", checkGateway);
-  el("gateway-url").addEventListener("keydown", function (event) { if (event.key === "Enter") { saveGateway(); } });
-
-  loadCatalog().then(function (catalog) {
-    var versions = catalog.versions || [];
-    var startableCount = versions.filter(startable).length;
-    el("counts").textContent = versions.length + " versions · " + startableCount + " startable here";
-    render();
-    if (window.location.hash.length > 1) {
-      var wanted = decodeURIComponent(window.location.hash.slice(1));
-      if (versions.some(function (v) { return v.id === wanted; })) { select(wanted); }
-    }
-  }).catch(function (error) {
-    el("counts").textContent = "no catalogue";
-    var card = el("card");
-    card.textContent = "";
-    var h = document.createElement("h2");
-    h.textContent = "The catalogue is not here";
-    var p = document.createElement("p");
-    p.className = "err";
-    p.textContent = "Could not read manifest.json: " + error.message;
-    card.appendChild(h); card.appendChild(p);
+function wireSettings() {
+  el("set-player").value = playerName() === "guest" ? "" : playerName();
+  el("set-gateway").value = gatewayValue();
+  el("set-save").addEventListener("click", function () {
+    try { localStorage.setItem(PLAYER_KEY, (el("set-player").value || "").trim() || "guest"); } catch (error) {}
+    text(el("set-status"), "saved");
+    text(el("player"), el("set-player").value);
+    showAccount();
   });
-})();
+  el("set-gateway-save").addEventListener("click", function () {
+    try { localStorage.setItem(GATEWAY_KEY, (el("set-gateway").value || "").trim()); } catch (error) {}
+    text(el("set-status"), "gateway saved");
+  });
+}
+
+function playerName() {
+  try { return localStorage.getItem(PLAYER_KEY) || "guest"; } catch (error) { return "guest"; }
+}
+
+function showAccount() {
+  var name = playerName();
+  text(el("account"), name);
+  var field = el("player");
+  if (field) { field.value = name === "guest" ? "" : name; }
+}
+
+/* ---- start --------------------------------------------------------------------------------------------------- */
+
+function start(routes, catalog) {
+  var built = buildRows(routes, catalog);
+  state.rows = built.rows;
+  state.byId = built.byId;
+
+  var playable = state.rows.filter(function (row) { return row.playable; });
+  var newestBuilt = playable.filter(function (row) { return row.built; })[0] || playable[0];
+  text(el("version"), "v" + (newestBuilt ? newestBuilt.id : "0.1"));
+  el("latest").innerHTML = "Latest release: <b>" + (newestBuilt ? "Minecraft " + newestBuilt.id : "none yet") +
+    "</b> · " + playable.length + " playable of " + state.rows.length + " in the catalogue";
+
+  renderFilters();
+  renderList();
+  select(newestBuilt ? newestBuilt.id : state.rows[0].id);
+
+  el("play").addEventListener("click", openSelected);
+  el("play-bottom").addEventListener("click", openSelected);
+  el("q").addEventListener("input", function () { state.query = el("q").value; renderList(); });
+  el("clear").addEventListener("click", function () { el("q").value = ""; state.query = ""; renderList(); });
+  el("player").addEventListener("change", function () {
+    try { localStorage.setItem(PLAYER_KEY, (el("player").value || "").trim() || "guest"); } catch (error) {}
+    showAccount();
+  });
+  Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (tab) {
+    tab.addEventListener("click", function () {
+      if (tab.dataset.tab === "play") { closePanels(); } else { openPanel(tab.dataset.tab); }
+    });
+  });
+  Array.prototype.forEach.call(document.querySelectorAll("[data-panel]"), function (link) {
+    link.addEventListener("click", function (event) {
+      event.preventDefault();
+      openPanel(link.dataset.panel);
+    });
+  });
+  document.addEventListener("keydown", function (event) { if (event.key === "Escape") { closePanels(); } });
+  showAccount();
+}
+
+Promise.all([
+  fetch("routes.json", { cache: "no-store" }).then(function (response) { return response.json(); }),
+  fetch("manifest.json", { cache: "no-store" }).then(function (response) { return response.json(); })
+]).then(function (both) {
+  start((both[0] && both[0].versions) || {}, both[1] || {});
+}).catch(function (error) {
+  text(el("title"), "The catalogue could not be read");
+  text(el("subtitle"), String(error) + " - try reloading; the data files live next to this page.");
+});
 </script>
 </body>
 </html>

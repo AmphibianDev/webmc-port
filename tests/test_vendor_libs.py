@@ -142,11 +142,17 @@ def main() -> int:
           "classpath unavailable" in page and "missing class" in page)
     # The metadata url moved to the plan (site/plans/<version>.json): the launcher's link carries the
     # version, the mode and the mods, and the launch page reads the rest from the plan.
-    check("the launcher's play link carries the version, the mode and the mods",
-          'play.html?version=' in launcher and '&mode=' in launcher and '&mods=' in launcher)
+    # The launcher's link carries the version and the mode. Mods are the launch page's business now: absent
+    # from its query string means "everything the plan offers", which is what a player expects from the mods
+    # folder, and an empty value is how you ask for none.
+    check("the launcher's play link carries the version and the mode",
+          'play.html?version=' in launcher and '&mode=' in launcher)
+    check("and the launch page decides the mod set, defaulting to what the plan offers",
+          'params.has("mods")' in (ROOT / "site" / "play.html").read_text())
     check("and the plan carries the version's metadata url for the asset index",
           'meta_url' in (ROOT / "tools" / "launchplan.py").read_text())
-    check("and warns when a link only downloads", "play_served_as" in launcher)
+    check("and warns when a link only downloads", "[data-panel]" in launcher or "Download the client" in launcher,
+          "the launcher has to say when a target is a download rather than a page")
 
     print()
     if FAILURES == 0:
