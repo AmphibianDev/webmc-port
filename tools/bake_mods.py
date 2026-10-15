@@ -19,12 +19,15 @@ three:
   3. **`net/fabricmc/api/ClientModInitializer.java`**: the interface a Fabric mod compiles against, taken
      from this repository's own shim (`mods/shims`), because a compiled client has no Fabric API present.
 
-And it appends the patcher to the version profile's `extraPatchers`, which is the engine's own documented
-way to have a per-version patcher run at the tail of its chain.
+Mixins are applied by `mods/mixin-applier`, which the patcher calls for every mod jar: the mixin's code is
+merged into the client's own class files before the client is compiled, which is the only moment an
+ahead-of-time client has. What that applier applies and what it refuses by name is its own contract, written
+out in MIXINS.md - a refusal fails the build on purpose, and a shape it does not implement is reported rather
+than skipped in silence.
 
-What this cannot do yet, and says so: **mixins**. A mod whose behaviour is mixins needs those transformed
-into the client's source at build time, which is a different and larger job. A mod with an entrypoint and
-no mixins works. The report names which mods fell into which group.
+The patcher is not listed in the version profile's `extraPatchers`: the engine's own validator refuses those
+outside its modern patch set, and 1.21.11 is on the legacy chain. The build job appends it after the chain
+instead, through a fixup on `build-overlays.sh`, using the same `run_client_patcher` helper the chain uses.
 """
 
 from __future__ import annotations
