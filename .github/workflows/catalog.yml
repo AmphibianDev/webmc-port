@@ -151,6 +151,8 @@ jobs:
           for dir in site/clients/*/; do
             [ -f "$dir/manifest.json" ] || continue
             echo "::group::$dir"
+            # advisories do not block a publish: they are things the next build fixes, and a catalogue
+            # that refuses to deploy because a compiled client contains somebody's product name never deploys
             python3 tools/verify_client.py --dir "$dir" || failed=1
             echo "::endgroup::"
           done

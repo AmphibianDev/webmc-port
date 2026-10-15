@@ -99,8 +99,9 @@ def main() -> int:
         found = problems_of(with_boot_brand)
         check("the branding block over the loading screen is caught",
               any("boot-brand" in problem for problem in found), str(found))
-        check("and so are the words a visitor would read",
-              any("brand words" in problem for problem in found), str(found))
+        advisory = verify_client.verify(None, with_boot_brand, log=lambda *_: None)
+        check("and the word the block would have shown is an advisory, because the block is the failure",
+              any("brand words" in w for w in advisory["warnings"]), str(advisory["warnings"]))
 
         no_shell = make(tmp, GOOD_CLIENT.replace('<div id="webmc-boot">', "<div>").replace(
             '<div id="boot-screen" aria-hidden="true"></div>', ""), "no-shell")
@@ -112,10 +113,19 @@ def main() -> int:
               kept["problems"] == [] and kept["boot_screen"] == "the engine's own",
               f"{kept['boot_screen']} {kept['problems']}")
 
+        # a brand word inside the compiled client is an advisory (our boot screen replaces it as it is shown),
+        # while the same word in our own page is a failure - the difference is who owns the bytes
         visible = make(tmp, GOOD_CLIENT.replace('<canvas id="game">', '<p>made with Gaius</p><canvas id="game">'),
                        "visible-brand")
-        check("a brand word in the text a visitor reads is caught",
-              any("brand words" in problem for problem in problems_of(visible)), str(problems_of(visible)))
+        advisory = verify_client.verify(None, visible, log=lambda *_: None)
+        check("a brand word inside the compiled client is an advisory, not a failed publish",
+              advisory["problems"] == [] and any("brand words" in w for w in advisory["warnings"]),
+              str((advisory["problems"], advisory["warnings"])))
+        our_page = make(tmp, GOOD_CLIENT, "our-page-brand")
+        page_file = our_page / "index.html"
+        page_file.write_text(page_file.read_text().replace("<body>", "<body><p>made with Gaius</p>"))
+        check("the same word in our own page is a failure",
+              any("in our own page" in p for p in problems_of(our_page)), str(problems_of(our_page)))
 
         wrong_title = make(tmp, GOOD_CLIENT, "wrong-title")
         manifest = json.loads((wrong_title / "manifest.json").read_text())
