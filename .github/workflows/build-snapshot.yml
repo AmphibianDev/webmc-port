@@ -770,8 +770,20 @@ jobs:
           gh release view built-clients >/dev/null 2>&1 || gh release create built-clients \
             --title "Built browser clients" \
             --notes "Compiled from the official client by this repository's build jobs." || true
-          gh release upload built-clients /tmp/build.log /tmp/build-log-tail.txt /tmp/bake.json \
-            --clobber 2>&1 || echo "::warning::could not upload the log"
+          # One file at a time, and only the ones that exist: `gh release upload` with a missing path fails the
+          # whole command, so a vanilla build (no /tmp/bake.json) uploaded *nothing* - including the log, which
+          # is the only reason this step exists.
+          uploaded=0
+          for file in /tmp/build.log /tmp/build-log-tail.txt /tmp/bake.json; do
+            if [ -f "$file" ]; then
+              if gh release upload built-clients "$file" --clobber 2>&1; then
+                uploaded=$((uploaded + 1))
+              else
+                echo "::warning::could not upload $file"
+              fi
+            fi
+          done
+          echo "uploaded $uploaded log file(s)"
 
       - uses: actions/upload-artifact@v7
         if: always()
