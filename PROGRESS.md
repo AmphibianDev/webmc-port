@@ -237,3 +237,49 @@ repository keeps its history as it is.
 **For a fresh clone to be green.** A missing third-party jar (the ASM jars in `work/asm`, a mod jar in
 `mods/samples`) is now a skip with a message, not a failed test. A suite that goes red on a clean checkout is a
 suite people learn to ignore.
+
+## The night the three versions were built
+
+**One engine, because the build the project owner liked is that engine.** `Enchantment-Niko/eag26-editor` describes
+itself as a tool for "Gaius / GoldHQ WebGL2 Minecraft builds" - so GoldHQ is a Gaius build with a gateway bolted on,
+the engine was never the problem, and the multiplayer was. Gaius ships profiles for 1.21.11, 26.2 and 26.3 already,
+so all three go through one pipeline: fetch the client from Mojang, remap it, run the patch chain, compile it ahead
+of time, and for Fabric merge a mod set into the client before that compile (there is no class loader in a tab).
+
+**Vanilla, working and live:** 1.21.11 and 26.2 are built, packed into pages, verified from the outside and deployed.
+`site/clients/1.21.11/` and `site/clients/26.2/` are what the launcher links; both are playable in the browser with
+no download, which is what was asked for.
+
+**1.21.11 was rebuilt with the mod set folded in** (`hello-fabric`, `hello-mixin`) - see below for why that sentence
+took an evening.
+
+**26.3** now fails only on a toolchain version: the engine pins emscripten 6.0.10 for its shader toolchain and the
+runner had installed 6.0.12, so the compile died thirty-four minutes in. The runner installs what the engine pins.
+
+### Fabric: the problem was where the mod's code went
+
+The bake ran, the report named the mods, the page said "with hello-fabric, hello-mixin baked in" - and the compiled
+client had no trace of either. So the build now checks itself and says the numbers out loud, through the one channel
+this account can read (check-run annotations, because the job log needs a permission it does not have):
+**4 mod classes and 3 injected calls in the patched jar** - and still nothing in the compiled output. A class that
+only a patch introduced does not reach the compiled client, twice, with the jar carrying it both times.
+
+The fix is to stop relying on that: the bake now *folds* each mod's entrypoint into `net/minecraft/client/Minecraft`
+itself - its methods merged into the class the compiler is certainly already compiling, remapped to it, made static
+when their bodies do not read `this`, and called from the client's own static initialiser. No new class has to reach
+the compiler for the mod's code to run. What cannot be folded is reported by name.
+
+### Multiplayer: the gateway speaks both dialects now
+
+The engine's tunnel is `{"type":"connect",host,port}` → `{"type":"connecting"}` → `{"type":"connected",host,port}`,
+and it *checks* those two fields (it calls that attestation), then raw TCP bytes - because its Java side owns
+Minecraft's framing, compression and encryption. That is the same job as the GoldHQ `goldproxy.v1` protocol our
+gateway already spoke, with different words, so the gateway now answers both on `/v1/connect` and `/tunnel`, and the
+protocol test drives the second one over a real socket (30/30).
+
+What is *not* solved: the engine's default relay (`wss://ellan.site/tunnel`) is dead - a WebSocket to it does not
+even open - which is exactly the "cannot connect to servers" the project owner reported. A gateway is a server
+somebody has to run, and this project hosts static files. So the packed page takes the player's gateway at load time
+(`?bridge=`, or the field in the launcher, stored in this browser): one published client serves everybody and each
+player chooses who dials for them. `tools/play_local.py` starts a gateway locally and serves a downloaded client with
+it already set, which is the working multiplayer path today.
