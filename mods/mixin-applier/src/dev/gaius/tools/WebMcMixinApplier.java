@@ -583,6 +583,76 @@ public final class WebMcMixinApplier {
         return fallback;
     }
 
+    /**
+     * Fold a mod's entrypoint class into the client class, so no *new* class has to reach the compiler.
+     *
+     * TeaVM compiles the patched client jar, but a class that only a patch introduced did not survive to the output
+     * twice over - the bake check can see the classes and the injected call in the jar while the compiled client has
+     * no trace of either. Merging the entrypoint's code into the client's own class removes that question entirely:
+     * the code lives where the compiler is already looking.
+     *
+     * Only methods that do not touch `this` are merged, as static methods; anything else is left alone and
+     * reported, because an instance method moved to another class needs its fields moved with it.
+     *
+     * @return the names of the static methods now on the target, in the order they should be called
+     */
+    public static List<String> mergeEntrypoint(Path classesRoot, String entrypoint, String targetInternalName,
+                                               Consumer<String> log) throws IOException {
+        Path source = classesRoot.resolve(entrypoint + ".class");
+        Path destination = classesRoot.resolve(targetInternalName + ".class");
+        if (!Files.isRegularFile(source) || !Files.isRegularFile(destination)) {
+            return List.of();
+        }
+        ClassNode mod = new ClassNode();
+        try (InputStream stream = Files.newInputStream(source)) {
+            new ClassReader(stream).accept(mod, 0);
+        }
+        ClassNode client = new ClassNode();
+        try (InputStream stream = Files.newInputStream(destination)) {
+            new ClassReader(stream).accept(client, 0);
+        }
+        List<String> merged = new ArrayList<>();
+        for (MethodNode method : new ArrayList<>(mod.methods)) {
+            if (method.name.equals("<init>") || method.name.equals("<clinit>")) {
+                continue;
+            }
+            if (usesThis(method) || find(client, method.name, method.desc) != null) {
+                log.accept("  entrypoint " + entrypoint.replace('/', '.') + "." + method.name
+                        + " stays where it is (it uses its own instance, or the name is taken)");
+                continue;
+            }
+            MethodNode copy = cloneMethod(method, mod.name, targetInternalName, false);
+            copy.access = (copy.access | Opcodes.ACC_STATIC) & ~(Opcodes.ACC_PRIVATE | Opcodes.ACC_PROTECTED
+                    | Opcodes.ACC_PUBLIC) | Opcodes.ACC_PUBLIC;
+            client.methods.add(copy);
+            merged.add(method.name + method.desc);
+        }
+        if (!merged.isEmpty()) {
+            ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS) {
+                @Override
+                protected String getCommonSuperClass(String type1, String type2) {
+                    return "java/lang/Object";
+                }
+            };
+            client.accept(writer);
+            Files.write(destination, writer.toByteArray());
+        }
+        return merged;
+    }
+
+    /** Whether a method's body reads local 0, i.e. `this` (a static method cannot be moved without it). */
+    private static boolean usesThis(MethodNode method) {
+        if ((method.access & Opcodes.ACC_STATIC) != 0) {
+            return false;
+        }
+        for (AbstractInsnNode node = method.instructions.getFirst(); node != null; node = node.getNext()) {
+            if (node instanceof VarInsnNode load && load.var == 0 && load.getOpcode() == Opcodes.ALOAD) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** Run by hand: `WebMcMixinApplier <mod.jar> <client-classes-dir>`, for when a build log is not enough. */
     public static void main(String[] args) throws IOException {
         if (args.length != 2) {
