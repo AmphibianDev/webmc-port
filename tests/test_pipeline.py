@@ -75,9 +75,16 @@ def main() -> int:
         next(e for e in planner.load_engines(include_disabled=True)
              if e["id"] == rows["1.21.11"]["engine"]).get("license")),
         "no licence recorded on the engine that builds 1.21.11")
-    check("a 26.x version is out of scope, with the reason",
-          rows["26.2"]["verdict"] == "needs-port" and "Java 25" in rows["26.2"]["why"],
-          str(rows["26.2"]["why"])[:100])
+    # 26.x used to be out of scope by decision. What changed is not the decision but the engine: it documents
+    # 26.2/26.3 as supported and its own tooling generates the profile, so the row says "buildable by gaius"
+    # and keeps the caveat that a generated profile is a first attempt rather than a promise.
+    check("a 26.x version is buildable by the engine that generates its profile",
+          rows["26.2"]["verdict"] == "build" and rows["26.2"]["engine"] == "gaius",
+          str({k: rows["26.2"].get(k) for k in ("verdict", "engine", "why")})[:160])
+    check("and the range that is generatable is stated, not implied",
+          any(str(rule.get("from")).startswith("26") for rule in
+              next(e for e in planner.load_engines() if e["id"] == "gaius").get("profile_rules") or []),
+          "a buildable row is a claim about a version nobody has built yet")
     check("a buildable entry says what it costs",
           rows["1.21.11"]["minutes"] and rows["1.21.11"]["ram_gb"] and rows["1.21.11"]["mods"],
           str({k: rows["1.21.11"][k] for k in ("minutes", "ram_gb", "mods")}))
@@ -202,8 +209,14 @@ def main() -> int:
               and len(json.loads(page_manifest.read_text())["versions"]) >= 3)
         saved = json.loads(state.read_text())
         check("it recorded every version it saw", len(saved["seen"]) >= 14, str(len(saved["seen"])))
+        # A queued entry is one waiting on something specific, and the list is not frozen: the point is that
+        # every queued version carries its reason, and that the ones behind a named wall are still there.
+        queued_ids = {entry["id"] for entry in saved["queued"]}
         check("it queued the versions that need a port",
-              {entry["id"] for entry in saved["queued"]} >= {"1.20.4", "26.3"}, str(saved["queued"]))
+              {"1.20.4", "1.16.5"} <= queued_ids, str(sorted(queued_ids)))
+        check("and every queued version says which wall it is behind",
+              all(entry.get("why") and "blocked:" in entry["why"] for entry in saved["queued"]),
+              str([entry for entry in saved["queued"] if not entry.get("why")])[:200])
         check("and did not queue the ones an engine can compile",
               "1.21.11" not in {entry["id"] for entry in saved["queued"]}
               and any(entry["id"] == "1.21.11" and entry["verdict"] == "build"
@@ -375,8 +388,8 @@ def main() -> int:
     check("1.8.9 too", states.get("1.8.9") == "real-java")
     check("a classic era version is real Java as well", states.get("b1.8.1") == "real-java")
     check("a LWJGL 3 version waits on one layer", states.get("1.16.5") == "one-layer", str(states.get("1.16.5")))
-    check("a 26.x version is out of scope, and says which wall it is behind",
-          states.get("26.3") == "blocked", str(states.get("26.3")))
+    check("a 26.x version is ahead-of-time now that an engine generates its profile",
+          states.get("26.3") == "ahead-of-time", str(states.get("26.3")))
     check("and the 1.21 line is the newest thing in scope",
           states.get("1.21.11") == "ahead-of-time" and states.get("1.21.4") == "ahead-of-time",
           f"1.21.11={states.get('1.21.11')} 1.21.4={states.get('1.21.4')}")
