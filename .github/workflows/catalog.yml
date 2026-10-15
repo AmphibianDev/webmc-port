@@ -141,6 +141,23 @@ jobs:
           python3 tools/fetch_packed.py --all --record || echo "::warning::no packed client could be fetched"
           ls -la site/clients 2>/dev/null | head -5 || true
 
+      - name: Check the packed clients we are about to publish, from the outside
+        # The build job checked its own work as it went. This reads the files the way a visitor's browser will -
+        # the manifest, each chunk's hash, the boot screen, the branding, the mod set - because a page that is
+        # wrong in one of those ways is wrong for everybody, and this is the last place it can be caught.
+        run: |
+          set -euo pipefail
+          failed=0
+          for dir in site/clients/*/; do
+            [ -f "$dir/manifest.json" ] || continue
+            echo "::group::$dir"
+            python3 tools/verify_client.py --dir "$dir" || failed=1
+            echo "::endgroup::"
+          done
+          # A page that fails this is published broken: say so as an error, so the job (and the person watching
+          # it) sees the failure rather than a green tick over a broken download.
+          [ "$failed" = "0" ] || { echo "::error::a packed client does not survive being read from the outside"; exit 1; }
+
       - name: How each version runs, for the launcher
         # One file the page reads next to the catalog: route (real Java / waiting on the shim / compiled),
         # which engine builds it, that engine's licence, and whether it can take a mod set at all.
