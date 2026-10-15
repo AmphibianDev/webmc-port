@@ -4,45 +4,45 @@
  "client": "Gaius-webmc.html",
  "gateway": null,
  "mods": [],
- "bytes": 128913286,
- "total": 128913286,
+ "bytes": 128910762,
+ "total": 128910762,
  "chunk_bytes": 20971520,
- "sha256": "bc2ea53c704e70085fc60003b8cebac18814b73dd615e1fd219bdefbc5005701",
+ "sha256": "13f3d36636bb720837406e4c68812f2ace2dda708748d813ec17819f276e34de",
  "chunks": [
   {
    "path": "data/client.0000",
    "size": 20971520,
-   "sha256": "18ef9669d603b2334ab59f9e26e630c237ce7629658ce35e83a902cbfd101a92"
+   "sha256": "2be8ee8f7a541fa697306c40b5f1731b702774346fcaad2c8324926c915204f0"
   },
   {
    "path": "data/client.0001",
    "size": 20971520,
-   "sha256": "a42079ff091054ea9312201b989e6789d34741b64ba78746614950f5d1e0221d"
+   "sha256": "ecf9eea824043ba7ff67fb0e0ff40ac29d04c55846ec417a7b6155742b0234ba"
   },
   {
    "path": "data/client.0002",
    "size": 20971520,
-   "sha256": "5d927b6a961e4634053435dac709efd564f6b69f88827c7097f619442243bf48"
+   "sha256": "3a309cf4a760dabc9c0c2e3c6ba64dde046bd96f2a740be595a9e5456eaf9294"
   },
   {
    "path": "data/client.0003",
    "size": 20971520,
-   "sha256": "42a753b091342737b13303aebc1c6a6afd8a1eef346a3420a8ca1b02d976f2db"
+   "sha256": "789afefabe4c692c3789a482b55f4b44d423a23d19f163d7a835c7fd7e794fe7"
   },
   {
    "path": "data/client.0004",
    "size": 20971520,
-   "sha256": "1c9207bdbc44500092de28ebf01513253f61e7333550e9877600e1819ce7d6c1"
+   "sha256": "44bfab2e1c3c2bbb2ba816ad9c60793bfde98d6a9007c8851ff68dbc2377a7a4"
   },
   {
    "path": "data/client.0005",
    "size": 20971520,
-   "sha256": "219920d69ddd55c6ac104e906626a7901d89608a7e3f735cff7c84d1ad7c60e8"
+   "sha256": "091b12952744fa83ba6acb97b563c11afa1fb981827d2a8f1c06f5dc7422fe82"
   },
   {
    "path": "data/client.0006",
-   "size": 3084166,
-   "sha256": "9097daaf0641a565d223b0ec594be2940cd1ff17188cc3993e467c77542e3075"
+   "size": 3081642,
+   "sha256": "94541698262f6c4375d15fff07fe7f3905d108ea9310aa7c58cd9078ea138e14"
   }
  ]
 }
