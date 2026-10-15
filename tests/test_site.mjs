@@ -16,7 +16,19 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const page = readFileSync(path.join(ROOT, 'site', 'index.html'), 'utf8');
-const routes = JSON.parse(readFileSync(path.join(ROOT, 'site', 'routes.json'), 'utf8')).versions;
+/* site/routes.json is derived and git-ignored: the catalog job regenerates it before it deploys. A fresh clone
+ * therefore has no such file, and a test that assumed one is how a green laptop turns into a red runner. So the
+ * file is built here with the same tool the deploy uses, offline, from the state the repository does carry. */
+function routeIndex() {
+  const target = path.join(ROOT, 'site', 'routes.json');
+  try {
+    return JSON.parse(readFileSync(target, 'utf8')).versions;
+  } catch (error) {
+    execFileSync('python3', [path.join(ROOT, 'tools', 'route.py'), '--export', target], { stdio: 'pipe' });
+    return JSON.parse(readFileSync(target, 'utf8')).versions;
+  }
+}
+const routes = routeIndex();
 const catalog = JSON.parse(readFileSync(path.join(ROOT, 'site', 'manifest.json'), 'utf8'));
 let failures = 0;
 const check = (label, ok, detail = '') => {
