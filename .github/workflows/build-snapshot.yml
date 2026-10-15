@@ -84,16 +84,7 @@ jobs:
               *"+"*) MODS="${RAW#*+}" ;;
               *) MODS="" ;;
             esac
-            # The route decides which engine builds this version, and the two families are not
-            # interchangeable: a profile engine is told which version to fetch and patch, a workspace *is* the
-            # client source. This line used to hardcode one engine, so a dispatch of 26.2 built it with an
-            # engine that cannot build it - and failed an hour later, in the middle of a patch chain.
-            ENGINE="$(python3 tools/engine_for.py --version "$VERSION" --field repo 2>/dev/null || true)"
-            if [ -z "$ENGINE" ]; then
-              echo "::error::no enabled engine builds $VERSION"
-              python3 tools/engine_for.py --version "$VERSION" || true
-              exit 1
-            fi
+            ENGINE=""
           else
             VERSION="${{ inputs.version }}"
             MODS="${{ inputs.mods }}"
@@ -120,10 +111,42 @@ jobs:
         with:
           path: ours
 
+      - name: Which engine builds this version, and what kind it is
+        # After the checkout, not before: the answer is in ports.json and routes.json, which are in the repository.
+        # This step used to be two - one that named an engine for a tag-triggered run (the hardcoded one) and one
+        # that worked out its kind - and the split is what let a dispatch of 26.2 be checked out with an engine
+        # that cannot build it, failing an hour later inside a patch chain.
+        id: engine_kind
+        working-directory: ours
+        run: |
+          set -euo pipefail
+          WANTED="${{ steps.want.outputs.engine }}"
+          if [ -z "$WANTED" ]; then
+            WANTED="$(python3 tools/engine_for.py --version "${{ steps.want.outputs.version }}" --field repo 2>/dev/null || true)"
+          fi
+          if [ -z "$WANTED" ]; then
+            echo "::error::no enabled engine builds ${{ steps.want.outputs.version }}"
+            python3 tools/engine_for.py --version "${{ steps.want.outputs.version }}" || true
+            exit 1
+          fi
+          KIND="$(python3 - "$WANTED" <<'PY'
+          import json, pathlib, sys
+          # By repository or by id: the interactive path passes a repo and the tag path resolves one, and the two
+          # families have to be told apart correctly or the wrong family's steps run.
+          wanted = sys.argv[1]
+          engines = json.loads(pathlib.Path("ports.json").read_text())["engines"]
+          found = next((e for e in engines if (e.get("repo") or "") == wanted or (e.get("id") or "") == wanted), None)
+          print((found or {}).get("kind") or "unknown")
+          PY
+          )"
+          echo "engine=$WANTED" >> "$GITHUB_OUTPUT"
+          echo "kind=$KIND" >> "$GITHUB_OUTPUT"
+          echo "${{ steps.want.outputs.version }} is built by $WANTED, a $KIND engine"
+
       - name: Check out the engine
         uses: actions/checkout@v7
         with:
-          repository: ${{ steps.want.outputs.engine }}
+          repository: ${{ steps.engine_kind.outputs.engine }}
           path: engine
           fetch-depth: 1
           # The engine keeps part of its tree in Git LFS and its build reads it.
@@ -175,28 +198,6 @@ jobs:
           sudo swapon /mnt/swapfile
           swapon --show
           free -g | head -2
-
-      - name: Which kind of engine this is
-        # The two families are built differently: a profile-based engine (Gaius) is told which version to
-        # fetch and compile, while a workspace *is* the client source for its version and is built with its
-        # own gradle/npm commands. The prepare step below only makes sense for the first kind.
-        id: engine_kind
-        working-directory: ours
-        run: |
-          set -euo pipefail
-          KIND="$(python3 - "${{ steps.want.outputs.engine }}" <<'PY'
-          import json, pathlib, sys
-          # By repository or by id: the interactive path passes a repo, the tag path resolves one too, and the
-          # two families have to be told apart correctly or the wrong family's steps run (that is how a
-          # workspace build ended up running a profile engine's patch chain, and failed an hour in).
-          wanted = sys.argv[1]
-          engines = json.loads(pathlib.Path("ports.json").read_text())["engines"]
-          found = next((e for e in engines if (e.get("repo") or "") == wanted or (e.get("id") or "") == wanted), None)
-          print((found or {}).get("kind") or "unknown")
-          PY
-          )"
-          echo "kind=$KIND" >> "$GITHUB_OUTPUT"
-          echo "engine: ${{ steps.want.outputs.engine }} is a $KIND engine"
 
       - name: Tell the engine where the JDK is
         # The overlay/release scripts ask for a JDK 21+ explicitly and stop with "Set GAIUS_JAVA_HOME to a
