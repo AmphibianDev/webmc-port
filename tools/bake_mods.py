@@ -258,6 +258,7 @@ public final class __CLASS__ {
                     String text = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
                     descriptor.put("id", firstString(text, "id"));
                     descriptor.put("entrypoint", firstEntrypoint(text));
+                    descriptor.put("hasEntrypoints", text.contains((char) 34 + "entrypoints" + (char) 34) ? "yes" : "no");
                                         descriptor.put("main", Boolean.toString(text.contains((char) 34 + "main" + (char) 34)));
                 }
             }
@@ -281,7 +282,7 @@ public final class __CLASS__ {
                 + (descriptor.get("entrypoint") == null ? "" : ", entrypoint " + descriptor.get("entrypoint")));
 
         String raw = descriptor.get("entrypoint");
-        if (raw != null) {
+        if (raw != null && "yes".equals(descriptor.get("hasEntrypoints"))) {
             int separator = raw.indexOf("::");
             String owner = (separator < 0 ? raw : raw.substring(0, separator)).replace('.', '/');
             String method = separator >= 0 ? raw.substring(separator + 2)
@@ -312,18 +313,37 @@ public final class __CLASS__ {
         return end < 0 ? null : json.substring(quote + 1, end);
     }
 
-    /** The client entrypoint's class name, out of an entrypoints block. */
+    /**
+     * The client entrypoint's class name, out of the entrypoints block.
+     *
+     * <p>It has to look *inside* "entrypoints". Searching the whole descriptor for the word "client" matched
+     * {"environment": "client"} and then read the mixins array as the entrypoint - which is how a mod with no
+     * entrypoint at all came out of a bake with one, and failed the build on a class that was never meant to be
+     * called.</p>
+     */
     private static String firstEntrypoint(String json) {
-        int at = json.indexOf("\\"client\\"");
-        if (at < 0) {
-            at = json.indexOf("\\"main\\"");
+        int block = json.indexOf(\"entrypoints\");
+        if (block < 0) {
+            return null;
         }
-        if (at < 0) {
+        int client = json.indexOf(\"client\", block);
+        int main = json.indexOf(\"main\", block);
+        int at;
+        if (client >= 0 && main >= 0) {
+            at = Math.min(client, main);
+        } else if (client >= 0) {
+            at = client;
+        } else if (main >= 0) {
+            at = main;
+        } else {
             return null;
         }
         int open = json.indexOf('[', at);
+        if (open < 0) {
+            return null;
+        }
         int quote = json.indexOf('"', open);
-        if (open < 0 || quote < 0) {
+        if (quote < 0) {
             return null;
         }
         int end = json.indexOf('"', quote + 1);
