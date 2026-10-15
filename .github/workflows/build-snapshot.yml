@@ -251,6 +251,7 @@ jobs:
           echo "resolved to $VERSION"
 
       - name: Point the build at the JDK this version's profile asks for
+        if: steps.engine_kind.outputs.kind != 'eaglercraft-workspace'
         # The profile is the authority: it says javaVersion per version, and the engine refuses to run on an
         # older one. 21 stays the default for everything else, so this only ever *raises* the JDK, and it says
         # which one it picked and why.
@@ -389,6 +390,7 @@ jobs:
           echo "uploaded: $(ls -la /tmp/bake.json /tmp/build.log 2>/dev/null | wc -l) file(s)"
 
       - name: Fetch the client, its libraries and its assets
+        if: steps.engine_kind.outputs.kind != 'eaglercraft-workspace'
         working-directory: engine
         run: |
           set -uo pipefail
@@ -399,6 +401,7 @@ jobs:
           exit "$STATUS"
 
       - name: Remap the client if this version is obfuscated
+        if: steps.engine_kind.outputs.kind != 'eaglercraft-workspace'
         working-directory: engine
         run: |
           set -uo pipefail
@@ -409,6 +412,7 @@ jobs:
           exit "$STATUS"
 
       - name: Build the overlays (the patch chain, bring-up allowed)
+        if: steps.engine_kind.outputs.kind != 'eaglercraft-workspace'
         # GAIUS_BRINGUP=1 lets the engine's bring-up list skip patches whose port is not finished. Every
         # skip prints BRINGUP_SKIP, and this step fails if the log shows one that the list does not
         # declare - the engine's own check-build-log-skips.mjs does that, and it is run here.
