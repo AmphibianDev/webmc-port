@@ -418,8 +418,12 @@ def test_page_contract(tmp: pathlib.Path, mods: list[dict]) -> None:
         "caveats": "to warn about what is unproven on that row before somebody presses play",
     }.items():
         check(f"every index entry carries '{field}' ({why})", field in index["versions"]["1.12.2"])
-    check("the launcher reads the index's version entries", "plan.modes" in launcher
-          and "plan.playable" in launcher and "plan.row" in launcher)
+    # The launcher reads the plan for which modes and mods a version has, and the index (site/routes.json)
+    # for how it runs and who builds it - two files, two jobs, and this is the seam between them.
+    check("the launcher reads the plan for its modes and mods",
+          "plan.modes" in launcher and "function modsOf" in launcher)
+    check("and the route index for how it runs and who builds it",
+          "route.engine" in launcher and "route.route" in launcher and "route.bakes_mods" in launcher)
     check("the launcher reads a mod's file, which is what it fetches",
           "mod.file" in launcher or "mod.id" in launcher)
     check("the index names our loader and where to get it",

@@ -140,7 +140,12 @@ def main() -> int:
           and "its own libraries are not deployed yet" in plan_tool)
     check("and the page says what a missing classpath costs instead of failing silently",
           "classpath unavailable" in page and "missing class" in page)
-    check("the launcher passes the version's metadata url", "&meta=" in launcher)
+    # The metadata url moved to the plan (site/plans/<version>.json): the launcher's link carries the
+    # version, the mode and the mods, and the launch page reads the rest from the plan.
+    check("the launcher's play link carries the version, the mode and the mods",
+          'play.html?version=' in launcher and '&mode=' in launcher and '&mods=' in launcher)
+    check("and the plan carries the version's metadata url for the asset index",
+          'meta_url' in (ROOT / "tools" / "launchplan.py").read_text())
     check("and warns when a link only downloads", "play_served_as" in launcher)
 
     print()
