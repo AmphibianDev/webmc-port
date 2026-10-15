@@ -121,6 +121,43 @@ def test_pack(tmp: pathlib.Path) -> None:
           pack_client.pack(client, tmp / "plain", "Minecraft 1.21.11", chunk_mb=2,
                            log=lambda *_: None)["mods"] == [])
 
+    print("\nthe gateway is applied at load time, not baked in")
+    # A packed page carries the *player's* gateway: ?bridge= (or the one saved in this browser) is spliced into
+    # the client's head as it is assembled, so one published build serves everybody and each player chooses who
+    # dials for them. The page's own functions are run here, on the real code that ships.
+    import subprocess as _sp
+    scripts = __import__("re").findall(r"<script(?![^>]*src=)[^>]*>([\s\S]*?)</script>",
+                                       pack_client.start_page("Minecraft 1.21.11", gateway="wss://relay.example"))
+    probe = tmp / "page-script.js"
+    probe.write_text("\n".join(scripts))
+    harness = tmp / "bridge-harness.js"
+    harness.write_text("""
+const fs = require("node:fs");
+const src = fs.readFileSync(process.argv[2], "utf8");
+eval(src.match(/function concatParts\\(parts\\) \\{[\\s\\S]*?\\n  \\}/)[0]);
+eval(src.match(/function withBridge\\(bytes, bridge\\) \\{[\\s\\S]*?\\n  \\}/)[0]);
+const input = "<!doctype html><html><head><title>client</title></head><body>x</body></html>";
+const out = new TextDecoder().decode(withBridge(new TextEncoder().encode(input), "wss://relay.example/v1/connect"));
+console.log(JSON.stringify({
+  bridge: out.includes("__gaiusBridgeUrls"),
+  tunnel: out.includes("wss://relay.example/v1/connect/tunnel"),
+  intact: out.includes("<title>client</title>") && out.endsWith("</html>") && !out.includes("\\u0000"),
+  concat: new TextDecoder().decode(concatParts([new TextEncoder().encode("ab"), new TextEncoder().encode("cd")])),
+}));
+""")
+    result = _sp.run(["node", str(harness), str(probe)], capture_output=True, text=True)
+    try:
+        seen = json.loads(result.stdout)
+    except Exception:
+        seen = {}
+        check("the page's bridge functions run", False, (result.stderr or result.stdout)[:300])
+    if seen:
+        check("the player's gateway is spliced into the client at load time", seen.get("bridge") is True)
+        check("and the client keeps working: the bytes are only added to, never replaced",
+              seen.get("intact") is True)
+        check("the tunnel path is built the way the engine expects", seen.get("tunnel") is True)
+        check("the chunks are still joined in order", seen.get("concat") == "abcd")
+
     print("\nthe gateway a packed client carries")
     e26 = tmp / "client.html"
     e26.write_text('<!doctype html><html><head><title>x</title></head><body>'
