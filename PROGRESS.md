@@ -130,3 +130,83 @@ screens, buttons included: this engine ships no `textures/gui` of its own (the r
 so there is nothing of ours to restyle. What is *not* vanilla is the shell we now hide and the engine's four
 extra screens for browser-only facts (profile name, relay editor). Those exist because a browser client needs
 them; they are additions beside the vanilla UI, not a repaint of it.
+
+## 2026-10-15 (evening): multiplayer that works, and mods that are really merged
+
+### Multiplayer
+
+A browser page cannot open a TCP socket - the API does not exist, which is why every browser client that joins a
+normal Java server has a gateway behind it. `gateway/server.js` is ours: one file, no dependencies, and it speaks
+the protocol the downloaded 26.3 client already implements (`goldproxy.v1`), which is what makes it useful now
+rather than after a rewrite of somebody else's client.
+
+The protocol was read out of the client's own modules, extracted with `tools/eagler_offline.py` and verified
+against the sha256s in the file it came from: `POST /v1/token` for a short-lived token scoped to one destination,
+then one WebSocket carrying control frames (open/ready/ack/ping/end/error) and raw TCP bytes, with the page
+owning Minecraft's framing and AES/CFB8 so the gateway never holds a key and never parses a packet. Its one
+packet-shaped check is that a session starts with a Minecraft handshake, before the target sees anything,
+because a gateway that dials any port for any byte stream is a port scanner with extra steps. Private and
+reserved targets are refused by rule, by name, and again after DNS.
+
+`tests/test_gateway.mjs` is the protocol rather than a description of it: 25 checks over a real socket and a real
+WebSocket, including every refusal, a browser preflight, and the flow-control window. `MULTIPLAYER.md` is the
+written form.
+
+Playing the client you already have:
+
+```sh
+python3 tools/play_local.py                 # gateway + page, one command, stops on Ctrl-C
+python3 tools/play_local.py --server mc.example.com
+```
+
+It serves the client with the gateway set inside it, and the patch is one script tag: removing it gives the file
+back byte for byte, which is checked against what was actually served - 200 MB of somebody else's payload is not
+something to reformat. 13 checks, no mocks.
+
+### Mods
+
+Two blockers, both now understood rather than guessed at.
+
+**Entrypoints** work: the bake instantiates each mod's `ClientModInitializer` and calls it from the client's own
+static initialiser, as bytecode. The previous failure was our own generated Java naming the mod's package - a
+compile error the engine reports as `package com.example does not exist`, because its sources are compiled before
+the patched classes are on its classpath. The hook class is gone.
+
+**Mixins** now work for the shapes that matter. `mods/mixin-applier` merges a mod's mixin classes into the
+client's class files before the client is compiled, so the compiler sees the merged result: no reflection, no
+interpreter, no runtime loader. Applied: `@Mixin` by class or name, `@Overwrite` when the descriptor matches,
+`@Inject` at HEAD/RETURN/TAIL for `(CallbackInfo)` handlers, `@Unique` members (self-references redirected to the
+target), and `@Shadow` - never copied, because after the merge a shadowed call resolves to the target's own
+member, which is the only reason a shadow exists.
+
+Refused, loudly, as a failed build: a mixin whose target is not in the client, a descriptor naming a class the jar
+does not carry, an `@Overwrite` or `@Inject` of a method that is not there. Reported by name but not fatal:
+handlers taking the target's own arguments, `@At` selectors beyond the three, `@Redirect`, `@ModifyArg`,
+`@ModifyVariable`, `@Accessor`, access wideners. Half a mixin is a client that looks fine until it does not.
+
+The test is a JVM run: compile a client, compile a mixin mod against this repository's annotation stubs, apply the
+mixins, then *run* it and read what it printed. 17 checks including that the shadowed field read the target's real
+value and that the build-time annotations did not travel into the compiled client. `MIXINS.md` is the contract;
+`CREDITS.md` credits SpongePowered/Mixin for the annotations and their meanings.
+
+**Meteor Client cannot load here yet**, and the reason is specific: its descriptor declares six mixin configs, an
+access widener, and its code calls Fabric API throughout. The applier has no Fabric API to offer and does not
+implement access wideners or `@Redirect`. What can be baked today is a mod written as an entrypoint plus the
+mixin shapes above - `mods/examples/hello-mixin` is exactly that, opt-in with
+`build-1.21.11+hello-fabric,hello-mixin`.
+
+### The branding, settled with bytes
+
+Fetching the first 400 KB of the released client and counting settled where the "big Gaius logo" comes from: the
+engine injects its own launcher shell (a GAIUS CLIENT header, a footer carrying the "not affiliated with Mojang
+Studios" sentence) plus a `#boot-brand` block that renders GAIUS CLIENT over the loading screen. Our strip had
+already removed the header and footer; it missed `#boot-brand`, whose id contains no brand word and only its text
+does. The tool now removes that block and hides the rest (the engine's own boot overlay, the profile
+kicker/subtitle/legal lines, anything it builds later under `[data-gaius-shell]`) - hidden rather than removed
+where the engine's own script looks the element up, because a null there is a client that stops.
+
+### Loading
+
+The packed page fetches its chunks in parallel and its boot screen cannot go backwards. The bar is monotonic
+because two things reporting progress on different scales is what "the bar went backwards" always was. The screen
+names the version, and for a modded build it names the mod set: "Minecraft 1.21.11 - with hello-fabric baked in".

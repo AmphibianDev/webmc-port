@@ -32,6 +32,21 @@
       ],
       "side": "client",
       "note": "a Fabric mod built from mods/examples/hello-fabric. On a version with a real JVM it is started by Fabric Loader at play time; on a compiled version the bake applies it before the compile. The one kind of mod that cannot work anywhere is one with native libraries."
+    },
+    {
+      "id": "hello-mixin",
+      "name": "Hello Mixin",
+      "version": "1.0.0",
+      "file": "jars/hello-mixin.jar",
+      "game": [
+        "*"
+      ],
+      "loaders": [
+        "fabric",
+        "aot"
+      ],
+      "side": "client",
+      "note": "A mixin: its code is merged into the client's own class files at build time, which is the only way a mixin can work in an ahead-of-time client. Built from mods/examples/hello-mixin by tools/build_mods.py, and baked the same way - opt in with a build tag such as build-1.21.11+hello-fabric,hello-mixin. MIXINS.md lists the mixin shapes that are applied and the ones that are refused by name."
     }
   ]
 }

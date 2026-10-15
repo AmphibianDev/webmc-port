@@ -44,8 +44,10 @@ def build_example(name: str, javac: str, loader_jar: pathlib.Path, out: pathlib.
         classes = pathlib.Path(scratch) / "classes"
         classes.mkdir(parents=True)
         # a mod may use the loader's API and/or the Fabric API shims the bake provides
+        # the loader's API, the Fabric shims the bake provides, and the mixin annotations this repository
+        # stubs (MIXINS.md): a mod that uses none of them needs none of them
         classpath = os.pathsep.join([str(loader_jar) if loader_jar.is_file() else str(build_loader.SOURCE),
-                                     str(ROOT / "mods" / "shims")])
+                                     str(ROOT / "mods" / "shims"), str(ROOT / "mods" / "mixin-shims")])
         command = [javac, "--release", "8", "-nowarn", "-cp", classpath,
                    "-d", str(classes)] + [str(source) for source in sources]
         result = subprocess.run(command, capture_output=True, text=True)
@@ -62,6 +64,11 @@ def build_example(name: str, javac: str, loader_jar: pathlib.Path, out: pathlib.
         with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as jar:
             for path in sorted(classes.rglob("*.class")):
                 relative = str(path.relative_to(classes)).replace("/", "/")
+                if relative.startswith("org/spongepowered/asm/"):
+                    # javac found the annotation stubs on the classpath and compiled them along the way. They
+                    # belong to the client they are merged into, not to this jar: tools/build_mixin_shims.py
+                    # ships the two that are real code, and the annotations are read out of the class file.
+                    continue
                 info = zipfile.ZipInfo(relative, STAMP)
                 info.compress_type = zipfile.ZIP_DEFLATED
                 jar.writestr(info, path.read_bytes())
