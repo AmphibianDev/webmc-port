@@ -3,41 +3,44 @@
  "title": "Minecraft 1.21.11",
  "client": "Gaius-webmc.html",
  "gateway": null,
- "mods": [],
- "bytes": 113015704,
- "total": 113015704,
+ "mods": [
+  "hello-fabric",
+  "hello-mixin"
+ ],
+ "bytes": 113014236,
+ "total": 113014236,
  "chunk_bytes": 20971520,
- "sha256": "36ba61d42ff5cc00f1e279b3496b649843f40901d120d0ed72a9c43cb947cd88",
+ "sha256": "dd6a13833b0bd6080c7710ed14d72243d90ab2e10dc3c4aec0e7fe200c0cf419",
  "chunks": [
   {
    "path": "data/client.0000",
    "size": 20971520,
-   "sha256": "c56ac8a1f5847e35ab553fb1bba6fad3f709e13b803006f1e1fc68f398c1d846"
+   "sha256": "77a8396055d7b33cf6a51855a18ffb171b1dbd36e733aa7c0f3ab14f44a01350"
   },
   {
    "path": "data/client.0001",
    "size": 20971520,
-   "sha256": "c699b8b61e9a1319b5347220bf979598a79def181542abd852793a5c65b3457a"
+   "sha256": "42d602c224862c4b78fb25aafcb864cbba2a13a70cbefc9f013241ffed40fe11"
   },
   {
    "path": "data/client.0002",
    "size": 20971520,
-   "sha256": "cdcde8ef6c65242ad09cc183a092c2e60caa4a4cf04fc97c79b1bbfae8736111"
+   "sha256": "78fcc60369d24038876710034688b15f3516fde9bd5904e4456d4b50b694bcc5"
   },
   {
    "path": "data/client.0003",
    "size": 20971520,
-   "sha256": "d42fc2dd1d5d25b1bc30f2d3f97d4daa1eaaa521a8ff978442a91ba5fffef854"
+   "sha256": "aa4188fd9e61073c8e40d91e1dc2d3c54b03bff29a101a6a5eb0da421bc5fc05"
   },
   {
    "path": "data/client.0004",
    "size": 20971520,
-   "sha256": "a5db818b60af94342113f63e0898a50522ac51a8f2028389289b959964b29e84"
+   "sha256": "d875fb795622a07bc77d7c71ff229095907bccb3051fd1c90076b2a9e4dda6de"
   },
   {
    "path": "data/client.0005",
-   "size": 8158104,
-   "sha256": "12c7fb47ac59c82c35bd5a4dd50c9dcc73ca470d0c78530f2042553c4610bcc0"
+   "size": 8156636,
+   "sha256": "82519c4fbfa930e9861aa442df3675a0d1e81ddcaa43337198db3383060ef0c8"
   }
  ]
 }

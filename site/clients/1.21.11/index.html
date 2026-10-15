@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Minecraft 1.21.11</title>
+<meta name="webmc-mods" content="hello-fabric,hello-mixin" />
 <!-- Written by tools/pack_client.py. The client itself is the chunks next to this page. -->
 <style>
 
@@ -323,6 +324,43 @@
     return bytes;
   }
 
+  function concatParts(parts) {
+    var size = parts.reduce(function (total, part) { return total + part.length; }, 0);
+    var out = new Uint8Array(size);
+    var at = 0;
+    parts.forEach(function (part) { out.set(part, at); at += part.length; });
+    return out;
+  }
+
+  /* One script tag into the client's head, by bytes: the page is 100 MB and turning it into a string to run a
+   * replace on it is the one thing that would make this slow. */
+  function withBridge(bytes, bridge) {
+    var needle = new TextEncoder().encode("<head>");
+    var at = -1;
+    outer:
+    for (var i = 0; i < bytes.length - needle.length; i++) {
+      for (var j = 0; j < needle.length; j++) {
+        if (bytes[i + j] !== needle[j]) { continue outer; }
+      }
+      at = i;
+      break;
+    }
+    if (at < 0) { return bytes; }
+    var lines = [
+      "<head><script>/* WebMC: the tunnel this player chose. */",
+      "globalThis.__gaiusBridgeUrl = " + JSON.stringify(bridge.replace(/\/$/, "") + "/tunnel") + ";",
+      "globalThis.__gaiusBridgeUrls = [globalThis.__gaiusBridgeUrl];",
+      "<\/script>"   /* escaped: a literal closing tag would end this page's own script element */
+    ];
+    var script = new TextEncoder().encode(lines.join("\n"));
+    // the injected script replaces the "<head>" it is spliced onto, so the result is that much shorter
+    var out = new Uint8Array(bytes.length + script.length - needle.length);
+    out.set(bytes.subarray(0, at), 0);
+    out.set(script, at);
+    out.set(bytes.subarray(at + needle.length), at + script.length);
+    return out;
+  }
+
   async function play() {
     go.disabled = true;
     try {
@@ -346,7 +384,19 @@
         }
         why.textContent = (seen / 1048576).toFixed(1) + " / " + (manifest.total / 1048576).toFixed(1) + " MB";
       }));
-      var blob = new Blob(parts, { type: "text/html" });
+      /* The multiplayer setting is the player's, not the build's, so it is applied here at load time rather
+       * than baked in: a gateway in ?bridge= (or ?gateway=), or the one saved in this browser. Two lineages,
+       * two places to put it, and both are the client's own documented switch. */
+      var bridge = new URLSearchParams(location.search).get("bridge")
+                 || new URLSearchParams(location.search).get("gateway")
+                 || (function () { try { return localStorage.getItem("webmc.gateway") || ""; } catch (e) { return ""; } })();
+      var assembled = concatParts(parts);
+      if (bridge) {
+        try { localStorage.setItem("eagler26.goldproxy", JSON.stringify({ gateway: bridge })); } catch (e) {}
+        assembled = withBridge(assembled, bridge);
+        if (window.webmcBoot) { window.webmcBoot.progress(1, "Multiplayer: " + bridge); }
+      }
+      var blob = new Blob([assembled], { type: "text/html" });
       /* A build that had a mod set baked in says so before the client opens, because that is the difference
        * between a modded build and a build that silently ignored the mods. */
       if (manifest.mods && manifest.mods.length && window.webmcBoot) {
