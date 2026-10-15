@@ -78,7 +78,12 @@ jobs:
             RAW="${GITHUB_REF_NAME#build-}"
             VERSION="${RAW%%+*}"
             MODS=""
-            case "$RAW" in *+) MODS="${RAW#*+}" ;; esac
+            # the quoted "+" matters: this was `case "$RAW" in *+)`, which never matches (the pattern is
+            # parsed as a literal `*+`, and a shell will not tell you), so a mod set was silently dropped
+            case "$RAW" in
+              *"+"*) MODS="${RAW#*+}" ;;
+              *) MODS="" ;;
+            esac
             ENGINE="TypeThe0ry/Gaius"
           else
             VERSION="${{ inputs.version }}"
@@ -91,6 +96,8 @@ jobs:
           echo "mods=$MODS" >> "$GITHUB_OUTPUT"
           echo "engine=$ENGINE" >> "$GITHUB_OUTPUT"
           echo "building $VERSION with $ENGINE${MODS:+ and mods $MODS}"
+          # said out loud, because "the bake never ran" was invisible in a 90,000-line log
+          echo "mods requested: ${MODS:-none}"
 
       - name: Check out this repository
         uses: actions/checkout@v7

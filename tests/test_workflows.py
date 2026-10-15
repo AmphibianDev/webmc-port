@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import pathlib
+import subprocess
 import sys
 import tempfile
 
@@ -263,6 +264,42 @@ def test_routes(tmp: pathlib.Path) -> None:
           all(summary["examples"].values()), str(summary["examples"]))
 
 
+def test_tag_parsing() -> None:
+    """Run the workflow's own tag parsing, because a shell pattern that never matches fails silently.
+
+    The modded build that changed nothing was caused by `case "$RAW" in *+)`: the pattern is parsed as a
+    literal, no branch matched, the mod set vanished, and the build looked perfectly healthy. This test
+    takes the lines out of the workflow and runs them with a few tags, so a silent no-op becomes a
+    failure here.
+    """
+    print("\nthe tag name is parsed by the workflow's own shell")
+    workflow = (ROOT / ".github" / "workflows" / "build-snapshot.yml").read_text()
+    # comments are skipped: one of them contains a backtick-quoted copy of the old pattern, which bash
+    # would happily treat as command substitution
+    lines = [line.strip() for line in workflow.splitlines()
+             if not line.strip().startswith("#")
+             and any(token in line for token in ('RAW="${GITHUB_REF_NAME', 'VERSION="${RAW', 'case "$RAW"',
+                                                'MODS="${RAW', 'MODS=""', '*) MODS=', 'esac'))]
+    check("the parsing lines were found in the workflow", len(lines) >= 4, str(lines))
+    script = "\n".join(lines + ['echo "version=$VERSION mods=$MODS"'])
+
+    def parse(tag: str) -> str:
+        result = subprocess.run(["bash", "-c", script], capture_output=True, text=True,
+                                env={"GITHUB_REF_NAME": tag, "PATH": "/usr/bin:/bin"})
+        return result.stdout.strip()
+
+    check("a plain version tag parses to that version and no mods",
+          parse("build-1.21.11") == "version=1.21.11 mods=", parse("build-1.21.11"))
+    check("a tag with a mod set parses both",
+          parse("build-1.21.11+hello-fabric") == "version=1.21.11 mods=hello-fabric",
+          parse("build-1.21.11+hello-fabric"))
+    check("two mods survive as a list",
+          parse("build-1.21.11+hello-fabric,hello-webmc") == "version=1.21.11 mods=hello-fabric,hello-webmc",
+          parse("build-1.21.11+hello-fabric,hello-webmc"))
+    check("a snapshot tag keeps its snapshots parts",
+          parse("build-26.4-snapshot-4") == "version=26.4-snapshot-4 mods=", parse("build-26.4-snapshot-4"))
+
+
 def test_credits() -> None:
     print("\nthe credits ledger and the engine registry agree")
     ports = json.loads((ROOT / "ports.json").read_text())
@@ -297,6 +334,7 @@ def main() -> int:
         test_the_real_workflows()
         test_credits()
         test_routes(tmp)
+        test_tag_parsing()
     print(f"\n{FAILURES} workflow test(s) FAILED" if FAILURES else "\nworkflow tests passed")
     return 1 if FAILURES else 0
 
