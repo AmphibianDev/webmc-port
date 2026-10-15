@@ -55,6 +55,28 @@ def find_client(explicit: str | None) -> pathlib.Path:
     return candidates[0]
 
 
+# The two lineages take their multiplayer setting differently, and the difference is not cosmetic:
+#   * the Eagler26 lineage (goldproxy) tunnels: it needs a *gateway* that dials a normal Java server for it;
+#   * the EaglercraftX lineage connects straight to an Eaglercraft *server* over wss, so what it wants is that
+#     server's address, not a gateway. Handing one the other's value is exactly how a client ends up unable to
+#     connect, which is the complaint this whole exercise started from.
+EAGLERX_MARKERS = ("eaglercraftXOpts", "assets.epk")
+
+
+def is_eaglercraftx(data: bytes) -> bool:
+    head = data[:4000].decode("utf-8", "replace")
+    return any(marker in head for marker in EAGLERX_MARKERS)
+
+
+def eaglercraftx_script(server: str | None) -> str:
+    """The options object the EaglercraftX lineage reads at boot. No gateway: it speaks to a server itself."""
+    options = {"server": server} if server else {}
+    return ('<script data-webmc-server="' + (server or "") + '">/* WebMC: what this client should open with. The '
+            "EaglercraftX lineage connects to an Eaglercraft server over wss itself, so this is an address, not a "
+            "gateway. */\nwindow.eaglercraftXOpts = Object.assign(" + json.dumps(options)
+            + ", window.eaglercraftXOpts || {});\n</script>\n")
+
+
 def gateway_script(url: str) -> str:
     if not re.match(r"^wss?://[^\s\"']+$", url):
         raise SystemExit(f"a gateway address starts with ws:// or wss://, not {url!r}")
@@ -67,17 +89,22 @@ def gateway_script(url: str) -> str:
         + " })); } catch (e) {}\n</script>\n")
 
 
-def patch_client(data: bytes, gateway: str) -> bytes:
-    """Put the gateway into the client before any of its modules run."""
+def patch_client(data: bytes, gateway: str, server: str | None = None) -> bytes:
+    """Put the multiplayer setting into the client before any of its code runs."""
     text = data.decode("utf-8", errors="surrogateescape")
-    if GATEWAY_MARK in text:
+    if GATEWAY_MARK in text or 'data-webmc-server="' in text:
         return data
-    if "__eaglerConfig" not in text and "eagler26-offline-meta" not in text:
-        raise SystemExit("that build has no client config to set a gateway in: it is not an Eagler26 client, "
-                         "so multiplayer cannot be pointed anywhere from here")
-    # No extra newline, no reformatting: removing the script has to give back the file byte for byte, because
-    # "the client is unchanged except for the gateway" is a claim a 200 MB payload should be able to pass.
-    insertion = gateway_script(gateway)
+    if is_eaglercraftx(data):
+        insertion = eaglercraftx_script(server)
+    elif "__eaglerConfig" in text or "eagler26-offline-meta" in text:
+        insertion = gateway_script(gateway)
+    else:
+        raise SystemExit("this build has nowhere to put a multiplayer setting: it is neither an Eagler26 "
+                         "(goldproxy) build nor an EaglercraftX one, so nothing here can point it at a server")
+    # No extra newline, no reformatting: removing the tag has to give back the file byte for byte, because
+    # "the client is otherwise untouched" is a claim a 200 MB payload should be able to pass. (A leftover
+    # `insertion = gateway_script(...)` here overwrote the lineage choice and made the EaglercraftX path dead
+    # code - the sort of line that only a test on the other lineage finds.)
     if "<head>" in text:
         patched = text.replace("<head>", "<head>" + insertion, 1)
     elif "<html" in text:
@@ -150,7 +177,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--client", default=None, help="the single-file client to serve (.html)")
     parser.add_argument("--gateway", default=None,
                         help="a gateway to use instead of starting one (wss://…/v1/connect or ws://127.0.0.1:PORT/v1/connect)")
-    parser.add_argument("--server", default=None, help="open the client already joining this host[:port]")
+    parser.add_argument("--server", default=None,
+                        help="join this server on load (host[:port]; wss://host for an EaglercraftX build)")
     parser.add_argument("--port", type=int, default=0, help="the port to serve the page on (default: any free one)")
     parser.add_argument("--gateway-port", type=int, default=0, help="the port for the gateway (default: any free one)")
     parser.add_argument("--no-open", action="store_true", help="do not open a browser")
@@ -193,7 +221,9 @@ def main(argv: list[str] | None = None) -> int:
               f"({health.get('availableConnections')} session(s) free, private targets "
               f"{'allowed' if health.get('allowPrivateTargets') else 'refused'})")
 
-    page = patch_client(client_path.read_bytes(), gateway_url)
+    raw_client = client_path.read_bytes()
+    lineage = "eaglercraftx" if is_eaglercraftx(raw_client) else "eagler26"
+    page = patch_client(raw_client, gateway_url, args.server)
     Handler.client = page
     Handler.gateway = gateway_url
     Handler.gateway_port = gateway_port or 0
@@ -209,9 +239,16 @@ def main(argv: list[str] | None = None) -> int:
     # flushed: whoever started this is watching a pipe, and a page that opened while the instructions sit in a
     # buffer is a page nobody knows the address of
     print(f"\n  {client_path.name}\n  open {url}\n", flush=True)
-    print("  The game's own address box takes a host and an optional port (mc.example.com, or host:25565).",
-          flush=True)
-    print("  It goes through the gateway above; type Ctrl-C here to stop both.", flush=True)
+    if lineage == "eaglercraftx":
+        print("  This is an EaglercraftX build: it talks to an Eaglercraft server over wss itself, so its address",
+              flush=True)
+        print("  box takes an Eaglercraft server (wss://host) rather than a Java server. --server sets it here.",
+              flush=True)
+    else:
+        print("  The address box takes a host and an optional port (mc.example.com, or host:25565): this build",
+              flush=True)
+        print("  tunnels through the gateway above.", flush=True)
+    print("  Type Ctrl-C here to stop everything this started.", flush=True)
     if not args.no_open:
         opener = "open" if sys.platform == "darwin" else "xdg-open"
         if shutil.which(opener):

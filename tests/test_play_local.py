@@ -65,10 +65,28 @@ def test_patch() -> None:
           "a 200 MB payload should not be reformatted to add one script tag")
     check("a gateway address without a scheme is refused rather than baked in",
           "starts with ws:// or wss://" in _error_of(lambda: play_local.patch_client(FAKE_CLIENT.encode(), "host")) )
-    check("a build with nowhere to put a gateway says so",
-          "not an Eagler26 client" in _error_of(
+    check("a build with nowhere to put a setting says so",
+          "nowhere to put a multiplayer setting" in _error_of(
               lambda: play_local.patch_client(b"<!doctype html><html><head></head><body></body></html>",
-                                              "ws://127.0.0.1:9/v1/connect")))
+                                              "ws://127.0.0.1:9/v1/connect")),
+          "a client that cannot take a setting must be refused, not served unconfigured")
+
+    print("\nthe other lineage: an EaglercraftX build wants a server, not a gateway")
+    # The distinction that matters: the Eagler26 lineage tunnels through a gateway, the EaglercraftX lineage
+    # opens the WebSocket itself and wants a server address. Handing one the other's value is how a client ends
+    # up unable to connect, which is the complaint this started from.
+    x_client = ('<!doctype html><html><head><title>EaglercraftX</title>'
+                '<script>window.eaglercraftXOpts = { };</script>'
+                '<script>var pack = "assets.epk";</script></head><body></body></html>').encode()
+    check("an EaglercraftX build is recognised", play_local.is_eaglercraftx(x_client))
+    patched_x = play_local.patch_client(x_client, "ws://127.0.0.1:9/v1/connect", "wss://server.example")
+    check("its server goes in as a server address, not as a gateway",
+          b"eaglercraftXOpts" in patched_x and b"wss://server.example" in patched_x
+          and b"goldProxy" not in patched_x, str(patched_x[:160]))
+    check("and removing the tag gives the client back byte for byte",
+          patched_x.replace(play_local.eaglercraftx_script("wss://server.example").encode(), b"") == x_client)
+    check("with no server asked for, it carries no server",
+          b"wss://" not in play_local.patch_client(x_client, ""))
     check("patching twice does not double the script",
           play_local.patch_client(patched.encode(), "ws://127.0.0.1:9/v1/connect").decode().count("data-webmc-gateway") == 1)
 
