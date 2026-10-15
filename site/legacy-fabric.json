@@ -1,8 +1,8 @@
 {
  "first_supported": "1.3",
- "loader_count": 74,
+ "loader_count": 75,
  "maven": "https://maven.legacyfabric.net",
- "newest_loader": "0.19.5",
+ "newest_loader": "0.20.0",
  "source": {
   "game": "https://meta.legacyfabric.net/v2/versions/game",
   "loader": "https://meta.legacyfabric.net/v2/versions/loader"
