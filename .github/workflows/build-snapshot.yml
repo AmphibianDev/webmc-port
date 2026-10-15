@@ -113,12 +113,17 @@ jobs:
           # The engine keeps part of its tree in Git LFS and its build reads it.
           lfs: true
 
+      # 25 first, 21 second: setup-java leaves the last one on PATH, and 21 is what the 1.21 line and
+      # everything older asks for. 25 is installed *beside* it because the engine's own 26.3 profile says
+      # javaVersion 25 - and its scripts check that before doing anything else, so a 26.x build on a 21-only
+      # runner dies in the remap step with "requires JDK 25" and no clue in the version profile's direction.
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
-          # 21, not 25: the engine's scripts ask for "JDK {javaVersion} or newer" per profile, and every
-          # profile in scope says 21. A newer JDK satisfies the comparison in theory and has twice now
-          # not satisfied it in practice, and there is nothing here that needs a newer javac.
+          java-version: "25"
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
           java-version: "21"
 
       - uses: actions/setup-node@v6
@@ -244,6 +249,25 @@ jobs:
           VERSION="$(python3 -c "import json;print(json.load(open('/tmp/snapshot-report.json'))['version'])")"
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
           echo "resolved to $VERSION"
+
+      - name: Point the build at the JDK this version's profile asks for
+        # The profile is the authority: it says javaVersion per version, and the engine refuses to run on an
+        # older one. 21 stays the default for everything else, so this only ever *raises* the JDK, and it says
+        # which one it picked and why.
+        run: |
+          set -euo pipefail
+          PROFILE="engine/port/versions/$VERSION.json"
+          WANTED="$(python3 -c "import json,sys;print(json.load(open('$PROFILE')).get('javaVersion') or 21)" 2>/dev/null || echo 21)"
+          echo "the profile for $VERSION asks for Java $WANTED"
+          if [ "$WANTED" -ge 25 ] && [ -n "${JAVA_HOME_25_X64:-}" ]; then
+            echo "using the JVM installed for 25: $JAVA_HOME_25_X64"
+            echo "GAIUS_JAVA_HOME=$JAVA_HOME_25_X64" >> "$GITHUB_ENV"
+            echo "JAVA_HOME=$JAVA_HOME_25_X64" >> "$GITHUB_ENV"
+            echo "$JAVA_HOME_25_X64/bin" >> "$GITHUB_PATH"
+          else
+            echo "keeping the default JDK: $JAVA_HOME"
+            echo "GAIUS_JAVA_HOME=$JAVA_HOME" >> "$GITHUB_ENV"
+          fi
 
       - name: Record what was prepared, before the expensive part
         # If the compiler is killed later, this is what is left: which version, which patcher, which patches

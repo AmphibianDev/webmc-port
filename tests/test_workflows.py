@@ -325,6 +325,23 @@ def test_credits() -> None:
           "--strip-brand" in credits and "branding" in credits)
 
 
+def test_the_jdk_follows_the_profile() -> None:
+    """A version whose profile asks for Java 25 must not be built on a 21-only runner.
+
+    The 26.3 build failed in the remap step because the engine checks the profile's javaVersion first, and the
+    workflow installed exactly one JDK (21, chosen when every profile in scope said 21). This keeps the two in
+    step: the workflow installs both, and the job points itself at the one the profile names.
+    """
+    print("\nthe JDK the version's profile asks for")
+    workflow = (ROOT / ".github" / "workflows" / "build-snapshot.yml").read_text()
+    check("the workflow installs JDK 25 as well as 21", '"java-version": "25"' in workflow.replace("'", '"')
+          or 'java-version: "25"' in workflow)
+    check("and points the build at the JDK the profile names",
+          "JAVA_HOME_25_X64" in workflow and "the profile for $VERSION asks for Java" in workflow,
+          "installing a JDK nobody selects is the same as not installing it")
+    check("with 21 still the default for everything older", 'java-version: "21"' in workflow)
+
+
 def main() -> int:
     with tempfile.TemporaryDirectory() as scratch:
         tmp = pathlib.Path(scratch)
@@ -335,6 +352,7 @@ def main() -> int:
         test_credits()
         test_routes(tmp)
         test_tag_parsing()
+        test_the_jdk_follows_the_profile()
     print(f"\n{FAILURES} workflow test(s) FAILED" if FAILURES else "\nworkflow tests passed")
     return 1 if FAILURES else 0
 
