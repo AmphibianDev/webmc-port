@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import pathlib
+import shutil
 import re
 import subprocess
 import sys
@@ -105,6 +106,47 @@ def test_check(tmp: pathlib.Path) -> None:
           not aot_shell.check("<html><script>x</script></html>", log=lambda *_: None)["has_body"])
 
 
+def test_the_engine_name_never_reaches_the_screen() -> None:
+    """The shell is JavaScript, so the check is JavaScript: the exact function runs on the exact strings.
+
+    A player read "Starting Gaius Client 1.21.11" on our loading screen, so this is not a hypothetical. The
+    function is pulled out of the shell by name and run under node, which is the only way to check the code
+    that will run rather than a description of it.
+    """
+    print("\nthe engine's name on our loading screen")
+    shell = (ROOT / "site" / "boot" / "shell.html").read_text()
+    names = re.search(r"var ENGINE_NAMES = .*?;", shell, re.S)
+    attribution = re.search(r"var ATTRIBUTION = .*?;", shell, re.S)
+    function = re.search(r"function clean\(text\) \{.*?\n  \}", shell, re.S)
+    check("the shell has a sanitiser for the text the engine reports", bool(names and function))
+    if not (names and function and attribution):
+        return
+    if not shutil.which("node"):
+        print("  SKIP  node is not installed")
+        return
+    script = "\n".join([names.group(0), attribution.group(0), function.group(0), """
+    var cases = [["Starting Gaius Client 1.21.11...", "Starting Minecraft Client 1.21.11..."],
+                 ["EaglercraftX 1.8.9", "Minecraft 1.8.9"],
+                 ["Loading Minecraft 1.21.11", "Loading Minecraft 1.21.11"],
+                 ["Gaius is not affiliated with Mojang", ""],
+                 ["Eaglercraft is an independent project", ""],
+                 ["Compiling eaglerforge patches", "Compiling Minecraft patches"],
+                 ["Unpacking 214 MB", "Unpacking 214 MB"]];
+    for (var i = 0; i < cases.length; i++) {
+      var got = clean(cases[i][0]);
+      console.log((got === cases[i][1] ? "PASS " : "FAIL ") + JSON.stringify(cases[i][0])
+        + " -> " + JSON.stringify(got));
+    }
+    """])
+    with tempfile.TemporaryDirectory() as tmp:
+        probe = pathlib.Path(tmp) / "clean.js"
+        probe.write_text(script)
+        result = subprocess.run(["node", str(probe)], capture_output=True, text=True)
+    for line in result.stdout.splitlines():
+        check(line[5:], line.startswith("PASS"), line)
+    check("and node actually ran it", bool(result.stdout.strip()), result.stderr[-200:])
+
+
 def test_inject(tmp: pathlib.Path) -> None:
     print("\nputting the boot screen in front of a client")
     lines: list[str] = []
@@ -125,6 +167,8 @@ def test_inject(tmp: pathlib.Path) -> None:
     check("its canvas is still there", 'id="game"' in html)
     check("the style went into the head", html.index("--webmc-bg") < html.index("<body>"))
     check("the hand-over is wired to the first GL draw", "drawElements" in html and "clear" in html)
+    check("the engine's own console is hidden as well, because it prints its own name",
+          "#status" in html and "#log" in html)
     check("its branding block is hidden by our own stylesheet, so the page has one loading screen",
           "#boot-screen" in html and "[data-gaius-shell]" in html and "display: none !important" in html,
           "an element the client's script looks for is hidden rather than removed: a null there is a "
@@ -245,6 +289,7 @@ def main() -> int:
     with tempfile.TemporaryDirectory() as scratch:
         tmp = pathlib.Path(scratch)
         test_shell()
+        test_the_engine_name_never_reaches_the_screen()
         test_check(tmp)
         test_inject(tmp)
         (tmp / "branded.html").write_text(BRANDED)

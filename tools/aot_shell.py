@@ -179,7 +179,10 @@ BRANDS = ("eaglercraft", "eagler", "lax1dude", "gaius", "typetheory", "browsercr
 ENGINE_CHROME_REMOVE = ("#boot-brand",)          # the "GAIUS CLIENT" / "MOJANG STUDIOS" block
 ENGINE_CHROME_HIDE = ("#boot-screen",             # the engine's own boot overlay: ours is the loading screen
                       "#gaius-shell-header", "#gaius-shell-footer", "#gaius-error-details",
-                      "#profile-kicker", "#profile-subtitle", "#profile-legal")
+                      "#profile-kicker", "#profile-subtitle", "#profile-legal",
+                      # the engine's own console: it prints its name and its diagnostics there, and a player
+                      # reads every word of it if it is left visible
+                      "#status", "#log")
 # The hide rule uses the ids and the marker attribute the engine sets on anything it builds at run time.
 ENGINE_CHROME_SELECTOR = ", ".join(ENGINE_CHROME_HIDE) + ', [data-gaius-shell]' 
 

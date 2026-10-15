@@ -140,10 +140,25 @@
     style.setProperty("--webmc-scale", String(scale));
   }
 
+  /* The engine reports its progress with its own words, and its words carry its own name: a player read
+   * "Starting Gaius Client 1.21.11" on this screen, which is somebody else's product on our loading page. The
+   * engine's text is still useful - it says what it is doing - so the name is replaced rather than the message
+   * thrown away, and the version is left alone. */
+  var ENGINE_NAMES = /(?:gaius|eaglercraft(?:x)?|eagler|eaglerforge|lax1dude|typetheory|browsercraft)[a-z0-9_.-]*/gi;
+  var ATTRIBUTION = /not affiliated|independent project|independent browser software/i;
+  function clean(text) {
+    var line = String(text);
+    // An attribution sentence is not progress, and rewriting the name inside it produces a sentence that is
+    // worse than no sentence ("Minecraft is not affiliated with Mojang"). The credits live in CREDITS.md; the
+    // loading screen keeps the last real progress line instead.
+    if (ATTRIBUTION.test(line)) { return ""; }
+    return line.replace(ENGINE_NAMES, "Minecraft").replace(/\s+/g, " ").trim();
+  }
   var api = {
     show: function (text) {
       root.hidden = false;
-      if (text) { status.textContent = text; }
+      var line = text ? clean(text) : "";
+      if (line) { status.textContent = line; }
     },
     /* Monotonic: a step that reports less progress than the last one is ignored rather than shown, which
      * is what "the bar went backwards" always is - two things reporting progress on different scales. */
@@ -152,7 +167,8 @@
       var next = Math.max(0, Math.min(1, Number(fraction) || 0));
       if (next > value) { value = next; }
       fill.style.width = (value * 100).toFixed(2) + "%";
-      if (text) { status.textContent = text; }
+      var line = text ? clean(text) : "";
+      if (line) { status.textContent = line; }
     },
     /* The version being loaded, in the corner, because "Loading…" with no name is a worse wait. */
     version: function (text) {
