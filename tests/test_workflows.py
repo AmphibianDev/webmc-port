@@ -336,6 +336,40 @@ def test_credits() -> None:
           "--strip-brand" in credits and "branding" in credits)
 
 
+def test_the_engine_comes_from_the_route() -> None:
+    """A build must not name its own engine.
+
+    The workflow hardcoded one engine for a tag-triggered run, so a dispatch of 26.2 was built with an engine that
+    cannot build it and died an hour later inside a patch chain. The route is the single source of truth, and
+    tools/engine_for.py is the seam that reads it.
+    """
+    import json  # noqa: PLC0415
+    import subprocess  # noqa: PLC0415
+    print("\nthe engine a build uses")
+    workflow = (ROOT / ".github" / "workflows" / "build-snapshot.yml").read_text()
+    check("the workflow has no engine named in it",
+          "TypeThe0ry/Gaius" not in workflow.replace("# ", ""))
+    check("it asks the route instead", "tools/engine_for.py --version" in workflow)
+    check("and refuses to build a version no enabled engine covers",
+          "no enabled engine builds" in workflow)
+    check("the kind is matched by repository or by id, so the families cannot be confused",
+          '(e.get("repo") or "") == wanted or (e.get("id") or "") == wanted' in workflow)
+
+    # and the tool agrees with the data, version by version
+    for version, expected_kind in (("26.2", "eagler-workspace"),):
+        result = subprocess.run(["python3", str(ROOT / "tools" / "engine_for.py"), "--version", version, "--json"],
+                                capture_output=True, text=True, cwd=ROOT)
+        found = json.loads(result.stdout or "{}")
+        check(f"{version} resolves to the {expected_kind} engine",
+              found.get("kind") == expected_kind, str(found)[:160])
+        check(f"and to the repository that engine lives in",
+              bool(found.get("repo")) and "/" in (found.get("repo") or ""), str(found.get("repo")))
+    result = subprocess.run(["python3", str(ROOT / "tools" / "engine_for.py"), "--version", "1.21.11"],
+                            capture_output=True, text=True, cwd=ROOT)
+    check("and a version whose only engine is disabled resolves to no engine at all",
+          result.returncode != 0 and "engine: —" in result.stdout, result.stdout[:120])
+
+
 def test_the_jdk_follows_the_profile() -> None:
     """A version whose profile asks for Java 25 must not be built on a 21-only runner.
 
@@ -363,6 +397,7 @@ def main() -> int:
         test_credits()
         test_routes(tmp)
         test_tag_parsing()
+        test_the_engine_comes_from_the_route()
         test_the_jdk_follows_the_profile()
     print(f"\n{FAILURES} workflow test(s) FAILED" if FAILURES else "\nworkflow tests passed")
     return 1 if FAILURES else 0
