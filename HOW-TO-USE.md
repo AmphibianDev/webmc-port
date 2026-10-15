@@ -1,90 +1,90 @@
-# How to use this, and where the URL comes from
+# How to use this
 
-## Nothing is on GitHub, and why
+## The short version
 
-The repository that used to host this (`AnAmphibianWhoLovesWeb`) is suspended, and everything here
-lives in **local git commits** in `~/devspace/WebMC/webmc-port` plus bundle backups in
-`~/devspace/WebMC/backups/`. Publishing it again needs an account and a token, and one warning
-worth repeating once: the *code* is publishable anywhere, the **917 MB of Minecraft clients in
-`work/builds/` are not** — that is the redistribution that ended the last account. The scripts in
-`~/devspace/WebMC/` are ready for a move (`move-to-gitlab.sh`, `move-to-04DEREK28.sh`); both are
-code-only pushes and will refuse if anything game-sized is in the history.
+**The site is live: <https://amphibiandev.github.io/webmc-port/>** — a launcher that lists every Minecraft version
+the catalogue knows about, says how each one runs, and links the ones that are built. A built version has its own
+page, for example <https://amphibiandev.github.io/webmc-port/clients/1.21.11/>, which loads the client into the
+page. Nothing is streamed and nothing runs on anybody's server while you play.
 
-## Use it right now: a URL on your own machine
+**The repository is <https://github.com/AmphibianDev/webmc-port>** — `main` is what the site serves,
+`snapshot-build` is where work happens, and the build log lives on a `build-log` branch nobody has to check out.
+
+## What you can do from the launcher
+
+| you pick | what happens |
+| --- | --- |
+| a **real Java** version (1.0 – 1.12.2) | Mojang's own jar is fetched by your browser and runs in a JVM in the page. Fabric and Legacy Fabric jars from `mods/` load at play time |
+| a **compiled** version (1.20.5 and up, when built) | a page this project's build jobs compiled ahead of time. Mods are baked into the client before the compile — see `MIXINS.md` |
+| a **needs-shim** version (1.13 – 1.20.4) | not yet: those clients want LWJGL 3, and the JavaScript layer that provides it has not drawn a frame. The launcher offers the nearest version that does start |
+| a row with **no engine** | nothing to play yet, and the launcher says which wall it is behind instead of pretending |
+
+The launcher also explains the two things people ask about first: **no game files are hosted here** (the client jar
+comes from Mojang, either in your browser or at build time by whoever ran the build), and **multiplayer needs a
+gateway** because a browser cannot open a TCP socket.
+
+## Playing the 26.3 client you downloaded, with multiplayer
+
+A single-file offline build (Eagler26 26.3, for example) works when you open it — what it does not have is a
+gateway, so its multiplayer is off until something points it at one. One command starts both halves:
 
 ```sh
-cd ~/devspace/WebMC/webmc-port
-python3 tools/fetch_builds.py                  # done already: 29 builds, 917 MB, from GitHub
-python3 mods/injector/inject_mod_api.py --all  # done already: the mod API is in all of them
-python3 tools/serve_builds.py                  # -> http://127.0.0.1:8099/
+python3 tools/play_local.py                              # newest single-file client in ~/Downloads
+python3 tools/play_local.py --server mc.example.com      # and join that server on load
+python3 tools/play_local.py --allow-lan                  # LAN play
 ```
 
-Open **http://127.0.0.1:8099/** and press Play on any version. That page is generated from whatever
-is in `work/builds-modded/`, so it lists exactly what you have (29 builds, from Indev to 26.3).
+It starts the gateway (`gateway/server.js`, no dependencies) on a loopback port, serves the client with the
+gateway set inside it, prints the address, opens it, and stops both when you press Ctrl-C. The patch is one script
+tag: removing it gives your file back byte for byte. `MULTIPLAYER.md` has the protocol, the policy switches, and an
+nginx block for running a gateway of your own in public.
 
-Add `?mod=` to any Play link to load a JavaScript mod:
+## Running it on your own machine
 
-```
-http://127.0.0.1:8099/1.12.2/Eaglercraft%201.12.2%20(WASM-GC).modded.html?mod=http://127.0.0.1:8099/mods/my-mod.js
-```
-
-Put your `.js` files in `work/builds-modded/mods/` and they are served from there. A mod:
-
-```js
-if (globalThis.WebMCModAPI) {
-  WebMCModAPI.on("load", () => WebMCModAPI.displayToChat("my-mod loaded"));
-  WebMCModAPI.registerKeybind("Toggle overlay", "h", () => toggleMyHud());
-}
+```sh
+cd webmc-port
+export JAVA_HOME=…             # a JDK is only needed by the tests that compile Java
+bash run-tests.sh              # every offline check, ~1000 of them
+python3 -m http.server 8099 --directory site    # the launcher page, locally
 ```
 
-What mods can do at that tier: draw on an overlay canvas over the game, read keys, register keybinds,
-send chat and drive input, run on tick/render, log. What they cannot do: reach into the game's own
-classes — the builds are minified or WebAssembly, so nothing in them names `net.minecraft.*` any more.
-For that depth the mod has to be compiled in from a workspace (`mods/build_modded_workspace.py`) or
-run on the EaglerForge 1.12.2 build, whose own mod API does reach the game.
+The tests are the contract. They cover the version pipeline, the launcher's own promises, the boot screen, the
+packer, the bake, the mixin applier (compiled and run on a JVM), the gateway (driven over a real socket), the
+local play command, and a published client checked from the outside. Nothing in them touches the network, so they
+say what works rather than what might.
 
-## The mod button
+## Building a version
 
-Open the local launcher (`python3 tools/serve_builds.py` → http://127.0.0.1:8099/) and the top card is
-**Add a mod**: every `.js` in `work/builds-modded/mods/` shows up as a tickbox, and ticking one puts
-`?mod=…` on every Play button, with the exact resulting link shown underneath. A worked example
-(a clock + session timer HUD, F6 to toggle) is copied in the first time you run it, from
-`mods/examples/hud-clock.js`.
+A build is a tag. The job fetches the official client, patches it, compiles it, packs it into a page, verifies it,
+and publishes it:
 
-**Fabric `.jar` mods have no button, and cannot have one on these builds.** They are compiled ahead of
-time: no JVM in the tab means nothing can read a jar while the game runs. A Fabric mod gets in by being
-compiled in — `mods/build_modded_workspace.py` on a source workspace, or the repo's Actions workflow for
-26.2. The one place a jar loads *at runtime* is the browser JVM (the `▶ launch` cards on the published
-page, up to 1.12.2), because there a real Fabric Loader has a real JVM to run in.
+```sh
+git tag -f build-1.21.11 HEAD && git push -f origin refs/tags/build-1.21.11                 # vanilla
+git tag -f "build-1.21.11+hello-fabric" HEAD && git push -f "origin" "refs/tags/build-1.21.11+hello-fabric"
+```
 
-## Why there are "Eaglercraft" builds at all, and why versions come first
+The mod ids are the ones in `mods/mods.json`; `+hello-fabric,hello-mixin` bakes two. A build takes about an hour,
+most of it the WebAssembly compile. What came out is read back with:
 
-The unit of this project is the **version**, and each version is served by whichever route reaches it:
+```sh
+python3 tools/watch_builds.py                     # what the runs are doing
+python3 tools/fetch_packed.py --all --record      # put the published pages on the site
+python3 tools/verify_client.py --dir site/clients/1.21.11   # check a page the way a visitor's browser gets it
+```
 
-| Route | What runs the game | Versions |
-| --- | --- | --- |
-| **real Java** | a JVM in the page (CheerpJ), official jar fetched from Mojang | 1.0 → 1.12.2 (9 catalogued, 857 available) |
-| **compiled by us** | official source compiled to WebAssembly at build time | 26.2 today; any version an engine has a profile for |
-| **prebuilt port** | a client somebody else already compiled for the browser | 1.13.1, 1.14.4, 1.16.5, 1.20.6, 26.2, 26.3, the classics |
+## What this project never contains
 
-Those "Eaglercraft" files are not a different game: they are the same Minecraft versions, ported to run
-in a browser. They exist because the first two routes cannot reach most versions yet — Java 21 is not in
-any browser JVM (1.20.5+), and LWJGL 3 has no JavaScript implementation (1.13–1.20.4). So for those
-versions the only thing that runs in a tab is somebody else's compile.
+No game files are committed or served: the client jar and its assets are fetched from Mojang, at build time by
+whoever runs the build, and never redistributed here. Compiled clients live as release assets and as the packed
+chunks the site serves. `CREDITS.md` is the ledger for everything borrowed, including the two engines and the
+Mixin annotations; `COMPLIANCE.md` is the reasoning about what may be published at all.
 
-Clients that already ship a mod loader (the EaglerForge build) or that are pre-modded (Astra, WurstX,
-Resent, DragonX, GX-Client, Pixel) were removed: two loaders in one page fight each other, and mods here
-come from this project's injector.
+## When something looks wrong
 
-## When you want a public URL again
-
-| What you want | Where it goes | What it costs you |
-| --- | --- | --- |
-| The code, public | GitLab or GitHub, one repository | nothing; no game files, so no takedown surface |
-| The launcher page, public | GitLab Pages (free, and private sites are free too) | the page links builds, it does not host them |
-| The builds themselves, public | your own hosting behind your own account | this is the part that got suspended before; keep it private or local |
-| Everything, local | `tools/serve_builds.py` (above) | nothing, and it works today |
-
-To publish the code: `brew install glab && glab auth login`, then
-`GITLAB_NAMESPACE=<your-user> ./move-to-gitlab.sh` from `~/devspace/WebMC/`. Tell me the namespace
-and I'll run it and wire the Pages deploy.
+| symptom | first thing to look at |
+| --- | --- |
+| a version row says no engine | `python3 tools/route.py --version <v>` — it names the wall and the reason |
+| a build failed | `git show origin/build-log:build-log/last.log` and `report-<version>.json`; the build log branch is written even on failure |
+| a published page is broken | `python3 tools/verify_client.py --url <the page>` — hashes, boot screen, branding, mod set |
+| multiplayer will not connect | run the gateway by hand (`node gateway/server.js`) and read its status page; a public gateway refuses private and reserved targets on purpose |
+| the loading screen says somebody else's name | that is what `tools/aot_shell.py` strips and what its test checks; a build from before that fix is still cached |
