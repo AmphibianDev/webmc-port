@@ -198,8 +198,10 @@ def main() -> int:
     javac, java = str(home / "bin" / "javac"), str(home / "bin" / "java")
     asm = asm_classpath()
     if not asm:
-        print("  (no ASM jars: run python3 tools/fetch_asm.py)")
-        return 1
+        # A fresh clone has no work/asm: the jars are third-party binaries and git-ignored on purpose. Missing
+        # inputs are a skip, not a failure - a red suite on a clean checkout teaches people to ignore the suite.
+        print("  SKIP  no ASM jars (run python3 tools/fetch_asm.py to check the mixin applier)")
+        return 0
 
     tmp = pathlib.Path(tempfile.mkdtemp(prefix="webmc-mixin-"))
     print(f"the mixin applier, on a real JVM ({home.name})")

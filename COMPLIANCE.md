@@ -87,6 +87,13 @@ build of the game. It now also serves one as a page: the client is split into ch
 That is the operator's decision, taken knowingly - the download is still published beside it, and the
 sections above about licences, attribution and what this repository may host still apply.
 
+**The chunks are not committed.** They are derived from a client, they are large (a 108 MB page is 108 MB of
+chunks), and a repository that carries them is a repository that carries a build of the game in every clone.
+`site/clients/` is in `.gitignore`: the release asset is the copy of record, the catalog job fetches it
+(`tools/fetch_packed.py`) into the working tree it deploys, and the deploy uploads the tree rather than the
+git history - so the site serves the page and the repository does not distribute it. Earlier revisions of this
+repository did commit those chunks, and that is the mistake this paragraph exists to prevent repeating.
+
 ## Engines have to be licensed
 
 Every compiled-client engine (a "workspace") is somebody else's source tree, and it ends up inside the

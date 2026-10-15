@@ -16,6 +16,10 @@ site/loader/
 
 # the launch plans and the mods they name: derived, deployed, never committed. site/mods holds
 # third-party mod jars copied out of mods/jars/ by tools/launchplan.py --stage.
+# a compiled client, split into chunks behind a page: derived, deployed, and never committed -
+# the catalog job fetches it from the release asset (tools/fetch_packed.py) and the deploy
+# uploads the working tree, so the site serves it without the repository carrying it
+site/clients/
 site/launch.json
 site/routes.json
 site/plans/
