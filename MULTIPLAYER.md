@@ -94,6 +94,19 @@ location /v1/ {
 `/health` answers with the same facts the launcher shows: sessions in use, whether private targets are
 allowed, the blocked ports, and the window size. `/` renders the same thing as a page.
 
+### The one command, for a client you already have
+
+```sh
+python3 tools/play_local.py                              # newest single-file client in ~/Downloads
+python3 tools/play_local.py --server mc.example.com      # and join that server on load
+python3 tools/play_local.py --allow-lan                  # LAN play: private targets allowed
+python3 tools/play_local.py --gateway wss://relay.example/v1/connect   # use a gateway somewhere else
+```
+
+It starts the gateway on a free loopback port, serves the client as a page with the gateway set inside it, prints
+the address to open and opens it, and stops both when you press Ctrl-C. `http://127.0.0.1:<port>/health` answers
+the gateway's status through that page, and `/gateway` says which gateway the page is using.
+
 ### Pointing a client at it
 
 The Eagler26 client already knows this protocol and takes the gateway as a parameter:

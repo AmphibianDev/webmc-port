@@ -39,6 +39,24 @@ python3 tools/update.py --write                                  # refresh the c
 python3 tools/acquire.py --version 26.2 --dry-run                # what a build would fetch
 ```
 
+## Multiplayer, and the client in ~/Downloads
+
+A browser cannot open a TCP socket, so a typed server address is reached through a **gateway**: a small server
+that takes a WebSocket from the page and dials the address for you. `gateway/server.js` is ours, one file, no
+dependencies, and it speaks the protocol the downloaded 26.3 client already implements. To play that client
+locally with multiplayer on:
+
+```sh
+python3 tools/play_local.py                 # finds the newest single-file client in ~/Downloads
+python3 tools/play_local.py --server mc.example.com        # and joins it straight away
+python3 tools/play_local.py --client path/to/client.html --allow-lan   # LAN play
+```
+
+It starts the gateway on a loopback port, serves the client with the gateway already set inside it (the rest of
+the file is byte-identical, and a test checks that on 200 MB of real payload), prints the address to open, and
+stops both processes when you press Ctrl-C. `MULTIPLAYER.md` has the protocol, the policy switches, an nginx
+block for a public one, and the three things that are deliberately not here.
+
 ## Engines
 
 An engine compiles — or *runs* — a client for the web. This is the list `ports.json` carries:
@@ -182,6 +200,12 @@ tools/build_loader.py   builds our own loader jar (Java 8, reproducible) from mo
 tools/build_mods.py     builds the example mods against that jar
 tools/aot_profile.py    a version profile for any version (incl. the newest snapshot) from Mojang's own data
 tools/aot_shell.py      puts the vanilla-styled boot screen in front of a compiled client, and takes its own out
+tools/pack_client.py    a compiled client split into chunks behind one page, with its gateway and mod set set
+tools/eagler_offline.py reads a single-file offline client's payload out, verified against its own hashes
+tools/play_local.py     the gateway plus a page, so a downloaded client can join a server from this machine
+gateway/server.js       the gateway itself: WebSocket in, real TCP out, goldproxy.v1, no dependencies
+mods/mixin-applier/     build-time mixins: merges a mod's mixin classes into the client before it is compiled
+mods/mixin-shims/       the annotation stubs a mixin compiles against (not Mixin; see MIXINS.md)
 tools/fabric.py         what both Fabrics support (modern meta + Legacy Fabric meta)
 tools/acquire.py        client jar + asset index, checksums, work/ only
 tools/update.py         the updater: what is new, what to queue, the page's manifest
@@ -198,6 +222,8 @@ state.json              the catalog's memory: every version seen, and what it ne
 targets.json            the versions this project is supposed to cover
 tests/                  offline tests: pipeline, launch plans, the pages' contracts, the loader
 tests/test_loader.py    the loader's contract (structural always; behaviourally when a JDK exists)
+tests/test_gateway.mjs  the gateway's protocol, driven over a real socket by a real client
+tests/test_mixin_applier.py  a mixin mod merged into a client, then *run*, on a JVM
 fixtures/               a manifest to test against, so no test touches the network
 .github/workflows/      daily catalog + Pages, and a manual build job
 ```
