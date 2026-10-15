@@ -190,6 +190,13 @@
           "profile_tool": "tools/aot_snapshot.py",
           "why": "the whole 1.21 line shares one client generation; a profile for 1.21.11 already exists and the profile for any other 1.21.x is generated from Mojang's own metadata",
           "caveat": "a version between the known ones starts from the nearest profile's overrides and its bring-up list, and the log says which patches were skipped"
+        },
+        {
+          "from": "26.0",
+          "to": "26.3",
+          "profile_tool": "tools/aot_snapshot.py",
+          "why": "the engine ships a hand-written profile for 1.21.11 only, and its own tooling generates one for the 26.x line from Mojang's metadata - the versions it documents as supported (26.2 and 26.3). The generated profile starts from the nearest known profile's overrides and bring-up list, and the build log says which patches were skipped rather than pretending they ran.",
+          "caveat": "a version whose patch chain has moved on since the profile was written fails on a version-specific patcher and needs one line in tools/aot_fixups.json - that is what the fixups file is for, and why the log records each skip."
         }
       ],
       "note": " Enabled for the 26.x range: tools/aot_snapshot.py generates the profile from Mojang's metadata, so a new snapshot is a dispatch rather than a code change. The 26.1 - 26.3 range is generatable; 26.4 and later need the renderpearl renderer ported first, which is recorded as a blocker rather than promised as a build. In this project's v1 scope it builds 1.21.11 and, through generated profiles, the rest of the 1.21 line. 26.x is deliberately out of scope.",
