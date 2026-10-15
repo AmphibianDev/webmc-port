@@ -91,3 +91,42 @@ compiles, packs and publishes.
   the first shader still failing — its report is on the `shim-log` branch) or our own AOT engine.
 * **26.x**: out of scope by decision (Java 25 and a rewritten renderer).
 * **April Fools snapshots**: each is its own patch job against the engine's chain, like 1.21.4 and 1.21.10.
+
+## 2026-10-15 (later): the front end the user actually looks at
+
+**Launcher.** `site/index.html` is the real launcher's shape now: a version column on the left with a search
+box, kind chips (release/snapshot/beta/alpha), a "startable only" switch and a curated default of twelve
+rows, and a detail card on the right with the selected version's route, engine, licence, mod policy and its
+play target. One function decides all of it - `playTarget()` - and it answers in five ways: a page this site
+serves, the Java applet page for assets that are not baked yet, a direct download, somebody else's link (with
+a warning that it only downloads), or nothing at all, which offers the nearest version that does start. The
+multiplayer truth is on the front page too, because it is the question everybody asks: a browser cannot open
+a TCP socket, so a typed server address is reached through a relay node, the default one being
+`wss://ellan.site/tunnel`, and self-hosting is a documented environment variable away.
+
+**Loading.** The packed page fetches its chunks in parallel now - they are independent files with a hash
+each, so six chunks of 18 MB should cost one chunk's wait, not six - and the boot screen's bar is monotonic:
+two things reporting progress on different scales is what "the bar went backwards" always was, so a step
+that reports less than the last one is ignored rather than shown. The screen names the version it is loading,
+has a soft gradient on the fill, and carries no engine branding.
+
+**Branding, settled with bytes rather than guesses.** Fetching the first 400 KB of the released client and
+counting settled where the "big Gaius logo" comes from: the engine injects its own launcher shell into the
+packaged page (a GAIUS CLIENT header and a footer that carried the "not affiliated with Mojang Studios"
+sentence) plus a `#boot-brand` block that renders GAIUS CLIENT over the loading screen. Our strip had already
+removed the header and the footer - zero occurrences of either in the shipped bytes - and missed `#boot-brand`,
+whose id contains no brand word and only its text does. The tool now removes `#boot-brand` and hides
+`#boot-screen`, the shell header/footer, the profile kicker/subtitle/legal lines and anything the engine
+builds later under `[data-gaius-shell]`. Hidden rather than removed where the engine's own script looks the
+element up: a null there is a client that stops, and a hidden element gives the same result safely.
+
+**Multiplayer, checked rather than assumed.** The default relay answers `/relay-node/v1` with
+`ok:true, protocolVersion 1, availableConnections 64/64, requiresToken:false, allowsPrivateTargets:false`:
+so typing a public server address needs no token and should work, a LAN/private address is refused by design,
+and the failure mode to look for is a public server that will not accept the relay's connection.
+
+**The button textures question, answered honestly.** The screens the game draws are the official client's own
+screens, buttons included: this engine ships no `textures/gui` of its own (the repository has no such files),
+so there is nothing of ours to restyle. What is *not* vanilla is the shell we now hide and the engine's four
+extra screens for browser-only facts (profile name, relay editor). Those exist because a browser client needs
+them; they are additions beside the vanilla UI, not a repaint of it.
