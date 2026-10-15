@@ -9,6 +9,7 @@ echo; echo "== the boot screen (vanilla-styled, injected into a client)"; python
 echo; echo "== the gateway (WebSocket to TCP: a typed server address, a real socket)"; node tests/test_gateway.mjs || failed=1
 echo; echo "== playing a downloaded client locally (real gateway, patched page)"; python3 tests/test_play_local.py || failed=1
 echo; echo "== a published client, checked from the outside"; python3 tests/test_verify_client.py || failed=1
+echo; echo "== the fixups still match the engine files they patch"; python3 tests/test_fixup_anchors.py || failed=1
 echo; echo "== the mixin applier (a mixin mod merged into a client, run on a JVM)"; python3 tests/test_mixin_applier.py || failed=1
 echo; echo "== a compiled client, packed into a page a player can open"; python3 tests/test_pack_client.py || failed=1
 echo; echo "== one version in, one route out"; python3 tests/test_workflows.py || failed=1
