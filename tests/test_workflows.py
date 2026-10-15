@@ -223,8 +223,14 @@ def test_routes(tmp: pathlib.Path) -> None:
           str(guessed["why"])[:100])
     check("and the engine for it is the MIT one", guessed["engine"] == "gaius"
           and guessed["engine_license"] == "MIT", f"{guessed['engine']} {guessed['engine_license']}")
-    check("an engine that cannot take a mod set says so rather than ignoring one",
-          guessed["bakes_mods"] is False and "only when an engine" in guessed["mods"], guessed["mods"])
+    # The engine that builds 1.21.11 *can* take a mod set now (our own bake), so the answer is that mods
+    # go in at build time - and an engine without that capability still has to say so rather than
+    # producing a vanilla client called modded.
+    check("a compiled version whose engine can bake says mods go in at build time",
+          guessed["bakes_mods"] is True and guessed["mods"] == "baked at build time", guessed["mods"])
+    without = route.route_for("1.21.11", [dict(engine, bakes_mods=False) for engine in engines], state)
+    check("and an engine that cannot take a mod set says so rather than ignoring one",
+          without["bakes_mods"] is False and "only when an engine" in without["mods"], without["mods"])
     built = route.route_for("26.2", engines, state)
     check("a version with a build behind it is playable, and says where the build is",
           built["playable"] and built["built"]["url"].startswith("https://"), str(built["built"]))

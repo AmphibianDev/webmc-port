@@ -175,7 +175,7 @@
         "ram_gb": 24,
         "minutes": 55
       },
-      "mods": "yes - build-time (see ../webmc-browser/modded/loader.py)",
+      "mods": "yes - build-time, through this repository's own bake (tools/bake_mods.py): the mod's classes are copied into the client and its entrypoint is called from the client's own initialiser. Mixins are the next step and the report says which mods have them.",
       "build": {
         "clone": "git clone --depth 1 --lfs https://github.com/{repo} engine",
         "acquire": "cd engine && GAIUS_VERSION_PROFILE_PATH=versions/{version}.json bash port/scripts/fetch-version.sh",
@@ -205,7 +205,7 @@
       ],
       "license": "MIT",
       "audio": "the client fetches its audio at play time; nothing in this repository ships Minecraft sound or music",
-      "bakes_mods": false,
+      "bakes_mods": true,
       "scope": "1.21 line (1.21 - 1.21.11); 26.x removed from v1"
     },
     {

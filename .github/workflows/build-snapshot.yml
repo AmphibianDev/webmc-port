@@ -73,17 +73,24 @@ jobs:
         run: |
           set -euo pipefail
           if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
-            VERSION="${GITHUB_REF_NAME#build-}"
+            # `build-1.21.11` or `build-1.21.11+hello-fabric`: a tag is the one way to start a build
+            # without a token, so the mod set travels in the tag name.
+            RAW="${GITHUB_REF_NAME#build-}"
+            VERSION="${RAW%%+*}"
+            MODS=""
+            case "$RAW" in *+) MODS="${RAW#*+}" ;; esac
             ENGINE="TypeThe0ry/Gaius"
           else
             VERSION="${{ inputs.version }}"
+            MODS="${{ inputs.mods }}"
             ENGINE="${{ inputs.engine_repo }}"
           fi
           [ -n "$VERSION" ] || VERSION="latest-snapshot"
           [ -n "$ENGINE" ] || ENGINE="TypeThe0ry/Gaius"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "mods=$MODS" >> "$GITHUB_OUTPUT"
           echo "engine=$ENGINE" >> "$GITHUB_OUTPUT"
-          echo "building $VERSION with $ENGINE"
+          echo "building $VERSION with $ENGINE${MODS:+ and mods $MODS}"
 
       - name: Check out this repository
         uses: actions/checkout@v7
@@ -257,10 +264,11 @@ jobs:
           git push origin HEAD:refs/heads/build-log --force || echo "::warning::could not push the early report"
 
       - name: Bake the mod set, if one was asked for
-        # Mods on a compiled client can only go in before the compile. The bake needs an engine with source
-        # hooks; an engine that only patches a compiled client cannot take them, and the route step above
-        # has already refused that case rather than producing a vanilla client called modded.
-        if: ${{ inputs.mods != '' }}
+        # Mods on a compiled client can only go in before the compile. Two kinds of engine, two bakes:
+        # a workspace has source hooks the bake tool knows, and a profile engine gets our generated
+        # patcher, which copies the mod's classes into the client and calls its entrypoint from the
+        # client's own static initialiser.
+        if: steps.want.outputs.mods != '' 
         working-directory: ours
         run: |
           set -euo pipefail
@@ -284,11 +292,23 @@ jobs:
           # the mixins whose targets are not in this client, copies the classes and the Fabric API shims
           # into the engine's source tree, and generates the entrypoint call the compiled client makes at
           # startup. It runs *before* the compile, because there is no class loader afterwards.
-          python3 mods/build_modded_workspace.py --workspace ../engine --mods /tmp/mods \
-            --out /tmp/bake 2>&1 | tee -a /tmp/build.log
-          echo "bake exit: ${PIPESTATUS[0]}"
-          # what the bake left in the workspace, so the compile step is not the first thing to notice
-          find ../engine -name '*EaglerFabricLoader*' -o -name 'webmc-baked-mods.txt' 2>/dev/null | head -5 || true
+          if [ "${{ steps.engine_kind.outputs.kind }}" = "eaglercraft-workspace" ]; then
+            python3 mods/build_modded_workspace.py --workspace ../engine --mods /tmp/mods \
+              --out /tmp/bake 2>&1 | tee -a /tmp/build.log
+            echo "bake exit: ${PIPESTATUS[0]}"
+            find ../engine -name '*EaglerFabricLoader*' 2>/dev/null | head -3 || true
+          else
+            MOD_ARGS=""
+            for jar in /tmp/mods/*.jar; do MOD_ARGS="$MOD_ARGS --mods $jar"; done
+            python3 tools/bake_mods.py --engine ../engine --version "$VERSION" --mods-dir /tmp/mods \
+              --report /tmp/bake.json $MOD_ARGS 2>&1 | tee -a /tmp/build.log
+            BAKE_STATUS=${PIPESTATUS[0]}
+            echo "bake exit: $BAKE_STATUS"
+            [ "$BAKE_STATUS" = "0" ] || exit "$BAKE_STATUS"
+            # the patcher reads this while the engine's patch chain runs, which is the next thing after
+            # the fetch
+            python3 -c "import json;print('WEBMC_MODS=' + (json.load(open('/tmp/bake.json')).get('webmc_mods') or ''))" >> "$GITHUB_ENV"
+          fi
 
       - name: Fetch the client, its libraries and its assets
         working-directory: engine
