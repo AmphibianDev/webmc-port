@@ -168,12 +168,53 @@ def start_page(title: str, manifest_name: str = "manifest.json") -> str:
 '''
 
 
-def pack(client: pathlib.Path, out: pathlib.Path, title: str, chunk_mb: int, log=print) -> dict:
+# A gateway is what makes a typed server address work at all (see MULTIPLAYER.md). A browser cannot open a
+# TCP socket, so the client has to be told where to tunnel; a packed client that nobody configured is a client
+# whose multiplayer is silently off, which is the one failure a player cannot diagnose from the game.
+GATEWAY_MARK = "data-webmc-gateway"
+
+
+def gateway_script(url: str) -> str:
+    if not re.match(r"^wss?://[^\s\"']+$", url):
+        raise SystemExit(f"a gateway address has to start with ws:// or wss://, not {url!r}")
+    return (
+        f'<script {GATEWAY_MARK}="{url}">/* WebMC: the gateway this build should use. The client reads '
+        "its own config first, so a player can still override it - nothing here is a key or a secret. */\n"
+        f"globalThis.__eaglerConfig = Object.assign({{ goldProxy: {{ gateway: {json.dumps(url)} }} }}, "
+        "globalThis.__eaglerConfig || {});\n</script>\n")
+
+
+def inject_gateway(html: bytes, url: str) -> bytes:
+    """Put the gateway default into an Eagler26 build, using the client's own configuration merge.
+
+    `eagler-config.js` does `Object.assign({...defaults}, globalThis.__eaglerConfig || {})`, so a value set
+    before its module runs survives - and a value in `localStorage["eagler26.goldproxy"]` still wins over it.
+    """
+    text = html.decode("utf-8", errors="surrogateescape")
+    if GATEWAY_MARK in text:
+        return html  # already set by an earlier pass
+    if "__eaglerConfig" not in text and "eagler26-offline-meta" not in text:
+        raise SystemExit("this build does not look like an Eagler26 client: it has no client config to set "
+                         "a gateway in, so the address would be ignored")
+    marker = "<head>"
+    insertion = marker + "\n" + gateway_script(url)
+    if marker in text:
+        text = text.replace(marker, insertion, 1)
+    else:
+        text = gateway_script(url) + text
+    return text.encode("utf-8", errors="surrogateescape")
+
+
+def pack(client: pathlib.Path, out: pathlib.Path, title: str, chunk_mb: int, gateway: str | None = None,
+         log=print) -> dict:
     """Split the client, write the chunks, the manifest and the page. Returns the manifest."""
     data = client.read_bytes()
     head = data[:512].decode("utf-8", errors="replace").lower()
     if "<!doctype html" not in head and "<html" not in head:
         raise SystemExit(f"{client} is not an HTML client (its first bytes are not a page)")
+    if gateway:
+        data = inject_gateway(data, gateway)
+        log(f"  set the gateway default to {gateway} inside the client")
 
     chunk_bytes = chunk_mb * 1024 * 1024
     out.mkdir(parents=True, exist_ok=True)
@@ -194,6 +235,7 @@ def pack(client: pathlib.Path, out: pathlib.Path, title: str, chunk_mb: int, log
         "note": "Written by tools/pack_client.py. Chunks of one compiled client; immutable once published.",
         "title": title,
         "client": client.name,
+        "gateway": gateway or None,
         "bytes": len(data),
         "total": len(data),
         "chunk_bytes": chunk_bytes,
@@ -213,13 +255,15 @@ def main(argv=None) -> int:
     parser.add_argument("--out", required=True, help="a directory to write the page, manifest and chunks")
     parser.add_argument("--title", default="Minecraft")
     parser.add_argument("--chunk-mb", type=int, default=DEFAULT_CHUNK_MB)
+    parser.add_argument("--gateway", default=None,
+                        help="wss://…/v1/connect to bake in as the multiplayer default (Eagler26 clients)")
     args = parser.parse_args(argv)
 
     client = pathlib.Path(args.client)
     if not client.is_file():
         print(f"no such client: {client}", file=sys.stderr)
         return 2
-    manifest = pack(client, pathlib.Path(args.out), args.title, args.chunk_mb)
+    manifest = pack(client, pathlib.Path(args.out), args.title, args.chunk_mb, args.gateway)
     hmm = [chunk for chunk in manifest["chunks"] if chunk["size"] > 100 * 1024 * 1024]
     if hmm:
         print("  ! a chunk is over 100 MB: GitHub Pages would refuse it", file=sys.stderr)

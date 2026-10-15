@@ -28,6 +28,25 @@ is a one-line change in `ports.json`.
 | [Cucuzacu/WebForge](https://github.com/Cucuzacu/WebForge) | **no licence file** | 1.6.4 with Forge | linked where it lives, nothing rebuilt from it |
 | [EaglerPorts](https://github.com/EaglerPorts) | **no licence file** | several classics | linked where they live, nothing copied |
 
+## Clients we host
+
+| Project | What it is | What we do with it | What we changed |
+| --- | --- | --- | --- |
+| **Eagler26** (`Eagler26-26.3-Full.html`, built by the Eagler26 project, distributed by the client's own site) | a single-file offline build of Minecraft **26.3** (Eagler V0.99, build V0.99-3a9034f1): the whole client compiled to WebAssembly, its assets, sound and music archive, an integrated server for singleplayer, and a `goldproxy.v1` multiplayer transport | a visitor can load it, play singleplayer, and join a normal Java server through a gateway | none inside the client: we do not repackage it. Our site sets the gateway it should use and the address to join, through the client's own supported switches (`?gateway=`, `?server=`, `?port=`, or `localStorage["eagler26.goldproxy"]'), and our page is the loading screen around it |
+
+The Eagler26 build's own metadata names its payload (`eagler26-offline-meta`): `minecraftVersion` 26.3,
+`eaglerVersion` V0.99, singleplayer included, sound/music/records at original quality, wasm sha256
+`3a9034f1...`, and a sha256 for every resource. `tools/eagler_offline.py` reads exactly that metadata and can
+prove any extraction against it; the file that was checked is the one downloaded to the project owner's
+machine, not a copy fetched by this repository.
+
+## The gateway
+
+A browser cannot open a TCP socket, so joining a Java server from a page needs a server-side gateway. Ours
+lives in `gateway/server.js`, speaks the `goldproxy.v1` protocol the Eagler26 client already implements, and
+is ours (no borrowed code). The protocol itself - the token endpoint, the `open`/`ready` handshake, the
+control and binary frames, the close codes - is documented in `MULTIPLAYER.md` from the client's own modules.
+
 ## Runtimes and toolchains
 
 | Project | Licence | What we use |

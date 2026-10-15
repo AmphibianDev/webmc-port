@@ -44,6 +44,21 @@ def fake_client(path: pathlib.Path, megabytes: int = 5) -> pathlib.Path:
     return path
 
 
+def _error_of(call) -> str:
+    """The message a refusal carries. A test that only asserts 'it failed' cannot show the next person why."""
+    try:
+        call()
+    except SystemExit as error:
+        return str(error)
+    return ""
+
+
+def _plain_html(tmp: pathlib.Path) -> pathlib.Path:
+    path = tmp / "plain.html"
+    path.write_text("<!doctype html><html><head><title>not an eagler26 build</title></head><body></body></html>")
+    return path
+
+
 def test_pack(tmp: pathlib.Path) -> None:
     print("\npacking a compiled client")
     client = fake_client(tmp / "client-26.2.html", megabytes=5)
@@ -93,6 +108,26 @@ def test_pack(tmp: pathlib.Path) -> None:
           "not an official minecraft product" in page.lower())
     check("a corrupted transfer is reported, not ignored", "could not start:" in page)
     check("progress is shown while the chunks arrive", "webmcBoot.progress" in page)
+
+    print("\nthe gateway a packed client carries")
+    e26 = tmp / "client.html"
+    e26.write_text('<!doctype html><html><head><title>x</title></head><body>'
+                   '<script id="eagler26-offline-meta" type="application/json">{}</script></body></html>')
+    gw_manifest = pack_client.pack(e26, tmp / "gw", "26.3", 4, gateway="wss://relay.example/v1/connect",
+                                   log=lambda *_: None)
+    packed = (tmp / "gw" / "data" / "client.0000").read_bytes().decode()
+    check("the gateway is set before the client's own config module runs",
+          packed.index("__eaglerConfig") < packed.index("eagler26-offline-meta"),
+          "the client merges its defaults *under* whatever is already set, so this has to come first")
+    check("the value is the address the player's client will tunnel through",
+          "wss://relay.example/v1/connect" in packed and "goldProxy" in packed)
+    check("the manifest records it, so a published page can be traced to its gateway",
+          gw_manifest["gateway"] == "wss://relay.example/v1/connect")
+    check("a build with no gateway leaves the client untouched",
+          pack_client.pack(e26, tmp / "nogw", "26.3", 4, log=lambda *_: None)["gateway"] is None)
+    check("and a client that has no place to put one is refused rather than packed unconfigured",
+          "does not look like an Eagler26 client" in _error_of(
+              lambda: pack_client.pack(_plain_html(tmp), tmp / "bad", "x", 4, gateway="wss://a.example/v1")))
     check("the chunks are fetched in parallel, not one after another",
           "Promise.all(manifest.chunks.map" in page, "sequential fetches make the wait the sum of the parts")
     check("each chunk is still verified before it is used",

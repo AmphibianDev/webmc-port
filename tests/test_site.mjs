@@ -97,9 +97,16 @@ for (const [label, needle] of Object.entries({
 check('the launcher explains that a browser cannot open raw TCP',
   page.includes('cannot open a raw TCP connection') || page.includes('cannot open a raw TCP'));
 check('and that multiplayer goes through a relay node', page.includes('relay node') && page.includes('wss://'));
-check('with the two ways to fix a failed connection named',
-  page.includes('relay being') && page.includes('Refusing') === false);
+check('with the gateway model explained, not just named',
+  page.includes('gateway') && page.includes('Type <code>mc.example.com</code>') && page.includes('adds the scheme'),
+  'a player needs to know they type a host, not a wss:// address');
+check('and a field for the gateway they run themselves, saved in their browser only',
+  page.includes('id="gateway-url"') && page.includes('localStorage') && page.includes('never sent to this site'));
+check('with the gateway checks reading like something a player can act on',
+  page.includes('private targets refused') && page.includes('not a gateway'));
 check('and self-hosting pointed at', page.includes('apps/bridge') && page.includes('GAIUS_RELAY_PUBLIC_URL'));
+check('and at our own gateway, with the file it lives in',
+  page.includes('gateway/server.js') && page.includes('MULTIPLAYER.md'));
 
 // ---------------------------------------------------------------- the promises that matter
 check('it claims nothing about hosting game files', page.includes('No game files are hosted here'));

@@ -124,14 +124,30 @@
           tunnels through a WebSocket relay node; the relay list and a self-hosting guide are below.</li>
       </ul>
     </div>
-    <div class="card">
+    <div class="card" id="multiplayer">
       <h3>Multiplayer: how the connection actually happens</h3>
-      <p class="small muted">Typing a server address goes through a relay node, not straight out of your
-        browser: <code>wss://…/tunnel</code>. If a connection fails, the usual causes are the relay being
-        unreachable from your network, or the server refusing the relay's connection.</p>
+      <p class="small muted">A browser cannot open a TCP socket, so a typed server address is reached through
+        a <b>gateway</b> (or a relay node, in the compiled client's own words): a small server that takes a
+        WebSocket from your page and dials the address for you. Type <code>mc.example.com</code> in the game's
+        address box, not <code>wss://…</code> — the client adds the scheme. This project's own gateway is
+        <code>gateway/server.js</code>, one file, no dependencies, and it speaks the protocol the 26.3 client
+        already implements.</p>
+      <p class="small">
+        <label for="gateway-url">Your gateway</label>
+        <input id="gateway-url" type="text" spellcheck="false" placeholder="wss://your.host/v1/connect"
+               autocomplete="off">
+        <button id="gateway-save" type="button">Save</button>
+        <button id="gateway-check" type="button">Check</button>
+        <span id="gateway-status" class="small muted"></span>
+      </p>
+      <p class="small muted">Stored in this browser only (<code>localStorage</code>), never sent to this site.
+        A gateway you run yourself: <code>node gateway/server.js</code>, then put it behind TLS at
+        <code>wss://your.host/v1/connect</code>. <a href="https://github.com/AmphibianDev/webmc-port/blob/main/MULTIPLAYER.md">MULTIPLAYER.md</a>
+        has the protocol, the policy switches, the nginx block and what not to do.</p>
       <ul class="small">
-        <li>The build's default node list lives in <code>relay-nodes.json</code> inside the client, and the
-          in-game <b>Relays</b> screen can add your own.</li>
+        <li>The compiled client's default node list lives in <code>relay-nodes.json</code> inside the build,
+          and the in-game <b>Relays</b> screen can add your own; the 26.3 client takes a gateway as
+          <code>?gateway=</code> or in <code>localStorage["eagler26.goldproxy"]</code>.</li>
         <li>To run one yourself: the engine's <code>apps/bridge</code> is the relay (Node), with a systemd
           unit and nginx configs in the same folder. Two environment variables
           (<code>GAIUS_RELAY_PUBLIC_URL</code>, <code>GAIUS_ALLOW_PRIVATE_TARGETS=0</code>) and it is
@@ -214,6 +230,48 @@
 
   /* What a click on this version does. The three answers the launcher gives, in one place:
    * a packed page this site serves, a client that launches a JVM in the page, or nothing yet. */
+  /* ---- the gateway field: this browser's own setting, and only that ---- */
+  var GATEWAY_KEY = "webmc.gateway";
+  function gateway() {
+    try { return localStorage.getItem(GATEWAY_KEY) || ""; } catch (e) { return ""; }
+  }
+  function showGateway() {
+    var input = el("gateway-url"), status = el("gateway-status");
+    if (input) { input.value = gateway(); }
+    if (status) {
+      status.textContent = gateway() ? "" : "no gateway set: singleplayer and the relays a build ships with still work";
+    }
+    var link = document.querySelector("#gateway-help a");
+    if (link && gateway()) { link.href = link.href; }
+  }
+  function saveGateway() {
+    var value = (el("gateway-url").value || "").trim();
+    if (value && !/^wss?:\/\//.test(value)) {
+      el("gateway-status").textContent = "a gateway address starts with wss:// (or ws:// on a local page)";
+      return;
+    }
+    try { value ? localStorage.setItem(GATEWAY_KEY, value) : localStorage.removeItem(GATEWAY_KEY); } catch (e) {}
+    el("gateway-status").textContent = value ? "saved for this browser" : "cleared";
+  }
+  function checkGateway() {
+    var status = el("gateway-status");
+    var url = (el("gateway-url").value || gateway()).trim();
+    if (!url) { status.textContent = "nothing to check yet"; return; }
+    // a gateway's JSON endpoints answer cross-origin on purpose, so the page can ask about its own setting
+    var health = url.replace(/\/v1\/connect\/?$/, "/health");
+    status.textContent = "asking " + health + " …";
+    fetch(health, { cache: "no-store" }).then(function (res) {
+      if (!res.ok) { throw new Error("HTTP " + res.status); }
+      return res.json();
+    }).then(function (info) {
+      status.textContent = "reachable: protocol " + info.protocolVersion + ", sessions "
+        + info.activeConnections + "/" + info.maximumConnections
+        + (info.allowPrivateTargets ? ", private targets ALLOWED" : ", private targets refused");
+    }).catch(function (error) {
+      status.textContent = "no answer from " + health + " (" + error.message + ") — it may be down, or not a gateway";
+    });
+  }
+
   function playTarget(version) {
     var route = routeOf(version.id) || {};
     var plan = planOf(version.id);
@@ -540,6 +598,12 @@
     state.all = true;
     go(state.query);
   });
+
+  /* the gateway field: this browser's setting, read back on load */
+  showGateway();
+  el("gateway-save").addEventListener("click", saveGateway);
+  el("gateway-check").addEventListener("click", checkGateway);
+  el("gateway-url").addEventListener("keydown", function (event) { if (event.key === "Enter") { saveGateway(); } });
 
   loadCatalog().then(function (catalog) {
     var versions = catalog.versions || [];
