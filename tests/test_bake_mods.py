@@ -19,7 +19,10 @@ what the bake writes rather than only that it wrote something:
 from __future__ import annotations
 
 import json
+import os
 import pathlib
+import shutil
+import subprocess
 import sys
 import tempfile
 import zipfile
@@ -63,7 +66,8 @@ def fake_mod(path: pathlib.Path, mod_id: str, entrypoint: str | None, mixins: bo
         descriptor["mixins"] = ["example.mixins.json"]
     with zipfile.ZipFile(path, "w") as jar:
         jar.writestr("fabric.mod.json", json.dumps(descriptor))
-        jar.writestr(f"{mod_id.replace('-', '')}/Mod.class", FAKE_CLASS)
+        # a real mod's class sits at the path its descriptor names, which is what the hook then calls
+        jar.writestr((entrypoint.replace(".", "/") if entrypoint else f"{mod_id}/Mod") + ".class", FAKE_CLASS)
         if mixins:
             jar.writestr("example.mixins.json", '{"required": true, "package": "example.mixin"}')
             jar.writestr("example/mixin/MixinThing.class", FAKE_CLASS)
@@ -178,12 +182,110 @@ def test_command_line(tmp: pathlib.Path) -> None:
           bake_mods.main(["--engine", str(engine), "--version", "1.21.11"]) == 2)
 
 
+def test_patcher_runs(tmp: pathlib.Path) -> None:
+    """The generated Java, compiled and executed for real - the half a Python test cannot see.
+
+    Needs javac, java and ASM on disk (the engine's build fetches ASM anyway); without them it says so and
+    moves on, like every other test here that wants a JDK. What it proves is the whole contract: the class
+    compiles, the mod's classes are copied into the patch output, and the call lands in the client's own
+    static initialiser - verified by reading the bytecode back with javap.
+    """
+    print("\nthe generated patcher, compiled and run")
+    # a JDK that actually works: macOS ships a /usr/bin/javac that exists and cannot compile, so the
+    # finder from the loader's build tool is used and the stub is weeded out by running it
+    import build_loader  # noqa: PLC0415 - only on this path
+    javac = build_loader.find_javac()
+    if javac:
+        probe = subprocess.run([javac, "-version"], capture_output=True, text=True)
+        if "Unable to locate" in (probe.stderr + probe.stdout):
+            javac = None
+    java = str(pathlib.Path(javac).parent / "java") if javac else None
+    if javac and not pathlib.Path(java).exists():
+        java = None
+    javap = str(pathlib.Path(javac).parent / "javap") if javac else None
+    asm = None
+    for candidate in (ROOT / "work" / "asm", pathlib.Path("/tmp/baketest")):
+        jars = sorted(candidate.glob("asm*.jar")) if candidate.is_dir() else []
+        if len(jars) >= 2:
+            asm = ":".join(str(jar) for jar in jars)
+            break
+    if not javac or not java or not asm:
+        print("  SKIP  needs javac, java and asm/asm-tree jars (put them in work/asm/)")
+        return
+
+    engine = fake_engine(tmp / "engine-patch")
+    jar = fake_mod(tmp / "hello-fabric.jar", "hello-fabric", "com.example.HelloFabricMod")
+    bake_mods.bake(engine, "1.21.11", [jar], tmp, log=lambda *_: None)
+    patcher = engine / "port" / "tools" / "src" / "main" / "java" / "dev" / "gaius" / "tools" / "WebMcModBakePatcher.java"
+
+    # a client jar of our own: one class, with a static initialiser to inject into
+    source = tmp / "clientsrc" / "net" / "minecraft" / "client"
+    source.mkdir(parents=True, exist_ok=True)
+    (source / "Minecraft.java").write_text(
+        "package net.minecraft.client;\n"
+        "public class Minecraft {\n"
+        "    static { System.setProperty(\"mc\", \"loaded\"); }\n"
+        "}\n")
+    classes = tmp / "clientclasses"
+    classes.mkdir(parents=True, exist_ok=True)
+    compiled = subprocess.run([javac, "-d", str(classes), str(source / "Minecraft.java")],
+                              capture_output=True, text=True)
+    check("a fake client compiles", compiled.returncode == 0, compiled.stderr[:200])
+    client_jar = tmp / "client.jar"
+    with zipfile.ZipFile(client_jar, "w") as archive:
+        for path in classes.rglob("*.class"):
+            archive.write(path, str(path.relative_to(classes)))
+
+    patcher_classes = tmp / "patcher-classes"
+    built = subprocess.run([javac, "-nowarn", "-cp", asm, "-d", str(patcher_classes), str(patcher)],
+                           capture_output=True, text=True)
+    check("the generated patcher compiles as it is written", built.returncode == 0, built.stderr[:400])
+    if built.returncode != 0:
+        return
+
+    output = tmp / "patched"
+    environment = dict(os.environ)
+    environment["WEBMC_MODS"] = str(engine / "port" / "work" / "1.21.11" / "webmc-mods" / jar.name)
+    run = subprocess.run([java, "-cp", f"{patcher_classes}{os.pathsep}{asm}",
+                          f"dev.gaius.tools.{bake_mods.PATCHER_CLASS}", str(client_jar), str(output),
+                          "1.21.11"], capture_output=True, text=True, env=environment)
+    check("it runs against a client jar and reports what it did",
+          run.returncode == 0 and "injected" in run.stdout, (run.stdout + run.stderr)[:300])
+    check("the mod's own class is copied into the client's patch output",
+          (output / "com" / "example" / "HelloFabricMod.class").is_file())
+    check("and the client class is rewritten", (output / "net" / "minecraft" / "client" / "Minecraft.class").is_file())
+
+    disassembly = subprocess.run([javap, "-c", "-p", "-cp", str(output), "net.minecraft.client.Minecraft"],
+                                 capture_output=True, text=True).stdout
+    check("the client's static initialiser calls the baked mods",
+          "webmc/baked/WebMcBakedMods.initialize:()V" in disassembly,
+          disassembly[-300:])
+    # inside the static initialiser itself, not merely somewhere in the dump
+    initialiser = disassembly.split("static {}", 1)[-1].split("\n}", 1)[0]
+    check("and it calls it on the way out of the client's own initialisation, before returning",
+          "webmc/baked/WebMcBakedMods.initialize" in initialiser
+          and initialiser.index("webmc/baked/WebMcBakedMods.initialize") < initialiser.rindex("return"),
+          initialiser[-300:])
+
+    print("\nand with no mods it does nothing, loudly")
+    empty = subprocess.run([java, "-cp", f"{patcher_classes}{os.pathsep}{asm}",
+                            f"dev.gaius.tools.{bake_mods.PATCHER_CLASS}", str(client_jar),
+                            str(tmp / "patched-empty")], capture_output=True, text=True,
+                           env={k: v for k, v in environment.items() if k != "WEBMC_MODS"})
+    leftovers = sorted(path.name for path in (tmp / "patched-empty").rglob("*.class")) \
+        if (tmp / "patched-empty").is_dir() else []
+    check("a build with an empty WEBMC_MODS says so and writes no class file",
+          "no mods in WEBMC_MODS" in empty.stdout and not leftovers,
+          f"{empty.stdout[:160]} written: {leftovers}")
+
+
 def main() -> int:
     with tempfile.TemporaryDirectory() as scratch:
         tmp = pathlib.Path(scratch)
         test_read_mod(tmp)
         test_bake(tmp)
         test_command_line(tmp)
+        test_patcher_runs(tmp)
     print(f"\n{FAILURES} bake test(s) FAILED" if FAILURES else "\nbake tests passed")
     return 1 if FAILURES else 0
 
