@@ -2,40 +2,40 @@
  "note": "Written by tools/pack_client.py. Chunks of one compiled client; immutable once published.",
  "title": "Minecraft 1.21.11",
  "client": "Gaius-webmc.html",
- "bytes": 113011072,
- "total": 113011072,
+ "bytes": 113011660,
+ "total": 113011660,
  "chunk_bytes": 20971520,
- "sha256": "c18b1df65706bd95e6d652142a5364d6a82ae5ae9fce6998a0b1054880248052",
+ "sha256": "b0a91884cc441d30a19ef863541dcfd3ab35be4edd3cf66041e5c76dd1230bdf",
  "chunks": [
   {
    "path": "data/client.0000",
    "size": 20971520,
-   "sha256": "cc06a843b562ca1ab47279b4583e6ea628fd7a40d141437828463e8007edeb88"
+   "sha256": "e32eac7eb8e5bfac1debad5ef36d24528bd161670a24fe085dab8879241a451d"
   },
   {
    "path": "data/client.0001",
    "size": 20971520,
-   "sha256": "001c87f798fc9898d1a5e1ea31fb5884f4d416edc6028af843310807eefd2ec3"
+   "sha256": "4e0bbbf57dedddadedf05421bc4eb6170e7d76b4e155970a2e59cd4f9cda0cc8"
   },
   {
    "path": "data/client.0002",
    "size": 20971520,
-   "sha256": "bedc0e339868499c1a52b4002ebb1d5fe6a0091754f24966bb096e3a9da0528a"
+   "sha256": "e28efdc17db662f01d5caa53d99b9ada2d901119e59580c652bed879107ddb96"
   },
   {
    "path": "data/client.0003",
    "size": 20971520,
-   "sha256": "993b807c424ed69348ce96f3e367f4430ac3552b1b05ab280ca8c6c4609916ad"
+   "sha256": "17fc6f4a31b375a1e5d7ba44c333274c419e6eb5c8d779083ae0a9a565f260a1"
   },
   {
    "path": "data/client.0004",
    "size": 20971520,
-   "sha256": "9a9b354c6ac1db31c74067d4c54f24e77b02eb6e6a3ba8c5ac7104471f3cf84b"
+   "sha256": "e600074b5e8e83445859e13bdebb5b7314f3357fc9caf415a4dd8b5e395692ad"
   },
   {
    "path": "data/client.0005",
-   "size": 8153472,
-   "sha256": "a9770a32bf8e7e61d094e64581816cb005847f49ea512a43a26d1a1f4aabb542"
+   "size": 8154060,
+   "sha256": "b5a3255e4e273e1c1d9f6b2b4ff2f993b2435d6d947acf78ec7d2fd35de9187d"
   }
  ]
 }
