@@ -47,9 +47,9 @@ const harness = path.join(harnessDir, 'page.mjs');
 // if a future version of the page happens to declare something twice.
 writeFileSync(harness, [
   'const page = (() => {',
-  [extract('md5'), extract('offlineUuid'), extract('varint'), extract('frame'), extract('string'),
-   extract('tunnel'), extract('reader'), extract('packetId'), extract('readString')].join('\n'),
-  'return { md5, offlineUuid, varint, frame, string, tunnel, reader, packetId, readString };',
+  [extract('normaliseGateway'), extract('md5'), extract('offlineUuid'), extract('varint'), extract('frame'),
+   extract('string'), extract('tunnel'), extract('reader'), extract('packetId'), extract('readString')].join('\n'),
+  'return { normaliseGateway, md5, offlineUuid, varint, frame, string, tunnel, reader, packetId, readString };',
   '})();',
   'export default page;',
 ].join('\n'));
