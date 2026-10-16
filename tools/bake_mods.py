@@ -162,12 +162,14 @@ public final class __CLASS__ {
             // policy on purpose - with every gap named in the log, and never quietly.
             boolean allowPartial = "1".equals(System.getenv("WEBMC_MODS_ALLOW_PARTIAL"));
             String detail = mixinRefusals + " mixin part(s) could not be applied: the build log above names each one.";
+            // The list is printed either way: a build log that says "49 parts" and not which ones is a
+            // build log somebody has to reproduce from scratch.
+            for (String line : WebMcMixinApplier.lastNotApplied()) {
+                System.out.println("__CLASS__:   unapplied: " + line);
+            }
             if (allowPartial) {
                 System.out.println("__CLASS__: PARTIAL BUILD (WEBMC_MODS_ALLOW_PARTIAL=1): " + detail
                         + " The client runs without those parts, and this log is the list of them.");
-                for (String line : WebMcMixinApplier.lastNotApplied()) {
-                    System.out.println("__CLASS__:   unapplied: " + line);
-                }
             } else {
                 throw new IllegalStateException(detail + " Half a mixin is a client that looks fine until it does not, "
                         + "so this is a failed build rather than a quiet one. Set WEBMC_MODS_ALLOW_PARTIAL=1 to build "

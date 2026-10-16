@@ -63,6 +63,12 @@ jobs:
   snapshot:
     name: Compile the newest snapshot
     runs-on: ubuntu-latest
+    env:
+      # Deliberate, and named: the mixin patcher runs inside the engine's overlay chain (a later step
+      # than the bake), so the policy has to be visible to the whole job. A partial bake still produces
+      # a client, and every missing mixin part is listed in the log. Set to 0 to go back to
+      # "any unapplied part fails the build".
+      WEBMC_MODS_ALLOW_PARTIAL: "1"
     # The engine's own figure is ~55 minutes; the TeaVM link is the part that can stretch. The runner
     # limit is six hours, and this leaves room for two attempts' worth of pain.
     timeout-minutes: 350
@@ -320,10 +326,6 @@ jobs:
         # client's own static initialiser.
         if: steps.want.outputs.mods != '' 
         working-directory: ours
-        env:
-          # Deliberate: a partial bake still produces a client, with every missing mixin part named in
-          # the log. Set this to 0 to go back to "any unapplied part fails the build".
-          WEBMC_MODS_ALLOW_PARTIAL: "1"
         run: |
           set -euo pipefail
           # GitHub runs this step's shell with -e, so a failing pipeline aborts the step before
