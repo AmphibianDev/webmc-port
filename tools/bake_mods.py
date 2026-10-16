@@ -156,9 +156,23 @@ public final class __CLASS__ {
             System.out.println("__CLASS__: mixins touched " + mixinClasses + " client class(es)");
         }
         if (mixinRefusals > 0) {
-            throw new IllegalStateException(mixinRefusals + " mixin(s) could not be applied: the build log above "
-                    + "names each one. Half a mixin is a client that looks fine until it does not, so this is a "
-                    + "failed build rather than a quiet one.");
+            // The default is still "a half-applied mod is a failed build", because a client that looks
+            // fine and behaves wrongly is the failure this repository has already paid for twice. But a
+            // build that cannot be produced cannot be *tested* either, so a build may ask for the other
+            // policy on purpose - with every gap named in the log, and never quietly.
+            boolean allowPartial = "1".equals(System.getenv("WEBMC_MODS_ALLOW_PARTIAL"));
+            String detail = mixinRefusals + " mixin part(s) could not be applied: the build log above names each one.";
+            if (allowPartial) {
+                System.out.println("__CLASS__: PARTIAL BUILD (WEBMC_MODS_ALLOW_PARTIAL=1): " + detail
+                        + " The client runs without those parts, and this log is the list of them.");
+                for (String line : WebMcMixinApplier.lastNotApplied()) {
+                    System.out.println("__CLASS__:   unapplied: " + line);
+                }
+            } else {
+                throw new IllegalStateException(detail + " Half a mixin is a client that looks fine until it does not, "
+                        + "so this is a failed build rather than a quiet one. Set WEBMC_MODS_ALLOW_PARTIAL=1 to build "
+                        + "anyway, with every gap named.");
+            }
         }
         System.out.println("__CLASS__: copied " + copied + " class(es) from " + mods.size() + " mod jar(s)");
         if (entries.isEmpty()) {

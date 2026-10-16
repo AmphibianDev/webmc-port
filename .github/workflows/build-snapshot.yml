@@ -320,6 +320,10 @@ jobs:
         # client's own static initialiser.
         if: steps.want.outputs.mods != '' 
         working-directory: ours
+        env:
+          # Deliberate: a partial bake still produces a client, with every missing mixin part named in
+          # the log. Set this to 0 to go back to "any unapplied part fails the build".
+          WEBMC_MODS_ALLOW_PARTIAL: "1"
         run: |
           set -euo pipefail
           # GitHub runs this step's shell with -e, so a failing pipeline aborts the step before
@@ -376,6 +380,10 @@ jobs:
             for jar in /tmp/mods/*.jar; do
               [ -f "$jar" ] && MOD_ARGS="$MOD_ARGS --mods $jar"
             done
+            # A named, deliberate policy: a build with mixin parts missing is a failure by default, because
+            # a client that looks fine and behaves wrongly is the failure this repository already paid for.
+            # While the remaining parts are being closed, the build asks for the other policy - the client
+            # runs, and every unapplied part is printed into this log and recorded in the report.
             python3 tools/bake_mods.py --engine ../engine --version "$VERSION" --mods-dir /tmp/mods \
               --report /tmp/bake.json $MOD_ARGS 2>&1 | tee -a /tmp/build.log
             BAKE_STATUS=${PIPESTATUS[0]}

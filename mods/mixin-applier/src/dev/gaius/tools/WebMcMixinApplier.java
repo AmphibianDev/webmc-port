@@ -110,6 +110,13 @@ public final class WebMcMixinApplier {
     private WebMcMixinApplier() {
     }
 
+    /** Everything the last apply() could not do, so a build can name each gap instead of counting them. */
+    private static final List<String> LAST_NOT_APPLIED = new ArrayList<>();
+
+    public static List<String> lastNotApplied() {
+        return List.copyOf(LAST_NOT_APPLIED);
+    }
+
     public static Report apply(Path modJar, Path classesRoot, Consumer<String> log) throws IOException {
         List<String> notApplied = new ArrayList<>();
         List<String> refusals = new ArrayList<>();
@@ -212,6 +219,9 @@ public final class WebMcMixinApplier {
                 }
             }
         }
+        LAST_NOT_APPLIED.clear();
+        LAST_NOT_APPLIED.addAll(notApplied);
+        LAST_NOT_APPLIED.addAll(refusals);
         return new Report(touched.size(), overwritten, injected, redirected, modified, generated, copied, shadows,
                 notApplied, refusals);
     }
