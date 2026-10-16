@@ -464,6 +464,12 @@ function panelHtml(name) {
       "this build carries</td></tr></table>" +
       "<h3>This build's gateway</h3>" +
       "<p class='status' id='gateway-status'>looking…</p>" +
+      "<h3>Not sure it works?</h3>" +
+      "<p>There is a page that runs the four steps in the open - gateway reachable, server answers a status ping, " +
+      "and a cracked server accepts a login for your name with the UUID it derives from that name - and prints what " +
+      "each one said. A failure there is the gateway or the server; a green run there and a client that will not " +
+      "join means the client.</p>" +
+      "<p><a class='btn' href='join-test.html'>Open the connection test</a></p>" +
       "<h3>Running your own</h3>" +
       "<p><code>gateway/server.js</code> is this project's gateway: one file, no dependencies, and it speaks the " +
       "protocol these clients already implement. <code>python3 tools/play_local.py</code> starts it and serves a " +

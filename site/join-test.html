@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>WebMC — join test</title>
+<style>
+  :root { --bg:#101013; --panel:#1e1e22; --line:#3a3a42; --text:#f2f2f5; --muted:#9d9daa; --ok:#4aa85d; --bad:#d4695f; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; }
+  main { max-width: 52rem; margin: 0 auto; padding: 32px 22px 80px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  p.lede { color: var(--muted); margin: 0 0 22px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 10px 0; }
+  label { color: var(--muted); width: 9rem; }
+  input { background: var(--panel); border: 1px solid var(--line); color: var(--text); border-radius: 6px;
+          padding: 9px 11px; font: inherit; flex: 1 1 18rem; }
+  button { background: #2f2f36; border: 1px solid var(--line); color: var(--text); font: inherit; padding: 9px 16px;
+           border-radius: 6px; cursor: pointer; }
+  button:hover { background: #26262c; }
+  button.primary { background: #3f8e4f; border-color: #3f8e4f; font-weight: 700; }
+  pre { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px; overflow: auto;
+        max-height: 26rem; white-space: pre-wrap; }
+  .ok { color: var(--ok); } .bad { color: var(--bad); } .muted { color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Does multiplayer work from this page?</h1>
+  <p class="lede">This runs the same three steps a browser client runs when you type a server address, and prints
+    what each one answered: the gateway is reachable, the server on the other side answers a status ping, and a
+    cracked (offline-mode) server accepts a login for the name below. No game client involved, so a failure here is
+    the transport and a success here is not the client.</p>
+
+  <div class="row"><label for="gateway">gateway</label>
+    <input id="gateway" type="text" spellcheck="false" placeholder="wss://your.host/v1/connect (or ws://127.0.0.1:8090/v1/connect)" /></div>
+  <div class="row"><label for="target">server</label>
+    <input id="target" type="text" spellcheck="false" placeholder="play.example.net or play.example.net:25565" /></div>
+  <div class="row"><label for="name">player name</label>
+    <input id="name" type="text" spellcheck="false" maxlength="16" placeholder="Notch" /></div>
+  <div class="row">
+    <button id="check" class="primary">Run the test</button>
+    <button id="clear">Clear</button>
+    <span id="verdict" class="muted"></span>
+  </div>
+  <pre id="log">waiting…</pre>
+</main>
+<script>
+"use strict";
+
+/* The four things a client does, in the open, so a failure can be pointed at instead of guessed at:
+ *   1. the gateway answers /health (it is there, and it speaks a protocol this page knows);
+ *   2. the tunnel opens and the gateway reports it dialled the server;
+ *   3. the server answers a status ping (the address is right and it is a Minecraft server);
+ *   4. an offline-mode server accepts a login for this name - which is the cracked-server case, and the one that
+ *      needs the UUID a server derives from the name (that is why it is computed here too).
+ * Nothing here is a game: it is the transport, so a red line means the gateway or the server, and a green run with
+ * a client that still will not join means the client.
+ */
+
+function el(id) { return document.getElementById(id); }
+function line(text, kind) {
+  var log = el("log");
+  var span = document.createElement("span");
+  if (kind) { span.className = kind; }
+  span.textContent = text + "\n";
+  log.appendChild(span);
+}
+function reset() { el("log").textContent = ""; }
+
+/* The same derivation the client uses: an offline server computes UUID.nameUUIDFromBytes("OfflinePlayer:" + name). */
+function md5(input) {
+  var shifts = [7,12,17,22,7,12,17,22,7,12,17,22,7,12,17,22,5,9,14,20,5,9,14,20,5,9,14,20,5,9,14,20,
+                4,11,16,23,4,11,16,23,4,11,16,23,4,11,16,23,6,10,15,21,6,10,15,21,6,10,15,21,6,10,15,21];
+  var table = new Uint32Array(64);
+  for (var i = 0; i < 64; i++) { table[i] = Math.floor(Math.abs(Math.sin(i + 1)) * 4294967296); }
+  var length = input.length;
+  var padded = new Uint8Array((((length + 8) >>> 6) + 1) * 64);
+  padded.set(input);
+  padded[length] = 0x80;
+  var view = new DataView(padded.buffer);
+  view.setUint32(padded.length - 8, (length * 8) >>> 0, true);
+  view.setUint32(padded.length - 4, Math.floor(length / 536870912), true);
+  var a0 = 0x67452301, b0 = 0xefcdab89, c0 = 0x98badcfe, d0 = 0x10325476;
+  for (var offset = 0; offset < padded.length; offset += 64) {
+    var a = a0, b = b0, c = c0, d = d0;
+    for (var j = 0; j < 64; j++) {
+      var f, g;
+      if (j < 16) { f = (b & c) | (~b & d); g = j; }
+      else if (j < 32) { f = (d & b) | (~d & c); g = (5 * j + 1) % 16; }
+      else if (j < 48) { f = b ^ c ^ d; g = (3 * j + 5) % 16; }
+      else { f = c ^ (b | ~d); g = (7 * j) % 16; }
+      var sum = (a + f + table[j] + view.getUint32(offset + g * 4, true)) | 0;
+      a = d; d = c; c = b;
+      b = (b + ((sum << shifts[j]) | (sum >>> (32 - shifts[j])))) | 0;
+    }
+    a0 = (a0 + a) | 0; b0 = (b0 + b) | 0; c0 = (c0 + c) | 0; d0 = (d0 + d) | 0;
+  }
+  var out = new Uint8Array(16);
+  var outView = new DataView(out.buffer);
+  [a0, b0, c0, d0].forEach(function (word, index) { outView.setUint32(index * 4, word >>> 0, true); });
+  return out;
+}
+function offlineUuid(name) {
+  var text = "OfflinePlayer:" + name;
+  var bytes = new Uint8Array(text.length);
+  for (var i = 0; i < text.length; i++) { bytes[i] = text.charCodeAt(i) & 0xff; }
+  var digest = md5(bytes);
+  digest[6] = (digest[6] & 0x0f) | 0x30;
+  digest[8] = (digest[8] & 0x3f) | 0x80;
+  return Array.prototype.map.call(digest, function (byte) { return byte.toString(16).padStart(2, "0"); }).join("");
+}
+
+function varint(value) {
+  var out = [];
+  var v = value >>> 0;
+  do { var b = v & 0x7f; v >>>= 7; if (v) { b |= 0x80; } out.push(b); } while (v);
+  return out;
+}
+/* A typed array, not a plain array: WebSocket.send accepts a buffer view, and a plain Array is silently not a frame
+ * in either a browser or node - which is what made this page's first version send nothing at all. */
+function frame(bytes) { return new Uint8Array(varint(bytes.length).concat(bytes)); }
+function string(text) {
+  var bytes = Array.prototype.map.call(text, function (character) { return character.charCodeAt(0) & 0xff; });
+  return varint(bytes.length).concat(bytes);
+}
+
+/* Open the gateway and ask it for one target. Resolves with the socket and what the gateway said. */
+function tunnel(gateway, host, port, notes) {
+  return new Promise(function (resolve, reject) {
+    // This test speaks the tunnel dialect (the one the game's own client speaks when it is built this way), so a
+    // gateway URL given as `/v1/connect` - the other dialect, for the Eagler26 lineage - is pointed at `/tunnel`.
+    var url = gateway.replace(/\/+$/, "").replace(/\/v1\/connect$/, "");
+    if (!/\/tunnel$/.test(url)) { url += "/tunnel"; }
+    var socket;
+    try { socket = new WebSocket(url); } catch (error) { reject(new Error("bad gateway address: " + error.message)); return; }
+    socket.binaryType = "arraybuffer";
+    var timer = setTimeout(function () { reject(new Error("the gateway did not answer in 12s")); socket.close(); }, 12000);
+    var opened = false;
+    socket.onopen = function () { opened = true; notes.push("gateway: open"); socket.send(JSON.stringify({ type: "connect", host: host, port: port })); };
+    socket.onmessage = function (event) {
+      if (typeof event.data !== "string") { return; }
+      var message;
+      try { message = JSON.parse(event.data); } catch (error) { return; }
+      if (message.type === "connecting") { notes.push("gateway: dialling " + host + ":" + port); return; }
+      if (message.type === "connected") {
+        clearTimeout(timer);
+        notes.push("gateway: connected to " + message.host + ":" + message.port + " (attested)");
+        resolve(socket);
+        return;
+      }
+      if (message.type === "error") { clearTimeout(timer); reject(new Error("gateway refused: " + message.code + " " + (message.message || ""))); return; }
+      if (message.t === "ready") {
+        clearTimeout(timer);
+        notes.push("gateway: connected to " + message.ip + ":" + message.port + " (dns " + message.dnsMs + "ms, connect " + message.connectMs + "ms)");
+        resolve(socket);
+        return;
+      }
+      if (message.t === "error") { clearTimeout(timer); reject(new Error("gateway refused: " + message.code + " " + (message.msg || ""))); }
+    };
+    socket.onerror = function () { if (!opened) { clearTimeout(timer); reject(new Error("the gateway could not be reached at all (wrong address, ws:// on an https page, or it is down)")); } };
+    socket.onclose = function (event) { clearTimeout(timer); reject(new Error("the gateway closed the tunnel (" + event.code + " " + event.reason + ")")); };
+  });
+}
+
+/* Read frames from the target: enough of a Minecraft client to see what a server says to us. */
+function reader(socket, onFrame) {
+  var buffer = [];
+  socket.addEventListener("message", function (event) {
+    if (typeof event.data === "string") { return; }
+    var bytes = new Uint8Array(event.data);
+    for (var i = 0; i < bytes.length; i++) { buffer.push(bytes[i]); }
+    for (;;) {
+      var length = 0, shift = 0, at = 0, complete = false;
+      while (at < buffer.length && shift < 35) {
+        var b = buffer[at++];
+        length |= (b & 0x7f) << shift; shift += 7;
+        if (!(b & 0x80)) { complete = true; break; }
+      }
+      if (!complete || buffer.length < at + length) { return; }
+      var body = buffer.slice(at, at + length);
+      buffer = buffer.slice(at + length);
+      onFrame(body);
+    }
+  });
+}
+
+function packetId(body) { var value = 0, shift = 0, at = 0; for (;;) { var b = body[at++]; value |= (b & 0x7f) << shift; shift += 7; if (!(b & 0x80)) { return [value, at]; } } }
+function readString(body, at) { var length = 0, shift = 0; for (;;) { var b = body[at++]; length |= (b & 0x7f) << shift; shift += 7; if (!(b & 0x80)) { break; } } return String.fromCharCode.apply(null, body.slice(at, at + length)); }
+
+async function run() {
+  reset();
+  var gateway = el("gateway").value.trim() || (function () { try { return localStorage.getItem("webmc.gateway") || ""; } catch (e) { return ""; } })();
+  var target = el("target").value.trim();
+  var name = el("name").value.trim() || (function () { try { return localStorage.getItem("webmc.player") || ""; } catch (e) { return ""; } })() || "Player";
+  var verdict = el("verdict");
+  verdict.textContent = "";
+  if (!gateway) { line("no gateway: start one with `python3 tools/play_local.py`, or put one in the field", "bad"); return; }
+  if (!target || !/^[A-Za-z0-9._-]+(:\d+)?$/.test(target)) { line("a server address looks like play.example.net or play.example.net:25565", "bad"); return; }
+  var parts = target.split(":");
+  var host = parts[0];
+  var port = Number(parts[1] || 25565);
+
+  line("gateway: " + gateway);
+  line("server:  " + host + ":" + port);
+  line("name:    " + name + "  →  offline UUID " + offlineUuid(name));
+  line("");
+
+  /* 1. is the gateway there, and does it say so? */
+  try {
+    var health = await fetch(gateway.replace(/\/+$/, "").replace(/\/connect$|\/tunnel$/, "/health"), { cache: "no-store" });
+    var info = await health.json();
+    line("1. gateway status: ok, protocol " + info.protocolVersion + ", " + info.activeConnections + "/" + info.maximumConnections + " sessions in use" +
+      (info.allowPrivateTargets ? ", private targets ALLOWED" : ", private targets refused"), "ok");
+  } catch (error) {
+    line("1. gateway status: no answer (" + error.message + ") - the tunnel below will fail too if it is not up", "bad");
+  }
+
+  /* 2 and 3. dial through the tunnel and ask the server for its status. */
+  var notes = [];
+  var socket;
+  try {
+    socket = await tunnel(gateway, host, port, notes);
+  } catch (error) {
+    notes.forEach(function (note) { line("2. " + note, "muted"); });
+    line("2. tunnel: " + error.message, "bad");
+    verdict.textContent = "the gateway or the address - not the client";
+    verdict.className = "bad";
+    return;
+  }
+  notes.forEach(function (note) { line("2. " + note, "muted"); });
+
+  var status = await new Promise(function (resolve) {
+    var timer = setTimeout(function () { resolve(null); }, 8000);
+    reader(socket, function (body) {
+      var id = packetId(body)[0];
+      if (id === 0x00) {
+        clearTimeout(timer);
+        try {
+          var text = readString(body, packetId(body)[1]);
+          resolve(JSON.parse(text));
+        } catch (error) { resolve(null); }
+      }
+    });
+    socket.send(frame([0x00].concat(varint(770), string(host), [(port >> 8) & 0xff, port & 0xff], varint(1))));
+    socket.send(frame([0x00]));
+  });
+  if (status) {
+    var description = typeof status.description === "string" ? status.description : (status.description && status.description.text) || "";
+    line("3. status: " + (status.version ? status.version.name + " (protocol " + status.version.protocol + ")" : "answered") +
+      " | " + (status.players ? status.players.online + "/" + status.players.max + " players" : "no player count"), "ok");
+    if (description) { line("   MOTD: " + String(description).replace(/§./g, "").slice(0, 90), "muted"); }
+  } else {
+    line("3. status: no reply to a status ping (the address may be wrong, or that port is not a Minecraft server)", "bad");
+  }
+
+  /* 4. the cracked-server case: a login for this name, with the UUID an offline server derives. */
+  socket.close();
+  var loginNotes = [];
+  var loginSocket;
+  try {
+    loginSocket = await tunnel(gateway, host, port, loginNotes);
+  } catch (error) {
+    line("4. login tunnel: " + error.message, "bad");
+    verdict.textContent = "the gateway or the address - not the client";
+    verdict.className = "bad";
+    return;
+  }
+  var uuid = offlineUuid(name);
+  var uuidBytes = [];
+  for (var i = 0; i < 32; i += 2) { uuidBytes.push(parseInt(uuid.substr(i, 2), 16)); }
+  var reply = await new Promise(function (resolve) {
+    var timer = setTimeout(function () { resolve({ id: null, why: "no reply in 8s" }); }, 8000);
+    reader(loginSocket, function (body) {
+      var parsed = packetId(body);
+      clearTimeout(timer);
+      resolve({ id: parsed[0], body: body, length: parsed[1] });
+    });
+    loginSocket.send(frame([0x00].concat(varint(770), string(host), [(port >> 8) & 0xff, port & 0xff], varint(2))));
+    loginSocket.send(frame([0x00].concat(string(name), uuidBytes)));
+  });
+  /* In the login state: 0x00 disconnect, 0x02 login success, 0x03 compression, 0x04 encryption request. */
+  if (reply.id === 0x02) {
+    line("4. login: accepted - a cracked server took the name and its offline UUID", "ok");
+    verdict.textContent = "the whole path works: gateway, server, cracked login";
+    verdict.className = "ok";
+  } else if (reply.id === 0x00) {
+    var reason = "";
+    try { reason = readString(reply.body, packetId(reply.body)[1]); } catch (error) { reason = ""; }
+    line("4. login: the server said no: " + reason.slice(0, 160), "bad");
+    verdict.textContent = "the server refused the login";
+    verdict.className = "bad";
+  } else if (reply.id === 0x04) {
+    line("4. login: the server wants a Mojang session (online mode) - a browser client cannot do that one", "bad");
+    verdict.textContent = "that server is premium, not cracked";
+    verdict.className = "bad";
+  } else if (reply.id === 0x03) {
+    line("4. login: accepted (the server enabled compression)", "ok");
+    verdict.textContent = "the whole path works: gateway, server, cracked login";
+    verdict.className = "ok";
+  } else {
+    line("4. login: no answer to the login (" + (reply.why || "packet " + reply.id) + ")", "bad");
+    verdict.textContent = "no login answer";
+    verdict.className = "bad";
+  }
+  loginSocket.close();
+}
+
+el("check").addEventListener("click", function () { run().catch(function (error) { line("the test itself failed: " + error, "bad"); }); });
+el("clear").addEventListener("click", reset);
+(function () {
+  try { el("gateway").value = localStorage.getItem("webmc.gateway") || ""; el("name").value = localStorage.getItem("webmc.player") || ""; } catch (error) {}
+})();
+</script>
+</body>
+</html>
