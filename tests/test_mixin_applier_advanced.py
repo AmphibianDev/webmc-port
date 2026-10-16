@@ -156,6 +156,11 @@ public class Game {
         return sum;
     }
 
+    public static int staticCount() {
+        System.out.println("client static ran");
+        return 3;
+    }
+
     public int constants(int input) {
         return input * 3;
     }
@@ -180,6 +185,7 @@ public class Game {
         System.out.println("wrapped returns " + game.wrapped());
         System.out.println("wrapping returns " + game.wrapping());
         System.out.println("assigned returns " + game.assigned());
+        System.out.println("static returns " + Game.staticCount());
         System.out.println("constants returns " + game.constants(5));
         System.out.println("locals returns " + game.locals());
         System.out.println("expression returns " + game.expression());
@@ -299,6 +305,22 @@ public class GameMixin {
     private int wrapTheCall(Operation<Integer> original) {
         System.out.println("mixin wrapped the call");
         return original.call() + 100;
+    }
+
+    /** A static handler on a static method: the shape that a merged client needs to get right. */
+    @Inject(method = "staticCount", at = @At("HEAD"))
+    private static void onStaticHead(CallbackInfo callback) {
+        System.out.println("mixin static head");
+    }
+
+    /**
+     * A non-static handler on a static method: there is no instance to run it on, so it is refused by
+     * name - the build says so and the client still runs. Generating the call anyway is what produced
+     * ASM's "NegativeArraySizeException" on the first real Meteor build.
+     */
+    @Inject(method = "staticCount", at = @At("RETURN"))
+    private void onStaticReturn(CallbackInfo callback) {
+        System.out.println("this must never run");
     }
 
     /** MixinExtras' @WrapMethod: the whole method is replaced, and the original is still reachable. */
@@ -466,6 +488,11 @@ def main() -> int:
           text[-500:])
     check("an @Inject at INVOKE_ASSIGN runs after the call returned",
           "mixin after the assigned call" in text and "assigned returns 1" in text, text[-500:])
+    check("a static handler on a static method is applied",
+          "mixin static head" in text and "static returns 3" in text, text[-400:])
+    check("a non-static handler on a static method is refused by name, not compiled",
+          "this must never run" not in text and "has no instance to run on" in applied.stdout,
+          applied.stdout[-300:])
     # The generated members are new methods on the client: they are proved by compiling a probe
     # *after* the merge, which is the only honest way to show they exist and work.
     probe_src = tmp / "probe-src" / "example" / "probe"

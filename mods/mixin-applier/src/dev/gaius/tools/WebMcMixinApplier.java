@@ -585,6 +585,11 @@ public final class WebMcMixinApplier {
         List<Type> wanted = new ArrayList<>(java.util.Arrays.asList(parameters).subList(0, last));
         boolean mixinInstance = (handler.access & Opcodes.ACC_STATIC) == 0;
         boolean staticVictim = (victim.access & Opcodes.ACC_STATIC) != 0;
+        if (staticVictim && mixinInstance) {
+            return new Plan(false, false, List.of(), List.of(), false, null, cancellable,
+                    "the handler is not static and " + victim.name + " is: a merged handler in a static method "
+                    + "has no instance to run on");
+        }
 
         boolean targetInstance = false;
         if (!wanted.isEmpty() && !staticVictim && wanted.get(0).getSort() == Type.OBJECT
@@ -717,10 +722,11 @@ public final class WebMcMixinApplier {
             returnSlot = freshLocal(victim, returnType);
             code.add(new VarInsnNode(storeOpcode(returnType), returnSlot));
         }
-        if (plan.mixinInstance()) {
+        boolean hasReceiver = (victim.access & Opcodes.ACC_STATIC) == 0;
+        if (plan.mixinInstance() && hasReceiver) {
             code.add(new VarInsnNode(Opcodes.ALOAD, 0));
         }
-        if (plan.targetInstance()) {
+        if (plan.targetInstance() && hasReceiver) {
             code.add(new VarInsnNode(Opcodes.ALOAD, 0));
         }
         for (int i = 0; i < plan.slots().size(); i++) {
@@ -740,8 +746,8 @@ public final class WebMcMixinApplier {
             code.add(new VarInsnNode(Opcodes.ASTORE, callbackSlot));
             code.add(new VarInsnNode(Opcodes.ALOAD, callbackSlot));
         }
-        code.add(new MethodInsnNode(plan.mixinInstance() ? Opcodes.INVOKEVIRTUAL : Opcodes.INVOKESTATIC, targetName,
-                handler.name, handler.desc, false));
+        code.add(new MethodInsnNode(plan.mixinInstance() && hasReceiver ? Opcodes.INVOKEVIRTUAL : Opcodes.INVOKESTATIC,
+                targetName, handler.name, handler.desc, false));
         Type handlerReturn = Type.getReturnType(handler.desc);
         if (!handlerReturn.equals(Type.VOID_TYPE)) {
             code.add(new InsnNode(popOpcode(handlerReturn)));
@@ -863,7 +869,13 @@ public final class WebMcMixinApplier {
             return 0;
         }
         Integer index = integer(annotation, "index");
-        boolean mixinInstance = (handler.access & Opcodes.ACC_STATIC) == 0;
+        boolean victimHasReceiver = (victim.access & Opcodes.ACC_STATIC) == 0;
+        boolean mixinInstance = (handler.access & Opcodes.ACC_STATIC) == 0 && victimHasReceiver;
+        if ((handler.access & Opcodes.ACC_STATIC) == 0 && !victimHasReceiver) {
+            notApplied.add(where + ": the handler is not static and " + victim.name + " is: a merged handler in a "
+                    + "static method has no instance to run on");
+            return 0;
+        }
         Type[] parameters = Type.getArgumentTypes(handler.desc);
         int done = 0;
         for (AbstractInsnNode node : locate(victim, point, notApplied, where)) {
@@ -1033,7 +1045,13 @@ public final class WebMcMixinApplier {
             notApplied.add(where + ": no method " + name + " in this client to modify");
             return 0;
         }
-        boolean mixinInstance = (handler.access & Opcodes.ACC_STATIC) == 0;
+        boolean mixinInstance = (handler.access & Opcodes.ACC_STATIC) == 0
+                && (victim.access & Opcodes.ACC_STATIC) == 0;
+        if ((handler.access & Opcodes.ACC_STATIC) == 0 && (victim.access & Opcodes.ACC_STATIC) != 0) {
+            notApplied.add(where + ": the handler is not static and " + victim.name + " is: a merged handler in a "
+                    + "static method has no instance to run on");
+            return 0;
+        }
         Type[] parameters = Type.getArgumentTypes(handler.desc);
         boolean wantsTarget = parameters.length > 1 && parameters[0].getSort() == Type.OBJECT
                 && parameters[0].getInternalName().equals(target.name);
@@ -1231,8 +1249,16 @@ public final class WebMcMixinApplier {
                     + victimReturn.getClassName() + "), not " + handlerReturn.getClassName());
             return 0;
         }
-        boolean mixinInstance = (handler.access & Opcodes.ACC_STATIC) == 0;
         boolean staticVictim = (victim.access & Opcodes.ACC_STATIC) != 0;
+        boolean mixinInstance = (handler.access & Opcodes.ACC_STATIC) == 0 && !staticVictim;
+        if (!staticVictim && (handler.access & Opcodes.ACC_STATIC) == 0) {
+            mixinInstance = true;
+        }
+        if (staticVictim && (handler.access & Opcodes.ACC_STATIC) == 0) {
+            notApplied.add(where + ": the handler is not static and " + name + " is: a merged handler in a static "
+                    + "method has no instance to run on");
+            return 0;
+        }
 
         // 1. keep the original body under a private name
         String original = ORIGINAL_PREFIX + victim.name;
@@ -1429,7 +1455,13 @@ public final class WebMcMixinApplier {
             notApplied.add(where + ": no method " + name + " in this client to modify");
             return 0;
         }
-        boolean mixinInstance = (handler.access & Opcodes.ACC_STATIC) == 0;
+        boolean mixinInstance = (handler.access & Opcodes.ACC_STATIC) == 0
+                && (victim.access & Opcodes.ACC_STATIC) == 0;
+        if ((handler.access & Opcodes.ACC_STATIC) == 0 && (victim.access & Opcodes.ACC_STATIC) != 0) {
+            notApplied.add(where + ": the handler is not static and " + victim.name + " is: a merged handler in a "
+                    + "static method has no instance to run on");
+            return 0;
+        }
         Type[] handlerParameters = Type.getArgumentTypes(handler.desc);
         Type produced = handlerParameters.length > 0 ? handlerParameters[0] : Type.getObjectType("java/lang/Object");
         int done = 0;
@@ -1471,7 +1503,13 @@ public final class WebMcMixinApplier {
             notApplied.add(where + ": no method " + name + " in this client to modify");
             return 0;
         }
-        boolean mixinInstance = (handler.access & Opcodes.ACC_STATIC) == 0;
+        boolean mixinInstance = (handler.access & Opcodes.ACC_STATIC) == 0
+                && (victim.access & Opcodes.ACC_STATIC) == 0;
+        if ((handler.access & Opcodes.ACC_STATIC) == 0 && (victim.access & Opcodes.ACC_STATIC) != 0) {
+            notApplied.add(where + ": the handler is not static and " + victim.name + " is: a merged handler in a "
+                    + "static method has no instance to run on");
+            return 0;
+        }
         Type[] handlerParameters = Type.getArgumentTypes(handler.desc);
         Type produced = handlerParameters.length > 0 ? handlerParameters[0] : Type.INT_TYPE;
         int done = 0;
@@ -1518,7 +1556,13 @@ public final class WebMcMixinApplier {
         }
         Type[] parameters = Type.getArgumentTypes(handler.desc);
         Type wanted = parameters.length > 0 ? parameters[0] : null;
-        boolean mixinInstance = (handler.access & Opcodes.ACC_STATIC) == 0;
+        boolean mixinInstance = (handler.access & Opcodes.ACC_STATIC) == 0
+                && (victim.access & Opcodes.ACC_STATIC) == 0;
+        if ((handler.access & Opcodes.ACC_STATIC) == 0 && (victim.access & Opcodes.ACC_STATIC) != 0) {
+            notApplied.add(where + ": the handler is not static and " + victim.name + " is: a merged handler in a "
+                    + "static method has no instance to run on");
+            return 0;
+        }
         int ordinal = point.ordinal();
         int seen = 0;
         int done = 0;
