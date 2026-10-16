@@ -78,6 +78,8 @@ def asm_classpath() -> str:
 
 def run(cmd: list[str], check_ok: bool = True) -> subprocess.CompletedProcess:
     result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0 and (result.stderr or result.stdout):
+        print("    " + "\n    ".join((result.stderr or result.stdout).strip().splitlines()[:6]))
     if check_ok and result.returncode != 0:
         print("  command failed:", " ".join(cmd))
         print((result.stdout + result.stderr)[-1500:])
@@ -176,6 +178,10 @@ public class Game {
 
     public static void main(String[] args) {
         Game game = new Game();
+        Avatar avatar = new Avatar();
+        avatar.extract("head", 3, 1.5f);
+        System.out.println("avatar render " + avatar.render("head", 2, 1f));
+        System.out.println("avatar keep " + avatar.keep("head", 2, 1f));
         System.out.println("tick returns " + game.tick(4));
         System.out.println("count returns " + game.count());
         game.guarded();
@@ -198,6 +204,31 @@ public class Game {
 }
 """
 
+AVATAR = """
+package example.client;
+
+public class Avatar {
+    public String state = "none";
+
+    public Avatar() {
+        System.out.println("avatar built");
+        this.state = "built";
+    }
+
+    public void extract(String name, int size, float scale) {
+        System.out.println("avatar extract " + name + " " + size + " " + scale);
+    }
+
+    public int render(String name, int size, float scale) {
+        return Helper.value() + size;
+    }
+
+    public boolean keep(String name, int size, float scale) {
+        return Helper.value() > 0;
+    }
+}
+"""
+
 HELPER = """
 package example.client;
 
@@ -216,6 +247,46 @@ public class Helper {
     public static int value() {
         System.out.println("helper value");
         return 1;
+    }
+}
+"""
+
+AVATAR_MIXIN = """
+package example.mixin;
+
+import example.client.Avatar;
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.injector.WrapWithCondition;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+@Mixin(Avatar.class)
+public class AvatarMixin {
+    /** A RETURN injection into a constructor, which is what Meteor does to every renderer. */
+    @Inject(method = "<init>", at = @At("RETURN"))
+    private void afterInit(CallbackInfo callback) {
+        System.out.println("mixin after init");
+    }
+
+    /** A RETURN injection whose handler takes the target's own three arguments. */
+    @Inject(method = "extract", at = @At("RETURN"))
+    private void afterExtract(String name, int size, float scale, CallbackInfo callback) {
+        System.out.println("mixin after extract " + name);
+    }
+
+    /** A MixinExtras wrapper over a call whose value is used. */
+    @ModifyExpressionValue(method = "render", at = @At(value = "INVOKE", target = "Lexample/client/Helper;value()I"))
+    private int wrapValue(int value) {
+        return value + 500;
+    }
+
+    /** A conditional wrapper over a call whose boolean is returned. */
+    @WrapWithCondition(method = "keep", at = @At(value = "INVOKE", target = "Lexample/client/Helper;value()I"))
+    private boolean allow() {
+        System.out.println("mixin asked about keep");
+        return false;
     }
 }
 """
@@ -417,8 +488,9 @@ def main() -> int:
     client_src.mkdir(parents=True)
     (client_src / "Game.java").write_text(CLIENT)
     (client_src / "Helper.java").write_text(HELPER)
+    (client_src / "Avatar.java").write_text(AVATAR)
     check("a client with a private field, a private method and some calls compiles",
-          build(javac, [client_src / "Game.java", client_src / "Helper.java"], client_out))
+          build(javac, [client_src / "Game.java", client_src / "Helper.java", client_src / "Avatar.java"], client_out))
 
     classes = tmp / "classes"
     shutil.copytree(client_out, classes)
@@ -439,15 +511,16 @@ def main() -> int:
     mixin_dir.mkdir(parents=True)
     (mixin_dir / "GameMixin.java").write_text(MIXIN)
     (mixin_dir / "GameAccessor.java").write_text(ACCESSOR)
+    (mixin_dir / "AvatarMixin.java").write_text(AVATAR_MIXIN)
     check("a mod using every shape compiles against the shims",
-          build(javac, [mixin_dir / "GameMixin.java", mixin_dir / "GameAccessor.java"], mod_classes,
-                os.pathsep.join([str(shims_out), str(classes)])))
+          build(javac, [mixin_dir / "GameMixin.java", mixin_dir / "GameAccessor.java", mixin_dir / "AvatarMixin.java"],
+                mod_classes, os.pathsep.join([str(shims_out), str(classes)])))
 
     descriptor = ('{"schemaVersion": 1, "id": "example.shapes", "name": "Shapes", "version": "1.0.0",'
                   ' "entrypoints": {"client": ["example.mixin.GameMixin"]},'
                   ' "mixins": ["shapes.mixins.json"]}')
     config = ('{"required": true, "package": "example.mixin", "compatibilityLevel": "JAVA_21",'
-              ' "mixins": ["GameMixin", "GameAccessor"]}')
+              ' "mixins": ["GameMixin", "GameAccessor", "AvatarMixin"]}')
     mod_jar = tmp / "shapes.jar"
     make_jar(mod_jar, mod_classes, {"fabric.mod.json": descriptor, "shapes.mixins.json": config})
 
@@ -469,10 +542,12 @@ def main() -> int:
           and "client guarded ran" not in text, text[:400])
     check("an @Inject at an INVOKE runs before the call",
           text.index("mixin before work") < text.index("helper work"), text[:400])
-    # Four sites call Helper.value(): `callsHelper` (redirected: no longer reaches Helper), `wrapped`
-    # (@WrapOperation forwards, so it still does), `expression` and `assigned` (both untouched). Three
-    # prints is therefore the redirect working; four would be the redirect doing nothing.
-    check("a @Redirect replaces the call", "mixin redirected value" in text and text.count("helper value") == 3,
+    # Six sites call Helper.value(): `callsHelper` (redirected - no longer reaches Helper), `wrapped`
+    # (@WrapOperation forwards, so it does), `expression`, `assigned`, `Avatar.render` (wrapped, and a
+    # wrapper still calls it) and `Avatar.keep` (skipped by @WrapWithCondition). Four prints is the
+    # redirect and the condition both working; five would mean the condition did nothing.
+    # `helper value` is printed by Helper.value() itself.
+    check("a @Redirect replaces the call", "mixin redirected value" in text and text.count("helper value") == 4,
           f"{text.count('helper value')} calls reached Helper: " + text[:400])
     check("a @ModifyArg changes the argument the call receives", "helper work 41" in text, text[:400])
     check("a @ModifyConstant changes the constant", "constants returns 515" in text, text[:400])
@@ -488,6 +563,14 @@ def main() -> int:
           text[-500:])
     check("an @Inject at INVOKE_ASSIGN runs after the call returned",
           "mixin after the assigned call" in text and "assigned returns 1" in text, text[-500:])
+    check("a RETURN injection into a constructor is applied and the class verifies",
+          "mixin after init" in text and "avatar built" in text, text[-400:])
+    check("a RETURN handler taking three arguments is called with them",
+          "mixin after extract head" in text, text[-400:])
+    check("a ModifyExpressionValue inside a method whose value is used still verifies",
+          "avatar render 503" in text, text[-400:])
+    check("a WrapWithCondition over a boolean call still verifies",
+          "mixin asked about keep" in text and "avatar keep false" in text, text[-400:])
     check("a static handler on a static method is applied",
           "mixin static head" in text and "static returns 3" in text, text[-400:])
     check("a non-static handler on a static method is refused by name, not compiled",

@@ -180,8 +180,21 @@ public final class WebMcMixinApplier {
                                 return "java/lang/Object";
                             }
                         };
-                        clientClass.accept(writer);
-                        Files.write(targetFile, writer.toByteArray());
+                        // A merge this writer cannot frame is one merge, not the whole build: the class is
+                        // left as the client had it and named out loud, so a bake still produces a client
+                        // and the report says exactly which mixin did not make it. (The first real Meteor
+                        // build died here, after thirty minutes, with nothing.)
+                        try {
+                            clientClass.accept(writer);
+                            Files.write(targetFile, writer.toByteArray());
+                        } catch (RuntimeException | Error failure) {
+                            refusals.add(mixinClass.name.replace('/', '.') + " -> " + target.replace('/', '.')
+                                    + ": the merged class could not be written (" + failure + "); the class is left "
+                                    + "as the client had it");
+                            log.accept("  ! " + mixinClass.name.replace('/', '.') + " left " + target.replace('/', '.')
+                                    + " unmodified: " + failure);
+                            continue;
+                        }
                         // A generated Operation lives in its own class file: the client has to carry it too.
                         for (ClassNode helper : helpers) {
                             ClassWriter helperWriter = new ClassWriter(ClassWriter.COMPUTE_FRAMES
