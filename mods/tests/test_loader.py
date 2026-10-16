@@ -173,7 +173,20 @@ def main() -> int:
             [("net/fabricmc/impl/NeedsMesh.class", indigolike)],
             {"id": "needs-a-missing-shim", "version": "1", "entrypoints": {"client": ["example.Thing"]}},
         )
-        code, output = run_loader(uncovered, client, work / "uncovered-out")
+        # The mesh API has a shim now, so the uncovered case is made by hiding that shim for the run:
+        # what is under test is that an uncovered need blocks the build and is named, not that any
+        # particular class is missing one.
+        # The loader covers a need when a shim *package* exists, so the uncovered case hides the whole
+        # mesh package for the run. What is under test is that an uncovered need blocks the build and is
+        # named, not that a particular class has no shim today.
+        shim_package = (HERE.parent / "shims" / "net" / "fabricmc" / "fabric" / "api" / "client" / "renderer"
+                        / "v1" / "mesh")
+        hidden = shim_package.with_name("mesh.hidden")
+        try:
+            shim_package.rename(hidden)
+            code, output = run_loader(uncovered, client, work / "uncovered-out")
+        finally:
+            hidden.rename(shim_package)
         check("a needed Fabric API class with no shim blocks the build", code == 2, f"exit {code}")
         blocked = json.loads((work / "uncovered-out" / "plan.json").read_text())["shims_missing"]
         check(
