@@ -153,6 +153,18 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(self.client)
             return
+        if path in ("/join-test", "/join-test.html"):
+            # The connection test on the same local origin as the gateway, so a ws:// gateway is allowed here
+            # even though the hosted page needs wss://. This is the page to answer "does a cracked server
+            # accept my connection" without involving the game at all.
+            page = (ROOT / "site" / "join-test.html").read_bytes()
+            self.send_response(200)
+            self.send_header("content-type", "text/html; charset=utf-8")
+            self.send_header("content-length", str(len(page)))
+            self.send_header("cache-control", "no-store")
+            self.end_headers()
+            self.wfile.write(page)
+            return
         if path == "/health":
             # the gateway's own status, so one URL answers "is the tunnel up" for whoever is watching
             try:
@@ -253,6 +265,8 @@ def main(argv: list[str] | None = None) -> int:
         print("  The address box takes a host and an optional port (mc.example.com, or host:25565): this build",
               flush=True)
         print("  tunnels through the gateway above.", flush=True)
+    print(f"  Connection test (gateway + cracked-server login, in the open): http://127.0.0.1:{page_port}/join-test",
+          flush=True)
     print("  Type Ctrl-C here to stop everything this started.", flush=True)
     if not args.no_open:
         opener = "open" if sys.platform == "darwin" else "xdg-open"
