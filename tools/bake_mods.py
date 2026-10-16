@@ -47,6 +47,7 @@ PATCHER_CLASS = "WebMcModBakePatcher"
 
 PATCHER_JAVA = '''package dev.gaius.tools;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -58,6 +59,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 import java.util.zip.ZipFile;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
@@ -324,6 +326,66 @@ public final class __CLASS__ {
                 }
                 copiedNames.add(entry.getName());
                 copied += 1;
+            }
+
+            // Nested jars are mods too. Meteor bundles fourteen of them - Orbit (its event bus),
+            // starscript, Fabric API's modules, a few libraries - and a real Fabric Loader treats each
+            // as a mod of its own: their classes join the client and their entrypoints are called.
+            // Copying only the outer jar is why the first compile died on
+            // "Class meteordevelopment.orbit.IEventBus was not found".
+            var nestedEntries = archive.entries();
+            while (nestedEntries.hasMoreElements()) {
+                ZipEntry nested = nestedEntries.nextElement();
+                if (!nested.getName().startsWith("META-INF/jars/") || !nested.getName().endsWith(".jar")) {
+                    continue;
+                }
+                byte[] nestedBytes;
+                try (var stream = archive.getInputStream(nested)) {
+                    nestedBytes = stream.readAllBytes();
+                }
+                String nestedName = nested.getName().substring("META-INF/jars/".length());
+                Map<String, String> nestedDescriptor = new LinkedHashMap<>();
+                int nestedCopied = 0;
+                try (ZipInputStream inner = new ZipInputStream(new ByteArrayInputStream(nestedBytes))) {
+                    ZipEntry innerEntry;
+                    while ((innerEntry = inner.getNextEntry()) != null) {
+                        if (innerEntry.isDirectory()) {
+                            continue;
+                        }
+                        String name = innerEntry.getName();
+                        if (name.equals("fabric.mod.json")) {
+                            String text = new String(inner.readAllBytes(), StandardCharsets.UTF_8);
+                            nestedDescriptor.put("id", firstString(text, "id"));
+                            nestedDescriptor.put("entrypoint", firstEntrypoint(text));
+                            nestedDescriptor.put("hasEntrypoints", text.contains((char) 34 + "entrypoints" + (char) 34) ? "yes" : "no");
+                            nestedDescriptor.put("main", Boolean.toString(text.contains((char) 34 + "main" + (char) 34)));
+                            continue;
+                        }
+                        if (!name.endsWith(".class")) {
+                            continue;
+                        }
+                        Path target = output.resolve(name);
+                        Files.createDirectories(target.getParent());
+                        Files.write(target, inner.readAllBytes());
+                        copiedNames.add(name);
+                        nestedCopied += 1;
+                    }
+                }
+                copied += nestedCopied;
+                String nestedRaw = nestedDescriptor.get("entrypoint");
+                String nestedCall = "";
+                if (nestedRaw != null && "yes".equals(nestedDescriptor.get("hasEntrypoints"))) {
+                    int separator = nestedRaw.indexOf("::");
+                    String owner = (separator < 0 ? nestedRaw : nestedRaw.substring(0, separator)).replace('.', '/');
+                    String method = separator >= 0 ? nestedRaw.substring(separator + 2)
+                            : (Boolean.parseBoolean(nestedDescriptor.get("main")) ? "onInitialize" : "onInitializeClient");
+                    if (copiedNames.contains(owner + ".class")) {
+                        entries.add(new Entry(owner, method));
+                        nestedCall = ", entrypoint " + nestedRaw;
+                    }
+                }
+                System.out.println("__CLASS__:   " + nestedCopied + " class(es) from " + nestedName + " (nested"
+                        + (nestedDescriptor.get("id") == null ? "" : ", id " + nestedDescriptor.get("id")) + nestedCall + ")");
             }
         }
         System.out.println("__CLASS__: " + copied + " class(es) from " + mod.getFileName()
