@@ -154,6 +154,122 @@
     if (ATTRIBUTION.test(line)) { return ""; }
     return line.replace(ENGINE_NAMES, "Minecraft").replace(/\s+/g, " ").trim();
   }
+
+  /* ------------------------------------------------------------------------------------------------------------
+   * The identity a server sees.
+   *
+   * A browser client has no Mojang session, so it has to be an offline-mode player: a name, and the UUID an
+   * offline server would derive from that name. That derivation is the whole trick - a server in offline mode
+   * computes UUID.nameUUIDFromBytes("OfflinePlayer:" + name) and expects the client to send exactly that. Send a
+   * random UUID instead and some servers refuse the login; send this one and an offline server accepts the join
+   * with no session at all. The engine's own shell does this, and our page strips that shell - which is why a
+   * client of ours could not join anything: it had no identity to send.
+   *
+   * The MD5 below is the engine's (MIT, credited in CREDITS.md), kept byte for byte so the UUID matches.
+   * ---------------------------------------------------------------------------------------------------------- */
+  var PLAYER_KEY = "webmc.player";
+
+  function md5(input) {
+    var shifts = [
+      7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22,
+      5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20,
+      4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23,
+      6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21
+    ];
+    var table = new Uint32Array(64);
+    for (var i = 0; i < 64; i++) { table[i] = Math.floor(Math.abs(Math.sin(i + 1)) * 4294967296); }
+    var length = input.length;
+    var padded = new Uint8Array((((length + 8) >>> 6) + 1) * 64);
+    padded.set(input);
+    padded[length] = 0x80;
+    var view = new DataView(padded.buffer);
+    view.setUint32(padded.length - 8, (length * 8) >>> 0, true);
+    view.setUint32(padded.length - 4, Math.floor(length / 536870912), true);
+    var a0 = 0x67452301, b0 = 0xefcdab89, c0 = 0x98badcfe, d0 = 0x10325476;
+    for (var offset = 0; offset < padded.length; offset += 64) {
+      var a = a0, b = b0, c = c0, d = d0;
+      for (var j = 0; j < 64; j++) {
+        var f, g;
+        if (j < 16) { f = (b & c) | (~b & d); g = j; }
+        else if (j < 32) { f = (d & b) | (~d & c); g = (5 * j + 1) % 16; }
+        else if (j < 48) { f = b ^ c ^ d; g = (3 * j + 5) % 16; }
+        else { f = c ^ (b | ~d); g = (7 * j) % 16; }
+        var sum = (a + f + table[j] + view.getUint32(offset + g * 4, true)) | 0;
+        a = d; d = c; c = b;
+        b = (b + ((sum << shifts[j]) | (sum >>> (32 - shifts[j])))) | 0;
+      }
+      a0 = (a0 + a) | 0; b0 = (b0 + b) | 0; c0 = (c0 + c) | 0; d0 = (d0 + d) | 0;
+    }
+    var out = new Uint8Array(16);
+    var outView = new DataView(out.buffer);
+    [a0, b0, c0, d0].forEach(function (word, index) { outView.setUint32(index * 4, word >>> 0, true); });
+    return out;
+  }
+
+  function offlineUuid(name) {
+    var text = "OfflinePlayer:" + name;
+    var bytes = new Uint8Array(text.length);
+    for (var i = 0; i < text.length; i++) { bytes[i] = text.charCodeAt(i) & 0xff; }
+    var digest = md5(bytes);
+    digest[6] = (digest[6] & 0x0f) | 0x30;
+    digest[8] = (digest[8] & 0x3f) | 0x80;
+    return Array.prototype.map.call(digest, function (byte) {
+      return byte.toString(16).padStart(2, "0");
+    }).join("");
+  }
+
+  function savedName() {
+    try { return localStorage.getItem(PLAYER_KEY) || ""; } catch (error) { return ""; }
+  }
+
+  function keepName(name) {
+    try { localStorage.setItem(PLAYER_KEY, name); } catch (error) { /* private mode: the name lasts this tab */ }
+  }
+
+  /* What the game asks for, in the shape its own shell provides it. `firstRun` is true when no name is saved, so
+   * the engine's own profile screen opens and the player types one; everything here is the offline path.
+   *
+   * The skin hooks are present but empty: without a skin the game sends no textures property, which is exactly
+   * what an offline player has. A skin picked in the game is remembered in this browser and applied on the next
+   * join, because the engine applies a change to the running client when the profile screen closes. */
+  function installIdentity() {
+    // A page that keeps the engine's own shell already has one of these; ours fills the gap it leaves behind.
+    if (globalThis.__gaiusProfile) { return; }
+    var name = savedName();
+    var profile = {
+      firstRun: !name,
+      pick: { state: "idle" },
+      savedSkin: function () { return ""; },
+      savedSkinModel: function () { return "classic"; },
+      texturesValue: function () { return ""; },
+      pickSkin: function () { /* skins are optional; nothing to pick from here */ },
+      apply: function (requested) {
+        var wanted = String(requested || name || "").trim();
+        if (!/^[A-Za-z0-9_]{1,16}$/.test(wanted)) {
+          return { ok: false, error: "Use 1-16 letters, numbers or underscores." };
+        }
+        name = wanted;
+        keepName(wanted);
+        var uuid = offlineUuid(wanted);
+        try {
+          var session = {};
+          try { session = JSON.parse(sessionStorage.getItem("gaius.session") || "{}") || {}; } catch (error) { session = {}; }
+          session.username = wanted;
+          session.uuid = uuid;
+          sessionStorage.setItem("gaius.session", JSON.stringify(session));
+        } catch (error) { /* the game keeps the identity in memory either way */ }
+        globalThis.__gaiusSkinDescriptor = null;
+        return { ok: true, uuid: uuid };
+      }
+    };
+    globalThis.__gaiusProfile = profile;
+    globalThis.__gaiusSessionMode = globalThis.__gaiusSessionMode || "offline";
+    if (name) { profile.firstRun = false; profile.apply(name); }
+    globalThis.__webmcIdentity = { name: name || "", offline: true };
+  }
+
+  installIdentity();
+
   var api = {
     show: function (text) {
       root.hidden = false;

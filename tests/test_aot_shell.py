@@ -106,6 +106,53 @@ def test_check(tmp: pathlib.Path) -> None:
           not aot_shell.check("<html><script>x</script></html>", log=lambda *_: None)["has_body"])
 
 
+def test_the_client_has_an_offline_identity() -> None:
+    """A browser client joins an offline-mode server as an offline player: a name and the UUID derived from it.
+
+    Get that derivation wrong and servers refuse the login - which is what "I cannot connect to servers" was: our
+    page strips the engine's shell, and the shell is where the identity came from. The check is against the value a
+    server computes (UUID.nameUUIDFromBytes("OfflinePlayer:" + name), version 3), not against itself.
+    """
+    print("\nthe identity a server sees")
+    shell = (ROOT / "site" / "boot" / "shell.html").read_text()
+    check("the shell installs a profile before any of the game's code runs",
+          "installIdentity()" in shell and "globalThis.__gaiusProfile = profile" in shell)
+    check("and says the session is offline, so the client does not look for a Mojang session",
+          '__gaiusSessionMode = globalThis.__gaiusSessionMode || "offline"' in shell)
+    check("it derives the UUID the way an offline server does, from the name",
+          "OfflinePlayer:" in shell and "digest[6] = (digest[6] & 0x0f) | 0x30" in shell
+          and "digest[8] = (digest[8] & 0x3f) | 0x80" in shell)
+    if not shutil.which("node"):
+        print("  SKIP  node is not installed")
+        return
+    # run the shell's own identity code, then compare with Python's md5 - the same bytes a Java server computes
+    start = shell.index("var PLAYER_KEY")
+    end = shell.index("installIdentity();") + len("installIdentity();")
+    script = ("var store = {};\n"
+              "globalThis.localStorage = { getItem: k => (k in store ? store[k] : null),"
+              " setItem: (k, v) => { store[k] = String(v); }, removeItem: k => { delete store[k]; } };\n"
+              "globalThis.sessionStorage = { getItem: () => null, setItem: () => {} };\n"
+              + shell[start:end] + "\n"
+              "var out = globalThis.__gaiusProfile.apply('Notch');\n"
+              "console.log(JSON.stringify({uuid: out.uuid, ok: out.ok, firstRun: globalThis.__gaiusProfile.firstRun}));\n")
+    with tempfile.TemporaryDirectory() as tmp:
+        probe = pathlib.Path(tmp) / "identity.js"
+        probe.write_text(script)
+        result = subprocess.run(["node", str(probe)], capture_output=True, text=True)
+    try:
+        seen = json.loads(result.stdout)
+    except Exception:
+        seen = {}
+        print("  node said:", (result.stderr or result.stdout)[:200])
+    import hashlib as _hashlib
+    import uuid as _uuid
+    expected = _uuid.UUID(bytes=_hashlib.md5(b"OfflinePlayer:Notch").digest(), version=3).hex
+    check("the UUID it derives for a name is the one a server derives for that name",
+          seen.get("uuid") == expected, f"{seen.get('uuid')} vs {expected}")
+    check("and an empty browser asks for a name before anything else",
+          seen.get("firstRun") is True)
+
+
 def test_the_engine_name_never_reaches_the_screen() -> None:
     """The shell is JavaScript, so the check is JavaScript: the exact function runs on the exact strings.
 
@@ -292,6 +339,7 @@ def main() -> int:
     with tempfile.TemporaryDirectory() as scratch:
         tmp = pathlib.Path(scratch)
         test_shell()
+        test_the_client_has_an_offline_identity()
         test_the_engine_name_never_reaches_the_screen()
         test_check(tmp)
         test_inject(tmp)
