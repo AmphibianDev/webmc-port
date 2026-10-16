@@ -998,12 +998,8 @@
       "play_repo": "DhyeyBG/Eaglercraft-26.3",
       "play_bytes": 77863500,
       "play_served_as": "html",
-      "url": "clients/26.3/",
-      "download": null,
-      "kind": "built",
-      "built_bytes": null,
-      "built_at": null,
-      "built_sha256": null
+      "url": "clients/26.3.html",
+      "kind": "built"
     },
     {
       "id": "26.3-rc-3",
@@ -1260,8 +1256,7 @@
       "play_kind": "prebuilt port",
       "play_repo": "3lit3-Pl4y3r/eaglercraft-26.2",
       "play_bytes": 75576620,
-      "url": "clients/26.2/",
-      "download": "https://github.com/AmphibianDev/webmc-port/releases/latest/download/client-26.2.html",
+      "url": "https://github.com/AmphibianDev/webmc-port/releases/latest/download/client-26.2.html",
       "kind": "built",
       "built_bytes": 41080814,
       "built_at": "2026-10-12T04:43:56Z",
@@ -22664,7 +22659,7 @@
       "queued": "2026-10-14T22:31:59Z"
     }
   ],
-  "updated": "2026-10-16T00:21:24Z",
+  "updated": "2026-10-15T12:22:37Z",
   "jvm": {
     "17w48a": {
       "route": "needs-lwjgl3",
@@ -27624,154 +27619,154 @@
       "content_type": "text/html",
       "bytes": 4352,
       "ok": true,
-      "checked": "2026-10-16T00:21:22Z"
+      "checked": "2026-10-15T12:22:35Z"
     },
     "https://eaglerports.github.io/a1.0.16_02/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 4495,
       "ok": true,
-      "checked": "2026-10-16T00:21:21Z"
+      "checked": "2026-10-15T12:22:34Z"
     },
     "https://eaglerports.github.io/a1.2.6/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 4495,
       "ok": true,
-      "checked": "2026-10-16T00:21:19Z"
+      "checked": "2026-10-15T12:22:27Z"
     },
     "https://eaglerports.github.io/b1.3_01/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 4495,
       "ok": true,
-      "checked": "2026-10-16T00:21:19Z"
+      "checked": "2026-10-15T12:22:27Z"
     },
     "https://eaglerports.github.io/b1.6-tb3/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 4495,
       "ok": true,
-      "checked": "2026-10-16T00:21:21Z"
+      "checked": "2026-10-15T12:22:34Z"
     },
     "https://eaglerports.github.io/b1.8.1/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 4495,
       "ok": true,
-      "checked": "2026-10-16T00:21:19Z"
+      "checked": "2026-10-15T12:22:27Z"
     },
     "https://eaglerports.github.io/1.2.5/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 4495,
       "ok": true,
-      "checked": "2026-10-16T00:21:19Z"
+      "checked": "2026-10-15T12:22:27Z"
     },
     "https://github.com/3kh0/eaglercraft-builds/raw/HEAD/Eaglercraft_b1.3_Offline_Download.html": {
       "status": 200,
       "content_type": "text/plain",
       "bytes": 4534321,
       "ok": true,
-      "checked": "2026-10-16T00:21:22Z"
+      "checked": "2026-10-15T12:22:35Z"
     },
     "https://userarham.github.io/1.13.1-Eaglercraft-UNFORKED/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 2234,
       "ok": true,
-      "checked": "2026-10-16T00:21:19Z"
+      "checked": "2026-10-15T12:22:27Z"
     },
     "https://github.com/3lit3-Pl4y3r/eaglercraft-26.2/raw/HEAD/index.html": {
       "status": 200,
       "content_type": "text/plain",
       "bytes": 75576620,
       "ok": true,
-      "checked": "2026-10-16T00:21:21Z"
+      "checked": "2026-10-15T12:22:34Z"
     },
     "https://dhyeybg.github.io/Eaglercraft-26.3/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 77863500,
       "ok": true,
-      "checked": "2026-10-16T00:21:17Z"
+      "checked": "2026-10-15T12:22:14Z"
     },
     "https://xxfluffyasherxx.github.io/Eaglercraft-1.20.4-Updated-/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 4267,
       "ok": true,
-      "checked": "2026-10-16T00:21:18Z"
+      "checked": "2026-10-15T12:22:22Z"
     },
     "https://jqi123456.github.io/Eaglercraft-Java-1.14/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 1621,
       "ok": true,
-      "checked": "2026-10-16T00:21:19Z"
+      "checked": "2026-10-15T12:22:27Z"
     },
     "https://github.com/t1229414f/craft67/raw/HEAD/index.html": {
       "status": 200,
       "content_type": "text/plain",
       "bytes": 1558,
       "ok": true,
-      "checked": "2026-10-16T00:21:19Z"
+      "checked": "2026-10-15T12:22:26Z"
     },
     "https://github.com/kiwinatra/beta-eagl/raw/HEAD/index.html": {
       "status": 200,
       "content_type": "text/plain",
       "bytes": 8134,
       "ok": true,
-      "checked": "2026-10-16T00:21:18Z"
+      "checked": "2026-10-15T12:22:25Z"
     },
     "https://kritikal-hit.github.io/Eagler-Craft/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 35227991,
       "ok": true,
-      "checked": "2026-10-16T00:21:18Z"
+      "checked": "2026-10-15T12:22:23Z"
     },
     "https://github.com/unspeakfan/Eaglercraft-1.20.4/raw/HEAD/index.html": {
       "status": 200,
       "content_type": "text/plain",
       "bytes": 25185298,
       "ok": true,
-      "checked": "2026-10-16T00:21:20Z"
+      "checked": "2026-10-15T12:22:29Z"
     },
     "https://exgg1453.github.io/NX-Eaglercraft-Mobile/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 48902432,
       "ok": true,
-      "checked": "2026-10-16T00:21:18Z"
+      "checked": "2026-10-15T12:22:18Z"
     },
     "https://github.com/Nate2018/Eaglercraft-1.21.1-TeaVM/raw/HEAD/index.html": {
       "status": 200,
       "content_type": "text/plain",
       "bytes": 1832,
       "ok": true,
-      "checked": "2026-10-16T00:21:20Z"
+      "checked": "2026-10-15T12:22:31Z"
     },
     "https://github.com/crisppy1/Eaglercraft-1.21.1/raw/HEAD/index.html": {
       "status": 200,
       "content_type": "text/plain",
       "bytes": 211156,
       "ok": true,
-      "checked": "2026-10-16T00:21:18Z"
+      "checked": "2026-10-15T12:22:22Z"
     },
     "https://github.com/thebananamanjcgaming/EaglercraftZ-26.1.1/raw/HEAD/index.html": {
       "status": 200,
       "content_type": "text/plain",
       "bytes": 2385,
       "ok": true,
-      "checked": "2026-10-16T00:21:18Z"
+      "checked": "2026-10-15T12:22:17Z"
     },
     "https://diddy62626.github.io/eaglercraft-26.1.2/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 11672,
       "ok": true,
-      "checked": "2026-10-16T00:21:18Z"
+      "checked": "2026-10-15T12:22:14Z"
     }
   },
   "built": {

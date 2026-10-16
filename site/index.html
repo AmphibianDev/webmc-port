@@ -555,8 +555,21 @@ function closePanels() {
   });
 }
 
+/* A gateway address as people actually type it: "127.0.0.1:8090", "relay.example/tunnel", "wss://relay.example".
+ * The client needs a full URL, so the scheme comes from the page (wss on https, ws on a local page) and the path is
+ * left alone - the gateway serves the tunnel at /tunnel and the client appends that itself if it is missing. */
+function normaliseGateway(value) {
+  var text = String(value || "").trim().replace(/\/+$/, "");
+  if (!text) { return ""; }
+  if (!/^wss?:\/\//.test(text)) {
+    var secure = location.protocol === "https:" || location.protocol === "file:";
+    text = (secure ? "wss://" : "ws://") + text.replace(/^\/\//, "");
+  }
+  return text;
+}
+
 function gatewayValue() {
-  try { return localStorage.getItem(GATEWAY_KEY) || ""; } catch (error) { return ""; }
+  try { return normaliseGateway(localStorage.getItem(GATEWAY_KEY) || ""); } catch (error) { return ""; }
 }
 
 function wireGateway() {
@@ -584,7 +597,7 @@ function wireGateway() {
     });
   }
   el("gateway-save").addEventListener("click", function () {
-    var value = (input.value || "").trim();
+    var value = normaliseGateway(input.value || "");
     if (value && !/^wss?:\/\//.test(value)) {
       text(el("gateway-status"), "a gateway address starts with wss:// (or ws:// on a local page)");
       return;

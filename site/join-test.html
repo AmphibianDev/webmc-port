@@ -59,6 +59,17 @@
  */
 
 function el(id) { return document.getElementById(id); }
+
+/* The same rule the launcher uses: a bare host gets the scheme this page can use, and the path is left alone. */
+function normaliseGateway(value) {
+  var text = String(value || "").trim().replace(/\/+$/, "");
+  if (!text) { return ""; }
+  if (!/^wss?:\/\//.test(text)) {
+    var secure = location.protocol === "https:" || location.protocol === "file:";
+    text = (secure ? "wss://" : "ws://") + text.replace(/^\/\//, "");
+  }
+  return text;
+}
 function line(text, kind) {
   var log = el("log");
   var span = document.createElement("span");
@@ -130,7 +141,7 @@ function tunnel(gateway, host, port, notes) {
   return new Promise(function (resolve, reject) {
     // This test speaks the tunnel dialect (the one the game's own client speaks when it is built this way), so a
     // gateway URL given as `/v1/connect` - the other dialect, for the Eagler26 lineage - is pointed at `/tunnel`.
-    var url = gateway.replace(/\/+$/, "").replace(/\/v1\/connect$/, "");
+    var url = normaliseGateway(gateway).replace(/\/v1\/connect$/, "");
     if (!/\/tunnel$/.test(url)) { url += "/tunnel"; }
     var socket;
     try { socket = new WebSocket(url); } catch (error) { reject(new Error("bad gateway address: " + error.message)); return; }
