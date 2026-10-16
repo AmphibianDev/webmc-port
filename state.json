@@ -27776,17 +27776,17 @@
       "at": "2026-10-12T04:43:56Z",
       "note": "compiled by build-client.yml from the official 26.2 client (TeaVM + WASM-GC)",
       "packed": "clients/26.2/",
-      "packed_bytes": 120858313,
+      "packed_bytes": 120864299,
       "packed_chunks": 6
     },
     "1.21.11": {
       "packed": "clients/1.21.11/",
-      "packed_bytes": 113014236,
+      "packed_bytes": 113020758,
       "packed_chunks": 6
     },
     "26.3": {
       "packed": "clients/26.3/",
-      "packed_bytes": 128910762,
+      "packed_bytes": 128917256,
       "packed_chunks": 7
     }
   }

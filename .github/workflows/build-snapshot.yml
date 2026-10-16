@@ -674,12 +674,16 @@ jobs:
             echo "::warning::nothing was packed for $VERSION, so there is no page to publish"
             exit 0
           fi
-          tar -czf "/tmp/packed-$VERSION.tar.gz" -C site/clients "$VERSION"
-          ls -lh "/tmp/packed-$VERSION.tar.gz"
+          SUFFIX=""
+          if [ -n "${{ steps.want.outputs.mods }}" ]; then
+            SUFFIX="+$(printf '%s' "${{ steps.want.outputs.mods }}" | tr ',' '+')"
+          fi
+          tar -czf "/tmp/packed-$VERSION$SUFFIX.tar.gz" -C site/clients "$VERSION"
+          ls -lh "/tmp/packed-$VERSION$SUFFIX.tar.gz"
           gh release view built-clients >/dev/null 2>&1 || gh release create built-clients \
             --title "Built browser clients" \
             --notes "Compiled from the official client by this repository's build job." || true
-          gh release upload built-clients "/tmp/packed-$VERSION.tar.gz" --clobber \
+          gh release upload built-clients "/tmp/packed-$VERSION$SUFFIX.tar.gz" --clobber \
             || echo "::warning::could not upload the packed client"
 
       - name: Record that it built and packed, before the publish step
@@ -717,7 +721,15 @@ jobs:
         run: |
           set -uo pipefail
           cd ours
-          ASSET="client-$VERSION.html"
+          # One name per build, mod set included: `client-26.2.html` for vanilla and
+          # `client-26.2+fabric.html` for a modded one. Before this they collided, so a modded client was
+          # overwritten by the next vanilla build of the same version and could not be inspected - which is
+          # exactly why "is the mod really in there" kept coming back empty.
+          SUFFIX=""
+          if [ -n "${{ steps.want.outputs.mods }}" ]; then
+            SUFFIX="+$(printf '%s' "${{ steps.want.outputs.mods }}" | tr ',' '+')"
+          fi
+          ASSET="client-$VERSION$SUFFIX.html"
           CLIENT="$(find dist -name '*-webmc.html' -size +1M | sort | head -1 || true)"
           [ -n "$CLIENT" ] || CLIENT="$(find ../engine/port/web/dist -name '*.html' -size +5M | sort | head -1 || true)"
           if [ -z "$CLIENT" ]; then echo "::warning::nothing large enough to publish"; exit 0; fi

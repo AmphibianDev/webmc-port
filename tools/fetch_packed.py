@@ -33,8 +33,9 @@ RELEASE = "built-clients"
 REPO = "AmphibianDev/webmc-port"
 
 
-def asset_url(version: str) -> str:
-    return f"https://github.com/{REPO}/releases/download/{RELEASE}/packed-{version}.tar.gz"
+def asset_url(stem: str) -> str:
+    """`<version>` or `<version>+<mods>` - the stem is whatever the release calls it."""
+    return f"https://github.com/{REPO}/releases/download/{RELEASE}/packed-{stem}.tar.gz"
 
 
 def download(url: str, target: pathlib.Path) -> bool:
@@ -96,12 +97,19 @@ def versions_with_assets() -> list[str]:
     except Exception as error:  # noqa: BLE001
         print(f"could not list the release: {error}")
         return []
-    found = []
+    # An archive is `packed-<version>.tar.gz` or `packed-<version>+<mods>.tar.gz`, and the modded one is a
+    # superset of the vanilla client for that version. Both can exist, so a version with a modded archive is
+    # served from it: the extra part of the name is what tells them apart.
+    best: dict[str, str] = {}
     for asset in document.get("assets") or []:
         name = str(asset.get("name") or "")
-        if name.startswith("packed-") and name.endswith(".tar.gz"):
-            found.append(name[len("packed-"):-len(".tar.gz")])
-    return sorted(found)
+        if not (name.startswith("packed-") and name.endswith(".tar.gz")):
+            continue
+        stem = name[len("packed-"):-len(".tar.gz")]
+        version = stem.split("+", 1)[0]
+        if version not in best or "+" in stem:
+            best[version] = stem
+    return sorted(best)
 
 
 def main(argv=None) -> int:
@@ -124,11 +132,13 @@ def main(argv=None) -> int:
     site = pathlib.Path(args.site)
     fetched = 0
     with tempfile.TemporaryDirectory() as scratch:
-        for version in versions:
-            archive = pathlib.Path(args.archive) if args.archive else pathlib.Path(scratch) / f"{version}.tar.gz"
+        for stem in versions:
+            # `stem` may carry a mod set (`26.2+hello-fabric`); the page still lands under the plain version.
+            version = stem.split("+", 1)[0]
+            archive = pathlib.Path(args.archive) if args.archive else pathlib.Path(scratch) / f"{stem}.tar.gz"
             if not args.archive:
-                print(f"fetching packed-{version}.tar.gz")
-                if not download(asset_url(version), archive):
+                print(f"fetching packed-{stem}.tar.gz")
+                if not download(asset_url(stem), archive):
                     continue
             manifest = unpack(archive, version, site)
             if manifest is None:
