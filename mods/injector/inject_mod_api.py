@@ -26,6 +26,7 @@ second one. Nothing here needs a JVM, and nothing here can load a `.jar` - see m
 from __future__ import annotations
 
 import argparse
+import json
 import pathlib
 import re
 import sys
@@ -111,9 +112,44 @@ def classify(source: str) -> dict:
     }
 
 
-def inject_api(source: str, api: str) -> tuple[str, str]:
+def mods_block(mods: list[str] | None) -> str:
+    """The mods a page starts with.
+
+    Not the same thing as `?mod=` in the URL, and both are needed: a packed client is handed to an iframe as
+    a blob, so the URL it was asked for is not the URL it runs at - the list has to be inside the bytes. A
+    player who adds a mod while it runs still uses the panel, and both end up in the same registry.
+    """
+    wanted = [mod for mod in (mods or []) if mod]
+    if not wanted:
+        return ""
+    return ("<script>/* WebMC: the mods this client was loaded with. The panel manages them from here. */\n"
+            f"globalThis.__WebMC_MODS__ = {json.dumps(wanted)};\n</script>\n")
+
+
+# What the injected door can and cannot honour, decided by reading the build rather than by hoping. The report
+# prints it per build, and tools/verify_client.py checks a published client carries the door at all - which is
+# the difference between "mods are supported" and "mods are a word in a catalogue".
+DOOR_MARK = "WebMC mod API v3"
+
+
+def door_surface(source: str, verdict: dict) -> dict:
+    """What a mod can reach in this build, read out of the build itself."""
+    return {
+        "door": DOOR_MARK,
+        "page_tier": True,
+        "deep_tier": bool(verdict.get("deep")),
+        "anchors": verdict.get("anchors_found") or [],
+        "resource_door": "EaglerModResourceRegistry" in source,
+        "archives": "zip/jar with a fabric.mod.json and a browser payload",
+        "bytecode": False,
+        "note": ("a compiled client executes no new bytecode: a mod whose code is a .class file needs a real "
+                 "JVM, which is this project's other row"),
+    }
+
+
+def inject_api(source: str, api: str, mods: list[str] | None = None) -> tuple[str, str]:
     """Place the API as early as the page allows. Returns (patched, where)."""
-    block = f"\n{MARKER_BEGIN}\n<script>\n{api}\n</script>\n{MARKER_END}\n"
+    block = (f"\n{MARKER_BEGIN}\n<script>\n{api}\n</script>\n{mods_block(mods)}{MARKER_END}\n")
     for tag in ("<head", "<body"):
         match = re.search(re.escape(tag) + r"[^>]*>", source, re.IGNORECASE)
         if match:
@@ -144,10 +180,12 @@ def place_hooks(source: str) -> tuple[str, list[dict]]:
     return source, placed
 
 
-def patch(path: pathlib.Path, out_dir: pathlib.Path | None, dry_run: bool) -> dict:
+def patch(path: pathlib.Path, out_dir: pathlib.Path | None, dry_run: bool,
+          mods: list[str] | None = None) -> dict:
     source = path.read_text(errors="replace")
     verdict = classify(source)
-    report = {"file": str(path), **verdict, "hooks": [], "output": None, "state": "planned"}
+    report = {"file": str(path), **verdict, "hooks": [], "output": None, "state": "planned",
+              "surface": door_surface(source, verdict), "mods": list(mods or [])}
 
     # idempotence: drop any previous patch before adding another
     if MARKER_BEGIN in source:
@@ -155,7 +193,7 @@ def patch(path: pathlib.Path, out_dir: pathlib.Path | None, dry_run: bool) -> di
         report["replaced_previous_patch"] = True
 
     api = API.read_text()
-    source, where = inject_api(source, api)
+    source, where = inject_api(source, api, mods)
     report["api_placed_after"] = where
 
     if verdict["deep"]:
@@ -180,14 +218,20 @@ def builds_under(root: pathlib.Path) -> list[pathlib.Path]:
     return sorted(path for path in root.rglob("*.html") if ".modded." not in path.name)
 
 
-def main() -> int:
+def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description="Add the JavaScript mod API to a built client")
     parser.add_argument("build", nargs="?", help="one HTML build")
     parser.add_argument("--all", action="store_true", help="every build under work/builds/")
     parser.add_argument("--builds-dir", default=str(ROOT / "work" / "builds"))
     parser.add_argument("--out", default=str(ROOT / "work" / "builds-modded"))
+    parser.add_argument("--mods", default="",
+                        help="comma-separated mod urls this page starts with: a .js mod, or a .zip/.jar "
+                             "carrying a fabric.mod.json and a browser payload")
+    parser.add_argument("--json", action="store_true", help="print the report as json")
     parser.add_argument("--dry-run", action="store_true")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
+
+    mods = [mod.strip() for mod in args.mods.split(",") if mod.strip()]
 
     out_dir = pathlib.Path(args.out)
     if args.all:
@@ -201,17 +245,24 @@ def main() -> int:
         print(f"no builds under {args.builds_dir} - run tools/fetch_builds.py first")
         return 2
 
+    if args.json:
+        reports = [patch(path, out_dir, args.dry_run, mods) for path in targets]
+        print(json.dumps(reports, indent=1))
+        return 0
+
     print(f"{len(targets)} build(s)\n")
     print(f"  {'build':<46} {'what it is':<28} {'deep hooks':<11} existing mod api")
     print(f"  {'-' * 46} {'-' * 28} {'-' * 11} {'-' * 16}")
     patched = deep = 0
     for path in targets:
         per_build_out = out_dir / path.parent.name if path.parent.name != "builds" else out_dir
-        report = patch(path, per_build_out, args.dry_run)
+        report = patch(path, per_build_out, args.dry_run, mods)
         name = path.name if len(path.name) < 44 else path.name[:41] + "..."
         api = ", ".join(report["existing_mod_api"]) or "—"
         print(f"  {name:<46} {report['kind']:<28} "
               f"{('yes (' + str(report['hooks_placed']) + ')' if report['deep'] else 'page tier'):<11} {api}")
+        if mods:
+            print(f"  {'':<46} starts with: {', '.join(mods)}")
         patched += report["state"] == "patched"
         deep += 1 if report["deep"] else 0
     print(f"\n{patched} {'would be patched' if args.dry_run else 'patched'}, "

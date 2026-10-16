@@ -63,6 +63,38 @@
       "side": "client",
       "licence": "GPL-3.0",
       "note": "The real thing, from meteorclient.com (its GitHub releases carry no jar). Committed rather than downloaded because GPL-3.0 allows redistribution and the build has to read it: 1340 classes, 233 mixin classes across six configs, an access widener, and its own copies of the Fabric API modules with a nested-jar layout. The bake applies entrypoints and a subset of mixins (MIXINS.md), so this is the honest test of how far that gets - the build log names every part it cannot apply instead of shipping a client that quietly ignores the mod."
+    },
+    {
+      "id": "fabric-api",
+      "name": "Fabric API",
+      "version": "0.161.0+26.2",
+      "file": "vendor/fabric-api-26.2.jar",
+      "game": [
+        "26.2"
+      ],
+      "loaders": [
+        "fabric",
+        "aot"
+      ],
+      "side": "client",
+      "licence": "Apache-2.0",
+      "note": "The real Fabric API, compiled into the client by the bake rather than shimmed member by member. 43 modules: 18 need nothing, 17 need one named adapter (files->OPFS, threads->scheduler, LWJGL->the port's natives), 8 are desktop-only and are left out with the reason. Redistributed under Apache-2.0 (see CREDITS.md)."
+    },
+    {
+      "id": "fabric-api",
+      "name": "Fabric API",
+      "version": "0.163.0+26.3",
+      "file": "vendor/fabric-api-26.3.jar",
+      "game": [
+        "26.3"
+      ],
+      "loaders": [
+        "fabric",
+        "aot"
+      ],
+      "side": "client",
+      "licence": "Apache-2.0",
+      "note": "The real Fabric API, compiled into the client by the bake rather than shimmed member by member. 43 modules: 18 need nothing, 17 need one named adapter (files->OPFS, threads->scheduler, LWJGL->the port's natives), 8 are desktop-only and are left out with the reason. Redistributed under Apache-2.0 (see CREDITS.md)."
     }
   ]
 }

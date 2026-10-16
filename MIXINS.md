@@ -19,9 +19,21 @@ That is why this project puts mods into the client **at build time** instead:
 | anything a mod does at play time through reflection | an AOT compiler cannot see a class named only in a string | **not yet** - which is one more reason the mixin merge is done on the class files |
 
 So "does it support Fabric" has a precise answer: **a Fabric mod that is written as an entrypoint plus mixins is
-baked in and runs; a mod that expects Fabric Loader and Fabric API at play time does not.** Meteor Client is the
-second kind: its descriptor declares six mixin configs, an access widener, and its code calls Fabric API
-throughout, so it cannot load here yet, and saying otherwise would be a lie with a download button.
+baked in and runs; a mod that expects Fabric Loader and Fabric API at play time needs those shimmed as well.**
+
+As of 2026-10-16 that answer is measured rather than guessed, by `webmc-mods/tools/bake.mjs`:
+
+| mod | mixin classes | appliable by the applier | what is left |
+| --- | --- | --- | --- |
+| Meteor Client 26.2-35 | 192 (+36 that live in other jars) | **192** | Fabric API shims, and the compile itself |
+| its bundled Fabric API modules | 17 | 17 | the loader API they call |
+
+That is a change from "its mixins cannot be applied at all": `tests/test_mixin_applier_advanced.py` proves every
+shape Meteor uses on a real JVM - handler arguments, cancellable injections, instruction-level `@At`, `@Redirect`,
+`@ModifyArg`, `@ModifyArgs`, `@ModifyVariable`, `@ModifyConstant`, `@ModifyExpressionValue`, `@ModifyReturnValue`,
+`@WrapWithCondition`, `@ModifyReceiver`, `@WrapOperation`, `@Accessor`, `@Invoker` and access wideners - compile,
+apply, run and read. What remains for a Meteor build is the Fabric API it calls (shims), and then the engine
+compile, which is 30-45 minutes of CI per iteration. A build that half works is still a build that says so.
 
 ## What the mixin applier applies
 
@@ -33,21 +45,38 @@ skipped, because a mod that half works is worse than a mod that is not there.
 - `@Mixin(Target.class)` and `@Mixin(targets = "a.b.C")`, with the config's `package` prefix.
 - `@Overwrite` - the target method's body becomes the mixin's. The method must exist with the same descriptor; if
   it does not, the mixin is **refused** (not attempted), because half an overwrite is a broken client.
-- `@Inject(method = "x", at = @At("HEAD" | "RETURN" | "TAIL"))` for handlers whose parameters are
-  `(CallbackInfo)` or `(CallbackInfoReturnable)`. `RETURN` and `TAIL` both mean "before an exit": every exit gets
-  the call, because a method with several exits has several places that can mean.
+- `@Inject(method = "x", at = @At(...))` at `HEAD`, `RETURN`, `TAIL`, and at an instruction -
+  `INVOKE` (`Lowner;name(desc)ret`), `FIELD` (`Lowner;name:desc`), `NEW` (`Lowner;`), `CONSTANT` (`target = "3"`),
+  `LOAD` / `STORE` - with `ordinal` selecting among several matches.
+- **A handler that takes the target's own arguments**, at any of those points. They are read out of the target
+  method's own local slots, which is exact at an injection point, so the arguments are the real ones. A handler may
+  also take the target instance first, and at `RETURN` it may take the return value.
+- `cancellable = true`: after the handler runs, the generated code checks `isCancelled()` and returns early -
+  with `getReturnValue()` unboxed to the method's own return type when the method returns something.
+- `@Redirect` (an `INVOKE` or `FIELD` is replaced by the handler's call), `@ModifyArg` (`index` names the argument),
+  `@ModifyArgs` (the arguments are handed over boxed, in an `Args` the handler can read and replace),
+  `@ModifyVariable` (`LOAD`/`STORE`), `@ModifyConstant`.
+- MixinExtras: `@ModifyExpressionValue`, `@ModifyReturnValue`, `@WrapWithCondition`, `@ModifyReceiver`, and
+  `@WrapOperation` - whose `Operation` is generated per wrapped call site, because that is the only place that
+  knows the owner, name and descriptor of the call being wrapped.
+- `@Accessor` and `@Invoker`, class-level or method-level: the member the mixin only declared is *generated* into
+  the target - a field read or write, or a call to the method the annotation names.
+- Access wideners and class tweakers (`accessWidener` in the descriptor): `accessible`, `extendable` and `mutable`
+  are applied to the client's own class files before the mixins that need them.
 - `@Shadow` - never copied. After the merge the mixin's code *is* the target's code, so a shadowed call resolves
-  to the target's own member. That is the only reason a shadow exists.
+  to the target's own member, which is the only reason a shadow exists.
 - `@Unique` and any other member the mixin declares - copied with it, and references it makes to its own class
   are redirected to the target, because that is where the code now lives.
+- Annotations that are not injection instructions (`@Deprecated`, `@Override`, `@Nullable`, ...) are ignored: they
+  are not gaps, and counting them as gaps would make ordinary mods look unportable.
 
 **Not applied, and named in the build log**
 
-- A handler that also takes the target's own arguments. Passing them correctly needs Mixin's local-variable
-  analysis; guessing is a wrong argument at play time, which is far worse than a missing injection.
-- `@At` selectors other than `HEAD`, `RETURN` and `TAIL` (`INVOKE`, `FIELD`, `NEW`, `CONSTANT`, ...).
-- `@Redirect`, `@ModifyArg`, `@ModifyVariable`, `@Accessor`, `@Invoker`, `@Mixin`'s config options such as
-  `injectors.defaultRequire`, and access wideners.
+- `@At` selectors other than the ones above (`SLICE`, `CUSTOM`, `JUMP`, ...), and `shift = AFTER`.
+- `@Inject` with `LocalCapture`.
+- `@WrapMethod` (wrapping a whole method means renaming it and generating a replacement body).
+- `@ModifyArgs` on anything but an `INVOKE` or a `FIELD`, and `@Slice` anywhere.
+- A handler whose parameters do not line up with the target's own arguments, or with the call it rewrites.
 
 **Refused, and a failed build**
 

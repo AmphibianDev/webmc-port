@@ -349,6 +349,16 @@ jobs:
               shutil.copyfile(source, pathlib.Path("/tmp/mods") / source.name)
           print(f"mod set: {', '.join(wanted)}")
           PY
+          # `set +e` is deliberate above (so a failing pipeline can be reported), which means this
+          # status has to be checked by hand: without it a mod jar that is missing from the checkout
+          # prints an error, the step carries on, and the bake runs with an empty mod set - a build
+          # that fails forty minutes later, in a place that says nothing about the real cause.
+          STAGE_STATUS=$?
+          if [ "$STAGE_STATUS" != "0" ]; then
+            echo "::error::the mod set could not be staged (exit $STAGE_STATUS): the bake would run with no mods"
+            exit "$STAGE_STATUS"
+          fi
+          ls -la /tmp/mods | tee -a /tmp/build.log
           # The bake is the mod loader on the compiled row: it reads each jar's fabric.mod.json, prunes
           # the mixins whose targets are not in this client, copies the classes and the Fabric API shims
           # into the engine's source tree, and generates the entrypoint call the compiled client makes at

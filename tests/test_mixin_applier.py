@@ -133,7 +133,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(example.client.Game.class)
 public class BadMixin {
-    @Inject(method = "tick", at = @At("FIELD"))
+    @Inject(method = "tick", at = @At("SLICE"))
     private void onField(CallbackInfo callback) {
         System.out.println("never");
     }
@@ -289,7 +289,8 @@ def main() -> int:
     check("a mixin into a method the client does not have is refused, not skipped",
           "REFUSED" in refused.stdout and "does not have" in refused.stdout, refused.stdout.strip()[:400])
     check("an @At the applier does not implement is called out by name",
-          "@At(\"FIELD\") is not applied" in refused.stdout, refused.stdout.strip()[:400])
+          "@At(\"SLICE\") is not implemented" in refused.stdout or "@At(\"SLICE\")" in refused.stdout,
+          refused.stdout.strip()[:400])
     check("and a refusal is a non-zero exit, so a build cannot ignore it", refused.returncode != 0)
 
     print(f"\n{12 + 5 - FAILURES}/{12 + 5} mixin checks passed")

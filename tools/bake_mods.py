@@ -486,12 +486,19 @@ def bake(engine: pathlib.Path, version: str, mod_jars: list[pathlib.Path], mods_
     else:
         log("  each entrypoint is called from the client's static initialiser as bytecode")
 
-    shim = SHIMS / "net" / "fabricmc" / "api" / "ClientModInitializer.java"
-    if shim.is_file():
-        shim_target = overrides / "net" / "fabricmc" / "api" / "ClientModInitializer.java"
-        shim_target.parent.mkdir(parents=True, exist_ok=True)
-        shim_target.write_text(shim.read_text())
-        log(f"  wrote {shim_target.relative_to(engine)} (the interface a Fabric mod compiles against)")
+    # Every shim, not one: a mod that calls the Fabric loader or the API needs those classes to exist
+    # in the client the compiler sees, and the loader shims are what make `FabricLoader.getInstance()`
+    # and a mod's own metadata work in a client that has no loader at play time.
+    staged = []
+    if SHIMS.is_dir():
+        for source in sorted(SHIMS.rglob("*.java")):
+            target = overrides / source.relative_to(SHIMS)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(source.read_text())
+            staged.append(source.relative_to(SHIMS).as_posix())
+    if staged:
+        log(f"  staged {len(staged)} shim source file(s) the mods compile against "
+            + f"({', '.join(staged[:3])}{'…' if len(staged) > 3 else ''})")
 
     # How the patcher gets called depends on which patch set the version is on, and the engine's own validator
     # decides that, not us: `extraPatchers` is refused outside the modern patch set ("extraPatchers is only

@@ -36,6 +36,10 @@ import sys
 
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parent
+sys.path.insert(0, str(HERE))
+
+import debrand  # noqa: E402  (the engine-chrome list and the pass that applies it)
+
 SHELL = ROOT / "site" / "boot" / "shell.html"
 
 MARKER = 'id="webmc-boot"'
@@ -115,17 +119,7 @@ def overlay(style: str, dirt: pathlib.Path | None) -> str:
 
 def remove_element(html: str, selector: str) -> tuple[str, str]:
     """Remove one element by #id. Returns (html, what happened)."""
-    wanted = selector.strip()
-    if not wanted.startswith("#"):
-        return html, f"skipped {wanted!r}: only #id selectors are supported"
-    element_id = wanted[1:]
-    paired = re.compile(r"<(\w+)([^>]*\bid=\"%s\"[^>]*)>[\s\S]*?</\1>\s*" % re.escape(element_id), re.I)
-    if paired.search(html):
-        return paired.sub("", html, count=1), f"removed the element with {wanted}"
-    void = re.compile(r"<\w+[^>]*\bid=\"%s\"[^>]*/?>\s*" % re.escape(element_id), re.I)
-    if void.search(html):
-        return void.sub("", html, count=1), f"removed the empty element {wanted}"
-    return html, f"not found in this client: {wanted}"
+    return debrand.remove_element(html, selector)
 
 
 def build(client: str, style: str, dirt: pathlib.Path | None, remove: list[str], hide_on_gl: bool,
@@ -134,8 +128,18 @@ def build(client: str, style: str, dirt: pathlib.Path | None, remove: list[str],
     report = {"removed": [], "injected": False, "bytes_before": len(client), "style": style}
 
     html = client
-    # the engine's own chrome first, then whatever the caller asked for
-    for selector in tuple(ENGINE_CHROME_REMOVE) + tuple(remove):
+    # The engine's own chrome first, through the shared pass: it reads the page to decide what can go and what
+    # only has to be hidden, which one regex list cannot know. Ours is the loading screen, so its boot overlay
+    # goes either way - hidden if its script looks the overlay up, removed if nothing refers to it at all.
+    html, chrome = debrand.debrand(html, log=lambda *_: None, assume_engine=True, clear_brands=False)
+    report["chrome"] = chrome
+    report["removed"].extend(item["result"] for item in chrome["removed"])
+    for item in chrome["removed"]:
+        log(f"  removed {item['selector']}: {item['why']}")
+    for item in chrome["hidden"]:
+        log(f"  hid {item['selector']}: {item['why']} ({item['because']})")
+    # then whatever the caller asked for by name
+    for selector in tuple(remove):
         html, what = remove_element(html, selector)
         report["removed"].append(what)
         log(f"  {what}")
@@ -150,10 +154,10 @@ def build(client: str, style: str, dirt: pathlib.Path | None, remove: list[str],
         markup = overlay(style, dirt)
         html = html[:open_body.end()] + "\n" + markup + html[open_body.end():]
         css = style_block(dirt)
-        # the engine's leftover chrome is hidden rather than removed where its own script looks for it, and
-        # the selector covers whatever it builds later with its marker attribute
-        css += ("<style>/* WebMC: the engine's own launcher chrome is not part of this page */\n"
-                + ENGINE_CHROME_SELECTOR + " { display: none !important; }</style>\n")
+        # the chrome the shared pass left in place is already hidden by the stylesheet it added; this only adds
+        # ours, and only if the client does not carry it yet
+        if f'id="{debrand.STYLE_ID}"' not in html:
+            css += debrand.style_block(sorted(set(ENGINE_CHROME_HIDE) | {f"[{debrand.RUNTIME_MARKER}]"}))
         html = html.replace("</head>", css + "</head>", 1) if "</head>" in html else css + html
         report["injected"] = True
         log(f"  injected the boot screen ({len(markup)} bytes of markup, {len(css)} bytes of style)")
@@ -168,88 +172,32 @@ def build(client: str, style: str, dirt: pathlib.Path | None, remove: list[str],
     return html, report
 
 
-# Names that belong to the engines we borrow rather than to this project. Credited in CREDITS.md, and
-# stripped from the page (not from the compiled code - see strip_brand for why).
-BRANDS = ("eaglercraft", "eagler", "lax1dude", "gaius", "typetheory", "browsercraft", "eaglerforge",
-          "resent", "koneclient")
+# Names that belong to the engines we borrow rather than to this project, and the engine's own chrome: both
+# lists live in tools/debrand.py, because the packer runs the same pass on every client it publishes and two
+# lists would drift. This module imports them rather than carrying a second copy.
+BRANDS = debrand.BRANDS
 
-# The engine's own chrome, by the ids it uses. Removed when it is a block of branding, hidden when it is
-# something the client's own script needs to find: taking an element out from under a script is a client
-# that stops on a null, so hiding is the safe half of the same idea.
-ENGINE_CHROME_REMOVE = ("#boot-brand",)          # the "GAIUS CLIENT" / "MOJANG STUDIOS" block
-ENGINE_CHROME_HIDE = ("#boot-screen",             # the engine's own boot overlay: ours is the loading screen
-                      "#gaius-shell-header", "#gaius-shell-footer", "#gaius-error-details",
-                      "#profile-kicker", "#profile-subtitle", "#profile-legal",
-                      # the two overlays a player actually looks at in game: a console panel across the top and a
-                      # performance readout in the corner, both fixed and both visible by default. Hidden rather
-                      # than removed, because the engine's own script writes into them.
-                      "#status", "#perf-hud",
-                      # the engine's own console: it prints its name and its diagnostics there, and a player
-                      # reads every word of it if it is left visible
-                      "#status", "#log")
+# The engine's own chrome, by the ids it uses. Removed when it is a block of branding, hidden when the
+# client's own script needs to find it - `tools/debrand.py` decides which on the page itself, by looking at
+# whether the page's scripts refer to the id, and this is the list it decides from.
+ENGINE_CHROME_REMOVE = tuple(marker["selector"] for marker in debrand.CHROME if marker["remove"])
+ENGINE_CHROME_HIDE = tuple(marker["selector"] for marker in debrand.CHROME if not marker["remove"])
 # The hide rule uses the ids and the marker attribute the engine sets on anything it builds at run time.
-ENGINE_CHROME_SELECTOR = ", ".join(ENGINE_CHROME_HIDE) + ', [data-gaius-shell]' 
+ENGINE_CHROME_SELECTOR = ", ".join(ENGINE_CHROME_HIDE) + ', [data-gaius-shell]'
 
 
 def brand_hits(client: str, brands: tuple = BRANDS) -> dict:
     """Where borrowed branding appears, by context: ids/classes, visible text, and everything else."""
-    lower = client.lower()
-    hits = {"ids": [], "titles": [], "scripts": [], "other": []}
-    for brand in brands:
-        if brand not in lower:
-            continue
-        if f'id="{brand}' in lower or f'class="{brand}' in lower or f'{brand}-' in lower:
-            hits["ids"].append(brand)
-        for tag in ("title", "h1", "h2", "h3"):
-            for match in re.findall(rf"<{tag}[^>]*>([\s\S]{{0,200}}?)</{tag}>", client, re.I):
-                if brand in match.lower():
-                    hits["titles"].append(f"{tag}: {match.strip()[:60]}")
-        if re.search(rf"<script[^>]*>[\s\S]*?{re.escape(brand)}", client, re.I):
-            hits["scripts"].append(brand)
-        hits["other"].append(brand)
-    return {key: sorted(set(value)) for key, value in hits.items()}
+    return debrand.brand_hits(client, brands)
 
 
 def strip_brand(client: str, brands: tuple = BRANDS, log=print) -> tuple[str, dict]:
     """Take borrowed branding out of the *page*: titles, headings, and elements named after it.
 
-    What this deliberately does not do: rewrite the compiled JavaScript or wasm. A brand token inside
-    somebody else's code is often an identifier, a field name or part of a URL, and blind replacement
-    breaks the client - so those occurrences stay and CREDITS.md is what attributes them. The page is
-    what a player sees, and that is what can be made ours without lying about anything.
+    The work is `tools/debrand.py`'s, so this tool and the packer cannot disagree about what "branding"
+    means. What it deliberately does not do is rewrite the compiled code - see that module's account.
     """
-    report = {"titles_cleared": 0, "ids": [], "left_in_code": 0}
-
-    def clear_tag(text: str, tag: str) -> str:
-        """Empty a title/heading whose text names somebody else's product; leave the tag in place."""
-        pattern = re.compile(rf"<{tag}([^>]*)>([\s\S]{{0,200}}?)</{tag}>", re.I)
-
-        def replace(match: re.Match) -> str:
-            inner = match.group(2)
-            if any(brand in inner.lower() for brand in brands):
-                report["titles_cleared"] += 1
-                return f"<{tag}{match.group(1)}></{tag}>"
-            return match.group(0)
-
-        return pattern.sub(replace, text)
-
-    html = client
-    for tag in ("title", "h1", "h2", "h3"):
-        html = clear_tag(html, tag)
-    for brand in brands:
-        for element_id in re.findall(rf'id="([\w-]*{brand}[\w-]*)"', html, re.I):
-            html, what = remove_element(html, "#" + element_id)
-            report["ids"].append(what)
-        for class_name in re.findall(rf'class="([^"]*{brand}[^"]*)"', html, re.I):
-            report["ids"].append(f"left the class {class_name!r}: removing one safely needs a parser")
-    heads = brand_hits(html, brands)
-    report["left_in_code"] = len(heads["scripts"]) + len(heads["other"])
-    if report["titles_cleared"]:
-        log(f"  branding: cleared {report['titles_cleared']} title/heading(s) that were not ours")
-    if heads["other"]:
-        log(f"  branding: {len(heads['other'])} name(s) still appear inside compiled code "
-            f"({', '.join(heads['other'][:4])}) - credited in CREDITS.md instead of rewritten")
-    return html, report
+    return debrand.brand_pass(client, brands, log=log)
 
 
 def check(client: str, log=print) -> dict:

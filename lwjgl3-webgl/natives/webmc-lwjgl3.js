@@ -167,7 +167,22 @@ const state = {
 };
 
 function canvasFor(window) {
-  return state.windows.get(window) || null;
+  // A window handle is a Java `long`, and what CheerpJ hands a native for it is not guaranteed to be the
+  // same JavaScript value that went out: it can come back boxed, as a BigInt, or as a string. A Map keyed
+  // by the plain number misses all three, and the miss used to be silent - which is how "MakeContextCurrent
+  // returned" and "no GL context" two calls later turned into one confusing report.
+  if (window instanceof HTMLCanvasElement) return window;
+  const direct = state.windows.get(window);
+  if (direct) return direct;
+  const numeric = Number(window);
+  if (!Number.isNaN(numeric)) {
+    const byNumber = state.windows.get(numeric);
+    if (byNumber) return byNumber;
+  }
+  // Say what actually arrived, so the next report names the cause instead of leaving three causes alike.
+  note("canvasFor: no window for " + String(window) + " (" + typeof window + "); known = "
+       + Array.from(state.windows.keys()).join(","));
+  return null;
 }
 
 function installListeners(canvas) {
@@ -273,12 +288,21 @@ function Java_org_lwjgl_glfw_GLFW_glfwHideWindow(lib, window) {
 function Java_org_lwjgl_glfw_GLFW_glfwMakeContextCurrent(lib, window) {
   state.current = window;
   state.canvas = canvasFor(window);
-  if (!state.canvas) return;
+  if (!state.canvas) {
+    // Not a silent return. Java's glfwMakeContextCurrent has no failure channel, so swallowing the miss
+    // here resurfaces two calls later as "no GL context: call glfwMakeContextCurrent first" - which names
+    // the one function that did run. Say it here, where the handle is still in hand.
+    throw new Error("glfwMakeContextCurrent: no canvas for window handle " + String(window)
+                    + " (" + typeof window + ")");
+  }
   state.gl = state.canvas.getContext("webgl2", { antialias: false, alpha: false, depth: true, stencil: true,
                                                  powerPreference: "high-performance" });
   if (!state.gl) { state.gl = state.canvas.getContext("webgl", { antialias: false, alpha: false }); }
   if (!state.gl) throw new Error("this browser gave no WebGL context for the window");
-  window.webmcGL = state.gl;
+  // On the canvas, not on `window`: this module is an ES module, therefore strict, and `window` here is
+  // a Java long. Writing a property onto a primitive is a TypeError in strict mode, and onto a boxed
+  // handle it writes somewhere nobody reads.
+  state.canvas.webmcGL = state.gl;
   // say what we got, in the log the page prints: a context that exists and one that is already lost look
   // the same from Java, and every later call returns null in both cases
   state.javaLog = state.javaLog || [];

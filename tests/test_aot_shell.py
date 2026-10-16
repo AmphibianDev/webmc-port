@@ -223,7 +223,7 @@ def test_inject(tmp: pathlib.Path) -> None:
           "#boot-screen" in html and "[data-gaius-shell]" in html and "display: none !important" in html,
           "an element the client's script looks for is hidden rather than removed: a null there is a "
           + "client that stops")
-    check("it reports what it removed", any("removed the element with #splash" in line for line in lines),
+    check("it reports what it removed", any("removed #splash" in line for line in lines),
           str(lines))
     check("and counts the bytes both ways", report["bytes_after"] > report["bytes_before"]
           and report["injected"] is True, str(report))
@@ -235,7 +235,7 @@ def test_inject(tmp: pathlib.Path) -> None:
     _, missing = aot_shell.build(CLIENT, "dark", None, ["#not-here"], True, log=lambda *_: None)
     check("its canvas is still there", 'id="game"' in html)
     check("an id that is not in the client is reported, not silently ignored",
-          any("not found" in what for what in missing["removed"]), str(missing["removed"]))
+          any("not in this page" in what for what in missing["removed"]), str(missing["removed"]))
     _, bad = aot_shell.build(CLIENT, "dark", None, ["div.splash"], True, log=lambda *_: None)
     check("a selector it cannot do is refused with the reason",
           any("only #id selectors" in what for what in bad["removed"]), str(bad["removed"]))

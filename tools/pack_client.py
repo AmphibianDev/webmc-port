@@ -193,6 +193,12 @@ def start_page(title: str, manifest_name: str = "manifest.json", mods: list[str]
                  || new URLSearchParams(location.search).get("gateway")
                  || (function () {{ try {{ return localStorage.getItem("webmc.gateway") || ""; }} catch (e) {{ return ""; }} }})();
       var assembled = concatParts(parts);
+      /* The hash is the client as it was downloaded, and it is checked *before* the gateway is spliced
+       * in: the splice is this page's own edit, and hashing the edited bytes would fail every time a
+       * player set a gateway - which is to say, it would make multiplayer look like a corrupt file. */
+      if (manifest.sha256 && await digest(assembled) !== manifest.sha256) {{
+        throw new Error("the reassembled client does not match its hash");
+      }}
       if (bridge) {{
         try {{ localStorage.setItem("eagler26.goldproxy", JSON.stringify({{ gateway: bridge }})); }} catch (e) {{}}
         assembled = withBridge(assembled, bridge);
@@ -203,9 +209,6 @@ def start_page(title: str, manifest_name: str = "manifest.json", mods: list[str]
        * between a modded build and a build that silently ignored the mods. */
       if (manifest.mods && manifest.mods.length && window.webmcBoot) {{
         window.webmcBoot.progress(1, "Baked in: " + manifest.mods.join(", "));
-      }}
-      if (await digest(await blob.arrayBuffer()) !== manifest.sha256 && manifest.sha256) {{
-        throw new Error("the reassembled client does not match its hash");
       }}
       frame.src = URL.createObjectURL(blob);
       frame.style.display = "block";
