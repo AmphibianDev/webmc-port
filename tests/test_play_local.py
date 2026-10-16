@@ -134,7 +134,8 @@ def test_running(tmp: pathlib.Path) -> None:
         status, gateway_body = fetch(f"http://127.0.0.1:{page_port}/gateway")
         status, join_page = fetch(f"http://127.0.0.1:{page_port}/join-test")
         check("the connection test is served on the same local origin, where ws:// is allowed",
-              status == 200 and b"join-test" in join_page and b"offline UUID" in join_page, f"status {status}")
+              status == 200 and b"offline UUID" in join_page and b"Run the test" in join_page,
+              f"status {status}, {len(join_page)} bytes")
         check("the page can be asked which gateway it is using",
               json.loads(gateway_body).get("gateway") == f"ws://127.0.0.1:{gateway_port}/v1/connect")
         check("an unknown path is a 404, not the client by accident", fetch(f"http://127.0.0.1:{page_port}/nope")[0] == 404)
