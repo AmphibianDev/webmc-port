@@ -24,3 +24,7 @@ site/launch.json
 site/routes.json
 site/plans/
 site/mods/
+
+# A compiled client is a build artifact: it is fetched into the working tree by the deploy job,
+# never committed. (It was committed once, and that is what got this account suspended.)
+site/clients/
