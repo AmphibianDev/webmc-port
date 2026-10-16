@@ -169,6 +169,9 @@ def test_inject(tmp: pathlib.Path) -> None:
     check("the hand-over is wired to the first GL draw", "drawElements" in html and "clear" in html)
     check("the engine's own console is hidden as well, because it prints its own name",
           "#status" in html and "#log" in html)
+    check("and the two overlays a player actually sees in game are hidden: the status panel and the perf HUD",
+          "#perf-hud" in html and "display: none !important" in html,
+          "both are fixed, both are visible by default, and both are the engine's, not ours")
     check("its branding block is hidden by our own stylesheet, so the page has one loading screen",
           "#boot-screen" in html and "[data-gaius-shell]" in html and "display: none !important" in html,
           "an element the client's script looks for is hidden rather than removed: a null there is a "

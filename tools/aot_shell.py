@@ -180,6 +180,10 @@ ENGINE_CHROME_REMOVE = ("#boot-brand",)          # the "GAIUS CLIENT" / "MOJANG 
 ENGINE_CHROME_HIDE = ("#boot-screen",             # the engine's own boot overlay: ours is the loading screen
                       "#gaius-shell-header", "#gaius-shell-footer", "#gaius-error-details",
                       "#profile-kicker", "#profile-subtitle", "#profile-legal",
+                      # the two overlays a player actually looks at in game: a console panel across the top and a
+                      # performance readout in the corner, both fixed and both visible by default. Hidden rather
+                      # than removed, because the engine's own script writes into them.
+                      "#status", "#perf-hud",
                       # the engine's own console: it prints its name and its diagnostics there, and a player
                       # reads every word of it if it is left visible
                       "#status", "#log")
