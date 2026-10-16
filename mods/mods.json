@@ -47,6 +47,22 @@
       ],
       "side": "client",
       "note": "A mixin: its code is merged into the client's own class files at build time, which is the only way a mixin can work in an ahead-of-time client. Built from mods/examples/hello-mixin by tools/build_mods.py, and baked the same way - opt in with a build tag such as build-1.21.11+hello-fabric,hello-mixin. MIXINS.md lists the mixin shapes that are applied and the ones that are refused by name."
+    },
+    {
+      "id": "meteor-client",
+      "name": "Meteor Client",
+      "version": "26.2-35",
+      "file": "vendor/meteor-client-26.2-35.jar",
+      "game": [
+        "26.2"
+      ],
+      "loaders": [
+        "fabric",
+        "aot"
+      ],
+      "side": "client",
+      "licence": "GPL-3.0",
+      "note": "The real thing, from meteorclient.com (its GitHub releases carry no jar). Committed rather than downloaded because GPL-3.0 allows redistribution and the build has to read it: 1340 classes, 233 mixin classes across six configs, an access widener, and its own copies of the Fabric API modules with a nested-jar layout. The bake applies entrypoints and a subset of mixins (MIXINS.md), so this is the honest test of how far that gets - the build log names every part it cannot apply instead of shipping a client that quietly ignores the mod."
     }
   ]
 }

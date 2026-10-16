@@ -40,6 +40,12 @@ The Eagler26 build's own metadata names its payload (`eagler26-offline-meta`): `
 prove any extraction against it; the file that was checked is the one downloaded to the project owner's
 machine, not a copy fetched by this repository.
 
+## Mods we ship in the repository
+
+| Project | Licence | What we ship | What we changed |
+| --- | --- | --- | --- |
+| [MeteorDevelopment/meteor-client](https://github.com/MeteorDevelopment/meteor-client) | **GPL-3.0** | `mods/vendor/meteor-client-26.2-35.jar`, unmodified, as published at meteorclient.com (its GitHub releases carry no jar). GPL-3.0 allows redistribution; the source is at the link above, and this repository ships no modified copy | nothing - the jar is the jar. It is here so the site can serve it and so a build can try to bake it; the bake's report says which parts of it a compiled client can and cannot take |
+
 ## Mixin (the annotations, not the tool)
 
 | Project | Licence | What we use | What we changed |
