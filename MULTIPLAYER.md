@@ -136,3 +136,30 @@ public and needs no token.
   address that only exists on your own network, will not work through a public gateway - and should not.
 - **Nothing here is a tunnel to somebody's private network.** Private and reserved targets are refused by
   rule, by name, and again after DNS, because a name is only as private as the address it resolves to.
+
+## The gateway as a Cloudflare Worker (cracked servers, no machine of your own)
+
+`gateway/server.js` needs a machine that is always on. A Cloudflare Worker is the same gateway without
+that: a Worker can open a TCP connection with Cloudflare's sockets API, it is reachable over `wss://`
+without a certificate of your own, and the free tier is enough for a community client.
+
+```sh
+npx wrangler deploy gateway/cloudflare-worker.js --name webmc-gateway --compatibility-date 2026-01-01
+npx wrangler secret put GATEWAY_SECRET      # any long random string: tokens are signed with it
+curl https://webmc-gateway.<you>.workers.dev/health
+```
+
+It speaks the same two dialects as the Node gateway (`goldproxy.v1` and the engine's tunnel), so a client
+points at it unchanged:
+
+```
+https://amphibiandev.github.io/webmc-port/clients/26.2/?bridge=wss://webmc-gateway.<you>.workers.dev/v1/connect
+```
+
+What it refuses is the same list: private, loopback and link-local addresses (by literal and by name),
+database and mail ports, a low port that is not Minecraft, a token for another destination, a token older
+than two minutes, and a session whose first bytes are not a Minecraft handshake - because a relay that
+dials any port for any bytes is a port scanner with a WebSocket in front of it.
+
+The socket half of the Worker is Cloudflare's runtime (there is no way to run it on a laptop), so what is
+tested here is the half that decides what may be dialled: `node tests/test_gateway_worker.mjs`.
