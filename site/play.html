@@ -223,7 +223,11 @@
   /* The arguments differ by era, and getting them wrong is why a version "fails to start" with no
    * explanation: 1.6+ takes a long-form command line, everything before it takes a player name. */
   function clientArgs(className, assetIndex) {
-    const username = "WebMC";
+    // The launcher's settings hold the name a player wants, so it travels in the URL. Anything outside the
+    // characters the game allows (letters, digits, underscore, up to 16 of them) is dropped rather than passed
+    // through, because the argument is a command line this page builds by hand.
+    const requested = (params.get("username") || "").replace(/[^A-Za-z0-9_]/g, "").slice(0, 16);
+    const username = requested || "WebMC";
     if (className.endsWith("main.Main") || className.endsWith("knot.KnotClient")) {
       return ["--username", username, "--version", version, "--gameDir", ".",
               "--assetsDir", "/str/assets", "--assetIndex", assetIndex,

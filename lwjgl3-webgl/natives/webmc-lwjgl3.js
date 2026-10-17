@@ -49,6 +49,18 @@ function webmcAlloc(bytes) {
   return address;
 }
 
+// A memory access whose offset is out of range answers "Offset is outside the bounds of the DataView" and
+// nothing else - no address, no call. These check first, so the exception names the call and the address
+// it was given, which is the difference between a diagnosis and a mystery.
+function webmcBytes(where, address, count) {
+  if (typeof address !== "number" || !Number.isFinite(address) || address < 0
+      || address + count > HEAP_BYTES) {
+    throw new RangeError(where + ": address " + address + " (+" + count + " bytes) is outside the "
+                         + HEAP_BYTES + " byte arena");
+  }
+  return address;
+}
+
 function webmcFree(address) {
   const size = liveSizes.get(address);
   if (size === undefined) return;
@@ -86,33 +98,29 @@ for (const kind of HANDLE_KINDS) {
 // offsets into HEAP, nowhere near 2^53 - and converts a result back out for the natives that hand Java
 // a long, which tools/lwjgl3_natives.py reads from the Java declarations rather than guessing.
 let webmcNativeCalls = 0;
+
+// CheerpJ binds a native by the function's own `name`, so a wrapper that renames every native to
+// `webmcBoundNative` makes the first call work and the next one fail with an unhelpful
+// "TypeError: object is not a function" from inside its dispatcher, with the Java frames already gone.
+// Keeping the JNI name on the wrapper is what makes the indirection invisible.
+function webmcNamed(name, fn) {
+  Object.defineProperty(fn, "name", { value: name, configurable: true });
+  return fn;
+}
+
+// The wrapper must not log: a console.log from inside a native re-enters CheerpJ's runtime while it is
+// marshalling arguments, and its dispatcher then fails with that same TypeError. (Both of those were
+// found the hard way, one at a time, in a real browser.)
 function webmcNative(implementation, returnsLong) {
-  return (...args) => {
-    const index = webmcNativeCalls++;
-    if (index < 80) {
-      console.log("[call " + index + "] " + ((implementation && implementation.name) || String(implementation)));
-    }
-    if (typeof implementation !== "function") {
-      console.log("[BUG] entry " + index + " is not a function: " + String(implementation)
-                  + " (the export names it, the module does not define it)");
-      throw new TypeError("native not a function");
-    }
-    const converted = args.map((value) => (typeof value === "bigint" ? Number(value) : value));
-    if (implementation.name.includes("glfw")) {
-      console.log("[wrap->] " + implementation.name + " nargs=" + converted.length + " ["
-                  + converted.map((v) => typeof v + ":" + String(v)).join(" ") + "]");
-    }
-    const result = implementation(...converted);
-    if (returnsLong && typeof result === "number") {
-      const out = BigInt(Math.trunc(result));
-      if (implementation.name.includes("glfw")) {
-        console.log("[wrap] " + implementation.name + " args=" + converted.map(String).join(",")
-                    + " result=" + result + " out=" + out);
+  return function webmcBoundNative(...args) {
+    for (let index = 0; index < args.length; index++) {
+      if (typeof args[index] === "bigint") {
+        args[index] = Number(args[index]);
       }
-      return out;
     }
-    if (implementation.name.includes("glfw")) {
-      console.log("[wrap] " + implementation.name + " -> " + String(result) + " (not a long)");
+    const result = implementation(...args);
+    if (returnsLong && typeof result === "number") {
+      return BigInt(Math.trunc(result));
     }
     return result;
   };
@@ -923,17 +931,17 @@ function Java_org_lwjgl_system_WebMC_nmemCopy(lib, source, destination, bytes) {
   U8.copyWithin(destination, source, source + bytes);
 }
 function Java_org_lwjgl_system_WebMC_nmemGetByte(lib, address) { return U8[address] << 24 >> 24; }
-function Java_org_lwjgl_system_WebMC_nmemGetShort(lib, address) { return VIEW.getInt16(address, true); }
-function Java_org_lwjgl_system_WebMC_nmemGetInt(lib, address) { return VIEW.getInt32(address, true); }
-function Java_org_lwjgl_system_WebMC_nmemGetLong(lib, address) { return Number(VIEW.getBigInt64(address, true)); }
-function Java_org_lwjgl_system_WebMC_nmemGetFloat(lib, address) { return VIEW.getFloat32(address, true); }
-function Java_org_lwjgl_system_WebMC_nmemGetDouble(lib, address) { return VIEW.getFloat64(address, true); }
-function Java_org_lwjgl_system_WebMC_nmemPutByte(lib, address, value) { VIEW.setInt8(address, value); }
-function Java_org_lwjgl_system_WebMC_nmemPutShort(lib, address, value) { VIEW.setInt16(address, value, true); }
-function Java_org_lwjgl_system_WebMC_nmemPutInt(lib, address, value) { VIEW.setInt32(address, value, true); }
-function Java_org_lwjgl_system_WebMC_nmemPutLong(lib, address, value) { VIEW.setBigInt64(address, BigInt(value), true); }
-function Java_org_lwjgl_system_WebMC_nmemPutFloat(lib, address, value) { VIEW.setFloat32(address, value, true); }
-function Java_org_lwjgl_system_WebMC_nmemPutDouble(lib, address, value) { VIEW.setFloat64(address, value, true); }
+function Java_org_lwjgl_system_WebMC_nmemGetShort(lib, address) { return VIEW.getInt16(webmcBytes("nmemGetShort", address, 2), true); }
+function Java_org_lwjgl_system_WebMC_nmemGetInt(lib, address) { return VIEW.getInt32(webmcBytes("nmemGetInt", address, 4), true); }
+function Java_org_lwjgl_system_WebMC_nmemGetLong(lib, address) { return Number(VIEW.getBigInt64(webmcBytes("nmemGetLong", address, 8), true)); }
+function Java_org_lwjgl_system_WebMC_nmemGetFloat(lib, address) { return VIEW.getFloat32(webmcBytes("nmemGetFloat", address, 4), true); }
+function Java_org_lwjgl_system_WebMC_nmemGetDouble(lib, address) { return VIEW.getFloat64(webmcBytes("nmemGetDouble", address, 8), true); }
+function Java_org_lwjgl_system_WebMC_nmemPutByte(lib, address, value) { VIEW.setInt8(webmcBytes("nmemPutByte", address, 1), value); }
+function Java_org_lwjgl_system_WebMC_nmemPutShort(lib, address, value) { VIEW.setInt16(webmcBytes("nmemPutShort", address, 2), value, true); }
+function Java_org_lwjgl_system_WebMC_nmemPutInt(lib, address, value) { VIEW.setInt32(webmcBytes("nmemPutInt", address, 4), value, true); }
+function Java_org_lwjgl_system_WebMC_nmemPutLong(lib, address, value) { VIEW.setBigInt64(webmcBytes("nmemPutLong", address, 8), BigInt(value), true); }
+function Java_org_lwjgl_system_WebMC_nmemPutFloat(lib, address, value) { VIEW.setFloat32(webmcBytes("nmemPutFloat", address, 4), value, true); }
+function Java_org_lwjgl_system_WebMC_nmemPutDouble(lib, address, value) { VIEW.setFloat64(webmcBytes("nmemPutDouble", address, 8), value, true); }
 function Java_org_lwjgl_system_WebMC_nmemASCII(lib, address) {
   return new TextDecoder().decode(U8.subarray(address, nextZeroByte(address)));
 }
@@ -993,222 +1001,222 @@ function Java_org_lwjgl_glfw_GLFW_glfwPollEvents(...args) { traced("glfw.GLFW.gl
 // Each one goes through webmcNative, which speaks the boundary's types: BigInt for a Java
 // long arriving, and a BigInt back out for the 9 that return one.
 export const natives = {
-  Java_org_lwjgl_glfw_Callbacks_glfwFreeCallbacks: webmcNative(Java_org_lwjgl_glfw_Callbacks_glfwFreeCallbacks, false),
-  Java_org_lwjgl_glfw_GLFW_glfwCreateStandardCursor: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwCreateStandardCursor, true),
-  Java_org_lwjgl_glfw_GLFW_glfwCreateWindow: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwCreateWindow, true),
-  Java_org_lwjgl_glfw_GLFW_glfwDefaultWindowHints: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwDefaultWindowHints, false),
-  Java_org_lwjgl_glfw_GLFW_glfwDestroyCursor: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwDestroyCursor, false),
-  Java_org_lwjgl_glfw_GLFW_glfwDestroyWindow: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwDestroyWindow, false),
-  Java_org_lwjgl_glfw_GLFW_glfwFocusWindow: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwFocusWindow, false),
-  Java_org_lwjgl_glfw_GLFW_glfwGetClipboardString: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetClipboardString, false),
-  Java_org_lwjgl_glfw_GLFW_glfwGetCurrentContext: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetCurrentContext, true),
-  Java_org_lwjgl_glfw_GLFW_glfwGetCursorPos: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetCursorPos, false),
-  Java_org_lwjgl_glfw_GLFW_glfwGetError: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetError, false),
-  Java_org_lwjgl_glfw_GLFW_glfwGetFramebufferSize: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetFramebufferSize, false),
-  Java_org_lwjgl_glfw_GLFW_glfwGetJoystickName: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetJoystickName, false),
-  Java_org_lwjgl_glfw_GLFW_glfwGetKey: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetKey, false),
-  Java_org_lwjgl_glfw_GLFW_glfwGetKeyName: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetKeyName, false),
-  Java_org_lwjgl_glfw_GLFW_glfwGetKeyScancode: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetKeyScancode, false),
-  Java_org_lwjgl_glfw_GLFW_glfwGetMonitorPos: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetMonitorPos, false),
-  Java_org_lwjgl_glfw_GLFW_glfwGetMonitors: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetMonitors, false),
-  Java_org_lwjgl_glfw_GLFW_glfwGetMouseButton: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetMouseButton, false),
-  Java_org_lwjgl_glfw_GLFW_glfwGetPrimaryMonitor: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetPrimaryMonitor, true),
-  Java_org_lwjgl_glfw_GLFW_glfwGetTime: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetTime, false),
-  Java_org_lwjgl_glfw_GLFW_glfwGetVersionString: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetVersionString, false),
-  Java_org_lwjgl_glfw_GLFW_glfwGetVideoMode: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetVideoMode, false),
-  Java_org_lwjgl_glfw_GLFW_glfwGetVideoModes: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetVideoModes, false),
-  Java_org_lwjgl_glfw_GLFW_glfwGetWindowAttrib: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetWindowAttrib, false),
-  Java_org_lwjgl_glfw_GLFW_glfwGetWindowContentScale: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetWindowContentScale, false),
-  Java_org_lwjgl_glfw_GLFW_glfwGetWindowSize: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetWindowSize, false),
-  Java_org_lwjgl_glfw_GLFW_glfwHideWindow: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwHideWindow, false),
-  Java_org_lwjgl_glfw_GLFW_glfwIconifyWindow: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwIconifyWindow, false),
-  Java_org_lwjgl_glfw_GLFW_glfwInit: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwInit, false),
-  Java_org_lwjgl_glfw_GLFW_glfwJoystickPresent: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwJoystickPresent, false),
-  Java_org_lwjgl_glfw_GLFW_glfwMakeContextCurrent: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwMakeContextCurrent, false),
-  Java_org_lwjgl_glfw_GLFW_glfwMaximizeWindow: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwMaximizeWindow, false),
-  Java_org_lwjgl_glfw_GLFW_glfwPollEvents: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwPollEvents, false),
-  Java_org_lwjgl_glfw_GLFW_glfwPostEmptyEvent: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwPostEmptyEvent, false),
-  Java_org_lwjgl_glfw_GLFW_glfwRawMouseMotionSupported: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwRawMouseMotionSupported, false),
-  Java_org_lwjgl_glfw_GLFW_glfwRequestWindowAttention: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwRequestWindowAttention, false),
-  Java_org_lwjgl_glfw_GLFW_glfwRestoreWindow: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwRestoreWindow, false),
-  Java_org_lwjgl_glfw_GLFW_glfwSetCharCallback: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetCharCallback, false),
-  Java_org_lwjgl_glfw_GLFW_glfwSetClipboardString: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetClipboardString, false),
-  Java_org_lwjgl_glfw_GLFW_glfwSetCursor: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetCursor, false),
-  Java_org_lwjgl_glfw_GLFW_glfwSetCursorPos: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetCursorPos, false),
-  Java_org_lwjgl_glfw_GLFW_glfwSetCursorPosCallback: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetCursorPosCallback, false),
-  Java_org_lwjgl_glfw_GLFW_glfwSetDropCallback: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetDropCallback, false),
-  Java_org_lwjgl_glfw_GLFW_glfwSetErrorCallback: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetErrorCallback, false),
-  Java_org_lwjgl_glfw_GLFW_glfwSetFramebufferSizeCallback: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetFramebufferSizeCallback, false),
-  Java_org_lwjgl_glfw_GLFW_glfwSetInputMode: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetInputMode, false),
-  Java_org_lwjgl_glfw_GLFW_glfwSetKeyCallback: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetKeyCallback, false),
-  Java_org_lwjgl_glfw_GLFW_glfwSetMouseButtonCallback: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetMouseButtonCallback, false),
-  Java_org_lwjgl_glfw_GLFW_glfwSetScrollCallback: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetScrollCallback, false),
-  Java_org_lwjgl_glfw_GLFW_glfwSetTime: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetTime, false),
-  Java_org_lwjgl_glfw_GLFW_glfwSetWindowAttrib: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetWindowAttrib, false),
-  Java_org_lwjgl_glfw_GLFW_glfwSetWindowCloseCallback: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetWindowCloseCallback, false),
-  Java_org_lwjgl_glfw_GLFW_glfwSetWindowFocusCallback: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetWindowFocusCallback, false),
-  Java_org_lwjgl_glfw_GLFW_glfwSetWindowIcon: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetWindowIcon, false),
-  Java_org_lwjgl_glfw_GLFW_glfwSetWindowPos: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetWindowPos, false),
-  Java_org_lwjgl_glfw_GLFW_glfwSetWindowPosCallback: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetWindowPosCallback, false),
-  Java_org_lwjgl_glfw_GLFW_glfwSetWindowShouldClose: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetWindowShouldClose, false),
-  Java_org_lwjgl_glfw_GLFW_glfwSetWindowSize: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetWindowSize, false),
-  Java_org_lwjgl_glfw_GLFW_glfwSetWindowSizeCallback: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetWindowSizeCallback, false),
-  Java_org_lwjgl_glfw_GLFW_glfwSetWindowTitle: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetWindowTitle, false),
-  Java_org_lwjgl_glfw_GLFW_glfwSetWindowUserPointer: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetWindowUserPointer, false),
-  Java_org_lwjgl_glfw_GLFW_glfwShowWindow: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwShowWindow, false),
-  Java_org_lwjgl_glfw_GLFW_glfwSwapBuffers: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSwapBuffers, false),
-  Java_org_lwjgl_glfw_GLFW_glfwSwapInterval: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSwapInterval, false),
-  Java_org_lwjgl_glfw_GLFW_glfwTerminate: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwTerminate, false),
-  Java_org_lwjgl_glfw_GLFW_glfwUpdateGamepadMappings: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwUpdateGamepadMappings, false),
-  Java_org_lwjgl_glfw_GLFW_glfwWaitEvents: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwWaitEvents, false),
-  Java_org_lwjgl_glfw_GLFW_glfwWaitEventsTimeout: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwWaitEventsTimeout, false),
-  Java_org_lwjgl_glfw_GLFW_glfwWindowHint: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwWindowHint, false),
-  Java_org_lwjgl_glfw_GLFW_glfwWindowShouldClose: webmcNative(Java_org_lwjgl_glfw_GLFW_glfwWindowShouldClose, false),
-  Java_org_lwjgl_opengl_GL11_glBindBuffer: webmcNative(Java_org_lwjgl_opengl_GL11_glBindBuffer, false),
-  Java_org_lwjgl_opengl_GL11_glBindTexture: webmcNative(Java_org_lwjgl_opengl_GL11_glBindTexture, false),
-  Java_org_lwjgl_opengl_GL11_glBlendEquation: webmcNative(Java_org_lwjgl_opengl_GL11_glBlendEquation, false),
-  Java_org_lwjgl_opengl_GL11_glBlendFunc: webmcNative(Java_org_lwjgl_opengl_GL11_glBlendFunc, false),
-  Java_org_lwjgl_opengl_GL11_glBlendFuncSeparate: webmcNative(Java_org_lwjgl_opengl_GL11_glBlendFuncSeparate, false),
-  Java_org_lwjgl_opengl_GL11_glClear: webmcNative(Java_org_lwjgl_opengl_GL11_glClear, false),
-  Java_org_lwjgl_opengl_GL11_glClearColor: webmcNative(Java_org_lwjgl_opengl_GL11_glClearColor, false),
-  Java_org_lwjgl_opengl_GL11_glClearDepth: webmcNative(Java_org_lwjgl_opengl_GL11_glClearDepth, false),
-  Java_org_lwjgl_opengl_GL11_glClearStencil: webmcNative(Java_org_lwjgl_opengl_GL11_glClearStencil, false),
-  Java_org_lwjgl_opengl_GL11_glColorMask: webmcNative(Java_org_lwjgl_opengl_GL11_glColorMask, false),
-  Java_org_lwjgl_opengl_GL11_glCullFace: webmcNative(Java_org_lwjgl_opengl_GL11_glCullFace, false),
-  Java_org_lwjgl_opengl_GL11_glDepthFunc: webmcNative(Java_org_lwjgl_opengl_GL11_glDepthFunc, false),
-  Java_org_lwjgl_opengl_GL11_glDepthMask: webmcNative(Java_org_lwjgl_opengl_GL11_glDepthMask, false),
-  Java_org_lwjgl_opengl_GL11_glDepthRange: webmcNative(Java_org_lwjgl_opengl_GL11_glDepthRange, false),
-  Java_org_lwjgl_opengl_GL11_glDisable: webmcNative(Java_org_lwjgl_opengl_GL11_glDisable, false),
-  Java_org_lwjgl_opengl_GL11_glDrawArrays: webmcNative(Java_org_lwjgl_opengl_GL11_glDrawArrays, false),
-  Java_org_lwjgl_opengl_GL11_glDrawElements: webmcNative(Java_org_lwjgl_opengl_GL11_glDrawElements, false),
-  Java_org_lwjgl_opengl_GL11_glEnable: webmcNative(Java_org_lwjgl_opengl_GL11_glEnable, false),
-  Java_org_lwjgl_opengl_GL11_glFinish: webmcNative(Java_org_lwjgl_opengl_GL11_glFinish, false),
-  Java_org_lwjgl_opengl_GL11_glFlush: webmcNative(Java_org_lwjgl_opengl_GL11_glFlush, false),
-  Java_org_lwjgl_opengl_GL11_glFrontFace: webmcNative(Java_org_lwjgl_opengl_GL11_glFrontFace, false),
-  Java_org_lwjgl_opengl_GL11_glGenBuffers: webmcNative(Java_org_lwjgl_opengl_GL11_glGenBuffers, false),
-  Java_org_lwjgl_opengl_GL11_glGenerateMipmap: webmcNative(Java_org_lwjgl_opengl_GL11_glGenerateMipmap, false),
-  Java_org_lwjgl_opengl_GL11_glGetBoolean: webmcNative(Java_org_lwjgl_opengl_GL11_glGetBoolean, false),
-  Java_org_lwjgl_opengl_GL11_glGetError: webmcNative(Java_org_lwjgl_opengl_GL11_glGetError, false),
-  Java_org_lwjgl_opengl_GL11_glGetFloat: webmcNative(Java_org_lwjgl_opengl_GL11_glGetFloat, false),
-  Java_org_lwjgl_opengl_GL11_glGetInteger: webmcNative(Java_org_lwjgl_opengl_GL11_glGetInteger, false),
-  Java_org_lwjgl_opengl_GL11_glGetIntegeri: webmcNative(Java_org_lwjgl_opengl_GL11_glGetIntegeri, false),
-  Java_org_lwjgl_opengl_GL11_glGetString: webmcNative(Java_org_lwjgl_opengl_GL11_glGetString, false),
-  Java_org_lwjgl_opengl_GL11_glHint: webmcNative(Java_org_lwjgl_opengl_GL11_glHint, false),
-  Java_org_lwjgl_opengl_GL11_glIsEnabled: webmcNative(Java_org_lwjgl_opengl_GL11_glIsEnabled, false),
-  Java_org_lwjgl_opengl_GL11_glLineWidth: webmcNative(Java_org_lwjgl_opengl_GL11_glLineWidth, false),
-  Java_org_lwjgl_opengl_GL11_glPixelStorei: webmcNative(Java_org_lwjgl_opengl_GL11_glPixelStorei, false),
-  Java_org_lwjgl_opengl_GL11_glReadPixels: webmcNative(Java_org_lwjgl_opengl_GL11_glReadPixels, false),
-  Java_org_lwjgl_opengl_GL11_glScissor: webmcNative(Java_org_lwjgl_opengl_GL11_glScissor, false),
-  Java_org_lwjgl_opengl_GL11_glTexImage2D: webmcNative(Java_org_lwjgl_opengl_GL11_glTexImage2D, false),
-  Java_org_lwjgl_opengl_GL11_glTexParameterf: webmcNative(Java_org_lwjgl_opengl_GL11_glTexParameterf, false),
-  Java_org_lwjgl_opengl_GL11_glTexParameteri: webmcNative(Java_org_lwjgl_opengl_GL11_glTexParameteri, false),
-  Java_org_lwjgl_opengl_GL11_glTexSubImage2D: webmcNative(Java_org_lwjgl_opengl_GL11_glTexSubImage2D, false),
-  Java_org_lwjgl_opengl_GL11_glViewport: webmcNative(Java_org_lwjgl_opengl_GL11_glViewport, false),
-  Java_org_lwjgl_opengl_GL11_nglBufferData: webmcNative(Java_org_lwjgl_opengl_GL11_nglBufferData, false),
-  Java_org_lwjgl_opengl_GL11_nglBufferData1: webmcNative(Java_org_lwjgl_opengl_GL11_nglBufferData1, false),
-  Java_org_lwjgl_opengl_GL11_nglBufferSubData: webmcNative(Java_org_lwjgl_opengl_GL11_nglBufferSubData, false),
-  Java_org_lwjgl_opengl_GL11_nglDeleteBuffers: webmcNative(Java_org_lwjgl_opengl_GL11_nglDeleteBuffers, false),
-  Java_org_lwjgl_opengl_GL11_nglDeleteTextures: webmcNative(Java_org_lwjgl_opengl_GL11_nglDeleteTextures, false),
-  Java_org_lwjgl_opengl_GL11_nglDrawArrays: webmcNative(Java_org_lwjgl_opengl_GL11_nglDrawArrays, false),
-  Java_org_lwjgl_opengl_GL11_nglDrawElements: webmcNative(Java_org_lwjgl_opengl_GL11_nglDrawElements, false),
-  Java_org_lwjgl_opengl_GL11_nglGenBuffers: webmcNative(Java_org_lwjgl_opengl_GL11_nglGenBuffers, false),
-  Java_org_lwjgl_opengl_GL11_nglGenTextures: webmcNative(Java_org_lwjgl_opengl_GL11_nglGenTextures, false),
-  Java_org_lwjgl_opengl_GL11_nglGetIntegerv: webmcNative(Java_org_lwjgl_opengl_GL11_nglGetIntegerv, false),
-  Java_org_lwjgl_opengl_GL11_nglReadPixels: webmcNative(Java_org_lwjgl_opengl_GL11_nglReadPixels, false),
-  Java_org_lwjgl_opengl_GL11_nglTexImage2D: webmcNative(Java_org_lwjgl_opengl_GL11_nglTexImage2D, false),
-  Java_org_lwjgl_opengl_GL11_nglTexSubImage2D: webmcNative(Java_org_lwjgl_opengl_GL11_nglTexSubImage2D, false),
-  Java_org_lwjgl_opengl_GL13_glActiveTexture: webmcNative(Java_org_lwjgl_opengl_GL13_glActiveTexture, false),
-  Java_org_lwjgl_opengl_GL13_glTexParameteri: webmcNative(Java_org_lwjgl_opengl_GL13_glTexParameteri, false),
-  Java_org_lwjgl_opengl_GL13_nglDeleteTextures: webmcNative(Java_org_lwjgl_opengl_GL13_nglDeleteTextures, false),
-  Java_org_lwjgl_opengl_GL13_nglGenTextures: webmcNative(Java_org_lwjgl_opengl_GL13_nglGenTextures, false),
-  Java_org_lwjgl_opengl_GL14_glBlendEquation: webmcNative(Java_org_lwjgl_opengl_GL14_glBlendEquation, false),
-  Java_org_lwjgl_opengl_GL14_glBlendFuncSeparate: webmcNative(Java_org_lwjgl_opengl_GL14_glBlendFuncSeparate, false),
-  Java_org_lwjgl_opengl_GL15_glBindBuffer: webmcNative(Java_org_lwjgl_opengl_GL15_glBindBuffer, false),
-  Java_org_lwjgl_opengl_GL15_nglBufferData: webmcNative(Java_org_lwjgl_opengl_GL15_nglBufferData, false),
-  Java_org_lwjgl_opengl_GL15_nglBufferSubData: webmcNative(Java_org_lwjgl_opengl_GL15_nglBufferSubData, false),
-  Java_org_lwjgl_opengl_GL15_nglDeleteBuffers: webmcNative(Java_org_lwjgl_opengl_GL15_nglDeleteBuffers, false),
-  Java_org_lwjgl_opengl_GL15_nglGenBuffers: webmcNative(Java_org_lwjgl_opengl_GL15_nglGenBuffers, false),
-  Java_org_lwjgl_opengl_GL20_glAttachShader: webmcNative(Java_org_lwjgl_opengl_GL20_glAttachShader, false),
-  Java_org_lwjgl_opengl_GL20_glBindAttribLocation: webmcNative(Java_org_lwjgl_opengl_GL20_glBindAttribLocation, false),
-  Java_org_lwjgl_opengl_GL20_glCompileShader: webmcNative(Java_org_lwjgl_opengl_GL20_glCompileShader, false),
-  Java_org_lwjgl_opengl_GL20_glCreateProgram: webmcNative(Java_org_lwjgl_opengl_GL20_glCreateProgram, false),
-  Java_org_lwjgl_opengl_GL20_glCreateShader: webmcNative(Java_org_lwjgl_opengl_GL20_glCreateShader, false),
-  Java_org_lwjgl_opengl_GL20_glDeleteProgram: webmcNative(Java_org_lwjgl_opengl_GL20_glDeleteProgram, false),
-  Java_org_lwjgl_opengl_GL20_glDeleteShader: webmcNative(Java_org_lwjgl_opengl_GL20_glDeleteShader, false),
-  Java_org_lwjgl_opengl_GL20_glDetachShader: webmcNative(Java_org_lwjgl_opengl_GL20_glDetachShader, false),
-  Java_org_lwjgl_opengl_GL20_glDisableVertexAttribArray: webmcNative(Java_org_lwjgl_opengl_GL20_glDisableVertexAttribArray, false),
-  Java_org_lwjgl_opengl_GL20_glEnableVertexAttribArray: webmcNative(Java_org_lwjgl_opengl_GL20_glEnableVertexAttribArray, false),
-  Java_org_lwjgl_opengl_GL20_glGetAttribLocation: webmcNative(Java_org_lwjgl_opengl_GL20_glGetAttribLocation, false),
-  Java_org_lwjgl_opengl_GL20_glGetProgramInfoLog: webmcNative(Java_org_lwjgl_opengl_GL20_glGetProgramInfoLog, false),
-  Java_org_lwjgl_opengl_GL20_glGetProgrami: webmcNative(Java_org_lwjgl_opengl_GL20_glGetProgrami, false),
-  Java_org_lwjgl_opengl_GL20_glGetShaderInfoLog: webmcNative(Java_org_lwjgl_opengl_GL20_glGetShaderInfoLog, false),
-  Java_org_lwjgl_opengl_GL20_glGetShaderi: webmcNative(Java_org_lwjgl_opengl_GL20_glGetShaderi, false),
-  Java_org_lwjgl_opengl_GL20_glGetUniformLocation: webmcNative(Java_org_lwjgl_opengl_GL20_glGetUniformLocation, false),
-  Java_org_lwjgl_opengl_GL20_glLinkProgram: webmcNative(Java_org_lwjgl_opengl_GL20_glLinkProgram, false),
-  Java_org_lwjgl_opengl_GL20_glShaderSource: webmcNative(Java_org_lwjgl_opengl_GL20_glShaderSource, false),
-  Java_org_lwjgl_opengl_GL20_glUniform1f: webmcNative(Java_org_lwjgl_opengl_GL20_glUniform1f, false),
-  Java_org_lwjgl_opengl_GL20_glUniform1i: webmcNative(Java_org_lwjgl_opengl_GL20_glUniform1i, false),
-  Java_org_lwjgl_opengl_GL20_glUniform1iv: webmcNative(Java_org_lwjgl_opengl_GL20_glUniform1iv, false),
-  Java_org_lwjgl_opengl_GL20_glUniform2f: webmcNative(Java_org_lwjgl_opengl_GL20_glUniform2f, false),
-  Java_org_lwjgl_opengl_GL20_glUniform2fv: webmcNative(Java_org_lwjgl_opengl_GL20_glUniform2fv, false),
-  Java_org_lwjgl_opengl_GL20_glUniform3f: webmcNative(Java_org_lwjgl_opengl_GL20_glUniform3f, false),
-  Java_org_lwjgl_opengl_GL20_glUniform3fv: webmcNative(Java_org_lwjgl_opengl_GL20_glUniform3fv, false),
-  Java_org_lwjgl_opengl_GL20_glUniform4f: webmcNative(Java_org_lwjgl_opengl_GL20_glUniform4f, false),
-  Java_org_lwjgl_opengl_GL20_glUniform4fv: webmcNative(Java_org_lwjgl_opengl_GL20_glUniform4fv, false),
-  Java_org_lwjgl_opengl_GL20_glUniformMatrix2fv: webmcNative(Java_org_lwjgl_opengl_GL20_glUniformMatrix2fv, false),
-  Java_org_lwjgl_opengl_GL20_glUniformMatrix3fv: webmcNative(Java_org_lwjgl_opengl_GL20_glUniformMatrix3fv, false),
-  Java_org_lwjgl_opengl_GL20_glUniformMatrix4fv: webmcNative(Java_org_lwjgl_opengl_GL20_glUniformMatrix4fv, false),
-  Java_org_lwjgl_opengl_GL20_glUseProgram: webmcNative(Java_org_lwjgl_opengl_GL20_glUseProgram, false),
-  Java_org_lwjgl_opengl_GL20_nglGenBuffers: webmcNative(Java_org_lwjgl_opengl_GL20_nglGenBuffers, false),
-  Java_org_lwjgl_opengl_GL20_nglGetProgramiv: webmcNative(Java_org_lwjgl_opengl_GL20_nglGetProgramiv, false),
-  Java_org_lwjgl_opengl_GL20_nglGetShaderiv: webmcNative(Java_org_lwjgl_opengl_GL20_nglGetShaderiv, false),
-  Java_org_lwjgl_opengl_GL20_nglShaderSource: webmcNative(Java_org_lwjgl_opengl_GL20_nglShaderSource, false),
-  Java_org_lwjgl_opengl_GL20_nglUniform1fv: webmcNative(Java_org_lwjgl_opengl_GL20_nglUniform1fv, false),
-  Java_org_lwjgl_opengl_GL20_nglUniformMatrix4fv: webmcNative(Java_org_lwjgl_opengl_GL20_nglUniformMatrix4fv, false),
-  Java_org_lwjgl_opengl_GL20_nglVertexAttribIPointer: webmcNative(Java_org_lwjgl_opengl_GL20_nglVertexAttribIPointer, false),
-  Java_org_lwjgl_opengl_GL20_nglVertexAttribPointer: webmcNative(Java_org_lwjgl_opengl_GL20_nglVertexAttribPointer, false),
-  Java_org_lwjgl_opengl_GL30_glBindFramebuffer: webmcNative(Java_org_lwjgl_opengl_GL30_glBindFramebuffer, false),
-  Java_org_lwjgl_opengl_GL30_glBindRenderbuffer: webmcNative(Java_org_lwjgl_opengl_GL30_glBindRenderbuffer, false),
-  Java_org_lwjgl_opengl_GL30_glBindVertexArray: webmcNative(Java_org_lwjgl_opengl_GL30_glBindVertexArray, false),
-  Java_org_lwjgl_opengl_GL30_glBlitFramebuffer: webmcNative(Java_org_lwjgl_opengl_GL30_glBlitFramebuffer, false),
-  Java_org_lwjgl_opengl_GL30_glCheckFramebufferStatus: webmcNative(Java_org_lwjgl_opengl_GL30_glCheckFramebufferStatus, false),
-  Java_org_lwjgl_opengl_GL30_glFramebufferRenderbuffer: webmcNative(Java_org_lwjgl_opengl_GL30_glFramebufferRenderbuffer, false),
-  Java_org_lwjgl_opengl_GL30_glFramebufferTexture2D: webmcNative(Java_org_lwjgl_opengl_GL30_glFramebufferTexture2D, false),
-  Java_org_lwjgl_opengl_GL30_glGetStringi: webmcNative(Java_org_lwjgl_opengl_GL30_glGetStringi, false),
-  Java_org_lwjgl_opengl_GL30_glRenderbufferStorage: webmcNative(Java_org_lwjgl_opengl_GL30_glRenderbufferStorage, false),
-  Java_org_lwjgl_opengl_GL30_nglDeleteFramebuffers: webmcNative(Java_org_lwjgl_opengl_GL30_nglDeleteFramebuffers, false),
-  Java_org_lwjgl_opengl_GL30_nglDeleteVertexArrays: webmcNative(Java_org_lwjgl_opengl_GL30_nglDeleteVertexArrays, false),
-  Java_org_lwjgl_opengl_GL30_nglGenFramebuffers: webmcNative(Java_org_lwjgl_opengl_GL30_nglGenFramebuffers, false),
-  Java_org_lwjgl_opengl_GL30_nglGenRenderbuffers: webmcNative(Java_org_lwjgl_opengl_GL30_nglGenRenderbuffers, false),
-  Java_org_lwjgl_opengl_GL30_nglGenVertexArrays: webmcNative(Java_org_lwjgl_opengl_GL30_nglGenVertexArrays, false),
-  Java_org_lwjgl_opengl_GL30_nglGetStringi: webmcNative(Java_org_lwjgl_opengl_GL30_nglGetStringi, false),
-  Java_org_lwjgl_opengl_GL32_glBlendEquationSeparate: webmcNative(Java_org_lwjgl_opengl_GL32_glBlendEquationSeparate, false),
-  Java_org_lwjgl_opengl_GL32_glBlendFuncSeparate: webmcNative(Java_org_lwjgl_opengl_GL32_glBlendFuncSeparate, false),
-  Java_org_lwjgl_system_WebMC_arenaCapacity: webmcNative(Java_org_lwjgl_system_WebMC_arenaCapacity, true),
-  Java_org_lwjgl_system_WebMC_arenaUsed: webmcNative(Java_org_lwjgl_system_WebMC_arenaUsed, true),
-  Java_org_lwjgl_system_WebMC_log: webmcNative(Java_org_lwjgl_system_WebMC_log, false),
-  Java_org_lwjgl_system_WebMC_logText: webmcNative(Java_org_lwjgl_system_WebMC_logText, false),
-  Java_org_lwjgl_system_WebMC_nmemASCII: webmcNative(Java_org_lwjgl_system_WebMC_nmemASCII, false),
-  Java_org_lwjgl_system_WebMC_nmemAlloc: webmcNative(Java_org_lwjgl_system_WebMC_nmemAlloc, true),
-  Java_org_lwjgl_system_WebMC_nmemCopy: webmcNative(Java_org_lwjgl_system_WebMC_nmemCopy, false),
-  Java_org_lwjgl_system_WebMC_nmemFree: webmcNative(Java_org_lwjgl_system_WebMC_nmemFree, false),
-  Java_org_lwjgl_system_WebMC_nmemGetByte: webmcNative(Java_org_lwjgl_system_WebMC_nmemGetByte, false),
-  Java_org_lwjgl_system_WebMC_nmemGetDouble: webmcNative(Java_org_lwjgl_system_WebMC_nmemGetDouble, false),
-  Java_org_lwjgl_system_WebMC_nmemGetFloat: webmcNative(Java_org_lwjgl_system_WebMC_nmemGetFloat, false),
-  Java_org_lwjgl_system_WebMC_nmemGetInt: webmcNative(Java_org_lwjgl_system_WebMC_nmemGetInt, false),
-  Java_org_lwjgl_system_WebMC_nmemGetLong: webmcNative(Java_org_lwjgl_system_WebMC_nmemGetLong, true),
-  Java_org_lwjgl_system_WebMC_nmemGetShort: webmcNative(Java_org_lwjgl_system_WebMC_nmemGetShort, false),
-  Java_org_lwjgl_system_WebMC_nmemPutByte: webmcNative(Java_org_lwjgl_system_WebMC_nmemPutByte, false),
-  Java_org_lwjgl_system_WebMC_nmemPutDouble: webmcNative(Java_org_lwjgl_system_WebMC_nmemPutDouble, false),
-  Java_org_lwjgl_system_WebMC_nmemPutFloat: webmcNative(Java_org_lwjgl_system_WebMC_nmemPutFloat, false),
-  Java_org_lwjgl_system_WebMC_nmemPutInt: webmcNative(Java_org_lwjgl_system_WebMC_nmemPutInt, false),
-  Java_org_lwjgl_system_WebMC_nmemPutLong: webmcNative(Java_org_lwjgl_system_WebMC_nmemPutLong, false),
-  Java_org_lwjgl_system_WebMC_nmemPutShort: webmcNative(Java_org_lwjgl_system_WebMC_nmemPutShort, false),
-  Java_org_lwjgl_system_WebMC_nmemReadBytes: webmcNative(Java_org_lwjgl_system_WebMC_nmemReadBytes, false),
-  Java_org_lwjgl_system_WebMC_nmemSet: webmcNative(Java_org_lwjgl_system_WebMC_nmemSet, false),
-  Java_org_lwjgl_system_WebMC_nmemSlice: webmcNative(Java_org_lwjgl_system_WebMC_nmemSlice, true),
-  Java_org_lwjgl_system_WebMC_nmemUTF8: webmcNative(Java_org_lwjgl_system_WebMC_nmemUTF8, false),
-  Java_org_lwjgl_system_WebMC_nmemWriteBytes: webmcNative(Java_org_lwjgl_system_WebMC_nmemWriteBytes, false),
+  Java_org_lwjgl_glfw_Callbacks_glfwFreeCallbacks: webmcNamed("Java_org_lwjgl_glfw_Callbacks_glfwFreeCallbacks", webmcNative(Java_org_lwjgl_glfw_Callbacks_glfwFreeCallbacks, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwCreateStandardCursor: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwCreateStandardCursor", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwCreateStandardCursor, true)),
+  Java_org_lwjgl_glfw_GLFW_glfwCreateWindow: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwCreateWindow", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwCreateWindow, true)),
+  Java_org_lwjgl_glfw_GLFW_glfwDefaultWindowHints: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwDefaultWindowHints", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwDefaultWindowHints, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwDestroyCursor: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwDestroyCursor", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwDestroyCursor, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwDestroyWindow: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwDestroyWindow", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwDestroyWindow, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwFocusWindow: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwFocusWindow", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwFocusWindow, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwGetClipboardString: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwGetClipboardString", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetClipboardString, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwGetCurrentContext: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwGetCurrentContext", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetCurrentContext, true)),
+  Java_org_lwjgl_glfw_GLFW_glfwGetCursorPos: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwGetCursorPos", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetCursorPos, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwGetError: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwGetError", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetError, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwGetFramebufferSize: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwGetFramebufferSize", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetFramebufferSize, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwGetJoystickName: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwGetJoystickName", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetJoystickName, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwGetKey: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwGetKey", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetKey, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwGetKeyName: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwGetKeyName", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetKeyName, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwGetKeyScancode: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwGetKeyScancode", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetKeyScancode, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwGetMonitorPos: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwGetMonitorPos", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetMonitorPos, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwGetMonitors: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwGetMonitors", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetMonitors, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwGetMouseButton: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwGetMouseButton", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetMouseButton, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwGetPrimaryMonitor: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwGetPrimaryMonitor", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetPrimaryMonitor, true)),
+  Java_org_lwjgl_glfw_GLFW_glfwGetTime: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwGetTime", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetTime, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwGetVersionString: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwGetVersionString", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetVersionString, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwGetVideoMode: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwGetVideoMode", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetVideoMode, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwGetVideoModes: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwGetVideoModes", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetVideoModes, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwGetWindowAttrib: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwGetWindowAttrib", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetWindowAttrib, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwGetWindowContentScale: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwGetWindowContentScale", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetWindowContentScale, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwGetWindowSize: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwGetWindowSize", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetWindowSize, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwHideWindow: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwHideWindow", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwHideWindow, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwIconifyWindow: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwIconifyWindow", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwIconifyWindow, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwInit: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwInit", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwInit, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwJoystickPresent: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwJoystickPresent", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwJoystickPresent, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwMakeContextCurrent: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwMakeContextCurrent", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwMakeContextCurrent, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwMaximizeWindow: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwMaximizeWindow", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwMaximizeWindow, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwPollEvents: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwPollEvents", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwPollEvents, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwPostEmptyEvent: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwPostEmptyEvent", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwPostEmptyEvent, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwRawMouseMotionSupported: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwRawMouseMotionSupported", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwRawMouseMotionSupported, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwRequestWindowAttention: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwRequestWindowAttention", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwRequestWindowAttention, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwRestoreWindow: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwRestoreWindow", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwRestoreWindow, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwSetCharCallback: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetCharCallback", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetCharCallback, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwSetClipboardString: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetClipboardString", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetClipboardString, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwSetCursor: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetCursor", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetCursor, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwSetCursorPos: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetCursorPos", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetCursorPos, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwSetCursorPosCallback: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetCursorPosCallback", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetCursorPosCallback, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwSetDropCallback: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetDropCallback", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetDropCallback, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwSetErrorCallback: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetErrorCallback", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetErrorCallback, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwSetFramebufferSizeCallback: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetFramebufferSizeCallback", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetFramebufferSizeCallback, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwSetInputMode: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetInputMode", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetInputMode, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwSetKeyCallback: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetKeyCallback", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetKeyCallback, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwSetMouseButtonCallback: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetMouseButtonCallback", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetMouseButtonCallback, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwSetScrollCallback: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetScrollCallback", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetScrollCallback, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwSetTime: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetTime", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetTime, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwSetWindowAttrib: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetWindowAttrib", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetWindowAttrib, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwSetWindowCloseCallback: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetWindowCloseCallback", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetWindowCloseCallback, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwSetWindowFocusCallback: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetWindowFocusCallback", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetWindowFocusCallback, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwSetWindowIcon: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetWindowIcon", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetWindowIcon, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwSetWindowPos: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetWindowPos", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetWindowPos, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwSetWindowPosCallback: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetWindowPosCallback", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetWindowPosCallback, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwSetWindowShouldClose: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetWindowShouldClose", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetWindowShouldClose, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwSetWindowSize: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetWindowSize", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetWindowSize, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwSetWindowSizeCallback: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetWindowSizeCallback", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetWindowSizeCallback, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwSetWindowTitle: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetWindowTitle", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetWindowTitle, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwSetWindowUserPointer: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetWindowUserPointer", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetWindowUserPointer, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwShowWindow: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwShowWindow", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwShowWindow, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwSwapBuffers: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSwapBuffers", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSwapBuffers, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwSwapInterval: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSwapInterval", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSwapInterval, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwTerminate: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwTerminate", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwTerminate, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwUpdateGamepadMappings: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwUpdateGamepadMappings", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwUpdateGamepadMappings, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwWaitEvents: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwWaitEvents", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwWaitEvents, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwWaitEventsTimeout: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwWaitEventsTimeout", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwWaitEventsTimeout, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwWindowHint: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwWindowHint", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwWindowHint, false)),
+  Java_org_lwjgl_glfw_GLFW_glfwWindowShouldClose: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwWindowShouldClose", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwWindowShouldClose, false)),
+  Java_org_lwjgl_opengl_GL11_glBindBuffer: webmcNamed("Java_org_lwjgl_opengl_GL11_glBindBuffer", webmcNative(Java_org_lwjgl_opengl_GL11_glBindBuffer, false)),
+  Java_org_lwjgl_opengl_GL11_glBindTexture: webmcNamed("Java_org_lwjgl_opengl_GL11_glBindTexture", webmcNative(Java_org_lwjgl_opengl_GL11_glBindTexture, false)),
+  Java_org_lwjgl_opengl_GL11_glBlendEquation: webmcNamed("Java_org_lwjgl_opengl_GL11_glBlendEquation", webmcNative(Java_org_lwjgl_opengl_GL11_glBlendEquation, false)),
+  Java_org_lwjgl_opengl_GL11_glBlendFunc: webmcNamed("Java_org_lwjgl_opengl_GL11_glBlendFunc", webmcNative(Java_org_lwjgl_opengl_GL11_glBlendFunc, false)),
+  Java_org_lwjgl_opengl_GL11_glBlendFuncSeparate: webmcNamed("Java_org_lwjgl_opengl_GL11_glBlendFuncSeparate", webmcNative(Java_org_lwjgl_opengl_GL11_glBlendFuncSeparate, false)),
+  Java_org_lwjgl_opengl_GL11_glClear: webmcNamed("Java_org_lwjgl_opengl_GL11_glClear", webmcNative(Java_org_lwjgl_opengl_GL11_glClear, false)),
+  Java_org_lwjgl_opengl_GL11_glClearColor: webmcNamed("Java_org_lwjgl_opengl_GL11_glClearColor", webmcNative(Java_org_lwjgl_opengl_GL11_glClearColor, false)),
+  Java_org_lwjgl_opengl_GL11_glClearDepth: webmcNamed("Java_org_lwjgl_opengl_GL11_glClearDepth", webmcNative(Java_org_lwjgl_opengl_GL11_glClearDepth, false)),
+  Java_org_lwjgl_opengl_GL11_glClearStencil: webmcNamed("Java_org_lwjgl_opengl_GL11_glClearStencil", webmcNative(Java_org_lwjgl_opengl_GL11_glClearStencil, false)),
+  Java_org_lwjgl_opengl_GL11_glColorMask: webmcNamed("Java_org_lwjgl_opengl_GL11_glColorMask", webmcNative(Java_org_lwjgl_opengl_GL11_glColorMask, false)),
+  Java_org_lwjgl_opengl_GL11_glCullFace: webmcNamed("Java_org_lwjgl_opengl_GL11_glCullFace", webmcNative(Java_org_lwjgl_opengl_GL11_glCullFace, false)),
+  Java_org_lwjgl_opengl_GL11_glDepthFunc: webmcNamed("Java_org_lwjgl_opengl_GL11_glDepthFunc", webmcNative(Java_org_lwjgl_opengl_GL11_glDepthFunc, false)),
+  Java_org_lwjgl_opengl_GL11_glDepthMask: webmcNamed("Java_org_lwjgl_opengl_GL11_glDepthMask", webmcNative(Java_org_lwjgl_opengl_GL11_glDepthMask, false)),
+  Java_org_lwjgl_opengl_GL11_glDepthRange: webmcNamed("Java_org_lwjgl_opengl_GL11_glDepthRange", webmcNative(Java_org_lwjgl_opengl_GL11_glDepthRange, false)),
+  Java_org_lwjgl_opengl_GL11_glDisable: webmcNamed("Java_org_lwjgl_opengl_GL11_glDisable", webmcNative(Java_org_lwjgl_opengl_GL11_glDisable, false)),
+  Java_org_lwjgl_opengl_GL11_glDrawArrays: webmcNamed("Java_org_lwjgl_opengl_GL11_glDrawArrays", webmcNative(Java_org_lwjgl_opengl_GL11_glDrawArrays, false)),
+  Java_org_lwjgl_opengl_GL11_glDrawElements: webmcNamed("Java_org_lwjgl_opengl_GL11_glDrawElements", webmcNative(Java_org_lwjgl_opengl_GL11_glDrawElements, false)),
+  Java_org_lwjgl_opengl_GL11_glEnable: webmcNamed("Java_org_lwjgl_opengl_GL11_glEnable", webmcNative(Java_org_lwjgl_opengl_GL11_glEnable, false)),
+  Java_org_lwjgl_opengl_GL11_glFinish: webmcNamed("Java_org_lwjgl_opengl_GL11_glFinish", webmcNative(Java_org_lwjgl_opengl_GL11_glFinish, false)),
+  Java_org_lwjgl_opengl_GL11_glFlush: webmcNamed("Java_org_lwjgl_opengl_GL11_glFlush", webmcNative(Java_org_lwjgl_opengl_GL11_glFlush, false)),
+  Java_org_lwjgl_opengl_GL11_glFrontFace: webmcNamed("Java_org_lwjgl_opengl_GL11_glFrontFace", webmcNative(Java_org_lwjgl_opengl_GL11_glFrontFace, false)),
+  Java_org_lwjgl_opengl_GL11_glGenBuffers: webmcNamed("Java_org_lwjgl_opengl_GL11_glGenBuffers", webmcNative(Java_org_lwjgl_opengl_GL11_glGenBuffers, false)),
+  Java_org_lwjgl_opengl_GL11_glGenerateMipmap: webmcNamed("Java_org_lwjgl_opengl_GL11_glGenerateMipmap", webmcNative(Java_org_lwjgl_opengl_GL11_glGenerateMipmap, false)),
+  Java_org_lwjgl_opengl_GL11_glGetBoolean: webmcNamed("Java_org_lwjgl_opengl_GL11_glGetBoolean", webmcNative(Java_org_lwjgl_opengl_GL11_glGetBoolean, false)),
+  Java_org_lwjgl_opengl_GL11_glGetError: webmcNamed("Java_org_lwjgl_opengl_GL11_glGetError", webmcNative(Java_org_lwjgl_opengl_GL11_glGetError, false)),
+  Java_org_lwjgl_opengl_GL11_glGetFloat: webmcNamed("Java_org_lwjgl_opengl_GL11_glGetFloat", webmcNative(Java_org_lwjgl_opengl_GL11_glGetFloat, false)),
+  Java_org_lwjgl_opengl_GL11_glGetInteger: webmcNamed("Java_org_lwjgl_opengl_GL11_glGetInteger", webmcNative(Java_org_lwjgl_opengl_GL11_glGetInteger, false)),
+  Java_org_lwjgl_opengl_GL11_glGetIntegeri: webmcNamed("Java_org_lwjgl_opengl_GL11_glGetIntegeri", webmcNative(Java_org_lwjgl_opengl_GL11_glGetIntegeri, false)),
+  Java_org_lwjgl_opengl_GL11_glGetString: webmcNamed("Java_org_lwjgl_opengl_GL11_glGetString", webmcNative(Java_org_lwjgl_opengl_GL11_glGetString, false)),
+  Java_org_lwjgl_opengl_GL11_glHint: webmcNamed("Java_org_lwjgl_opengl_GL11_glHint", webmcNative(Java_org_lwjgl_opengl_GL11_glHint, false)),
+  Java_org_lwjgl_opengl_GL11_glIsEnabled: webmcNamed("Java_org_lwjgl_opengl_GL11_glIsEnabled", webmcNative(Java_org_lwjgl_opengl_GL11_glIsEnabled, false)),
+  Java_org_lwjgl_opengl_GL11_glLineWidth: webmcNamed("Java_org_lwjgl_opengl_GL11_glLineWidth", webmcNative(Java_org_lwjgl_opengl_GL11_glLineWidth, false)),
+  Java_org_lwjgl_opengl_GL11_glPixelStorei: webmcNamed("Java_org_lwjgl_opengl_GL11_glPixelStorei", webmcNative(Java_org_lwjgl_opengl_GL11_glPixelStorei, false)),
+  Java_org_lwjgl_opengl_GL11_glReadPixels: webmcNamed("Java_org_lwjgl_opengl_GL11_glReadPixels", webmcNative(Java_org_lwjgl_opengl_GL11_glReadPixels, false)),
+  Java_org_lwjgl_opengl_GL11_glScissor: webmcNamed("Java_org_lwjgl_opengl_GL11_glScissor", webmcNative(Java_org_lwjgl_opengl_GL11_glScissor, false)),
+  Java_org_lwjgl_opengl_GL11_glTexImage2D: webmcNamed("Java_org_lwjgl_opengl_GL11_glTexImage2D", webmcNative(Java_org_lwjgl_opengl_GL11_glTexImage2D, false)),
+  Java_org_lwjgl_opengl_GL11_glTexParameterf: webmcNamed("Java_org_lwjgl_opengl_GL11_glTexParameterf", webmcNative(Java_org_lwjgl_opengl_GL11_glTexParameterf, false)),
+  Java_org_lwjgl_opengl_GL11_glTexParameteri: webmcNamed("Java_org_lwjgl_opengl_GL11_glTexParameteri", webmcNative(Java_org_lwjgl_opengl_GL11_glTexParameteri, false)),
+  Java_org_lwjgl_opengl_GL11_glTexSubImage2D: webmcNamed("Java_org_lwjgl_opengl_GL11_glTexSubImage2D", webmcNative(Java_org_lwjgl_opengl_GL11_glTexSubImage2D, false)),
+  Java_org_lwjgl_opengl_GL11_glViewport: webmcNamed("Java_org_lwjgl_opengl_GL11_glViewport", webmcNative(Java_org_lwjgl_opengl_GL11_glViewport, false)),
+  Java_org_lwjgl_opengl_GL11_nglBufferData: webmcNamed("Java_org_lwjgl_opengl_GL11_nglBufferData", webmcNative(Java_org_lwjgl_opengl_GL11_nglBufferData, false)),
+  Java_org_lwjgl_opengl_GL11_nglBufferData1: webmcNamed("Java_org_lwjgl_opengl_GL11_nglBufferData1", webmcNative(Java_org_lwjgl_opengl_GL11_nglBufferData1, false)),
+  Java_org_lwjgl_opengl_GL11_nglBufferSubData: webmcNamed("Java_org_lwjgl_opengl_GL11_nglBufferSubData", webmcNative(Java_org_lwjgl_opengl_GL11_nglBufferSubData, false)),
+  Java_org_lwjgl_opengl_GL11_nglDeleteBuffers: webmcNamed("Java_org_lwjgl_opengl_GL11_nglDeleteBuffers", webmcNative(Java_org_lwjgl_opengl_GL11_nglDeleteBuffers, false)),
+  Java_org_lwjgl_opengl_GL11_nglDeleteTextures: webmcNamed("Java_org_lwjgl_opengl_GL11_nglDeleteTextures", webmcNative(Java_org_lwjgl_opengl_GL11_nglDeleteTextures, false)),
+  Java_org_lwjgl_opengl_GL11_nglDrawArrays: webmcNamed("Java_org_lwjgl_opengl_GL11_nglDrawArrays", webmcNative(Java_org_lwjgl_opengl_GL11_nglDrawArrays, false)),
+  Java_org_lwjgl_opengl_GL11_nglDrawElements: webmcNamed("Java_org_lwjgl_opengl_GL11_nglDrawElements", webmcNative(Java_org_lwjgl_opengl_GL11_nglDrawElements, false)),
+  Java_org_lwjgl_opengl_GL11_nglGenBuffers: webmcNamed("Java_org_lwjgl_opengl_GL11_nglGenBuffers", webmcNative(Java_org_lwjgl_opengl_GL11_nglGenBuffers, false)),
+  Java_org_lwjgl_opengl_GL11_nglGenTextures: webmcNamed("Java_org_lwjgl_opengl_GL11_nglGenTextures", webmcNative(Java_org_lwjgl_opengl_GL11_nglGenTextures, false)),
+  Java_org_lwjgl_opengl_GL11_nglGetIntegerv: webmcNamed("Java_org_lwjgl_opengl_GL11_nglGetIntegerv", webmcNative(Java_org_lwjgl_opengl_GL11_nglGetIntegerv, false)),
+  Java_org_lwjgl_opengl_GL11_nglReadPixels: webmcNamed("Java_org_lwjgl_opengl_GL11_nglReadPixels", webmcNative(Java_org_lwjgl_opengl_GL11_nglReadPixels, false)),
+  Java_org_lwjgl_opengl_GL11_nglTexImage2D: webmcNamed("Java_org_lwjgl_opengl_GL11_nglTexImage2D", webmcNative(Java_org_lwjgl_opengl_GL11_nglTexImage2D, false)),
+  Java_org_lwjgl_opengl_GL11_nglTexSubImage2D: webmcNamed("Java_org_lwjgl_opengl_GL11_nglTexSubImage2D", webmcNative(Java_org_lwjgl_opengl_GL11_nglTexSubImage2D, false)),
+  Java_org_lwjgl_opengl_GL13_glActiveTexture: webmcNamed("Java_org_lwjgl_opengl_GL13_glActiveTexture", webmcNative(Java_org_lwjgl_opengl_GL13_glActiveTexture, false)),
+  Java_org_lwjgl_opengl_GL13_glTexParameteri: webmcNamed("Java_org_lwjgl_opengl_GL13_glTexParameteri", webmcNative(Java_org_lwjgl_opengl_GL13_glTexParameteri, false)),
+  Java_org_lwjgl_opengl_GL13_nglDeleteTextures: webmcNamed("Java_org_lwjgl_opengl_GL13_nglDeleteTextures", webmcNative(Java_org_lwjgl_opengl_GL13_nglDeleteTextures, false)),
+  Java_org_lwjgl_opengl_GL13_nglGenTextures: webmcNamed("Java_org_lwjgl_opengl_GL13_nglGenTextures", webmcNative(Java_org_lwjgl_opengl_GL13_nglGenTextures, false)),
+  Java_org_lwjgl_opengl_GL14_glBlendEquation: webmcNamed("Java_org_lwjgl_opengl_GL14_glBlendEquation", webmcNative(Java_org_lwjgl_opengl_GL14_glBlendEquation, false)),
+  Java_org_lwjgl_opengl_GL14_glBlendFuncSeparate: webmcNamed("Java_org_lwjgl_opengl_GL14_glBlendFuncSeparate", webmcNative(Java_org_lwjgl_opengl_GL14_glBlendFuncSeparate, false)),
+  Java_org_lwjgl_opengl_GL15_glBindBuffer: webmcNamed("Java_org_lwjgl_opengl_GL15_glBindBuffer", webmcNative(Java_org_lwjgl_opengl_GL15_glBindBuffer, false)),
+  Java_org_lwjgl_opengl_GL15_nglBufferData: webmcNamed("Java_org_lwjgl_opengl_GL15_nglBufferData", webmcNative(Java_org_lwjgl_opengl_GL15_nglBufferData, false)),
+  Java_org_lwjgl_opengl_GL15_nglBufferSubData: webmcNamed("Java_org_lwjgl_opengl_GL15_nglBufferSubData", webmcNative(Java_org_lwjgl_opengl_GL15_nglBufferSubData, false)),
+  Java_org_lwjgl_opengl_GL15_nglDeleteBuffers: webmcNamed("Java_org_lwjgl_opengl_GL15_nglDeleteBuffers", webmcNative(Java_org_lwjgl_opengl_GL15_nglDeleteBuffers, false)),
+  Java_org_lwjgl_opengl_GL15_nglGenBuffers: webmcNamed("Java_org_lwjgl_opengl_GL15_nglGenBuffers", webmcNative(Java_org_lwjgl_opengl_GL15_nglGenBuffers, false)),
+  Java_org_lwjgl_opengl_GL20_glAttachShader: webmcNamed("Java_org_lwjgl_opengl_GL20_glAttachShader", webmcNative(Java_org_lwjgl_opengl_GL20_glAttachShader, false)),
+  Java_org_lwjgl_opengl_GL20_glBindAttribLocation: webmcNamed("Java_org_lwjgl_opengl_GL20_glBindAttribLocation", webmcNative(Java_org_lwjgl_opengl_GL20_glBindAttribLocation, false)),
+  Java_org_lwjgl_opengl_GL20_glCompileShader: webmcNamed("Java_org_lwjgl_opengl_GL20_glCompileShader", webmcNative(Java_org_lwjgl_opengl_GL20_glCompileShader, false)),
+  Java_org_lwjgl_opengl_GL20_glCreateProgram: webmcNamed("Java_org_lwjgl_opengl_GL20_glCreateProgram", webmcNative(Java_org_lwjgl_opengl_GL20_glCreateProgram, false)),
+  Java_org_lwjgl_opengl_GL20_glCreateShader: webmcNamed("Java_org_lwjgl_opengl_GL20_glCreateShader", webmcNative(Java_org_lwjgl_opengl_GL20_glCreateShader, false)),
+  Java_org_lwjgl_opengl_GL20_glDeleteProgram: webmcNamed("Java_org_lwjgl_opengl_GL20_glDeleteProgram", webmcNative(Java_org_lwjgl_opengl_GL20_glDeleteProgram, false)),
+  Java_org_lwjgl_opengl_GL20_glDeleteShader: webmcNamed("Java_org_lwjgl_opengl_GL20_glDeleteShader", webmcNative(Java_org_lwjgl_opengl_GL20_glDeleteShader, false)),
+  Java_org_lwjgl_opengl_GL20_glDetachShader: webmcNamed("Java_org_lwjgl_opengl_GL20_glDetachShader", webmcNative(Java_org_lwjgl_opengl_GL20_glDetachShader, false)),
+  Java_org_lwjgl_opengl_GL20_glDisableVertexAttribArray: webmcNamed("Java_org_lwjgl_opengl_GL20_glDisableVertexAttribArray", webmcNative(Java_org_lwjgl_opengl_GL20_glDisableVertexAttribArray, false)),
+  Java_org_lwjgl_opengl_GL20_glEnableVertexAttribArray: webmcNamed("Java_org_lwjgl_opengl_GL20_glEnableVertexAttribArray", webmcNative(Java_org_lwjgl_opengl_GL20_glEnableVertexAttribArray, false)),
+  Java_org_lwjgl_opengl_GL20_glGetAttribLocation: webmcNamed("Java_org_lwjgl_opengl_GL20_glGetAttribLocation", webmcNative(Java_org_lwjgl_opengl_GL20_glGetAttribLocation, false)),
+  Java_org_lwjgl_opengl_GL20_glGetProgramInfoLog: webmcNamed("Java_org_lwjgl_opengl_GL20_glGetProgramInfoLog", webmcNative(Java_org_lwjgl_opengl_GL20_glGetProgramInfoLog, false)),
+  Java_org_lwjgl_opengl_GL20_glGetProgrami: webmcNamed("Java_org_lwjgl_opengl_GL20_glGetProgrami", webmcNative(Java_org_lwjgl_opengl_GL20_glGetProgrami, false)),
+  Java_org_lwjgl_opengl_GL20_glGetShaderInfoLog: webmcNamed("Java_org_lwjgl_opengl_GL20_glGetShaderInfoLog", webmcNative(Java_org_lwjgl_opengl_GL20_glGetShaderInfoLog, false)),
+  Java_org_lwjgl_opengl_GL20_glGetShaderi: webmcNamed("Java_org_lwjgl_opengl_GL20_glGetShaderi", webmcNative(Java_org_lwjgl_opengl_GL20_glGetShaderi, false)),
+  Java_org_lwjgl_opengl_GL20_glGetUniformLocation: webmcNamed("Java_org_lwjgl_opengl_GL20_glGetUniformLocation", webmcNative(Java_org_lwjgl_opengl_GL20_glGetUniformLocation, false)),
+  Java_org_lwjgl_opengl_GL20_glLinkProgram: webmcNamed("Java_org_lwjgl_opengl_GL20_glLinkProgram", webmcNative(Java_org_lwjgl_opengl_GL20_glLinkProgram, false)),
+  Java_org_lwjgl_opengl_GL20_glShaderSource: webmcNamed("Java_org_lwjgl_opengl_GL20_glShaderSource", webmcNative(Java_org_lwjgl_opengl_GL20_glShaderSource, false)),
+  Java_org_lwjgl_opengl_GL20_glUniform1f: webmcNamed("Java_org_lwjgl_opengl_GL20_glUniform1f", webmcNative(Java_org_lwjgl_opengl_GL20_glUniform1f, false)),
+  Java_org_lwjgl_opengl_GL20_glUniform1i: webmcNamed("Java_org_lwjgl_opengl_GL20_glUniform1i", webmcNative(Java_org_lwjgl_opengl_GL20_glUniform1i, false)),
+  Java_org_lwjgl_opengl_GL20_glUniform1iv: webmcNamed("Java_org_lwjgl_opengl_GL20_glUniform1iv", webmcNative(Java_org_lwjgl_opengl_GL20_glUniform1iv, false)),
+  Java_org_lwjgl_opengl_GL20_glUniform2f: webmcNamed("Java_org_lwjgl_opengl_GL20_glUniform2f", webmcNative(Java_org_lwjgl_opengl_GL20_glUniform2f, false)),
+  Java_org_lwjgl_opengl_GL20_glUniform2fv: webmcNamed("Java_org_lwjgl_opengl_GL20_glUniform2fv", webmcNative(Java_org_lwjgl_opengl_GL20_glUniform2fv, false)),
+  Java_org_lwjgl_opengl_GL20_glUniform3f: webmcNamed("Java_org_lwjgl_opengl_GL20_glUniform3f", webmcNative(Java_org_lwjgl_opengl_GL20_glUniform3f, false)),
+  Java_org_lwjgl_opengl_GL20_glUniform3fv: webmcNamed("Java_org_lwjgl_opengl_GL20_glUniform3fv", webmcNative(Java_org_lwjgl_opengl_GL20_glUniform3fv, false)),
+  Java_org_lwjgl_opengl_GL20_glUniform4f: webmcNamed("Java_org_lwjgl_opengl_GL20_glUniform4f", webmcNative(Java_org_lwjgl_opengl_GL20_glUniform4f, false)),
+  Java_org_lwjgl_opengl_GL20_glUniform4fv: webmcNamed("Java_org_lwjgl_opengl_GL20_glUniform4fv", webmcNative(Java_org_lwjgl_opengl_GL20_glUniform4fv, false)),
+  Java_org_lwjgl_opengl_GL20_glUniformMatrix2fv: webmcNamed("Java_org_lwjgl_opengl_GL20_glUniformMatrix2fv", webmcNative(Java_org_lwjgl_opengl_GL20_glUniformMatrix2fv, false)),
+  Java_org_lwjgl_opengl_GL20_glUniformMatrix3fv: webmcNamed("Java_org_lwjgl_opengl_GL20_glUniformMatrix3fv", webmcNative(Java_org_lwjgl_opengl_GL20_glUniformMatrix3fv, false)),
+  Java_org_lwjgl_opengl_GL20_glUniformMatrix4fv: webmcNamed("Java_org_lwjgl_opengl_GL20_glUniformMatrix4fv", webmcNative(Java_org_lwjgl_opengl_GL20_glUniformMatrix4fv, false)),
+  Java_org_lwjgl_opengl_GL20_glUseProgram: webmcNamed("Java_org_lwjgl_opengl_GL20_glUseProgram", webmcNative(Java_org_lwjgl_opengl_GL20_glUseProgram, false)),
+  Java_org_lwjgl_opengl_GL20_nglGenBuffers: webmcNamed("Java_org_lwjgl_opengl_GL20_nglGenBuffers", webmcNative(Java_org_lwjgl_opengl_GL20_nglGenBuffers, false)),
+  Java_org_lwjgl_opengl_GL20_nglGetProgramiv: webmcNamed("Java_org_lwjgl_opengl_GL20_nglGetProgramiv", webmcNative(Java_org_lwjgl_opengl_GL20_nglGetProgramiv, false)),
+  Java_org_lwjgl_opengl_GL20_nglGetShaderiv: webmcNamed("Java_org_lwjgl_opengl_GL20_nglGetShaderiv", webmcNative(Java_org_lwjgl_opengl_GL20_nglGetShaderiv, false)),
+  Java_org_lwjgl_opengl_GL20_nglShaderSource: webmcNamed("Java_org_lwjgl_opengl_GL20_nglShaderSource", webmcNative(Java_org_lwjgl_opengl_GL20_nglShaderSource, false)),
+  Java_org_lwjgl_opengl_GL20_nglUniform1fv: webmcNamed("Java_org_lwjgl_opengl_GL20_nglUniform1fv", webmcNative(Java_org_lwjgl_opengl_GL20_nglUniform1fv, false)),
+  Java_org_lwjgl_opengl_GL20_nglUniformMatrix4fv: webmcNamed("Java_org_lwjgl_opengl_GL20_nglUniformMatrix4fv", webmcNative(Java_org_lwjgl_opengl_GL20_nglUniformMatrix4fv, false)),
+  Java_org_lwjgl_opengl_GL20_nglVertexAttribIPointer: webmcNamed("Java_org_lwjgl_opengl_GL20_nglVertexAttribIPointer", webmcNative(Java_org_lwjgl_opengl_GL20_nglVertexAttribIPointer, false)),
+  Java_org_lwjgl_opengl_GL20_nglVertexAttribPointer: webmcNamed("Java_org_lwjgl_opengl_GL20_nglVertexAttribPointer", webmcNative(Java_org_lwjgl_opengl_GL20_nglVertexAttribPointer, false)),
+  Java_org_lwjgl_opengl_GL30_glBindFramebuffer: webmcNamed("Java_org_lwjgl_opengl_GL30_glBindFramebuffer", webmcNative(Java_org_lwjgl_opengl_GL30_glBindFramebuffer, false)),
+  Java_org_lwjgl_opengl_GL30_glBindRenderbuffer: webmcNamed("Java_org_lwjgl_opengl_GL30_glBindRenderbuffer", webmcNative(Java_org_lwjgl_opengl_GL30_glBindRenderbuffer, false)),
+  Java_org_lwjgl_opengl_GL30_glBindVertexArray: webmcNamed("Java_org_lwjgl_opengl_GL30_glBindVertexArray", webmcNative(Java_org_lwjgl_opengl_GL30_glBindVertexArray, false)),
+  Java_org_lwjgl_opengl_GL30_glBlitFramebuffer: webmcNamed("Java_org_lwjgl_opengl_GL30_glBlitFramebuffer", webmcNative(Java_org_lwjgl_opengl_GL30_glBlitFramebuffer, false)),
+  Java_org_lwjgl_opengl_GL30_glCheckFramebufferStatus: webmcNamed("Java_org_lwjgl_opengl_GL30_glCheckFramebufferStatus", webmcNative(Java_org_lwjgl_opengl_GL30_glCheckFramebufferStatus, false)),
+  Java_org_lwjgl_opengl_GL30_glFramebufferRenderbuffer: webmcNamed("Java_org_lwjgl_opengl_GL30_glFramebufferRenderbuffer", webmcNative(Java_org_lwjgl_opengl_GL30_glFramebufferRenderbuffer, false)),
+  Java_org_lwjgl_opengl_GL30_glFramebufferTexture2D: webmcNamed("Java_org_lwjgl_opengl_GL30_glFramebufferTexture2D", webmcNative(Java_org_lwjgl_opengl_GL30_glFramebufferTexture2D, false)),
+  Java_org_lwjgl_opengl_GL30_glGetStringi: webmcNamed("Java_org_lwjgl_opengl_GL30_glGetStringi", webmcNative(Java_org_lwjgl_opengl_GL30_glGetStringi, false)),
+  Java_org_lwjgl_opengl_GL30_glRenderbufferStorage: webmcNamed("Java_org_lwjgl_opengl_GL30_glRenderbufferStorage", webmcNative(Java_org_lwjgl_opengl_GL30_glRenderbufferStorage, false)),
+  Java_org_lwjgl_opengl_GL30_nglDeleteFramebuffers: webmcNamed("Java_org_lwjgl_opengl_GL30_nglDeleteFramebuffers", webmcNative(Java_org_lwjgl_opengl_GL30_nglDeleteFramebuffers, false)),
+  Java_org_lwjgl_opengl_GL30_nglDeleteVertexArrays: webmcNamed("Java_org_lwjgl_opengl_GL30_nglDeleteVertexArrays", webmcNative(Java_org_lwjgl_opengl_GL30_nglDeleteVertexArrays, false)),
+  Java_org_lwjgl_opengl_GL30_nglGenFramebuffers: webmcNamed("Java_org_lwjgl_opengl_GL30_nglGenFramebuffers", webmcNative(Java_org_lwjgl_opengl_GL30_nglGenFramebuffers, false)),
+  Java_org_lwjgl_opengl_GL30_nglGenRenderbuffers: webmcNamed("Java_org_lwjgl_opengl_GL30_nglGenRenderbuffers", webmcNative(Java_org_lwjgl_opengl_GL30_nglGenRenderbuffers, false)),
+  Java_org_lwjgl_opengl_GL30_nglGenVertexArrays: webmcNamed("Java_org_lwjgl_opengl_GL30_nglGenVertexArrays", webmcNative(Java_org_lwjgl_opengl_GL30_nglGenVertexArrays, false)),
+  Java_org_lwjgl_opengl_GL30_nglGetStringi: webmcNamed("Java_org_lwjgl_opengl_GL30_nglGetStringi", webmcNative(Java_org_lwjgl_opengl_GL30_nglGetStringi, false)),
+  Java_org_lwjgl_opengl_GL32_glBlendEquationSeparate: webmcNamed("Java_org_lwjgl_opengl_GL32_glBlendEquationSeparate", webmcNative(Java_org_lwjgl_opengl_GL32_glBlendEquationSeparate, false)),
+  Java_org_lwjgl_opengl_GL32_glBlendFuncSeparate: webmcNamed("Java_org_lwjgl_opengl_GL32_glBlendFuncSeparate", webmcNative(Java_org_lwjgl_opengl_GL32_glBlendFuncSeparate, false)),
+  Java_org_lwjgl_system_WebMC_arenaCapacity: webmcNamed("Java_org_lwjgl_system_WebMC_arenaCapacity", webmcNative(Java_org_lwjgl_system_WebMC_arenaCapacity, true)),
+  Java_org_lwjgl_system_WebMC_arenaUsed: webmcNamed("Java_org_lwjgl_system_WebMC_arenaUsed", webmcNative(Java_org_lwjgl_system_WebMC_arenaUsed, true)),
+  Java_org_lwjgl_system_WebMC_log: webmcNamed("Java_org_lwjgl_system_WebMC_log", webmcNative(Java_org_lwjgl_system_WebMC_log, false)),
+  Java_org_lwjgl_system_WebMC_logText: webmcNamed("Java_org_lwjgl_system_WebMC_logText", webmcNative(Java_org_lwjgl_system_WebMC_logText, false)),
+  Java_org_lwjgl_system_WebMC_nmemASCII: webmcNamed("Java_org_lwjgl_system_WebMC_nmemASCII", webmcNative(Java_org_lwjgl_system_WebMC_nmemASCII, false)),
+  Java_org_lwjgl_system_WebMC_nmemAlloc: webmcNamed("Java_org_lwjgl_system_WebMC_nmemAlloc", webmcNative(Java_org_lwjgl_system_WebMC_nmemAlloc, true)),
+  Java_org_lwjgl_system_WebMC_nmemCopy: webmcNamed("Java_org_lwjgl_system_WebMC_nmemCopy", webmcNative(Java_org_lwjgl_system_WebMC_nmemCopy, false)),
+  Java_org_lwjgl_system_WebMC_nmemFree: webmcNamed("Java_org_lwjgl_system_WebMC_nmemFree", webmcNative(Java_org_lwjgl_system_WebMC_nmemFree, false)),
+  Java_org_lwjgl_system_WebMC_nmemGetByte: webmcNamed("Java_org_lwjgl_system_WebMC_nmemGetByte", webmcNative(Java_org_lwjgl_system_WebMC_nmemGetByte, false)),
+  Java_org_lwjgl_system_WebMC_nmemGetDouble: webmcNamed("Java_org_lwjgl_system_WebMC_nmemGetDouble", webmcNative(Java_org_lwjgl_system_WebMC_nmemGetDouble, false)),
+  Java_org_lwjgl_system_WebMC_nmemGetFloat: webmcNamed("Java_org_lwjgl_system_WebMC_nmemGetFloat", webmcNative(Java_org_lwjgl_system_WebMC_nmemGetFloat, false)),
+  Java_org_lwjgl_system_WebMC_nmemGetInt: webmcNamed("Java_org_lwjgl_system_WebMC_nmemGetInt", webmcNative(Java_org_lwjgl_system_WebMC_nmemGetInt, false)),
+  Java_org_lwjgl_system_WebMC_nmemGetLong: webmcNamed("Java_org_lwjgl_system_WebMC_nmemGetLong", webmcNative(Java_org_lwjgl_system_WebMC_nmemGetLong, true)),
+  Java_org_lwjgl_system_WebMC_nmemGetShort: webmcNamed("Java_org_lwjgl_system_WebMC_nmemGetShort", webmcNative(Java_org_lwjgl_system_WebMC_nmemGetShort, false)),
+  Java_org_lwjgl_system_WebMC_nmemPutByte: webmcNamed("Java_org_lwjgl_system_WebMC_nmemPutByte", webmcNative(Java_org_lwjgl_system_WebMC_nmemPutByte, false)),
+  Java_org_lwjgl_system_WebMC_nmemPutDouble: webmcNamed("Java_org_lwjgl_system_WebMC_nmemPutDouble", webmcNative(Java_org_lwjgl_system_WebMC_nmemPutDouble, false)),
+  Java_org_lwjgl_system_WebMC_nmemPutFloat: webmcNamed("Java_org_lwjgl_system_WebMC_nmemPutFloat", webmcNative(Java_org_lwjgl_system_WebMC_nmemPutFloat, false)),
+  Java_org_lwjgl_system_WebMC_nmemPutInt: webmcNamed("Java_org_lwjgl_system_WebMC_nmemPutInt", webmcNative(Java_org_lwjgl_system_WebMC_nmemPutInt, false)),
+  Java_org_lwjgl_system_WebMC_nmemPutLong: webmcNamed("Java_org_lwjgl_system_WebMC_nmemPutLong", webmcNative(Java_org_lwjgl_system_WebMC_nmemPutLong, false)),
+  Java_org_lwjgl_system_WebMC_nmemPutShort: webmcNamed("Java_org_lwjgl_system_WebMC_nmemPutShort", webmcNative(Java_org_lwjgl_system_WebMC_nmemPutShort, false)),
+  Java_org_lwjgl_system_WebMC_nmemReadBytes: webmcNamed("Java_org_lwjgl_system_WebMC_nmemReadBytes", webmcNative(Java_org_lwjgl_system_WebMC_nmemReadBytes, false)),
+  Java_org_lwjgl_system_WebMC_nmemSet: webmcNamed("Java_org_lwjgl_system_WebMC_nmemSet", webmcNative(Java_org_lwjgl_system_WebMC_nmemSet, false)),
+  Java_org_lwjgl_system_WebMC_nmemSlice: webmcNamed("Java_org_lwjgl_system_WebMC_nmemSlice", webmcNative(Java_org_lwjgl_system_WebMC_nmemSlice, true)),
+  Java_org_lwjgl_system_WebMC_nmemUTF8: webmcNamed("Java_org_lwjgl_system_WebMC_nmemUTF8", webmcNative(Java_org_lwjgl_system_WebMC_nmemUTF8, false)),
+  Java_org_lwjgl_system_WebMC_nmemWriteBytes: webmcNamed("Java_org_lwjgl_system_WebMC_nmemWriteBytes", webmcNative(Java_org_lwjgl_system_WebMC_nmemWriteBytes, false)),
 };
 
 export const count = 216;

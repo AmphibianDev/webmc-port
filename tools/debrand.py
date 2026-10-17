@@ -155,18 +155,118 @@ def clear_brand_text(html: str, report: dict) -> str:
 
 
 def toggle_script() -> str:
-    """The switch that brings the console back, added by this tool rather than by hand.
+    """The switch that brings a console back, and makes it useful.
 
-    Hiding the engine's console takes away the only place a player can read the client's own log, so the
-    hiding is reversible with `?log=1`. That listener has to travel with the page, which means it belongs in
-    the tool that edits the page - an edit made by hand is an edit the next published asset throws away,
-    which is exactly what happened to it once.
+    Hiding the engine's console took away the only place a player can read the client's own log. Adding a
+    switch was not enough on its own: the engine only prints its own channels, so on a frozen client - which is
+    the case this exists for - `?log=1` showed an empty box. This now installs a real console:
+
+      * `console.log/warn/error` and uncaught errors and rejections are mirrored into the panel, so whatever the
+        compiled client says is visible without devtools;
+      * a Worker ticks every second and posts a heartbeat, so when the page's main thread is *blocked* - which
+        is what a frozen loading screen is - the last heartbeat's age is printed. A timer inside the page could
+        not report that: a blocked main thread runs no timers, and a page that cannot print is exactly the
+        symptom being reported;
+      * everything is copyable with one button, because the point is to send it to somebody.
+
+    Written by this tool rather than by hand: an edit made by hand lasts until the next published asset
+    replaces it, which is what happened to the first version.
     """
-    return (f'{SCRIPT_MARK}'
-            '/* WebMC: ?log=1 brings the client console back, so a bug can be reported with its own stack '
-            'trace instead of a description of a frozen screen. */'
-            'try{if(/[?&]log=1/.test(location.search))document.documentElement.classList.add("webmc-log")}'
-            'catch(e){}</script>')
+    script = r"""
+(function () {
+  if (window.__webmcLog) return;
+  window.__webmcLog = true;
+  var panel = document.getElementById("status");
+  if (!panel) {
+    panel = document.createElement("pre");
+    panel.id = "status";
+    document.body.appendChild(panel);
+  }
+  panel.setAttribute("aria-label", "client log");
+  var lines = [];
+  function stamp() {
+    var d = new Date();
+    return d.toTimeString().slice(0, 8) + "." + String(d.getMilliseconds()).padStart(3, "0");
+  }
+  function write(text, cls) {
+    lines.push(stamp() + "  " + text);
+    if (lines.length > 500) lines.shift();
+    var line = document.createElement("div");
+    if (cls) line.style.color = cls;
+    line.textContent = text;
+    panel.appendChild(line);
+    while (panel.childNodes.length > 500) panel.removeChild(panel.firstChild);
+    panel.scrollTop = panel.scrollHeight;
+  }
+  window.__webmcLogLines = lines;
+  // whatever the client prints, including the engine's own status channel
+  for (const level of ["log", "info", "warn", "error", "debug"]) {
+    const original = console[level] ? console[level].bind(console) : function () {};
+    console[level] = function () {
+      const text = Array.prototype.map.call(arguments, function (value) {
+        try { return typeof value === "string" ? value : JSON.stringify(value); } catch (e) { return String(value); }
+      }).join(" ");
+      write(text, level === "error" ? "#ff9b9b" : level === "warn" ? "#ffd28a" : "");
+      original.apply(null, arguments);
+    };
+  }
+  window.addEventListener("error", function (event) {
+    write("uncaught: " + (event.message || event.error) + " at " + (event.filename || "?") + ":" + (event.lineno || 0),
+      "#ff9b9b");
+  });
+  window.addEventListener("unhandledrejection", function (event) {
+    write("unhandled rejection: " + (event.reason && (event.reason.stack || event.reason.message) || event.reason),
+      "#ff9b9b");
+  });
+
+  // a Worker keeps ticking while the page is blocked, so it can say *that* the page is blocked
+  var blob = new Blob(["setInterval(function(){postMessage(Date.now())},1000)"], { type: "text/javascript" });
+  try {
+    var beat = new Worker(URL.createObjectURL(blob));
+    var last = Date.now();
+    beat.onmessage = function () {
+      var age = Date.now() - last;
+      last = Date.now();
+      if (age > 2500) write("the page's main thread was blocked for " + Math.round(age / 1000) + "s", "#ffd28a");
+    };
+    var watch = setInterval(function () {
+      if (Date.now() - last > 4000) {
+        // the worker is alive and the page is not: the next line it prints is what the freeze looked like
+        document.title = "frozen (" + Math.round((Date.now() - last) / 1000) + "s) — WebMC";
+      }
+    }, 1000);
+  } catch (e) { write("no worker available to watch the main thread: " + e); }
+
+  // a copy button, because the point of a log is to be sent to somebody
+  var bar = document.createElement("div");
+  bar.style.cssText = "position:sticky;bottom:0;background:#000c;padding:4px 6px;display:flex;gap:8px";
+  var copy = document.createElement("button");
+  copy.textContent = "copy the log";
+  copy.style.cssText = "background:#3c8527;color:#fff;border:0;border-radius:3px;padding:3px 10px;font:12px system-ui";
+  copy.onclick = function () {
+    navigator.clipboard.writeText(window.__webmcLogLines.join("\n")).then(function () {
+      copy.textContent = "copied (" + window.__webmcLogLines.length + " lines)";
+    }, function () { copy.textContent = "could not copy — select the text"; });
+  };
+  var clear = document.createElement("button");
+  clear.textContent = "clear";
+  clear.style.cssText = "background:#333;color:#fff;border:0;border-radius:3px;padding:3px 10px;font:12px system-ui";
+  clear.onclick = function () { panel.textContent = ""; panel.appendChild(bar); };
+  bar.appendChild(copy);
+  bar.appendChild(clear);
+  panel.appendChild(bar);
+  write("WebMC log: " + navigator.userAgent);
+})();
+"""
+    parts = [
+        SCRIPT_MARK,
+        '/* WebMC: ?log=1 brings the client console back, and makes it worth reading: console output, ',
+        'uncaught errors, and a Worker that reports when the main thread is blocked. */',
+        'try{if(/[?&]log=1/.test(location.search)){document.documentElement.classList.add("webmc-log");',
+        script,
+        '}}catch(e){}' + '</' + 'script>',
+    ]
+    return "".join(parts)
 
 
 def style_block(selectors: list[str]) -> str:
