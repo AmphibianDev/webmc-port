@@ -113,6 +113,9 @@ function log(line, cls = "") {
   row.textContent = line;
   box.append(row);
   box.scrollTop = box.scrollHeight;
+  // The panel is what a person reads; this is what a headless browser - and anyone with devtools open -
+  // can read. Without it the only way to know where a launch stopped was to look at the page by hand.
+  (cls === "err" ? console.error : console.log)("[jvm] " + line);
 }
 const status = (text) => { el("status").textContent = text; };
 const progress = (fraction) => { el("bar").firstElementChild.style.width = `${Math.max(0, Math.min(1, fraction)) * 100}%`; };
@@ -267,7 +270,13 @@ async function start() {
   }
   progress(1);
 
+  // The shim's own classes go first: this repository *is* LWJGL 3 for the browser, and the bundle
+  // deliberately carries no org.lwjgl jars for that reason. Without this jar the client stops at
+  // "Unable to initialize main class", which names the symptom and not the cause.
+  const SHIM = "loader/webmc-lwjgl3.jar";
+  await mount(new URL(SHIM, BASE).href, `/str/webmc/webmc-lwjgl3.jar`, "the LWJGL 3 shim");
   const classpath = [
+    "/str/webmc/webmc-lwjgl3.jar",
     `/str/${version}-client.jar`,
     ...manifest.files.filter((entry) => entry.path.startsWith("libs/"))
       .map((entry) => `/str/webmc/libs/${entry.path.slice(5)}`),
@@ -276,11 +285,15 @@ async function start() {
   status("starting Minecraft under Fabric…");
   el("lead").textContent = "The game is starting. Fabric reads mods/ at play time, so the bundle's mods and "
     + "anything from ?mods= are loaded now — not compiled in.";
-  log("running net.fabricmc.loader.impl.launch.knot.KnotClient");
+  // ?main= picks the class to start: KnotClient loads mods at play time, net.minecraft.client.main.Main
+  // starts the client alone. Both are legitimate launches, and being able to choose is what turns "it did
+  // not start" into "which half did not start".
+  const main = params.get("main") || "net.fabricmc.loader.impl.launch.knot.KnotClient";
+  log(`running ${main}`);
   el("go").hidden = false;
 
   cheerpjCreateDisplay(-1, -1, el("stage"));
-  const code = await cheerpjRunMain("net.fabricmc.loader.impl.launch.knot.KnotClient", classpath.join(":"),
+  const code = await cheerpjRunMain("webmc.Launch", classpath.join(":"), main,
     "--username", username, "--version", version, "--gameDir", ".",
     "--assetsDir", "/str/assets", "--assetIndex", version,
     "--uuid", "0", "--accessToken", "0", "--userType", "legacy");

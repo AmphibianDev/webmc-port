@@ -144,6 +144,13 @@ def collector(directory: pathlib.Path, port: int, reports: dict, isolate: dict):
             except ValueError:
                 reports["last"] = {"raw": body.decode("utf-8", "replace")}
             reports.setdefault("all", []).append(reports["last"])
+            # streamed as it arrives: a launch that takes twenty minutes in a browser JVM is otherwise
+            # twenty minutes of not knowing whether it is progressing or wedged
+            stage = reports["last"].get("stage")
+            if stage:
+                print(f"  [{time.strftime('%H:%M:%S')}] {str(stage)[:160]}", flush=True)
+                for line in (reports["last"].get("log") or [])[-3:]:
+                    print(f"          {str(line)[:160]}", flush=True)
             self.send_response(204)
             self.send_header("content-length", "0")
             self.end_headers()

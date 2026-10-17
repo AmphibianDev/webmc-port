@@ -48,6 +48,11 @@ import fabric as fabric_tools  # noqa: E402
 
 FABRIC_META = "https://meta.fabricmc.net/v2"
 
+# Versions whose client this project has backported to Java 17 so a browser JVM can load it. The verdict
+# from tools/jvm_route.py still says "Java 21", and for the official jar that is true; what changed is that
+# the jar the page is handed is not the official one.
+BACKPORTED = {"1.21.11"}
+
 # Where a version's vendored libraries live. A module constant so a test can point it at a fixture
 # instead of depending on what a deployment happens to have published - the fact being described
 # ("this version's libraries are deployed") is real, so the test should control it rather than inherit it.
@@ -333,6 +338,14 @@ def plan_version(version: dict, verdict: dict, mods: list[dict], sources: dict,
     client = {"url": verdict.get("jar_url"), "sha1": verdict.get("jar_sha1"),
               "bytes": verdict.get("jar_bytes")}
     row = route_of(verdict, client["url"])
+    if version_id in BACKPORTED:
+        # The wall these versions were behind was Java 21, and this project's backport (tools/
+        # backport_client.py) removes it: their class files are lowered to 17 and their Java-21-only call
+        # sites rewritten. So they belong to the shim row - and their client is *ours*, which is why the
+        # plan points at the copy the site deployed rather than at Mojang's.
+        row = "shim"
+        client = {"url": f"clients/{version_id}.jar", "sha1": None, "bytes": None,
+                  "note": "backported to Java 17 by this project (tools/backport_client.py)"}
     libs_index = LIBS_DIR / f"{version_id}.json"
     plan = {
         "id": version_id,
@@ -361,8 +374,16 @@ def plan_version(version: dict, verdict: dict, mods: list[dict], sources: dict,
                                "more versions every run" if client["url"] else
                                "Mojang's metadata has no client jar for it")
     elif row == "shim":
-        plan["blocker"] = ("1.13 and newer need a JavaScript LWJGL 3, and ours has not drawn its first "
-                           "frame yet: " + str(verdict.get("why") or ""))
+        if version_id in BACKPORTED:
+            # the shim has drawn its first frame (lwjgl3-webgl/test/BootTest.java, run in a browser), and
+            # this version's client has been backported: what is left is whether the site has deployed both
+            plan["playable"] = (ROOT / "site" / "clients" / f"{version_id}.jar").is_file() \
+                or plan.get("libs_ready", False)
+            if not plan["playable"]:
+                plan["blocker"] = "its backported client and libraries are not deployed on this site yet"
+        else:
+            plan["blocker"] = ("1.13 and newer need a JavaScript LWJGL 3, and ours has not drawn its first "
+                               "frame yet: " + str(verdict.get("why") or ""))
         if "fabric" in plan.get("modes", {}) or "legacyfabric" in plan.get("modes", {}):
             plan.setdefault("caveats", []).append(CAVEATS["fabric-under-shim"])
     elif row == "aot":

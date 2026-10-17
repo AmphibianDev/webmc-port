@@ -120,7 +120,12 @@ def main(argv=None) -> int:
         rules = library.get("rules")
         if rules and not applies(rules):
             continue
-        source = libs / pathlib.PurePosixPath(artifact["path"]).name
+        name = pathlib.PurePosixPath(artifact["path"]).name
+        # A library that is itself Java 21 bytecode was backported into libs/<version>-j17 by
+        # tools/backport17.py (jtracy is the one for 1.21.11); prefer that copy, because the official jar
+        # cannot be loaded by the Java 17 runtime the page has.
+        backported = libs.parent / f"{libs.name}-j17" / name
+        source = backported if backported.is_file() else libs / name
         if not source.is_file():
             missing += 1
             continue

@@ -95,12 +95,19 @@ jobs:
           set -euo pipefail
           mkdir -p site/loader/classes
           find lwjgl3-webgl/src/main/java -name "*.java" > /tmp/loader-sources.txt
+          # the shim on its own first: the real-JVM page needs it as a jar on the client's classpath, and
+          # the boot test's jar below deliberately has the test class in it
+          javac --release 17 -nowarn -d /tmp/shim-classes @/tmp/loader-sources.txt
+          (cd /tmp/shim-classes && jar --create --file "$GITHUB_WORKSPACE/site/loader/webmc-lwjgl3.jar" .)
           echo "lwjgl3-webgl/test/BootTest.java" >> /tmp/loader-sources.txt
           javac --release 17 -nowarn -d site/loader/classes @/tmp/loader-sources.txt
           (cd site/loader/classes && jar --create --file ../app.jar .)
           rm -rf site/loader/classes
           mkdir -p site/loader/natives
           cp lwjgl3-webgl/natives/webmc-lwjgl3.js site/loader/natives/
+          # the real-JVM page imports it from the site root; a stale copy there is a page that runs an old
+          # shim and says nothing about it
+          cp lwjgl3-webgl/natives/webmc-lwjgl3.js site/lwjgl3-webmc-lwjgl3.js
           cp lwjgl3-webgl/test/boot.html site/loader/index.html
           cp site/loader-play.html site/loader/play.html
           ls -la site/loader site/loader/natives | head -12

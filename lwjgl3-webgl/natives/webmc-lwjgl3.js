@@ -113,6 +113,13 @@ function webmcNamed(name, fn) {
 // found the hard way, one at a time, in a real browser.)
 function webmcNative(implementation) {
   return function webmcBoundNative(...args) {
+    // Every native, counted, so a client that stops responding can be asked where it stopped: the
+    // function's own name is its JNI name, which is the same name Java called it by.
+    state.trace.push(implementation.name);
+    if (state.trace.length > 60) {
+      state.trace.shift();
+    }
+    state.traceCount = (state.traceCount || 0) + 1;
     for (let index = 0; index < args.length; index++) {
       if (typeof args[index] === "bigint") {
         args[index] = Number(args[index]);
@@ -127,7 +134,12 @@ function webmcNative(implementation) {
 }
 
 function traced(name) {
-  if (state.trace.length < 60) state.trace.push(name);
+  // The *last* sixty calls, not the first: when a client stops responding, the call it stopped in is the
+  // one worth having, and the first sixty are always the same setup.
+  state.trace.push(name);
+  if (state.trace.length > 60) {
+    state.trace.shift();
+  }
   state.traceCount = (state.traceCount || 0) + 1;
 }
 
