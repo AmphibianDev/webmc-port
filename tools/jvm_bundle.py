@@ -38,6 +38,20 @@ import sys
 import urllib.request
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
+
+FABRIC_MAVEN = "https://maven.fabricmc.net"
+# The loader's own dependencies, as its installer metadata lists them: a mismatched Mixin fails inside the
+# loader rather than here, so these are pinned to one version and used both by this tool and by the page.
+FABRIC = (
+    "net/fabricmc/fabric-loader/0.19.5/fabric-loader-0.19.5.jar",
+    "net/fabricmc/sponge-mixin/0.17.4+mixin.0.8.7/sponge-mixin-0.17.4+mixin.0.8.7.jar",
+    "net/fabricmc/intermediary/1.21.11/intermediary-1.21.11-v2.jar",
+    "org/ow2/asm/asm/9.10.1/asm-9.10.1.jar",
+    "org/ow2/asm/asm-tree/9.10.1/asm-tree-9.10.1.jar",
+    "org/ow2/asm/asm-commons/9.10.1/asm-commons-9.10.1.jar",
+    "org/ow2/asm/asm-analysis/9.10.1/asm-analysis-9.10.1.jar",
+    "org/ow2/asm/asm-util/9.10.1/asm-util-9.10.1.jar",
+)
 PORT = "https://amphibiandev.github.io/webmc-port"
 
 # What the title screen needs, by asset path prefix. Everything else waits for a world to be loaded.
@@ -81,6 +95,9 @@ def main(argv=None) -> int:
                         help="the backported client (tools/backport17.py wrote it)")
     parser.add_argument("--libs", default=str(ROOT / "work" / "client" / "libs" / "1.21.11"))
     parser.add_argument("--assets", action="store_true", help="also copy the title-screen asset subset")
+    parser.add_argument("--fabric", action="store_true", default=True,
+                        help="vendor Fabric Loader, Mixin, intermediary and ASM (default: yes)")
+    parser.add_argument("--no-fabric", dest="fabric", action="store_false")
     parser.add_argument("--version-json", default=None,
                         help="Mojang's document for the version (default work/client/<version>.json)")
     parser.add_argument("--mods", default=None,
@@ -156,6 +173,30 @@ def main(argv=None) -> int:
                           "what": f"{jar.name} (backported)"})
             mod_count += 1
 
+    loader_count = 0
+    # Fabric Loader, Mixin, intermediary and ASM: the loader's own dependencies, vendored here because the
+    # page otherwise has to fetch them from maven.fabricmc.net at play time - and a visitor whose resolver
+    # filters that host gets "without Fabric this route has nothing to run" instead of a game.
+    if args.fabric:
+        loader_dir = out / "loader"
+        loader_dir.mkdir(parents=True, exist_ok=True)
+        for path in FABRIC:
+            name = path.split("/")[-1]
+            target = loader_dir / name
+            cached = ROOT / "work" / "client" / "fabric" / name
+            if cached.is_file() and not target.is_file():
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(cached, target)
+                print(f"  cached {name} ({target.stat().st_size // 1024} KB)")
+            try:
+                fetch(f"{FABRIC_MAVEN}/{path}", target, args.proxy)
+            except Exception as error:  # noqa: BLE001 - the page can still fetch it live
+                print(f"  ! {name}: {error}")
+                continue
+            files.append({"path": f"loader/{name}", "bytes": target.stat().st_size, "sha256": sha256(target),
+                          "what": f"{name} (Fabric)"})
+            loader_count += 1
+
     assets = 0
     if args.assets:
         # The index is one small JSON from piston-meta, which does allow CORS - but this machine's DNS does not
@@ -198,7 +239,8 @@ def main(argv=None) -> int:
         "assets_index": f"assets/indexes/{args.version}.json",
         "files": files,
         "total_bytes": sum(entry["bytes"] for entry in files),
-        "counts": {"files": len(files), "libraries": len(files) - (1 if client.is_file() else 0) - assets - mod_count,
+        "counts": {"files": len(files), "libraries": len(files) - (1 if client.is_file() else 0) - assets - mod_count
+                   - loader_count, "loader": loader_count,
                    "assets": assets, "mods": mod_count},
     }
     (out / "manifest.json").write_text(json.dumps(manifest, indent=1) + "\n")

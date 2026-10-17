@@ -216,8 +216,12 @@ async function start() {
     "org/ow2/asm/asm-analysis/9.10.1/asm-analysis-9.10.1.jar",
     "org/ow2/asm/asm-util/9.10.1/asm-util-9.10.1.jar",
   ];
-  if (!(await reachable(`${FABRIC_MAVEN}/${FABRIC[0]}`))) {
-    log("maven.fabricmc.net is not reachable from this page; without Fabric this route has nothing to run", "err");
+  // Fabric comes from the bundle when it is there: the page then needs no third-party host at play time,
+  // which matters on a network whose resolver filters fabricmc.net - and is faster everywhere else.
+  const bundledFabric = manifest.files.filter((entry) => entry.path.startsWith("loader/"));
+  if (!bundledFabric.length && !(await reachable(`${FABRIC_MAVEN}/${FABRIC[0]}`))) {
+    log("maven.fabricmc.net is not reachable from this page and the bundle carries no Fabric; "
+        + "without Fabric this route has nothing to run", "err");
     status("Fabric is unreachable");
     el("retry").hidden = false;
     return;
@@ -255,7 +259,9 @@ async function start() {
   }
   for (const path of FABRIC) {
     const name = path.split("/").pop();
-    await mount(`${FABRIC_MAVEN}/${path}`, `/str/webmc/${name}`, name);
+    const bundled = bundledFabric.find((entry) => entry.path.endsWith("/" + name));
+    await mount(bundled ? new URL(`jvm/${version}/${bundled.path}`, BASE).href : `${FABRIC_MAVEN}/${path}`,
+                `/str/webmc/${name}`, name);
     tick(name);
   }
   for (const url of ownMods) {

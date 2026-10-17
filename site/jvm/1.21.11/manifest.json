@@ -327,13 +327,206 @@
    "bytes": 1834166,
    "sha256": "20bf7bd1b5b00e24abe83ae910c0d272874c2cda0c2478a6abf46648c48e4847",
    "what": "sodium-fabric-0.8.14+mc1.21.11.jar (backported)"
+  },
+  {
+   "path": "loader/fabric-loader-0.19.5.jar",
+   "bytes": 1984980,
+   "sha256": "93044e4dd46de5d8136701292f05e868da096d2c9fddb4793e4fdbcc63efc695",
+   "what": "fabric-loader-0.19.5.jar (Fabric)"
+  },
+  {
+   "path": "loader/sponge-mixin-0.17.4+mixin.0.8.7.jar",
+   "bytes": 1539080,
+   "sha256": "1f0ae44db7295f8626f33b1dc0ad7f043d8954a8d6847247875fcc5dfcecc934",
+   "what": "sponge-mixin-0.17.4+mixin.0.8.7.jar (Fabric)"
+  },
+  {
+   "path": "loader/intermediary-1.21.11-v2.jar",
+   "bytes": 707972,
+   "sha256": "f45b9530d0becae596fd48743e3ee1733cc2cdc69128cdb7d8d3571de163ab87",
+   "what": "intermediary-1.21.11-v2.jar (Fabric)"
+  },
+  {
+   "path": "loader/asm-9.10.1.jar",
+   "bytes": 126151,
+   "sha256": "ed825d10ab1399c8c0cb669e688cf0c8c82629b4c8399b58352b68e92ca10fcb",
+   "what": "asm-9.10.1.jar (Fabric)"
+  },
+  {
+   "path": "loader/asm-tree-9.10.1.jar",
+   "bytes": 51958,
+   "sha256": "3dfb0d5b6a106cd40b5b250e39935fbf2f927f4477546a5369a3ac609cf0506b",
+   "what": "asm-tree-9.10.1.jar (Fabric)"
+  },
+  {
+   "path": "loader/asm-commons-9.10.1.jar",
+   "bytes": 74840,
+   "sha256": "6d0abefb7cbf972ea16edb37ec14835372505063a45f976ab7ea889ed9497895",
+   "what": "asm-commons-9.10.1.jar (Fabric)"
+  },
+  {
+   "path": "loader/asm-analysis-9.10.1.jar",
+   "bytes": 35140,
+   "sha256": "dede75a21306b65974ecd8f87114ff6970f09fb794157a4ca09ab25c888c2bfc",
+   "what": "asm-analysis-9.10.1.jar (Fabric)"
+  },
+  {
+   "path": "loader/asm-util-9.10.1.jar",
+   "bytes": 95628,
+   "sha256": "1bb99d091fba2597dc6d51193e9bbcf0d8447e7ed96bd8f0198b18152f09655c",
+   "what": "asm-util-9.10.1.jar (Fabric)"
+  },
+  {
+   "path": "assets/objects/b6/b62ca8ec10d07e6bf5ac8dae0c8c1d2e6a1e3356",
+   "bytes": 9101,
+   "sha256": "be785e1c671c5f8a8ef39aa8b8bcdd116804626ba03f5b1bc3700d399fb45bc3",
+   "what": "icons/icon_128x128.png"
+  },
+  {
+   "path": "assets/objects/5f/5ff04807c356f1beed0b86ccf659b44b9983e3fa",
+   "bytes": 781,
+   "sha256": "23a0e228c33a2353d625d9ebfc62997a227d7b7f463ab0d9f9d9d98a424f7de8",
+   "what": "icons/icon_16x16.png"
+  },
+  {
+   "path": "assets/objects/80/8030dd9dc315c0381d52c4782ea36c6baf6e8135",
+   "bytes": 19642,
+   "sha256": "5b5df681f08a229566125e8974191a1252b136309ad39132c616763b3e56e4e4",
+   "what": "icons/icon_256x256.png"
+  },
+  {
+   "path": "assets/objects/af/af96f55a90eaf11b327f1b5f8834a051027dc506",
+   "bytes": 2063,
+   "sha256": "580ba697b652aa80088d23126ae3ecbd45c2d9e26979511f445dbc6a71845b27",
+   "what": "icons/icon_32x32.png"
+  },
+  {
+   "path": "assets/objects/b8/b80b6e9ff01c78c624df5429e1d3dcd3d5130834",
+   "bytes": 3409,
+   "sha256": "c474d91a8591df001a4817327a43ce58a9964765b8507751fb855b04077bd413",
+   "what": "icons/icon_48x48.png"
+  },
+  {
+   "path": "assets/objects/f0/f00657542252858a721e715a2e888a9226404e35",
+   "bytes": 374665,
+   "sha256": "cd8fbbf47ef6b69dc65176c94426e9711a115baa1b505a545c954e167b8a30c5",
+   "what": "icons/minecraft.icns"
+  },
+  {
+   "path": "assets/objects/95/958d57021d8009de55d6e9e19957a72545e3c30c",
+   "bytes": 9083,
+   "sha256": "c21c036fbfeb945b660f7cefdba805755127104f0fe1ca583a8943d3d6d9606e",
+   "what": "icons/snapshot/icon_128x128.png"
+  },
+  {
+   "path": "assets/objects/94/949afe72d4d3d785dab52d8baaefeb0e38b3c067",
+   "bytes": 783,
+   "sha256": "978da5860e5eba38e1884b285492c2d752ad7fc662373e20c12dbbbda132f842",
+   "what": "icons/snapshot/icon_16x16.png"
+  },
+  {
+   "path": "assets/objects/9f/9f84f917a09facacf1235eed3fa77789e4554afb",
+   "bytes": 19683,
+   "sha256": "c816c4b5554c88e6f049b308a6b6c97916819395dab72133fdf45ab15fd40d52",
+   "what": "icons/snapshot/icon_256x256.png"
+  },
+  {
+   "path": "assets/objects/26/26ad18d9f4ef0a71255459b5f01b738b81dbc7dc",
+   "bytes": 1970,
+   "sha256": "17d0e586c6a70665333d7672c8c54577dfd48ad1d94f61def92e20103347947c",
+   "what": "icons/snapshot/icon_32x32.png"
+  },
+  {
+   "path": "assets/objects/df/df274fe57c49ef1af6d218703d805db76a5c8af9",
+   "bytes": 3225,
+   "sha256": "2f8780bf08e78188c2523cf79063bf59b8c3441a09de805800686638b230a4e0",
+   "what": "icons/snapshot/icon_48x48.png"
+  },
+  {
+   "path": "assets/objects/65/65ebca3306ccd6d7f9d5de8f1cc7a1216d80246d",
+   "bytes": 318515,
+   "sha256": "37b81379aed67ded9763079ba256d9740353f97f5b455b79e67c43873df4ce93",
+   "what": "icons/snapshot/minecraft.icns"
+  },
+  {
+   "path": "assets/objects/40/402ded0eebd448033ef415e861a17513075f80e7",
+   "bytes": 3993,
+   "sha256": "8b0624ab98ad3e6d4038b581f3cc83c497587a92e764da7784f7a4dfd528c1be",
+   "what": "minecraft/font/include/unifont.json"
+  },
+  {
+   "path": "assets/objects/db/db5582c177aca966ba1a9b062cead233a262a939",
+   "bytes": 136,
+   "sha256": "f930b6cc37353ee5c149a18eadf7a6d492a8bfd02ad63b8782ed4afc528800d5",
+   "what": "minecraft/font/include/unifont_pua.json"
+  },
+  {
+   "path": "assets/objects/cc/ccd5ac4767ce0a9c71d1dd62f2dc25449789b5dd",
+   "bytes": 1559654,
+   "sha256": "aea3e9918b0d31de6f94623080f04c31c8c16a5b1a2e8d99ab39f1acdddd30f7",
+   "what": "minecraft/font/unifont.zip"
+  },
+  {
+   "path": "assets/objects/59/590470ab0f17afb73a4e41d9cb56fdbe069d275a",
+   "bytes": 234900,
+   "sha256": "a14d2da4f452442691791c834cf55aae43f8b435a4736eea44cb327435bca20e",
+   "what": "minecraft/font/unifont_jp.zip"
+  },
+  {
+   "path": "assets/objects/d7/d7caa0e3aa5eb656c51817ae4bfbf3c4d72cdaad",
+   "bytes": 100360,
+   "sha256": "65388145333f6ceffe2be67790183a77d45b97236248ac1eab3befe6a17979d7",
+   "what": "minecraft/font/unifont_pua.zip"
+  },
+  {
+   "path": "assets/objects/af/af28e43df0b60875348cecd1c1f65e2325b54204",
+   "bytes": 625075,
+   "sha256": "01f3d261ed23a8a5ddee4ce6ca864432ef15dcae664eb5daadf34ac5d85d0120",
+   "what": "minecraft/textures/gui/title/background/panorama_0.png"
+  },
+  {
+   "path": "assets/objects/15/15e3d77a4555455d752fde55b2661c159bee59ba",
+   "bytes": 693845,
+   "sha256": "f5f4d0331e6dc8835a7849a46f4f45b01ce8f66690431f8410a170a1e843ad7f",
+   "what": "minecraft/textures/gui/title/background/panorama_1.png"
+  },
+  {
+   "path": "assets/objects/bc/bc648a153191d8490fbaaa49e89c62240c6b2936",
+   "bytes": 510165,
+   "sha256": "3edbf7f99fc686a60c949187838e1442cd3ffc10c485bfe4871ca25541ab9771",
+   "what": "minecraft/textures/gui/title/background/panorama_2.png"
+  },
+  {
+   "path": "assets/objects/79/79795659716b1f0ad2b2b3078933acb7c86327d9",
+   "bytes": 460570,
+   "sha256": "0b8df1ad39e4e9da983eab25be705d6b559bd77b0cdb2147f0e3a16c26dffb63",
+   "what": "minecraft/textures/gui/title/background/panorama_3.png"
+  },
+  {
+   "path": "assets/objects/64/64d2b763bb3bcfcaee67ba1b9351b0a83c209ae7",
+   "bytes": 247400,
+   "sha256": "442e2726aa6f523b54a9d4208e40a4768e891dffff7e311f39b74f08e7918e9e",
+   "what": "minecraft/textures/gui/title/background/panorama_4.png"
+  },
+  {
+   "path": "assets/objects/4e/4ef46fd3165dcd588f4b2d945d4aacca9ad90d42",
+   "bytes": 201079,
+   "sha256": "8d54fcfb66e3c23d8b211b88708a5e7d9d908dcd52d36ee5a963c8e036b2bce3",
+   "what": "minecraft/textures/gui/title/background/panorama_5.png"
+  },
+  {
+   "path": "assets/objects/9d/9dd32387135eefa7ab95996d52a5ca4cec8a3b30",
+   "bytes": 86,
+   "sha256": "4cabea349b45c137de6ab4472303fb20fb94b07a119c8926aa54575ffbab91e6",
+   "what": "minecraft/textures/gui/title/background/panorama_overlay.png"
   }
  ],
- "total_bytes": 92745279,
+ "total_bytes": 102761211,
  "counts": {
-  "files": 54,
+  "files": 86,
   "libraries": 51,
-  "assets": 0,
+  "loader": 8,
+  "assets": 24,
   "mods": 2
  }
 }
