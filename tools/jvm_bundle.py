@@ -81,16 +81,21 @@ def main(argv=None) -> int:
                         help="the backported client (tools/backport17.py wrote it)")
     parser.add_argument("--libs", default=str(ROOT / "work" / "client" / "libs" / "1.21.11"))
     parser.add_argument("--assets", action="store_true", help="also copy the title-screen asset subset")
-    parser.add_argument("--mods", default="/tmp/knot/backported",
+    parser.add_argument("--version-json", default=None,
+                        help="Mojang's document for the version (default work/client/<version>.json)")
+    parser.add_argument("--mods", default=None,
                         help="mods to ship with the bundle, already backported to Java 17")
     parser.add_argument("--proxy", default=None)
     parser.add_argument("--report", action="store_true")
     args = parser.parse_args(argv)
 
     out = pathlib.Path(args.out).expanduser()
-    version_json = pathlib.Path("/tmp/v1211.json")
+    version_json = pathlib.Path(args.version_json) if args.version_json \
+        else ROOT / "work" / "client" / f"{args.version}.json"
     client = pathlib.Path(args.client).expanduser()
     libs = pathlib.Path(args.libs).expanduser()
+    if args.mods is None:
+        args.mods = str(ROOT / "work" / "client" / "mods-j17")
     if not version_json.is_file():
         print(f"{version_json} is not there: it is the version document the client's libraries come from")
         return 2
@@ -155,7 +160,7 @@ def main(argv=None) -> int:
     if args.assets:
         # The index is one small JSON from piston-meta, which does allow CORS - but this machine's DNS does not
         # resolve Mojang's hosts, and a cached copy is the same bytes: use it when it is there.
-        cached_index = pathlib.Path("/tmp/assets-index.json")
+        cached_index = ROOT / "work" / "client" / "assets-index.json"
         if cached_index.is_file():
             index = json.loads(cached_index.read_text())
             print(f"  using the cached asset index ({len(index['objects'])} objects)")
@@ -166,7 +171,7 @@ def main(argv=None) -> int:
                   if name.startswith(TITLE_SCREEN_PREFIXES)}
         for name, entry in sorted(wanted.items()):
             digest = entry["hash"]
-            source = pathlib.Path("/tmp/mc-assets") / digest[:2] / digest
+            source = ROOT / "work" / "client" / "assets" / digest[:2] / digest
             try:
                 fetch(f"https://resources.download.minecraft.net/{digest[:2]}/{digest}", source, args.proxy)
             except Exception as error:  # noqa: BLE001 - one asset must not stop the bundle
