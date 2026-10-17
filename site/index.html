@@ -160,6 +160,20 @@
   </aside>
 
   <section class="centre">
+    <!-- The one row that is not in routes.json yet: the client is Java 21 bytecode, this project lowers it
+         to 17 (tools/jvm_prepare.py), and the page runs it on a real JVM with Fabric Loader loading mods at
+         play time. It is linked here rather than invented by the catalogue because it is a different kind of
+         route - not the official jar as it ships, and not a build of ours. -->
+    <a class="notice" id="jvm-route" href="jvm.html"
+       style="display:block; margin:0 0 14px; padding:12px 16px; border:1px solid #3c8527; border-radius:10px;
+              background:#1b2a19; color:#e9e9ea; text-decoration:none">
+      <b>Minecraft 1.21.11 - real JVM in the page, with Fabric</b>
+      <span style="display:block; color:#9c9ca1; margin-top:4px">
+        The official client, lowered from Java 21 to 17 so a browser JVM can run it, with Fabric Loader
+        loading mods at play time (Fabric API and Sodium are in the bundle; <code>?mods=</code> adds your
+        own). No ahead-of-time build of the game.
+      </span>
+    </a>
     <div class="hero">
       <h1 id="title">Loading…</h1>
       <p id="subtitle"></p>
