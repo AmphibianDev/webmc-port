@@ -34,7 +34,7 @@ public class FabricLoader {
 
     /** What the generated loader calls, once per baked mod, before any entrypoint runs. */
     public static ModContainer register(String id, ModMetadata metadata, Map<String, byte[]> files) {
-        ModContainer container = new ModContainer(metadata, metadata.getOrigin(), files);
+        ModContainer container = new ModContainer(metadata, null, files);
         MODS.put(id, container);
         return container;
     }

@@ -4,5 +4,5 @@ package net.fabricmc.loader.api.metadata;
 public interface Person {
     String getName();
 
-    String getContact(String key);
+    ContactInformation getContact();
 }

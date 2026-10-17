@@ -40,7 +40,22 @@ public class ModContainer {
     }
 
     public ModOrigin getOrigin() {
-        return this.origin;
+        // A container built without an origin (the client itself, rather than a mod) still has to answer.
+        return this.origin == null ? SimpleOrigin.INSTANCE : this.origin;
+    }
+
+    private enum SimpleOrigin implements ModOrigin {
+        INSTANCE;
+
+        @Override
+        public Kind getKind() {
+            return Kind.UNKNOWN;
+        }
+
+        @Override
+        public List<String> getPaths() {
+            return List.of();
+        }
     }
 
     public Optional<ModContainer> getContainingMod() {

@@ -5,7 +5,13 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 
-/** A baked mod's own metadata: exactly the fields its fabric.mod.json carried. */
+/**
+ * A baked mod's own metadata, with the shape the loader's API declares (0.19+).
+ *
+ * The shapes matter more than the values here: a mod is compiled against *this* interface, so a member
+ * that differs - `getDescription()` returning an Optional where the real API returns a String, say - is
+ * a "method not found" in the middle of a compile rather than something a mod can notice and work around.
+ */
 public interface ModMetadata {
     String getType();
 
@@ -15,34 +21,33 @@ public interface ModMetadata {
 
     Version getVersion();
 
-    ModOrigin getOrigin();
+    ModEnvironment getEnvironment();
 
-    Map<String, Collection<String>> getDepends();
+    Collection<ModDependency> getDependencies();
 
-    Map<String, Collection<String>> getRecommends();
+    Collection<ModDependency> getDepends();
 
-    Map<String, Collection<String>> getSuggests();
+    Collection<ModDependency> getRecommends();
 
-    Map<String, Collection<String>> getConflicts();
+    Collection<ModDependency> getSuggests();
 
-    Map<String, Collection<String>> getBreaks();
+    Collection<ModDependency> getConflicts();
 
-    Map<String, String> getContact();
+    Collection<ModDependency> getBreaks();
 
-    Optional<String> getDescription();
+    String getName();
+
+    String getDescription();
 
     Collection<Person> getAuthors();
 
     Collection<Person> getContributors();
 
+    ContactInformation getContact();
+
     Collection<Person> getLicense();
 
-    Collection<String> getIcon(int size);
-
-    default Optional<String> getIconPath(int size) {
-        Collection<String> icons = getIcon(size);
-        return icons.isEmpty() ? Optional.empty() : Optional.of(icons.iterator().next());
-    }
+    Optional<String> getIconPath(int size);
 
     boolean containsCustomValue(String key);
 
@@ -50,9 +55,5 @@ public interface ModMetadata {
 
     Map<String, CustomValue> getCustomValues();
 
-    default boolean containsCustomElement(String key) {
-        return containsCustomValue(key);
-    }
-
-    String getName();
+    boolean containsCustomElement(String key);
 }

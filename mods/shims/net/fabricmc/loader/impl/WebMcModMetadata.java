@@ -1,7 +1,10 @@
 package net.fabricmc.loader.impl;
 
 import net.fabricmc.loader.api.Version;
+import net.fabricmc.loader.api.metadata.ContactInformation;
 import net.fabricmc.loader.api.metadata.CustomValue;
+import net.fabricmc.loader.api.metadata.ModDependency;
+import net.fabricmc.loader.api.metadata.ModEnvironment;
 import net.fabricmc.loader.api.metadata.ModMetadata;
 import net.fabricmc.loader.api.metadata.ModOrigin;
 import net.fabricmc.loader.api.metadata.Person;
@@ -74,14 +77,22 @@ public final class WebMcModMetadata implements ModMetadata {
     }
 
     @Override
-    public ModOrigin getOrigin() {
-        return ModOriginImpl.INSTANCE;
+    public ModEnvironment getEnvironment() {
+        Object value = this.json.get("environment");
+        if (value == null) {
+            return ModEnvironment.UNIVERSAL;
+        }
+        return switch (String.valueOf(value).toLowerCase()) {
+            case "client" -> ModEnvironment.CLIENT;
+            case "server" -> ModEnvironment.SERVER;
+            default -> ModEnvironment.UNIVERSAL;
+        };
     }
 
-    private Map<String, Collection<String>> dependencyMap(String key) {
-        Map<String, Collection<String>> out = new LinkedHashMap<>();
+    private Collection<ModDependency> dependencies(String key, ModDependency.Kind kind) {
+        List<ModDependency> out = new ArrayList<>();
         for (Map.Entry<String, Object> entry : map(key).entrySet()) {
-            Collection<String> ranges = new ArrayList<>();
+            List<String> ranges = new ArrayList<>();
             if (entry.getValue() instanceof List<?> items) {
                 for (Object item : items) {
                     ranges.add(String.valueOf(item));
@@ -89,49 +100,58 @@ public final class WebMcModMetadata implements ModMetadata {
             } else {
                 ranges.add(String.valueOf(entry.getValue()));
             }
-            out.put(entry.getKey(), ranges);
+            out.add(new WebMcModDependency(kind, entry.getKey(), ranges));
         }
         return out;
     }
 
     @Override
-    public Map<String, Collection<String>> getDepends() {
-        return dependencyMap("depends");
+    public Collection<ModDependency> getDependencies() {
+        List<ModDependency> all = new ArrayList<>();
+        for (ModDependency.Kind kind : ModDependency.Kind.values()) {
+            all.addAll(dependencies(kind.name().toLowerCase(), kind));
+        }
+        return all;
     }
 
     @Override
-    public Map<String, Collection<String>> getRecommends() {
-        return dependencyMap("recommends");
+    public Collection<ModDependency> getDepends() {
+        return dependencies("depends", ModDependency.Kind.DEPENDS);
     }
 
     @Override
-    public Map<String, Collection<String>> getSuggests() {
-        return dependencyMap("suggests");
+    public Collection<ModDependency> getRecommends() {
+        return dependencies("recommends", ModDependency.Kind.RECOMMENDS);
     }
 
     @Override
-    public Map<String, Collection<String>> getConflicts() {
-        return dependencyMap("conflicts");
+    public Collection<ModDependency> getSuggests() {
+        return dependencies("suggests", ModDependency.Kind.SUGGESTS);
     }
 
     @Override
-    public Map<String, Collection<String>> getBreaks() {
-        return dependencyMap("breaks");
+    public Collection<ModDependency> getConflicts() {
+        return dependencies("conflicts", ModDependency.Kind.CONFLICTS);
     }
 
     @Override
-    public Map<String, String> getContact() {
+    public Collection<ModDependency> getBreaks() {
+        return dependencies("breaks", ModDependency.Kind.BREAKS);
+    }
+
+    @Override
+    public ContactInformation getContact() {
         Map<String, String> out = new LinkedHashMap<>();
         for (Map.Entry<String, Object> entry : map("contact").entrySet()) {
             out.put(entry.getKey(), String.valueOf(entry.getValue()));
         }
-        return out;
+        return new ContactInformation(out);
     }
 
     @Override
-    public Optional<String> getDescription() {
+    public String getDescription() {
         Object value = this.json.get("description");
-        return value == null ? Optional.empty() : Optional.of(String.valueOf(value));
+        return value == null ? "" : String.valueOf(value);
     }
 
     private Collection<Person> people(String key) {
@@ -171,19 +191,17 @@ public final class WebMcModMetadata implements ModMetadata {
     }
 
     @Override
-    public Collection<String> getIcon(int size) {
+    public Optional<String> getIconPath(int size) {
         Object icon = this.json.get("icon");
         if (icon instanceof String path) {
-            return List.of(path);
+            return Optional.of(path);
         }
         if (icon instanceof Map<?, ?> sizes) {
-            List<String> out = new ArrayList<>();
             for (Object value : sizes.values()) {
-                out.add(String.valueOf(value));
+                return Optional.of(String.valueOf(value));
             }
-            return out;
         }
-        return List.of();
+        return Optional.empty();
     }
 
     @Override
@@ -195,6 +213,11 @@ public final class WebMcModMetadata implements ModMetadata {
     public CustomValue getCustomValue(String key) {
         Object value = map("custom").get(key);
         return value == null ? null : CustomValue.Impl.of(value);
+    }
+
+    @Override
+    public boolean containsCustomElement(String key) {
+        return containsCustomValue(key);
     }
 
     @Override
@@ -218,8 +241,32 @@ public final class WebMcModMetadata implements ModMetadata {
         }
 
         @Override
-        public String getContact(String key) {
-            return null;
+        public ContactInformation getContact() {
+            return new ContactInformation(Map.of());
+        }
+    }
+
+    /** One declared dependency, with the version strings its descriptor gave. */
+    private record WebMcModDependency(ModDependency.Kind getKind, String getModId, List<String> ranges)
+            implements ModDependency {
+        @Override
+        public boolean matches(net.fabricmc.loader.api.Version version) {
+            for (String range : this.ranges) {
+                if (range.equals("*") || range.equals(version.getFriendlyString())) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        @Override
+        public Collection<?> getVersionRequirements() {
+            return this.ranges;
+        }
+
+        @Override
+        public List<?> getVersionIntervals() {
+            return this.ranges;
         }
     }
 
