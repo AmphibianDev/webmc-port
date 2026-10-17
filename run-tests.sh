@@ -14,6 +14,7 @@ echo; echo "== a published client, checked from the outside"; python3 tests/test
 echo; echo "== the fixups still match the engine files they patch"; python3 tests/test_fixup_anchors.py || failed=1
 echo; echo "== the mixin applier (a mixin mod merged into a client, run on a JVM)"; python3 tests/test_mixin_applier.py || failed=1
 echo; echo "== the mixin applier's harder shapes (arguments, cancellable, redirects, accessors, wideners)"; python3 tests/test_mixin_applier_advanced.py || failed=1
+echo; echo "== how real mods write their configs (a sub-package name, a target that carries its descriptor)"; python3 tests/test_mixin_applier_config.py || failed=1
 echo; echo "== a compiled client, packed into a page a player can open"; python3 tests/test_pack_client.py || failed=1
 echo; echo "== one version in, one route out"; python3 tests/test_workflows.py || failed=1
 echo; echo "== the mod bake (a Fabric mod turned into client code)"; python3 tests/test_bake_mods.py || failed=1

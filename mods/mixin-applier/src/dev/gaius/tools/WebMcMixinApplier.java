@@ -195,12 +195,27 @@ public final class WebMcMixinApplier {
                             clientClass.accept(writer);
                             Files.write(targetFile, writer.toByteArray());
                         } catch (RuntimeException | Error failure) {
-                            refusals.add(mixinClass.name.replace('/', '.') + " -> " + target.replace('/', '.')
-                                    + ": the merged class could not be written (" + failure + "); the class is left "
-                                    + "as the client had it");
-                            log.accept("  ! " + mixinClass.name.replace('/', '.') + " left " + target.replace('/', '.')
-                                    + " unmodified: " + failure);
-                            continue;
+                            // Second attempt, frames left exactly as the client wrote them. Computing every
+                            // frame in a class this tool has never seen fails on real mods (Meteor lost 14
+                            // classes to NegativeArraySizeException, Lithium 2, Iris 1) - and the frames of
+                            // the parts that were not touched are already correct, so preserving them and
+                            // recomputing only the stack sizes is both cheaper and closer to what the client
+                            // already ran. It is a *fallback*: the first attempt produces better frames for
+                            // code a mixin did add.
+                            try {
+                                ClassWriter readerBased = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+                                clientClass.accept(readerBased);
+                                Files.write(targetFile, readerBased.toByteArray());
+                                log.accept("  ~ " + target.replace('/', '.')
+                                        + " written with the client's own frames (" + failure + ")");
+                            } catch (RuntimeException | Error second) {
+                                refusals.add(mixinClass.name.replace('/', '.') + " -> " + target.replace('/', '.')
+                                        + ": the merged class could not be written (" + failure + "; then "
+                                        + second + "); the class is left as the client had it");
+                                log.accept("  ! " + mixinClass.name.replace('/', '.') + " left "
+                                        + target.replace('/', '.') + " unmodified: " + failure);
+                                continue;
+                            }
                         }
                         // A generated Operation lives in its own class file: the client has to carry it too.
                         for (ClassNode helper : helpers) {
@@ -316,7 +331,13 @@ public final class WebMcMixinApplier {
                 }
                 injected += inject(victim, method, inject, to, notApplied, where + " -> " + name);
                 if (!addIfAbsent(target, cloneMethod(method, from, to, false))) {
-                    refusals.add(where + ": a method of that name and descriptor is already in the target");
+                    // Not a refusal: the target already has a method of that name and descriptor, which is the
+                    // state the mixin asked for. Calling it one made the count meaningless - Meteor showed 262 of
+                    // these and Iris 188, while the mixins themselves were fine - and a report nobody can read is
+                    // a report that hides the real refusals, which were then only a handful.
+                    copied++;
+                    log.accept("  = " + target.name.replace('/', '.') + "." + name
+                            + " is already there, nothing to add");
                 }
                 continue;
             }
@@ -1921,7 +1942,25 @@ public final class WebMcMixinApplier {
 
     private static String named(MethodNode method, AnnotationNode annotation) {
         String value = string(annotation, "method");
-        return value != null ? value : method.name;
+        if (value == null) {
+            return method.name;
+        }
+        // A mixin may write the descriptor - and the owning class - into the same string:
+        //   @Inject(method = "reloadResourcePacks()Ljava/util/concurrent/CompletableFuture;")
+        //   @Inject(method = "Lnet/minecraft/client/Minecraft;reloadResourcePacks()V")
+        // This used to hand that whole string to a lookup by *name*, which finds nothing, so every such mixin
+        // was refused as "an @Inject into a method this client does not have" - while the method was right
+        // there in the class. Sodium, Lithium and Iris write their targets this way for the injections that
+        // matter, which is why they looked like mods the bake could not do.
+        int parenthesis = value.indexOf('(');
+        if (parenthesis >= 0) {
+            value = value.substring(0, parenthesis);
+        }
+        int semicolon = value.lastIndexOf(';');
+        if (semicolon >= 0) {
+            value = value.substring(semicolon + 1);
+        }
+        return value;
     }
 
     private static String targetOf(ClassNode mixin) {
@@ -1978,7 +2017,21 @@ public final class WebMcMixinApplier {
         }
         List<String> qualified = new ArrayList<>();
         for (String name : found) {
-            qualified.add(name.contains(".") || pkg == null || pkg.isEmpty() ? name : pkg + "." + name);
+            // Every entry in a mixin config is relative to the config's `package`, even when it has dots in it:
+            // Sodium's config says package `net.caffeinemc.mods.sodium.mixin` and lists `core.GlDeviceMixin`,
+            // which means `...mixin.core.GlDeviceMixin`. Treating "contains a dot" as "already qualified" (what
+            // this did) made the applier look for `core/GlDeviceMixin.class` at the root of the jar, refuse
+            // every mixin of Sodium, Lithium, Iris and every other mod that organises its package, and report
+            // it as "listed as a mixin but its class is not in the jar" - a jar is not the place to look for
+            // that mistake. A name that already starts with the package is left alone, so a config that does
+            // write full names still works.
+            if (name.contains(".") && pkg != null && !pkg.isEmpty() && name.startsWith(pkg + ".")) {
+                qualified.add(name);
+            } else if (pkg == null || pkg.isEmpty()) {
+                qualified.add(name);
+            } else {
+                qualified.add(pkg + "." + name);
+            }
         }
         return qualified;
     }

@@ -141,10 +141,14 @@ def main(argv=None) -> int:
                         help="serve this directory (with index.html) instead of building the boot test")
     parser.add_argument("--query", default="")
     parser.add_argument("--port", type=int, default=8777)
-    parser.add_argument("--timeout", type=int, default=600, help="seconds to wait for a report")
+    parser.add_argument("--timeout", type=int, default=900,
+                        help="seconds to wait for a report: a cold CheerpJ downloads a JVM first")
     parser.add_argument("--browser", default=None)
     parser.add_argument("--keep", action="store_true", help="keep the work directory (the browser's log)")
     parser.add_argument("--console", action="store_true", help="print every console line, not a summary")
+    parser.add_argument("--profile", default="/tmp/webmc-browser-profile",
+                        help="a browser profile that survives runs: CheerpJ downloads its JVM once, and a "
+                             "fresh profile per run means paying that download every time (minutes)")
     args = parser.parse_args(argv)
 
     browser = args.browser or find_browser()
@@ -173,7 +177,7 @@ def main(argv=None) -> int:
         print(f"browser: {browser}")
 
         flags = [browser, "--headless=new", "--no-sandbox", "--window-size=400,400",
-                 f"--user-data-dir={work / 'profile'}", "--enable-logging=stderr", "--v=0"]
+                 f"--user-data-dir={pathlib.Path(args.profile)}", "--enable-logging=stderr", "--v=0"]
         flags += [f"--{name}" for name in BUILTIN]
         rules = host_resolver_rules()
         if rules:
