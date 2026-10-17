@@ -712,15 +712,6 @@
 </style>
 <style>/* WebMC: the engine's own launcher chrome is not part of this page */
 #boot-screen, #gaius-shell-header, #gaius-shell-footer, #gaius-error-details, #profile-kicker, #profile-subtitle, #profile-legal, #status, #perf-hud, #status, #log, [data-gaius-shell] { display: none !important; }</style>
-<script>/* WebMC: ?log=1 (or the launcher's Log link) brings the client console back, so a bug can be reported with its own stack trace instead of a description of a frozen screen. */try{if(/[?&]log=1/.test(location.search))document.documentElement.classList.add("webmc-log")}catch(e){}</script><style id="webmc-debrand">
-/* WebMC: the engine's own chrome, hidden rather than removed where its script looks it up. */
-#boot-screen { display: none !important; }
-#perf-hud { display: none !important; }
-#status { display: none !important; }
-[data-gaius-shell] { display: none !important; }
-html.webmc-log #boot-screen, html.webmc-log #perf-hud, html.webmc-log #status, html.webmc-log [data-gaius-shell] { display: revert !important; }
-html.webmc-log #status { position: fixed; z-index: 2147483647; max-height: 45vh; overflow: auto; background: #000c; color: #dfe; font: 12px/1.4 ui-monospace, monospace; padding: 6px 8px; width: 100%; }
-</style>
 </head>
 <body>
 <div id="webmc-boot">
