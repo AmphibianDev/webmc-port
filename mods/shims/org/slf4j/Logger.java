@@ -9,6 +9,39 @@ package org.slf4j;
 public interface Logger {
     String getName();
 
+    /** The fluent API of slf4j 2.x: present, and a no-op, so a merged mod can call it. */
+    default org.slf4j.spi.LoggingEventBuilder makeLoggingEventBuilder(org.slf4j.event.Level level) {
+        return new org.slf4j.spi.LoggingEventBuilder.Noop();
+    }
+
+    default org.slf4j.spi.LoggingEventBuilder atLevel(org.slf4j.event.Level level) {
+        return makeLoggingEventBuilder(level);
+    }
+
+    default boolean isEnabledForLevel(org.slf4j.event.Level level) {
+        return true;
+    }
+
+    default org.slf4j.spi.LoggingEventBuilder atTrace() {
+        return makeLoggingEventBuilder(org.slf4j.event.Level.TRACE);
+    }
+
+    default org.slf4j.spi.LoggingEventBuilder atDebug() {
+        return makeLoggingEventBuilder(org.slf4j.event.Level.DEBUG);
+    }
+
+    default org.slf4j.spi.LoggingEventBuilder atInfo() {
+        return makeLoggingEventBuilder(org.slf4j.event.Level.INFO);
+    }
+
+    default org.slf4j.spi.LoggingEventBuilder atWarn() {
+        return makeLoggingEventBuilder(org.slf4j.event.Level.WARN);
+    }
+
+    default org.slf4j.spi.LoggingEventBuilder atError() {
+        return makeLoggingEventBuilder(org.slf4j.event.Level.ERROR);
+    }
+
     default boolean isTraceEnabled(Marker marker) {
         return isTraceEnabled();
     }

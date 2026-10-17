@@ -12,8 +12,16 @@
 //   binary frames carry raw TCP bytes in both directions; the client owns Minecraft's framing and encryption
 //   text {"t":"ack","n"} <- flow control, {"t":"ping","id"} / {"t":"pong","id"}, {"t":"error",...}, {"t":"end",...}
 //
-// Nothing here parses Minecraft packets beyond the one check that a session starts with a handshake: the bytes
-// are a pipe, and the encryption happens in the page (AES/CFB8), so this process never holds a key or a packet.
+// Nothing here parses Minecraft packets beyond the one check that a session starts with a handshake, unless the
+// session asked for an online-mode join: then the login phase is read (three packets at most), the gateway
+// answers the server's EncryptionRequest on the page's behalf and speaks AES/CFB8 for the rest of the session,
+// because a browser cannot (no PKCS#1 v1.5 and no CFB8 in WebCrypto). That is gateway/online.js, and it is what
+// lets a premium account join an online-mode server with a client that was never modified. Offline-mode
+// servers - cracked ones - never send an EncryptionRequest, so they stay a pure byte pipe.
+//
+// The credentials for that join arrive once, over the WebSocket, as `auth` on the open request (or an `auth`
+// control frame before the first binary frame): {accessToken, uuid, name}. They are used for one session-server
+// call and never logged, echoed, or stored.
 //
 // Zero dependencies on purpose - it uses node:net, node:dns, node:crypto and a hand-written WebSocket frame
 // layer - so it can be read in one sitting and run with `node gateway/server.js`.
@@ -37,6 +45,8 @@ const net = require('node:net');
 const dns = require('node:dns/promises');
 const crypto = require('node:crypto');
 const os = require('node:os');
+
+const online = require('./online');
 
 // --------------------------------------------------------------------------------------------------- options
 
@@ -63,6 +73,13 @@ const OPTIONS = {
   maxFrameBytes: envInt('GATEWAY_MAX_FRAME_BYTES', 2 * 1024 * 1024 + 8),
   maxMessageBytes: 64 * 1024, // outbound: what the client accepts in one message
   windowBytes: envInt('GATEWAY_WINDOW_BYTES', 512 * 1024),
+  // Online-mode joins are on by default - they cost nothing for a session that never asks for one, and an
+  // operator who wants a cracked-only gateway turns them off with one variable. The session server is a URL
+  // rather than a constant because a deployment behind a rate limit, or one talking to a private auth service,
+  // has to be able to point it somewhere else.
+  allowOnline: process.env.GATEWAY_ALLOW_ONLINE !== '0',
+  sessionServer: process.env.GATEWAY_SESSION_SERVER || 'https://sessionserver.mojang.com',
+  onlineJoinTimeoutMs: envInt('GATEWAY_ONLINE_JOIN_TIMEOUT_MS', 8000),
 };
 
 // Ports a Minecraft client has no business reaching: mail, databases, remote shell, caches. A gateway that will
@@ -73,11 +90,42 @@ const BLOCKED_PORTS = new Set([21, 22, 23, 25, 53, 110, 111, 135, 137, 138, 139,
   28017]);
 const DEFAULT_PORT = 25565;
 
+/**
+ * The online-mode credentials a page may attach to an open request, or null when they are not usable.
+ *
+ * Only an access token and a profile id are kept: the token is used for exactly one call to the session server
+ * and is never logged or sent anywhere else, and the name is only used to rewrite the login packet, because an
+ * online-mode server verifies the name the client sent and refuses it when the account's name is different.
+ */
+function sanitizeAuth(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const accessToken = typeof raw.accessToken === 'string' ? raw.accessToken.trim() : '';
+  const uuid = typeof raw.uuid === 'string' ? raw.uuid.replace(/-/g, '').trim() : '';
+  const name = typeof raw.name === 'string' ? raw.name.trim() : '';
+  if (!accessToken || !/^[0-9a-fA-F]{32}$/.test(uuid)) return null;
+  return { accessToken, uuid, name };
+}
+
+function makeLoginGate(session) {
+  return new online.LoginGate({
+    getAuth: () => session.auth,
+    join: (request) => online.joinSession({
+      baseUrl: OPTIONS.sessionServer,
+      timeoutMs: OPTIONS.onlineJoinTimeoutMs,
+      ...request,
+    }),
+  });
+}
+
 const CLOSE = {
   PROTOCOL_ERROR: 4000, UNSUPPORTED_VERSION: 4001, UNAUTHORIZED: 4003, RATE_LIMITED: 4029, OVERLOADED: 4030,
   BAD_DESTINATION: 4100, DESTINATION_NOT_ALLOWED: 4101, PORT_BLOCKED: 4102, ADDRESS_BLOCKED: 4103, DNS_FAILED: 4104,
   CONNECT_FAILED: 4200, CONNECT_TIMEOUT: 4201, OPEN_TIMEOUT: 4008, NOT_MINECRAFT: 4300, MESSAGE_TOO_LARGE: 4009,
   BACKPRESSURE: 4010, IDLE_TIMEOUT: 4011, SESSION_LIMIT: 4012, INTERNAL: 4500,
+  // Online-mode joins, in the application range: the server wants a premium account, the account's sign-in is no
+  // longer valid, or Mojang's session server could not be reached. Distinct because the page reacts differently
+  // to each: the first two mean "sign in" (and the second one means "sign in again"), the third means "try later".
+  AUTH_REQUIRED: 4400, AUTH_FAILED: 4401, AUTH_UNAVAILABLE: 4402,
 };
 
 const sessions = new Set();
@@ -273,6 +321,10 @@ function handleSession(socket, request, head) {
     address, opened: false, socket: null, target: null, sized: false,
     rx: 0, tx: 0, received: 0, acked: 0, paused: false, openedAt: Date.now(), idle: null,
     finished: false, firstFrame: true,
+    // Online-mode state. `auth` is null unless the page asked for a premium join; `gate` is the login-phase
+    // state machine that answers the server's encryption request on the page's behalf; `pump` serialises server
+    // chunks so a chunk that awaits the session server cannot be overtaken by the next one.
+    auth: null, gate: null, pump: Promise.resolve(),
   };
   sessions.add(session);
 
@@ -310,6 +362,10 @@ function handleSession(socket, request, head) {
     if (message.token !== undefined && message.token !== null && !verifyToken(message.token, host, port)) {
       return failSession(CLOSE.UNAUTHORIZED, 'UNAUTHORIZED', 'that token is missing, expired or for another server');
     }
+    // A premium join is asked for on the open request (or by an `auth` frame before the first game byte).
+    const auth = sanitizeAuth(message.auth);
+    if (auth) session.auth = auth;
+    if (OPTIONS.allowOnline && !session.gate) session.gate = makeLoginGate(session);
 
     let dnsMs = 0;
     const dnsStarted = Date.now();
@@ -347,10 +403,10 @@ function handleSession(socket, request, head) {
       send(JSON.stringify({
         t: 'ready', ip: connection.remoteAddress, port, host, dnsMs, connectMs: Date.now() - connectStarted,
         window: OPTIONS.windowBytes,
+        online: Boolean(session.gate),
       }));
-      connection.on('data', (data) => {
-        session.rx += data.length;
-        session.received += data.length;
+      const deliver = (data) => {
+        if (session.finished || !data.length) return;
         let sent = 0;
         while (sent < data.length) {
           const slice = data.subarray(sent, sent + OPTIONS.maxMessageBytes);
@@ -364,6 +420,23 @@ function handleSession(socket, request, head) {
           connection.pause();
         }
         touch();
+      };
+      connection.on('data', (data) => {
+        session.rx += data.length;
+        session.received += data.length;
+        if (!session.gate) { deliver(data); return; }
+        session.pump = session.pump.then(async () => {
+          const out = await session.gate.serverToClient(data);
+          if (session.finished) return;
+          if (out.error) {
+            failSession(CLOSE[out.error.code] || CLOSE.INTERNAL, out.error.code, out.error.msg);
+            return;
+          }
+          // The answer to an encryption request is ours to write, and it goes out before the bytes that
+          // followed it in the same chunk (which are already ciphertext).
+          if (out.toServer && out.toServer.length) connection.write(out.toServer);
+          if (out.toClient && out.toClient.length) deliver(out.toClient);
+        }).catch((error) => failSession(CLOSE.INTERNAL, 'INTERNAL', String(error && error.message)));
       });
     });
     connection.once('error', (error) => {
@@ -400,6 +473,20 @@ function handleSession(socket, request, head) {
         return;
       }
       if (message.t === 'ping') { send(JSON.stringify({ t: 'pong', id: message.id })); return; }
+      if (message.t === 'auth') {
+        // The other way to ask for a premium join, for a page that would rather not put a token in the open
+        // request. It only counts before the session is encrypted: after that the live ciphers decide.
+        const auth = sanitizeAuth(message);
+        if (!auth) return failSession(CLOSE.AUTH_FAILED, 'AUTH_FAILED', 'that sign-in carries no token or no profile id');
+        if (session.gate && session.gate.encrypted) {
+          return failSession(CLOSE.PROTOCOL_ERROR, 'PROTOCOL_ERROR', 'the session is already encrypted');
+        }
+        if (!OPTIONS.allowOnline) return failSession(CLOSE.AUTH_REQUIRED, 'AUTH_REQUIRED', 'this gateway does not do online-mode joins');
+        session.auth = auth;
+        if (!session.gate && session.socket) session.gate = makeLoginGate(session);
+        send(JSON.stringify({ t: 'auth-ok', name: auth.name || null }));
+        return;
+      }
       if (message.t === 'ack') {
         session.acked = Number(message.n) || 0;
         if (session.paused && session.received - session.acked <= OPTIONS.windowBytes && session.socket) {
@@ -430,7 +517,8 @@ function handleSession(socket, request, head) {
         }
       }
       session.tx += frame.payload.length;
-      session.socket.write(frame.payload);
+      const outgoing = session.gate ? session.gate.clientToServer(frame.payload) : frame.payload;
+      if (outgoing.length) session.socket.write(outgoing);
       touch();
     }
   }, (why) => failSession(CLOSE.PROTOCOL_ERROR, 'PROTOCOL_ERROR', why), OPTIONS.maxFrameBytes);
@@ -460,7 +548,9 @@ function handleSession(socket, request, head) {
  * `{"type":"connecting"}`, then `{"type":"connected","host":…,"port":…}` - and it *checks* that the host and port
  * it gets back are the ones it asked for, refusing the connection if they are not (it calls that attestation).
  * After that, binary frames are raw TCP bytes in both directions; the client owns Minecraft's framing, its
- * compression and its encryption, so this side must not touch them.
+ * compression and its encryption, so this side must not touch them - unless the connect request carried `auth`,
+ * in which case this side answers an online-mode server's encryption for the client and transcodes AES, exactly
+ * as the goldproxy endpoint does. An offline server never notices the difference, because it never asks.
  */
 function handleTunnel(socket, request) {
   if (sessions.size >= OPTIONS.maxSessions) {
@@ -479,7 +569,7 @@ function handleTunnel(socket, request) {
   ].filter((line) => line !== null).join('\r\n'));
 
   const session = { address: request.socket.remoteAddress || 'unknown', finished: false, socket: null,
-                    opened: false, idle: null };
+                    opened: false, idle: null, auth: null, gate: null, pump: Promise.resolve() };
   sessions.add(session);
   const send = (text) => { if (!session.finished) socket.write(encodeFrame(0x1, Buffer.from(text))); };
   const stop = (message) => {
@@ -508,6 +598,11 @@ function handleTunnel(socket, request) {
       stop('unauthorized');
       return;
     }
+    // The online-mode join, asked for on the connect request: {accessToken, uuid, name}. Without it this endpoint
+    // stays exactly what it was - the client's own framing, compression and encryption, untouched by this side.
+    const auth = sanitizeAuth(message.auth);
+    if (auth) session.auth = auth;
+    if (OPTIONS.allowOnline && !session.gate) session.gate = makeLoginGate(session);
     send(JSON.stringify({ type: 'connecting' }));
     let target = { host, port };
     if (!net.isIP(host)) {
@@ -521,8 +616,25 @@ function handleTunnel(socket, request) {
       session.socket = connection;
       // host and port as asked for, so the client's own check passes: it refuses a tunnel whose attestation does
       // not match the target it requested.
-      send(JSON.stringify({ type: 'connected', host, port }));
-      connection.on('data', (data) => { if (!session.finished) socket.write(encodeFrame(0x2, data)); touch(); });
+      send(JSON.stringify({ type: 'connected', host, port, online: Boolean(session.gate) }));
+      const deliver = (data) => { if (!session.finished && data.length) { socket.write(encodeFrame(0x2, data)); touch(); } };
+      connection.on('data', (data) => {
+        if (!session.gate) { deliver(data); return; }
+        session.pump = session.pump.then(async () => {
+          const out = await session.gate.serverToClient(data);
+          if (session.finished) return;
+          if (out.error) {
+            send(JSON.stringify({ type: 'error', code: out.error.code, message: out.error.msg }));
+            stop(out.error.code);
+            return;
+          }
+          if (out.toServer && out.toServer.length) connection.write(out.toServer);
+          if (out.toClient && out.toClient.length) deliver(out.toClient);
+        }).catch((error) => {
+          send(JSON.stringify({ type: 'error', code: 'INTERNAL', message: String(error && error.message) }));
+          stop('internal error');
+        });
+      });
     });
     connection.once('error', (error) => {
       clearTimeout(timer);
@@ -552,7 +664,8 @@ function handleTunnel(socket, request) {
     }
     if (frame.opcode === 0x2) {
       if (!session.socket) { return; }   // buffered while the target is being dialled, like the client expects
-      session.socket.write(frame.payload);
+      const outgoing = session.gate ? session.gate.clientToServer(frame.payload) : frame.payload;
+      if (outgoing.length) session.socket.write(outgoing);
     }
   }, (why) => stop(why), OPTIONS.maxFrameBytes);
 
@@ -619,6 +732,14 @@ function status() {
     secure: OPTIONS.publicUrl.startsWith('wss://') || null,
     allowPrivateTargets: OPTIONS.allowPrivateTargets,
     allowedOrigins: OPTIONS.allowedOrigins,
+    // What this gateway will and will not do about accounts. `secureProfileKey: false` is not an oversight: a
+    // gateway can prove an account for the join, but a 1.19+ client also signs chat with a Mojang-issued key
+    // that a browser side does not hold, so servers with enforce-secure-profile=true will still refuse.
+    online: {
+      supported: OPTIONS.allowOnline,
+      sessionServer: OPTIONS.sessionServer,
+      secureProfileKey: false,
+    },
     activeConnections: sessions.size,
     maximumConnections: OPTIONS.maxSessions,
     availableConnections: OPTIONS.maxSessions - sessions.size,

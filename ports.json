@@ -233,7 +233,7 @@
       "mods": "runtime - a real class loader, so Fabric Loader and its mixins are the ordinary ones. Unproven: the same Fabric boot that is reported to hang under CheerpJ has to be re-tried on this runtime, which is a different class-loading implementation.",
       "blockers": [
         "LWJGL 3's natives have to be compiled into the wasm module (GLFW 3, GLES3 over WebGL 2 and OpenAL all exist in emscripten; what is missing is the JNI layer that maps LWJGL's expected symbols onto them). tools/lwjgl3_surface.py already measures exactly which symbols that is.",
-        "the JDK 21 recipe needs porting to JDK 25 for the 26.x clients (Zero itself builds fine there)",
+        "the JDK 25 recipe does not exist: emscripten-forge ships openjdk8 and openjdk21 only, and the JDK 21 port is 5,900 lines of patches (3,719 of them the Zero emscripten OS port, measured from the recipe), so JDK 25 is a rebase of that patch set rather than a version bump",
         "performance is unknown: Zero is an interpreter, so this is the route for correctness and mods, not for frames per second - the compiled rows stay ahead of it on speed"
       ],
       "note": "Kept disabled on purpose: it has no built client and a plan that offered it as playable would be lying. The route, the recipe and the link kit are real, and MODERN-JAVA.md is the account of what each remaining piece is.",
@@ -358,6 +358,33 @@
       "bakes_mods": true,
       "mods": "planned - build-time bake through mods/loader.py, the same manifest the other rows read",
       "disabled_why": "Not written yet, and recorded as a plan rather than a piece: our own engine would remove the last borrowed piece, but it is a project, not a step."
+    },
+    {
+      "id": "ikvm-wasm-client",
+      "name": "IKVM on .NET wasm: a real JVM in the page, with Fabric at play time",
+      "repo": "r58Playz/ikvmcraft",
+      "kind": "real-jvm",
+      "enabled": false,
+      "java": {
+        "java": 25,
+        "jvm": "ikvm-mono-wasm",
+        "heap_gb": 4,
+        "minutes": 30
+      },
+      "profiles": [],
+      "profile_rules": [],
+      "bakes_mods": false,
+      "mods": "runtime - Fabric Loader runs inside the JVM and the reference project injects into Knot, so a mods folder works at play time. Unproven here: nobody in this project has built it yet, and a mod that reaches for HotSpot internals or ships its own native library will not fit.",
+      "license": "unclear: the reference project publishes no LICENSE file; IKVM and the JDK 25 class library it builds are GPL-2.0 with the Classpath exception, and its GL layer (MobileGL, LGPL-3.0) sits underneath",
+      "blockers": [
+        "it is one person's work in progress, published with an explicit no-support note and no release of a game, so adopting it means tracking a pinned set of its own build artifacts (r58Playz/IKVM-WASM-Build)",
+        "performance is unmeasured and below a compiled client by construction - a wasm JIT on top of a JVM reimplementation - so it must never be offered as the smooth row",
+        "1.19+ chat signing needs a Mojang-issued profile key a browser side does not hold: a server with enforce-secure-profile=true refuses the session (the same limit gateway/online.js documents)",
+        "no 26.x join has been reproduced here yet, and the licence question has to be answered before anything of it ships"
+      ],
+      "note": "The only route found that runs a current, unmodified client with Fabric at play time: IKVM - a JVM implemented on .NET - compiled to wasm, with the JDK 25 class library, LWJGL 3's real natives compiled to wasm, and desktop OpenGL served by a WebGPU backend. Kept disabled on purpose: there is no build of it here, and the launcher must not promise frames per second it cannot deliver.",
+      "why": "the exact-version row: an unmodified client means a new snapshot needs no port at all, which is the one thing the compiled rows cannot do",
+      "disabled_why": "Recorded as a candidate, not a piece: the reference project is a work in progress that says plainly it is not ready and offers no support, nobody here has built it, and its licence has to be settled before anything of it ships. Until then the launcher says what the row is for and does not offer a play link."
     }
   ],
   "rules": {
@@ -481,7 +508,7 @@
       "limits": [
         "Zero interpreter only: there is no JIT for wasm32 in this port, so a game can be correct and slow",
         "no dynamic loader: every native method is answered from an emscripten_static_symbols table built at link time, so a native library must be compiled into the module",
-        "the recipe builds JDK 21; JDK 25 is the same port with a version bump, unproven here",
+        "the recipe builds JDK 21 only; JDK 25 means rebasing the port's ~5,900 lines of patches (measured from the recipe), unproven here",
         "posix_spawn does not exist, so anything that shells out has to be stubbed"
       ],
       "used_by": [

@@ -18,6 +18,7 @@ browser (or, for a compiled build, at build time by the person building) and is 
 | [Eaglercraft-Archive/EaglercraftX-1_8-workspace](https://github.com/Eaglercraft-Archive/EaglercraftX-1_8-workspace) | **no licence file** | 1.8 – 1.8.9 | the compile pipeline for that era | as above |
 | [Eagler-Versions/eaglercraft-1.7.10-workspace](https://github.com/Eagler-Versions/eaglercraft-1.7.10-workspace) | **no licence file** | 1.7.10 | the compile pipeline for that era | as above |
 | [NT9712/eaglercraft-262-workspace](https://github.com/NT9712/eaglercraft-262-workspace) | Apache-2.0 (a fork; does not relicense upstream) | 26.2 | not used | — |
+| [r58Playz/ikvmcraft](https://github.com/r58Playz/ikvmcraft) | **no licence file** (the stack it builds on: IKVM and the JDK 25 class library under GPL-2.0 with the Classpath exception, its GL layer MobileGL under LGPL-3.0) | 1.16.1 tested by its author; the design is version-agnostic | **not used yet** — it is the recorded candidate for the real-JVM row (`ikvm-wasm-client` in `ports.json`), which is the only route found that runs an unmodified client with Fabric at play time. Nothing of it is built, vendored or shipped here, and no play link is offered | — |
 
 **About the "no licence file" rows.** A repository with no licence file is *all rights reserved* by
 default: crediting the author is the right thing to do but it is not the same as permission. Those engines

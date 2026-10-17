@@ -7,6 +7,7 @@ echo "== version pipeline"; python3 tests/test_pipeline.py || failed=1
 echo; echo "== launcher page"; node tests/test_site.mjs || failed=1
 echo; echo "== the boot screen (vanilla-styled, injected into a client)"; python3 tests/test_aot_shell.py || failed=1
 echo; echo "== the gateway (WebSocket to TCP: a typed server address, a real socket)"; node tests/test_gateway.mjs || failed=1
+echo; echo "== the gateway's online-mode join (premium servers, the account's encryption answered for the page)"; node tests/test_gateway_online.mjs || failed=1
 echo; echo "== the join test page (gateway, status ping, a cracked login)"; node tests/test_join_test.mjs || failed=1
 echo; echo "== playing a downloaded client locally (real gateway, patched page)"; python3 tests/test_play_local.py || failed=1
 echo; echo "== a published client, checked from the outside"; python3 tests/test_verify_client.py || failed=1

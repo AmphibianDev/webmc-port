@@ -49,6 +49,7 @@ PATCHER_JAVA = '''package dev.gaius.tools;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -280,7 +281,7 @@ public final class __CLASS__ {
                     + " itself: no new class has to reach the compiler");
         } else {
             for (Entry entry : entries) {
-                body.add(call(entry));
+                body.add(call(entry, output));
                 calls++;
             }
         }
@@ -300,8 +301,42 @@ public final class __CLASS__ {
         }
     }
 
-    private static InsnList call(Entry entry) {
+    /**
+     * Call one entrypoint.
+     *
+     * Fabric has two shapes and both are common: a class with a no-argument constructor whose
+     * `onInitializeClient` is an instance method, and an "impl" object whose initialiser is static
+     * (Fabric API's own modules do this - `CommonPacketsImpl.onInitialize()`). Calling the second as if
+     * it were the first is a compile error a long way downstream, so the access flags of the class the
+     * bake just copied are what decides, not a guess.
+     */
+    private static InsnList call(Entry entry, Path classesRoot) {
+        boolean isStatic = false;
+        Path file = classesRoot.resolve(entry.owner() + ".class");
+        if (Files.isRegularFile(file) && file.toFile().length() > 0) {
+            try {
+                ClassNode node = new ClassNode();
+                try (InputStream stream = Files.newInputStream(file)) {
+                    new ClassReader(stream).accept(node, 0);
+                }
+                for (MethodNode method : node.methods) {
+                    if (method.name.equals(entry.method()) && "()V".equals(method.desc)) {
+                        isStatic = (method.access & Opcodes.ACC_STATIC) != 0;
+                        break;
+                    }
+                }
+            } catch (IOException | RuntimeException error) {
+                // A class this cannot read is not a reason to fail a build: the instance shape is what a
+                // missing class would have meant anyway, and the call itself is checked by the compiler.
+                System.out.println("__CLASS__: could not read " + entry.owner() + " to see whether " + entry.method()
+                        + " is static (" + error + "); calling it as an instance method");
+            }
+        }
         InsnList code = new InsnList();
+        if (isStatic) {
+            code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, entry.owner(), entry.method(), "()V", false));
+            return code;
+        }
         code.add(new TypeInsnNode(Opcodes.NEW, entry.owner()));
         code.add(new InsnNode(Opcodes.DUP));
         code.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, entry.owner(), "<init>", "()V", false));

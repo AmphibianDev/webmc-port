@@ -217,6 +217,28 @@ try {
   }
   check('and a name that cannot be resolved says so', Boolean(missing) && /DNS_FAILED|gateway refused/.test(missing),
     String(missing));
+
+  console.log('\nthe premium path the page offers');
+  check('the page has fields for an account, and reads them into one object',
+    /id="account-name"/.test(page) && /id="account-uuid"/.test(page) && /id="account-token"/.test(page)
+    && /function readAccount\(/.test(script), 'site/join-test.html is missing part of the premium form');
+  check('and it hands that object to the gateway instead of doing crypto in the page',
+    /request\.auth = account/.test(script) && !/createCipheriv|publicEncrypt|crypto\.subtle|window\.crypto/.test(page),
+    'the page must not implement RSA/AES itself');
+  const premiumNotes = [];
+  const premiumSocket = await join.tunnel(url, '127.0.0.1', target.port, premiumNotes,
+    { accessToken: 'a-test-token', uuid: '3f9b1e2c4d5a4b6c8d7e6f5a4b3c2d1e', name: 'PremiumPlayer' });
+  check('an account rides along on the connect request without breaking the tunnel',
+    Boolean(premiumSocket) && premiumNotes.some((note) => note.includes('as PremiumPlayer')), premiumNotes.join(' | '));
+  const premiumLogin = await new Promise((resolve) => {
+    const timer = setTimeout(() => resolve({ id: null, why: 'no reply' }), 6000);
+    join.reader(premiumSocket, (body) => { clearTimeout(timer); resolve({ id: join.packetId(body)[0] }); });
+    premiumSocket.send(join.frame([0x00].concat(join.varint(770), join.string('127.0.0.1'), [0, 25565], join.varint(2))));
+    premiumSocket.send(join.frame([0x00].concat(join.string('Notch'), join.varint(0))));
+  });
+  check('and a cracked server still accepts the login with an account attached', premiumLogin.id === 0x02 || premiumLogin.id === 0x03,
+    JSON.stringify(premiumLogin));
+  premiumSocket.close();
 } finally {
   gateway.kill();
   target.server.close();

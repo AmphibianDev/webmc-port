@@ -127,6 +127,47 @@ For the Gaius client, multiplayer is its relay model instead: `relay-nodes.json`
 session is leased from the chosen node, and the node dials the target. The default node in that file is
 public and needs no token.
 
+### Online-mode (premium) servers
+
+A cracked server never asks a question a browser cannot answer, which is why the gateway used to be only a pipe.
+An online-mode server does ask. It sends an EncryptionRequest, and answering it means generating a shared secret,
+RSA-encrypting that secret with the server's key, proving the account to Mojang's session server with the SHA-1 of
+it, and then speaking AES/CFB8 for the rest of the connection. WebCrypto has neither PKCS#1 v1.5 encryption nor
+CFB8, and the compiled clients deliberately do not implement it, so the gateway does it instead - in the one place
+that already speaks TCP and already sits between the page and the server:
+
+* the page offers the account once, as `auth` on the open (or connect) request: `{accessToken, uuid, name}`. On the
+  `goldproxy.v1` dialect an `{"t":"auth"}` frame before the first game byte does the same thing;
+* the gateway reads the login phase - three packets at most - and when the server asks for encryption it generates
+  the secret, answers with an EncryptionResponse, calls `sessionserver.mojang.com/session/minecraft/join` with the
+  hash the server will check, and switches both directions to AES/CFB8;
+* the client never sees the request, so nothing about it changes. The login name is rewritten to the account's
+  name, because an online-mode server verifies the name the client sent and refuses a mismatch as an invalid
+  session.
+
+Both dialects do this - `/v1/connect` and the engine's `/tunnel` - and an offline server never notices, because it
+never asks: the session stays exactly the byte pipe it was. `GET /health` reports `online.supported` and the session
+server in use, and `GATEWAY_ALLOW_ONLINE=0` turns the whole thing off for an operator who wants a cracked-only
+relay. The refusals have their own close codes so a page can tell them apart: **4400 `AUTH_REQUIRED`** (that server
+is online-mode and nobody is signed in), **4401 `AUTH_FAILED`** (the sign-in is expired - sign in again), **4402
+`AUTH_UNAVAILABLE`** (the session server could not be reached - try later). `tests/test_gateway_online.mjs` runs a
+real handshake against a fake online-mode server and a fake session server: 29 checks, including the digest the
+server computes being the one the session server was told.
+
+What it does not do yet, and the launcher must say so rather than quietly failing at the last step:
+
+* **No chat signing.** A 1.19+ client also proves itself for chat with a Mojang-issued profile key. The gateway can
+  prove the account for the join but cannot sign as it, so a server with `enforce-secure-profile=true` (the vanilla
+  default since 1.19.1) still refuses the session. 1.8 - 1.18.2, and any 1.19+ server that turned it off, are
+  unaffected.
+* **No sign-in flow in the page yet.** The gateway accepts a token; nothing in `site/` obtains one. That is the next
+  piece: the Microsoft device-code flow (open a link, type a code) and the Xbox/XSTS/Minecraft chain, with the XBL,
+  XSTS and Minecraft calls proxied by the gateway because those hosts do not answer CORS. The join-test page takes a
+  token pasted from another launcher in the meantime, which is enough to walk this path in a real browser.
+* **No modern-forwarding proxies.** A server behind Velocity or BungeeCord in "modern forwarding" mode wants the
+  proxy's own secret in the handshake, and a player cannot supply it. That is the server's decision, not a gap to
+  work around.
+
 ## What is not here
 
 - **We do not run a public gateway for you.** Running one is a server, and this project is a static site:

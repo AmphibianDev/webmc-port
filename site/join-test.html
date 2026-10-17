@@ -29,8 +29,9 @@
   <h1>Does multiplayer work from this page?</h1>
   <p class="lede">This runs the same three steps a browser client runs when you type a server address, and prints
     what each one answered: the gateway is reachable, the server on the other side answers a status ping, and a
-    cracked (offline-mode) server accepts a login for the name below. No game client involved, so a failure here is
-    the transport and a success here is not the client.</p>
+    server accepts a login for the name below - an offline-mode (cracked) one by default, and an online-mode
+    (premium) one when the account fields are filled in, because the gateway answers that server's session
+    challenge. No game client involved, so a failure here is the transport and a success here is not the client.</p>
 
   <div class="row"><label for="gateway">gateway</label>
     <input id="gateway" type="text" spellcheck="false" placeholder="wss://your.host/v1/connect (or ws://127.0.0.1:8090/v1/connect)" /></div>
@@ -38,6 +39,19 @@
     <input id="target" type="text" spellcheck="false" placeholder="play.example.net or play.example.net:25565" /></div>
   <div class="row"><label for="name">player name</label>
     <input id="name" type="text" spellcheck="false" maxlength="16" placeholder="Notch" /></div>
+  <details id="premium">
+    <summary>Premium (online-mode) server</summary>
+    <p class="muted">Fill all three and the gateway answers the server's session challenge for you, so an
+      online-mode server accepts the login. The token goes only to the gateway you typed above, which uses it for one
+      call to Mojang's session server and never stores it. Sign-in inside this page is not built yet, so a token from
+      another launcher (or its config) is what goes here.</p>
+    <div class="row"><label for="account-name">account name</label>
+      <input id="account-name" type="text" spellcheck="false" maxlength="16" placeholder="the account's own name" /></div>
+    <div class="row"><label for="account-uuid">account UUID</label>
+      <input id="account-uuid" type="text" spellcheck="false" placeholder="32 hex digits, dashes are fine" /></div>
+    <div class="row"><label for="account-token">access token</label>
+      <input id="account-token" type="password" spellcheck="false" placeholder="Minecraft access token" /></div>
+  </details>
   <div class="row">
     <button id="check" class="primary">Run the test</button>
     <button id="clear">Clear</button>
@@ -136,8 +150,20 @@ function string(text) {
   return varint(bytes.length).concat(bytes);
 }
 
-/* Open the gateway and ask it for one target. Resolves with the socket and what the gateway said. */
-function tunnel(gateway, host, port, notes) {
+/* The three fields that make an online-mode join possible, or null when any of them is missing or malformed.
+ * The UUID check is the gateway's own rule: a join with anything else cannot be proven to Mojang. */
+function readAccount() {
+  var name = el("account-name").value.trim();
+  var uuid = el("account-uuid").value.trim().replace(/-/g, "");
+  var token = el("account-token").value.trim();
+  if (!name || !/^[0-9a-fA-F]{32}$/.test(uuid) || !token) { return null; }
+  return { accessToken: token, uuid: uuid, name: name };
+}
+
+/* Open the gateway and ask it for one target. Resolves with the socket and what the gateway said. When `account`
+ * is given, it rides along in the connect request, and the gateway answers an online-mode server's encryption with
+ * it - the page never touches RSA or AES. */
+function tunnel(gateway, host, port, notes, account) {
   return new Promise(function (resolve, reject) {
     // This test speaks the tunnel dialect (the one the game's own client speaks when it is built this way), so a
     // gateway URL given as `/v1/connect` - the other dialect, for the Eagler26 lineage - is pointed at `/tunnel`.
@@ -148,7 +174,13 @@ function tunnel(gateway, host, port, notes) {
     socket.binaryType = "arraybuffer";
     var timer = setTimeout(function () { reject(new Error("the gateway did not answer in 12s")); socket.close(); }, 12000);
     var opened = false;
-    socket.onopen = function () { opened = true; notes.push("gateway: open"); socket.send(JSON.stringify({ type: "connect", host: host, port: port })); };
+    socket.onopen = function () {
+      opened = true;
+      notes.push("gateway: open" + (account ? " (as " + account.name + ")" : ""));
+      var request = { type: "connect", host: host, port: port };
+      if (account) { request.auth = account; }
+      socket.send(JSON.stringify(request));
+    };
     socket.onmessage = function (event) {
       if (typeof event.data !== "string") { return; }
       var message;
@@ -156,7 +188,7 @@ function tunnel(gateway, host, port, notes) {
       if (message.type === "connecting") { notes.push("gateway: dialling " + host + ":" + port); return; }
       if (message.type === "connected") {
         clearTimeout(timer);
-        notes.push("gateway: connected to " + message.host + ":" + message.port + " (attested)");
+        notes.push("gateway: connected to " + message.host + ":" + message.port + " (attested" + (message.online ? ", online-mode joins on" : "") + ")");
         resolve(socket);
         return;
       }
@@ -265,13 +297,31 @@ async function run() {
     line("3. status: no reply to a status ping (the address may be wrong, or that port is not a Minecraft server)", "bad");
   }
 
-  /* 4. the cracked-server case: a login for this name, with the UUID an offline server derives. */
+  /* 4. a login for this name: an offline server takes its own UUID, and an online-mode one is answered by the
+   * gateway when the account below is filled in. */
   socket.close();
+  var account = readAccount();
+  if (account) { line("4. login: offering the account " + account.name + " (the gateway does the encryption)", "muted"); }
   var loginNotes = [];
   var loginSocket;
   try {
-    loginSocket = await tunnel(gateway, host, port, loginNotes);
+    loginSocket = await tunnel(gateway, host, port, loginNotes, account);
   } catch (error) {
+    var refused = String(error.message || "");
+    if (/AUTH_REQUIRED/.test(refused)) {
+      line("4. login: that server is online-mode, and no account was offered", "bad");
+      line("   fill the Premium fields (name, UUID and access token) and run it again - the gateway will answer the" +
+        " session challenge for you", "muted");
+      verdict.textContent = "that server is premium: sign in (or paste a token)";
+      verdict.className = "bad";
+      return;
+    }
+    if (/AUTH_FAILED/.test(refused) || /AUTH_UNAVAILABLE/.test(refused)) {
+      line("4. login: " + refused, "bad");
+      verdict.textContent = "the sign-in was refused - sign in again";
+      verdict.className = "bad";
+      return;
+    }
     line("4. login tunnel: " + error.message, "bad");
     verdict.textContent = "the gateway or the address - not the client";
     verdict.className = "bad";
@@ -290,10 +340,11 @@ async function run() {
     loginSocket.send(frame([0x00].concat(varint(770), string(host), [(port >> 8) & 0xff, port & 0xff], varint(2))));
     loginSocket.send(frame([0x00].concat(string(name), uuidBytes)));
   });
-  /* In the login state: 0x00 disconnect, 0x02 login success, 0x03 compression, 0x04 encryption request. */
+  /* In the login state: 0x00 disconnect, 0x02 login success, 0x03 compression, 0x04 encryption request. The last
+   * one only reaches the page when nobody signed in: with an account, the gateway answers it before it gets here. */
   if (reply.id === 0x02) {
-    line("4. login: accepted - a cracked server took the name and its offline UUID", "ok");
-    verdict.textContent = "the whole path works: gateway, server, cracked login";
+    line("4. login: accepted" + (account ? " - the online-mode challenge was answered for this page" : " - a cracked server took the name and its offline UUID"), "ok");
+    verdict.textContent = account ? "the whole path works: gateway, server, premium login" : "the whole path works: gateway, server, cracked login";
     verdict.className = "ok";
   } else if (reply.id === 0x00) {
     var reason = "";
@@ -302,8 +353,8 @@ async function run() {
     verdict.textContent = "the server refused the login";
     verdict.className = "bad";
   } else if (reply.id === 0x04) {
-    line("4. login: the server wants a Mojang session (online mode) - a browser client cannot do that one", "bad");
-    verdict.textContent = "that server is premium, not cracked";
+    line("4. login: the server wants a Mojang session (online mode) and the gateway did not answer it", "bad");
+    verdict.textContent = "that server is premium: fill the Premium fields";
     verdict.className = "bad";
   } else if (reply.id === 0x03) {
     line("4. login: accepted (the server enabled compression)", "ok");
