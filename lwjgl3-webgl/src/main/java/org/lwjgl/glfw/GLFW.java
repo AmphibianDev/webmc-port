@@ -469,13 +469,16 @@ public final class GLFW {
     public static native boolean glfwWindowShouldClose(long arg0);
 
     // demanded by the client; the JavaScript behind it is in natives/webmc-lwjgl3.js
-    public static long glfwCreateStandardCursor(int arg0) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwCreateStandardCursor"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native long glfwCreateStandardCursor(int arg0);
 
     // demanded by the client; the JavaScript behind it is in natives/webmc-lwjgl3.js
-    public static void glfwSetCursor(long arg0, long arg1) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwSetCursor"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glfwSetCursor(long arg0, long arg1);
 
     // demanded by the client; the JavaScript behind it is in natives/webmc-lwjgl3.js
-    public static org.lwjgl.glfw.GLFWWindowCloseCallback glfwSetWindowCloseCallback(long arg0, org.lwjgl.glfw.GLFWWindowCloseCallbackI arg1) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwSetWindowCloseCallback"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native org.lwjgl.glfw.GLFWWindowCloseCallback glfwSetWindowCloseCallback(long arg0, org.lwjgl.glfw.GLFWWindowCloseCallbackI arg1);
 
     // demanded by the client; the JavaScript behind it is in natives/webmc-lwjgl3.js
     public static org.lwjgl.glfw.GLFWWindowIconifyCallback glfwSetWindowIconifyCallback(long arg0, org.lwjgl.glfw.GLFWWindowIconifyCallbackI arg1) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwSetWindowIconifyCallback"); }

@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import http.server
+import io
 import json
 import os
 import pathlib
@@ -90,7 +91,47 @@ def collector(directory: pathlib.Path, port: int, reports: dict, isolate: dict):
                 self.send_header("cross-origin-opener-policy", "same-origin")
                 self.send_header("cross-origin-embedder-policy", "credentialless")
                 self.send_header("cross-origin-resource-policy", "cross-origin")
+            # no-store, always: the profile that makes CheerpJ's runtime cheap to reuse would otherwise
+            # also let Chrome serve yesterday's page from its cache - which it did, running the previous
+            # test's Java program and reporting its result as this one's
+            self.send_header("cache-control", "no-store")
             super().end_headers()
+
+        def send_head(self):
+            """Serve ranges, because CheerpJ streams a jar in pieces and refuses one that cannot.
+
+            Its words, from the console: "Network error for .../t.jar: HTTP server does not support the
+            'Range' header. CheerpJ cannot run." A 27 MB client jar is exactly the case where it matters.
+            """
+            header = self.headers.get("range")
+            if not header or not header.startswith("bytes="):
+                return super().send_head()
+            path = self.translate_path(self.path)
+            if not pathlib.Path(path).is_file():
+                return super().send_head()
+            size = pathlib.Path(path).stat().st_size
+            first, _, last = header[len("bytes="):].partition("-")
+            try:
+                start = int(first)
+                end = int(last) if last else size - 1
+            except ValueError:
+                return super().send_head()
+            end = min(end, size - 1)
+            if start > end:
+                self.send_response(416)
+                self.send_header("content-range", f"bytes */{size}")
+                self.end_headers()
+                return None
+            handle = pathlib.Path(path).open("rb")
+            handle.seek(start)
+            body = handle.read(end - start + 1)
+            handle.close()
+            self.send_response(206)
+            self.send_header("content-type", self.guess_type(path))
+            self.send_header("content-range", f"bytes {start}-{end}/{size}")
+            self.send_header("content-length", str(len(body)))
+            self.end_headers()
+            return io.BytesIO(body)
 
         def log_message(self, *args):
             pass
@@ -148,6 +189,8 @@ def main(argv=None) -> int:
     parser.add_argument("--browser", default=None)
     parser.add_argument("--keep", action="store_true", help="keep the work directory (the browser's log)")
     parser.add_argument("--console", action="store_true", help="print every console line, not a summary")
+    parser.add_argument("--fresh-profile", action="store_true",
+                        help="wipe the profile first: a half-downloaded CheerpJ runtime in it hangs startup")
     parser.add_argument("--isolate", action="store_true",
                         help="serve with cross-origin isolation (SharedArrayBuffer); see the note in the handler")
     parser.add_argument("--resolve-extra", default="",
@@ -157,6 +200,8 @@ def main(argv=None) -> int:
                              "fresh profile per run means paying that download every time (minutes)")
     args = parser.parse_args(argv)
 
+    if args.fresh_profile:
+        shutil.rmtree(args.profile, ignore_errors=True)
     browser = args.browser or find_browser()
     if not browser:
         print("no browser found: install Chrome, or let Playwright install one")
@@ -186,7 +231,9 @@ def main(argv=None) -> int:
         flags = [browser, "--headless=new", "--no-sandbox", "--window-size=400,400",
                  f"--user-data-dir={pathlib.Path(args.profile)}", "--enable-logging=stderr", "--v=0"]
         flags += [f"--{name}" for name in BUILTIN]
-        hosts = list(NEEDED_HOSTS[:3])  # CheerpJ's own hosts: the runtime comes from them
+        # only the host the loader and runtime actually come from: mapping more of them cost a five minute
+        # hang that this narrowing fixed, and the extra ones can be asked for by name
+        hosts = ["cjrtnc.leaningtech.com"]
         hosts += [host for host in args.resolve_extra.split(",") if host]
         rules = host_resolver_rules(hosts)
         if rules:
