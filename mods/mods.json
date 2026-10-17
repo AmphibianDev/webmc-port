@@ -95,6 +95,54 @@
       "side": "client",
       "licence": "Apache-2.0",
       "note": "The real Fabric API, compiled into the client by the bake rather than shimmed member by member. 43 modules: 18 need nothing, 17 need one named adapter (files->OPFS, threads->scheduler, LWJGL->the port's natives), 8 are desktop-only and are left out with the reason. Redistributed under Apache-2.0 (see CREDITS.md)."
+    },
+    {
+      "id": "sodium",
+      "name": "Sodium",
+      "version": "0.9.2+mc26.2",
+      "file": "vendor/sodium-fabric-0.9.2+mc26.2.jar",
+      "game": [
+        "26.2"
+      ],
+      "loaders": [
+        "fabric",
+        "aot"
+      ],
+      "side": "client",
+      "licence": "LGPL-3.0",
+      "note": "The renderer of the Fabric world, downloaded from Modrinth. Its 77 mixin classes all apply in the build-time merge."
+    },
+    {
+      "id": "lithium",
+      "name": "Lithium",
+      "version": "0.25.3+mc26.2",
+      "file": "vendor/lithium-fabric-0.25.3+mc26.2.jar",
+      "game": [
+        "26.2"
+      ],
+      "loaders": [
+        "fabric",
+        "aot"
+      ],
+      "side": "client",
+      "licence": "LGPL-3.0",
+      "note": "Server-side game logic optimisations that a client build carries too; 253 of its 262 mixins apply, and the rest are named in the build log."
+    },
+    {
+      "id": "modmenu",
+      "name": "Mod Menu",
+      "version": "20.0.3",
+      "file": "vendor/modmenu-20.0.3.jar",
+      "game": [
+        "26.2"
+      ],
+      "loaders": [
+        "fabric",
+        "aot"
+      ],
+      "side": "client",
+      "licence": "MIT",
+      "note": "A list of what is loaded. A good first mod to bake: it shows the other mods, so 'did it work' is visible in the client."
     }
   ]
 }
