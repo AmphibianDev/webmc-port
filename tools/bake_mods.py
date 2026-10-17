@@ -327,14 +327,37 @@ public final class __CLASS__ {
                 if (!(instruction instanceof MethodInsnNode call)) {
                     continue;
                 }
-                if (!"java/lang/String".equals(call.owner) || !"splitWithDelimiters".equals(call.name)) {
-                    continue;
+                // One table, and every entry is a JDK method this client's class library does not have. Each
+                // is rewritten to a helper with the same behaviour under this project's own name, because
+                // changing the mod is not an option and silently dropping the call is worse.
+                String replacement = null;
+                String replacementDesc = null;
+                if ("java/lang/String".equals(call.owner) && "splitWithDelimiters".equals(call.name)
+                        && "(Ljava/lang/String;I)[Ljava/lang/String;".equals(call.desc)) {
+                    replacement = "splitWithDelimiters";
+                    replacementDesc = "(Ljava/lang/String;Ljava/lang/String;I)[Ljava/lang/String;";
+                } else if ("java/util/ServiceLoader".equals(call.owner) && "stream".equals(call.name)
+                        && "()Ljava/util/stream/Stream;".equals(call.desc)) {
+                    replacement = "serviceStream";
+                    replacementDesc = "(Ljava/util/ServiceLoader;)Ljava/util/stream/Stream;";
+                } else if ("java/util/ServiceLoader".equals(call.owner) && "findFirst".equals(call.name)
+                        && "()Ljava/util/Optional;".equals(call.desc)) {
+                    replacement = "serviceFindFirst";
+                    replacementDesc = "(Ljava/util/ServiceLoader;)Ljava/util/Optional;";
+                } else if ("java/util/ServiceLoader$Provider".equals(call.owner) && "get".equals(call.name)
+                        && "()Ljava/lang/Object;".equals(call.desc)) {
+                    replacement = "identity";
+                    replacementDesc = "(Ljava/lang/Object;)Ljava/lang/Object;";
+                } else if ("java/util/concurrent/Executors".equals(call.owner) && "newThreadPerTaskExecutor".equals(call.name)
+                        && "(Ljava/util/concurrent/ThreadFactory;)Ljava/util/concurrent/ExecutorService;".equals(call.desc)) {
+                    replacement = "newThreadPerTaskExecutor";
+                    replacementDesc = "(Ljava/util/concurrent/ThreadFactory;)Ljava/util/concurrent/ExecutorService;";
                 }
-                if (!"(Ljava/lang/String;I)[Ljava/lang/String;".equals(call.desc)) {
+                if (replacement == null) {
                     continue;
                 }
                 method.instructions.set(call, new MethodInsnNode(Opcodes.INVOKESTATIC, "webmc/runtime/JdkCompat",
-                        "splitWithDelimiters", "(Ljava/lang/String;Ljava/lang/String;I)[Ljava/lang/String;", false));
+                        replacement, replacementDesc, false));
                 changed = true;
             }
         }
@@ -344,7 +367,8 @@ public final class __CLASS__ {
         ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
         node.accept(writer);
         Files.write(classFile, writer.toByteArray());
-        System.out.println("__CLASS__:   rewrote String.splitWithDelimiters (Java 21) in " + classFile.getFileName());
+        System.out.println("__CLASS__:   rewrote a Java-version gap (see webmc.runtime.JdkCompat) in "
+                + classFile.getFileName());
     }
 
     /**
