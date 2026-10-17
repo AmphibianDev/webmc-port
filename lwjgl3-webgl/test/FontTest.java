@@ -32,11 +32,6 @@ public final class FontTest {
                 throw new IllegalStateException("the charmap does not advance");
             }
             int loaded = FreeType.FT_Load_Glyph(face, 'A', 0);
-            System.out.println("  metrics from the natives: " + org.lwjgl.system.WebMC.freetypeWidth() + "x"
-                + org.lwjgl.system.WebMC.freetypeRows() + " pitch=" + org.lwjgl.system.WebMC.freetypePitch());
-            System.out.println("  face struct says slot=" + org.lwjgl.system.MemoryUtil.memGetLong(face.address() + 168)
-                + " and the slot says bitmap=" + org.lwjgl.system.MemoryUtil.memGetLong(
-                    org.lwjgl.system.MemoryUtil.memGetLong(face.address() + 168) + 96));
             FT_GlyphSlot slot = face.glyph();
             int width = slot.bitmap().width();
             int rows = slot.bitmap().rows();

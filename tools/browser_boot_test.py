@@ -186,6 +186,7 @@ def main(argv=None) -> int:
                         help="extra Java source files to compile with the shim")
     parser.add_argument("--page", default=None,
                         help="serve this directory (with index.html) instead of building the boot test")
+    parser.add_argument("--path", default="/index.html", help="which page to open when serving --page")
     parser.add_argument("--query", default="")
     parser.add_argument("--port", type=int, default=8777)
     parser.add_argument("--timeout", type=int, default=900,
@@ -258,7 +259,7 @@ def main(argv=None) -> int:
             print(f"no free port between {args.port} and {args.port + 5}")
             return 2
         if url is None:
-            url = f"http://127.0.0.1:{args.port}/index.html{args.query}"
+            url = f"http://127.0.0.1:{args.port}{args.path}{args.query}"
         print(f"serving {directory} on {args.port}")
         print(f"browser: {browser}")
 
