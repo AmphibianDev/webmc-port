@@ -132,7 +132,6 @@ public final class J21Backport {
                 LIST_TYPES.add(type);
             }
         }
-        System.out.println("types that are Lists, read from the classpath: " + LIST_TYPES.size());
     }
 
     private static boolean reachesList(String type, Set<String> seen) {
@@ -315,8 +314,14 @@ public final class J21Backport {
             }
 
             // The rewritten calls land in the shim, so the shim travels with the client: a class file that
-            // calls webmc/j21/J21 is useless in a jar that does not carry it.
+            // calls webmc/j21/J21 is useless in a jar that does not carry it. Written once, and skipped when the
+            // input already has it - backporting a mod that is a *bundle* runs this over jars that were already
+            // through it, and a duplicate entry makes ZipOutputStream refuse the whole output ("duplicate entry:
+            // webmc/j21/J21.class"), which is how the first attempt at a Fabric mod produced an empty file.
             for (String shim : List.of("webmc/j21/J21.class", "webmc/j21/MatchException.class")) {
+                if (written.contains(shim)) {
+                    continue;
+                }
                 try (InputStream stream = J21Backport.class.getClassLoader().getResourceAsStream(shim)) {
                     if (stream == null) {
                         System.out.println("! the shim " + shim + " is not on this tool's own classpath");
@@ -326,7 +331,7 @@ public final class J21Backport {
                     out.putNextEntry(entry);
                     stream.transferTo(out);
                     out.closeEntry();
-                    System.out.println("carried " + shim + " into the output");
+                    written.add(shim);
                 }
             }
         }

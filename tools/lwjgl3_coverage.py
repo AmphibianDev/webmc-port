@@ -31,8 +31,12 @@ def main(argv=None) -> int:
     natives = set(re.findall(r"^function (Java_\w+)", js, re.M))
     left = {}
     for owner, members in need.items():
-        path = shim / "src" / "main" / "java" / (owner.replace(".", "/") + ".java")
-        text = path.read_text() if path.is_file() else ""
+        # a nested class (`MemoryUtil$MemoryAllocator`) lives in its outer class's file, so look in both
+        names = [owner.replace(".", "/")]
+        if "$" in owner:
+            names.append(owner.split("$")[0].replace(".", "/"))
+        files = [shim / "src" / "main" / "java" / (name + ".java") for name in names]
+        text = "\n".join(path.read_text() for path in files if path.is_file())
         for member in members:
             jni = "Java_" + owner.replace(".", "_").replace("$", "_") + "_" + member
             if jni in natives:
@@ -45,14 +49,22 @@ def main(argv=None) -> int:
                 if "extends " + base in text or "extends " + base + "<" in text:
                     for path in shim.rglob(base + ".java"):
                         candidates.append(path.read_text())
-            body = None
+            # every declaration of that name, because a nested class can implement something the outer class
+            # leaves as a stub (MemoryUtil$MemoryAllocator does), and any implementation is an implementation
+            answered = False
+            pattern = (r"(?:public|protected)\s+(?:static\s+)?(?:final\s+)?" + TYPE + r"\b"
+                       + re.escape(member) + r"\s*[\(;=]")
             for candidate in candidates:
-                body = re.search(r"(?:public|protected)\s+(?:static\s+)?(?:final\s+)?" + TYPE + r"\b"
-                                 + re.escape(member) + r"\s*[\(;=]", candidate) or body
-            if body:
-                line_end = text.find("\n", body.start())
-                if "UnsupportedOperationException" not in text[body.start():line_end if line_end > 0 else len(text)]:
-                    continue
+                for body in re.finditer(pattern, candidate):
+                    line_end = candidate.find("\n", body.start())
+                    line = candidate[body.start():line_end if line_end > 0 else len(candidate)]
+                    if "UnsupportedOperationException" not in line:
+                        answered = True
+                        break
+                if answered:
+                    break
+            if answered:
+                continue
             left.setdefault(owner, []).append(member)
     total = sum(len(v) for v in left.values())
     demanded = sum(len(v) for v in need.values())

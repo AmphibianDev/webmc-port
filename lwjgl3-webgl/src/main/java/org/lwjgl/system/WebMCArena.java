@@ -145,6 +145,23 @@ public final class WebMCArena {
         return ((long) (slabIndex + 1) << 32) | offset;
     }
 
+    /**
+     * Copy a region out, for the one place it has to leave Java: a GL call whose data is an address
+     * (a buffer upload, a texture) is implemented in JavaScript, and JavaScript cannot read these slabs.
+     * One copy at that boundary, and the alternative - two arenas, one of which JavaScript can read - is
+     * what this project spent a day discovering is worse.
+     */
+    public static synchronized byte[] read(long address, int length) {
+        byte[] bytes = new byte[length];
+        window(address, length).get(0, bytes, 0, length);
+        return bytes;
+    }
+
+    /** Copy a region in, for the other direction: pixels read back from a GL call. */
+    public static synchronized void write(long address, byte[] bytes) {
+        window(address, bytes.length).put(0, bytes, 0, bytes.length);
+    }
+
     /** A view of the arena at this address: the same memory, a different window. */
     public static synchronized ByteBuffer window(long address, int capacity) {
         ByteBuffer view = slab(address).duplicate().order(ByteOrder.nativeOrder());

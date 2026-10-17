@@ -15,12 +15,16 @@ public final class ARBVertexAttribBinding {
     public static final int GL_VERTEX_BINDING_OFFSET = 33495;
     public static final int GL_VERTEX_BINDING_STRIDE = 33496;
 
-    public static void glBindVertexBuffer(int arg0, int arg1, long arg2, int arg3) { throw new UnsupportedOperationException("org.lwjgl.opengl.ARBVertexAttribBinding.glBindVertexBuffer"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glBindVertexBuffer(int arg0, int arg1, long arg2, int arg3);
 
-    public static void glVertexAttribBinding(int arg0, int arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.ARBVertexAttribBinding.glVertexAttribBinding"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glVertexAttribBinding(int arg0, int arg1);
 
-    public static void glVertexAttribFormat(int arg0, int arg1, int arg2, boolean arg3, int arg4) { throw new UnsupportedOperationException("org.lwjgl.opengl.ARBVertexAttribBinding.glVertexAttribFormat"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glVertexAttribFormat(int arg0, int arg1, int arg2, boolean arg3, int arg4);
 
-    public static void glVertexAttribIFormat(int arg0, int arg1, int arg2, int arg3) { throw new UnsupportedOperationException("org.lwjgl.opengl.ARBVertexAttribBinding.glVertexAttribIFormat"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glVertexAttribIFormat(int arg0, int arg1, int arg2, int arg3);
 
 }

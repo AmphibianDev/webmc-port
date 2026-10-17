@@ -250,6 +250,8 @@
  "org.lwjgl.system.WebMC": [
   "arenaCapacity",
   "arenaUsed",
+  "bufferDataFromJava",
+  "bufferSubDataFromJava",
   "log",
   "logText",
   "nmemASCII",
@@ -272,6 +274,9 @@
   "nmemSet",
   "nmemSlice",
   "nmemUTF8",
-  "nmemWriteBytes"
+  "nmemWriteBytes",
+  "readPixelsToArray",
+  "texImageFromJava",
+  "texSubImageFromJava"
  ]
 }

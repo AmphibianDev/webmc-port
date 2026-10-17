@@ -683,7 +683,16 @@ public final class GL11 {
     public static void glPushMatrix() { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glPushMatrix"); }
 
     // implemented in natives/webmc-lwjgl3.js
-    public static native void glReadPixels(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, long arg6);
+    /**
+     * The address form of glReadPixels: JavaScript reads the pixels into an array (the only way it can
+     * hand them over) and they are copied into the arena here. One copy, at the boundary.
+     */
+    public static void glReadPixels(int x, int y, int width, int height, int format, int type, long pixels) {
+        byte[] read = org.lwjgl.system.WebMC.readPixelsToArray(x, y, width, height, format, type);
+        if (pixels != 0L && read != null) {
+            org.lwjgl.system.WebMCArena.write(pixels, read);
+        }
+    }
 
     // implemented in natives/webmc-lwjgl3.js
     public static native void glReadPixels(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, java.nio.ByteBuffer arg6);

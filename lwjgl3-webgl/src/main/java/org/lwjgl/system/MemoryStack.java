@@ -61,7 +61,7 @@ public final class MemoryStack implements AutoCloseable {
      * everything else in this shim uses, and is released when the stack closes.
      */
     public long nmalloc(int size) {
-        long address = WebMC.nmemAlloc(size);
+        long address = WebMCArena.malloc(size);
         this.addresses.add(address);
         return address;
     }
@@ -102,7 +102,7 @@ public final class MemoryStack implements AutoCloseable {
     @Override
     public void close() {
         for (long address : this.addresses) {
-            WebMC.nmemFree(address);
+            WebMCArena.free(address);
         }
         this.addresses.clear();
         for (int index = 0; index < count; index++) {

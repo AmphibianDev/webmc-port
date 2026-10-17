@@ -211,6 +211,7 @@ public final class GL11C {
     public static final int GL_XOR = 5382;
     public static final int GL_ZERO = 0;
 
-    public static void glBindTexture(int arg0, int arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11C.glBindTexture"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glBindTexture(int arg0, int arg1);
 
 }

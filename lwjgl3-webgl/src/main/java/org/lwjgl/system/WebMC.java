@@ -78,6 +78,26 @@ public final class WebMC {
      * shell - so every "BOOT FAILED" this program printed was invisible to the thing running it. This is
      * the one line of plumbing that fixes that.
      */
+    /**
+     * A buffer upload whose source lives in the arena. JavaScript cannot read the arena, so the bytes
+     * travel as a Java array - which CheerpJ hands to JavaScript as a typed array - and the pointer never
+     * crosses the boundary at all.
+     */
+    public static native void bufferDataFromJava(int target, long size, byte[] bytes, int usage);
+
+    /** The same, for a sub-range of a bound buffer. */
+    public static native void bufferSubDataFromJava(int target, long offset, byte[] bytes);
+
+    /** A texture upload whose pixels live in the arena. */
+    public static native void texImageFromJava(int target, int level, int internalFormat, int width,
+                                               int height, int border, int format, int type, byte[] pixels);
+
+    public static native void texSubImageFromJava(int target, int level, int xOffset, int yOffset, int width,
+                                                  int height, int format, int type, byte[] pixels);
+
+    /** Pixels *out* of the framebuffer: JavaScript reads them into an array and Java copies it in. */
+    public static native byte[] readPixelsToArray(int x, int y, int width, int height, int format, int type);
+
     public static native void log(String message);
 
     /** And the same for the lines that are already StringBuffered. */

@@ -79,7 +79,21 @@ public final class GL15 {
 
     // implemented in natives/webmc-lwjgl3.js (declared here because no measured
     // client calls it, so the generated surface does not mention it)
-    public static native void nglBufferData(int target, long size, long data, int usage);
+    /**
+     * The n-form: the same upload, addressed instead of wrapped in a ByteBuffer.
+     *
+     * It is the one place the arena has to be copied, because the implementation is JavaScript and the
+     * arena's memory is Java's. `org.lwjgl.system.WebMC.bufferDataFromJava` receives a byte[] - which CheerpJ hands to
+     * JavaScript as a typed array - and a pointer never crosses the boundary.
+     */
+    public static void nglBufferData(int target, long size, long data, int usage) {
+        if (data == 0L) {
+            org.lwjgl.system.WebMC.bufferDataFromJava(target, size, null, usage);
+            return;
+        }
+        org.lwjgl.system.WebMC.bufferDataFromJava(target, size,
+                org.lwjgl.system.WebMCArena.read(data, (int) size), usage);
+    }
     // implemented in natives/webmc-lwjgl3.js (declared here because no measured
     // client calls it, so the generated surface does not mention it)
     public static native void nglGenBuffers(int count, long pointers);
