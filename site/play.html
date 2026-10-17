@@ -113,19 +113,24 @@
    * locally, those lines are forwarded to the collector as well: a boot that takes twenty minutes in a
    * browser JVM is otherwise twenty minutes of not knowing whether it is progressing or wedged. */
   if (COLLECTOR) {
-    const write = console.log.bind(console);
     let forwarded = 0;
-    console.log = (...args) => {
+    const forward = (kind, args, write) => {
       write(...args);
       const line = args.map(String).join(" ");
       if (forwarded < 4000 && line.length < 400) {
         forwarded += 1;
         fetch("/result", {
           method: "POST", headers: { "content-type": "application/json" },
-          body: JSON.stringify({ code: -1, stage: "[jvm] " + line, log: [] }),
+          body: JSON.stringify({ code: -1, stage: "[" + kind + "] " + line, log: [] }),
         }).catch(() => {});
       }
     };
+    // error and warn too, not just log: the JVM's stderr - which is where a Java crash goes - arrives as
+    // console.error, and forwarding only console.log is how the reason a launch stopped stayed invisible
+    for (const kind of ["log", "error", "warn", "info"]) {
+      const write = console[kind].bind(console);
+      console[kind] = (...args) => forward(kind, args, write);
+    }
   }
   const posted = [];
   const log = (message) => {

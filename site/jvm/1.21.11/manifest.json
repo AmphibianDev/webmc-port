@@ -7,91 +7,91 @@
   {
    "path": "client.jar",
    "bytes": 27557397,
-   "sha256": "da4e06f43a884c99d619545c13e1e22b20eabe86e5a740ef8d9a91896b67e958",
+   "sha256": "d6d453582ba40f49f6cb578a00e91f168efaa674a2df6039aabef55e2addf030",
    "what": "the official 1.21.11 client, backported to Java 17"
   },
   {
    "path": "libs/lz4-java-1.8.1.jar",
-   "bytes": 683071,
-   "sha256": "1de8ff91b90fba9d4896b8617ed3594c2e4390d321d5a92c34f80e62e406c1b0",
+   "bytes": 684346,
+   "sha256": "c79b78c29f4f6a306ca834e08e04c5eade737fd63565aada8e3f46297c4c6019",
    "what": "lz4-java-1.8.1.jar"
   },
   {
    "path": "libs/java-objc-bridge-1.1.jar",
-   "bytes": 1330045,
-   "sha256": "77e34a13bccffc6c8b1a0e3ed46ddb0ea7dd56f2104ecdfacaaec9e4054ac332",
+   "bytes": 1332968,
+   "sha256": "e119109aa91a0fef96fc7cf81444be2e5107f77620046ae54b77362ece93baf6",
    "what": "java-objc-bridge-1.1.jar"
   },
   {
    "path": "libs/azure-json-1.4.0.jar",
-   "bytes": 325945,
-   "sha256": "c50bc998cd1a6c689f8644b51c206217bf2da09d5b949e777490a60290cc3a0d",
+   "bytes": 307239,
+   "sha256": "b1a7f7d0c623e0e1b78638ddc0f3f5779cdba586c20e0394a1029ad58c2cc171",
    "what": "azure-json-1.4.0.jar"
   },
   {
    "path": "libs/oshi-core-6.9.0.jar",
-   "bytes": 1022125,
-   "sha256": "b29ba9bce041e6ea822203d5b5a692660c87551241510ebc76eedffe684844c7",
+   "bytes": 1032551,
+   "sha256": "3574e96fd3f3b1cdd5bf9061f40e80f6c5ab48ed8e9272c4ab72958aea8f31a1",
    "what": "oshi-core-6.9.0.jar"
   },
   {
    "path": "libs/gson-2.13.2.jar",
-   "bytes": 289901,
-   "sha256": "dd0ce1b55a3ed2080cb70f9c655850cda86c206862310009dcb5e5c95265a5e0",
+   "bytes": 290897,
+   "sha256": "0b7c2867f55377e1e5965daf555119632b2d0f2a79b5ea9963f9ff8e69c932c3",
    "what": "gson-2.13.2.jar"
   },
   {
    "path": "libs/failureaccess-1.0.3.jar",
-   "bytes": 10763,
-   "sha256": "cbfc3906b19b8f55dd7cfd6dfe0aa4532e834250d7f080bd8d211a3e246b59cb",
+   "bytes": 12209,
+   "sha256": "f96463dd0a1e2b2798034b4ab9fa7bf5084ae729a31494d837256caa40ee9fe7",
    "what": "failureaccess-1.0.3.jar"
   },
   {
    "path": "libs/guava-33.5.0-jre.jar",
-   "bytes": 3017283,
-   "sha256": "1e301f0c52ac248b0b14fdc3d12283c77252d4d6f48521d572e7d8c4c2cc4ac7",
+   "bytes": 3017348,
+   "sha256": "a75aee991008209743ac1fba952cdc50a594b59af0a40f4acbb7bd4633e87135",
    "what": "guava-33.5.0-jre.jar"
   },
   {
    "path": "libs/icu4j-77.1.jar",
-   "bytes": 14663227,
-   "sha256": "b3640b9f416a4411fd33c59abbeea8fd57d024c23e1819bf9673220a97499fe3",
+   "bytes": 14663141,
+   "sha256": "f3b7b82a79e25a237847d9f995cca858a55b9b246e826ef1b572b4a63d4597e4",
    "what": "icu4j-77.1.jar"
   },
   {
    "path": "libs/msal4j-1.23.1.jar",
-   "bytes": 392813,
-   "sha256": "414d4fe3c66c7bb1a741014f352e5f0a8329172703e7fbb0020d232a8c8385b1",
+   "bytes": 393885,
+   "sha256": "9f6de5aeb8b8ccd261db4c3289c5de6228ad05849617e22c807e280d5af55d8d",
    "what": "msal4j-1.23.1.jar"
   },
   {
    "path": "libs/authlib-7.0.61.jar",
-   "bytes": 116084,
-   "sha256": "09a152617bd23c86bf59db1f9ba82ede23ec8f691a824d6c5dec4f0175f82aa4",
+   "bytes": 119484,
+   "sha256": "0a377419894bdc2faee0c0229c1fdaa1ca9febfd07d24f8b0a5773b2fb12c469",
    "what": "authlib-7.0.61.jar"
   },
   {
    "path": "libs/blocklist-1.0.10.jar",
-   "bytes": 964,
-   "sha256": "830bfd639c8db49236bbd8e45d3a2b8c96c56ff654a10118654958a6235d4c44",
+   "bytes": 2717,
+   "sha256": "f599e6ed5bfaea15b29136ca2b7cb51c7f1f8bdcc318990ad3b94bcfb26850f5",
    "what": "blocklist-1.0.10.jar"
   },
   {
    "path": "libs/brigadier-1.3.10.jar",
-   "bytes": 80082,
-   "sha256": "c8ee4136e474ac7723ca2b432ec8d1a2bc88ef7d1ec57c314ba9e33cdc83dd75",
+   "bytes": 82731,
+   "sha256": "a15be3d78df5fd9eff5005c64f7a5a9dcab5cd3c75f0d0e2e31649b0db90a8f8",
    "what": "brigadier-1.3.10.jar"
   },
   {
    "path": "libs/datafixerupper-9.0.19.jar",
-   "bytes": 731440,
-   "sha256": "9653a39cf5c4853cc98628d902dcb23ffeb2755122ecc563bde38c8f60c0b61e",
+   "bytes": 741073,
+   "sha256": "97cc2803fe623b41927c20dc0462067029d98cca6d3101de3313f527e0b9d28c",
    "what": "datafixerupper-9.0.19.jar"
   },
   {
    "path": "libs/jtracy-1.0.37.jar",
    "bytes": 14787,
-   "sha256": "a3255c724be1493a40b5e4043cc3c5462d7cbee6a509179b0ff9805d40df4d40",
+   "sha256": "4872a114587dcfde40433c6d6ef6428d954686f2ad18d1239fffcb67098e72f2",
    "what": "jtracy-1.0.37.jar"
   },
   {
@@ -120,212 +120,212 @@
   },
   {
    "path": "libs/logging-1.6.11.jar",
-   "bytes": 20706,
-   "sha256": "5d803eb7348a27468c6172daef2f0d77260dd63cde377ebfa73e36789ae8fcee",
+   "bytes": 22913,
+   "sha256": "355375a6ec8de369cfe70061b24195bc8b04189db4643d524024680acbf8087d",
    "what": "logging-1.6.11.jar"
   },
   {
    "path": "libs/patchy-2.2.10.jar",
-   "bytes": 4439,
-   "sha256": "16d70e7968b45caffc81576268eb000f473fb60bf257182d3447dea8ec919d5a",
+   "bytes": 6245,
+   "sha256": "76cdfb3bfb3806e507f6c984d62c40e78bdb72d05605c6c01626dc9519639c72",
    "what": "patchy-2.2.10.jar"
   },
   {
    "path": "libs/text2speech-1.18.11.jar",
-   "bytes": 13842,
-   "sha256": "587f08aa316ee4d6a9f39f77d3ba7d8a83425da53aa74938a1f034a4e3fc255f",
+   "bytes": 15743,
+   "sha256": "9a793cb455b4372a073073f4794031443047122a4c0c11f33a8cb892d10d3111",
    "what": "text2speech-1.18.11.jar"
   },
   {
    "path": "libs/commons-codec-1.19.0.jar",
-   "bytes": 374716,
-   "sha256": "5c3881e4f556855e9c532927ee0c9dfde94cc66760d5805c031a59887070af5f",
+   "bytes": 373674,
+   "sha256": "1541549f36646e76a088496aef9e19084a887feda5b6a35db74e310f62dd97db",
    "what": "commons-codec-1.19.0.jar"
   },
   {
    "path": "libs/commons-io-2.20.0.jar",
-   "bytes": 563971,
-   "sha256": "df90bba0fe3cb586b7f164e78fe8f8f4da3f2dd5c27fa645f888100ccc25dd72",
+   "bytes": 564451,
+   "sha256": "79c594e9dfe742db8ea039cf689d3cfd3f84bbfdec9076fb393eba501c4b635a",
    "what": "commons-io-2.20.0.jar"
   },
   {
    "path": "libs/netty-buffer-4.2.7.Final.jar",
-   "bytes": 373323,
-   "sha256": "b81613c8ed22b1cc39eccf2a28bd0c1d4561fb2e5e542061617ef4ce1d228bf5",
+   "bytes": 374397,
+   "sha256": "bf2b88e55d7a56f58711f67c0ea765ab5f51b84830ecb2a5b8df016c768539ac",
    "what": "netty-buffer-4.2.7.Final.jar"
   },
   {
    "path": "libs/netty-codec-base-4.2.7.Final.jar",
-   "bytes": 152980,
-   "sha256": "6360415b7c87160afcde5e7d4946c35539b9f043e8166c91a7fff95cc6067d9f",
+   "bytes": 154173,
+   "sha256": "519edc1642aa39ba61549f0564e725959a57fa06fd8dbafa9869773b08a63118",
    "what": "netty-codec-base-4.2.7.Final.jar"
   },
   {
    "path": "libs/netty-codec-compression-4.2.7.Final.jar",
-   "bytes": 182886,
-   "sha256": "edd53ad34991804301a46571113d8ffb4d6f67e6d874674dafbb915724275cb3",
+   "bytes": 183901,
+   "sha256": "0861a03119e9a25b6e9de5ae864b4ab65dd97146e21c9bff0ccb16d55ac24dd7",
    "what": "netty-codec-compression-4.2.7.Final.jar"
   },
   {
    "path": "libs/netty-codec-http-4.2.7.Final.jar",
-   "bytes": 683327,
-   "sha256": "2984dd38420a61c4dd68fcacc51ffc528eb46f73f7795cdafdb3a4d6fcb76862",
+   "bytes": 684262,
+   "sha256": "6b2d11553a3b885eac18a7f7fe484e4b5603b9b853961fb2f9e332cdd44b720a",
    "what": "netty-codec-http-4.2.7.Final.jar"
   },
   {
    "path": "libs/netty-common-4.2.7.Final.jar",
-   "bytes": 789111,
-   "sha256": "2345bc0ed5843fa57aa49eba67529485c3a1d420fcf0429324c8220c7a80e9a6",
+   "bytes": 789858,
+   "sha256": "8e97eb638a583af70e75cd67fe0295b9f119ea3efd547c10adb5b743a4a3c67a",
    "what": "netty-common-4.2.7.Final.jar"
   },
   {
    "path": "libs/netty-handler-4.2.7.Final.jar",
-   "bytes": 581349,
-   "sha256": "21d063409c12dbcec46d380c8856a0f7b6a5b68bb5f1d005eb065b4d64146cb3",
+   "bytes": 582231,
+   "sha256": "4f6169b5f4df36aa406294a06e3406285f73de368ec7f3ac3e313e3ee6e144fa",
    "what": "netty-handler-4.2.7.Final.jar"
   },
   {
    "path": "libs/netty-resolver-4.2.7.Final.jar",
-   "bytes": 38454,
-   "sha256": "7e4d569867e6c08437fb21a220ea01c294b0e38f01149b683c895a1bcd928438",
+   "bytes": 39654,
+   "sha256": "8195d59b802912e92a8ff9613eeb2855fe8cc3f060ead4ae34bdb4dae76fcff2",
    "what": "netty-resolver-4.2.7.Final.jar"
   },
   {
    "path": "libs/netty-transport-classes-epoll-4.2.7.Final.jar",
-   "bytes": 156228,
-   "sha256": "4492948e6a7694398e5197cf15ed2e21d6662a739d010ae666fa276e7222853c",
+   "bytes": 157350,
+   "sha256": "965bc755f1f7164e8d03e8eb56040c0e6f3ba5ac8699d39443aceb3dc0c6fcb6",
    "what": "netty-transport-classes-epoll-4.2.7.Final.jar"
   },
   {
    "path": "libs/netty-transport-classes-kqueue-4.2.7.Final.jar",
-   "bytes": 117794,
-   "sha256": "a3eb1c94ae1a6be9e1d1ec52c3f5c510a75b04b8ef1ea86b7e77b3f1287ae3cc",
+   "bytes": 118894,
+   "sha256": "3f4ae1470407dab6becd8fffa799178e625f4d08375184e26214144f7fcbfa99",
    "what": "netty-transport-classes-kqueue-4.2.7.Final.jar"
   },
   {
    "path": "libs/netty-transport-native-epoll-4.2.7.Final-linux-aarch_64.jar",
-   "bytes": 43408,
-   "sha256": "2f0c7309d7df48a88fb374c02cfb446e1a1e5fb597fb02d773c70ac07da2c268",
+   "bytes": 44572,
+   "sha256": "fc238ccc2960ae59df4268020f675d79b839e81a2e52b98e28e09ebd350324b0",
    "what": "netty-transport-native-epoll-4.2.7.Final-linux-aarch_64.jar"
   },
   {
    "path": "libs/netty-transport-native-epoll-4.2.7.Final-linux-x86_64.jar",
-   "bytes": 41810,
-   "sha256": "7f395c8fdbe6990f7664408b57d919042401b893178fcba48bebf1a61bf78618",
+   "bytes": 42980,
+   "sha256": "5ab29dbc13690c6d1d33ba85efd371cda88a8dece1197f873d3b4a51d463d14f",
    "what": "netty-transport-native-epoll-4.2.7.Final-linux-x86_64.jar"
   },
   {
    "path": "libs/netty-transport-native-kqueue-4.2.7.Final-osx-aarch_64.jar",
-   "bytes": 27122,
-   "sha256": "7647a69558e3d49a352781c2ae81a97e16b442d7c6565a06b4ae0f15298489d5",
+   "bytes": 28283,
+   "sha256": "302de1edc668240fe6973c5a634ff4d97938f82d5c52fa518d4bb7b90bed5034",
    "what": "netty-transport-native-kqueue-4.2.7.Final-osx-aarch_64.jar"
   },
   {
    "path": "libs/netty-transport-native-kqueue-4.2.7.Final-osx-x86_64.jar",
-   "bytes": 26463,
-   "sha256": "a29c08b6895746aaca796e72a429bc705f40267feb35f75cd8fbbcd4de6de99f",
+   "bytes": 27624,
+   "sha256": "43a1787710d31fca585ef6a7a23ce1572ff8080da196af2597269d0446bee1b8",
    "what": "netty-transport-native-kqueue-4.2.7.Final-osx-x86_64.jar"
   },
   {
    "path": "libs/netty-transport-native-unix-common-4.2.7.Final.jar",
-   "bytes": 46861,
-   "sha256": "736703b3f6d127e182f5be888b6e15732b0c08d6634e00725352a6a9d19974b2",
+   "bytes": 48052,
+   "sha256": "a45bf2b2ad4635d6261f0e0b185c050e4f5601281c39b34456a0327a4425b2b0",
    "what": "netty-transport-native-unix-common-4.2.7.Final.jar"
   },
   {
    "path": "libs/netty-transport-4.2.7.Final.jar",
-   "bytes": 562559,
-   "sha256": "aadc6fb05c14fb789368ca3f854721549c72f6c0d81798bbccf9de1bb716892b",
+   "bytes": 563592,
+   "sha256": "98b476775db2f57ba7638ae312acb689d04ff286d3118c201772d81808442de1",
    "what": "netty-transport-4.2.7.Final.jar"
   },
   {
    "path": "libs/fastutil-8.5.18.jar",
-   "bytes": 23965563,
-   "sha256": "9094ae67d01d0ad246f886f11ad557fc2e79c72cbf3feed83e1512a8ae90a74a",
+   "bytes": 24088491,
+   "sha256": "5718515afcd482cf784116a57be44966b5d857338fae5d7bfe1431af1d71834e",
    "what": "fastutil-8.5.18.jar"
   },
   {
    "path": "libs/jna-platform-5.17.0.jar",
-   "bytes": 1378617,
-   "sha256": "b7e3d46c87bad2eb409b0e704916bcd81206168e357312dfddd0e253679cd9e0",
+   "bytes": 1400832,
+   "sha256": "0b0311c690d5cedac822b1a2041097778ab463ee06bdbb4865b23e3b5f6151e8",
    "what": "jna-platform-5.17.0.jar"
   },
   {
    "path": "libs/jna-5.17.0.jar",
-   "bytes": 2002589,
-   "sha256": "b3a9408e7c51e08ef0e3bfcc08f443f6ec0f6191ba8cd7c18d53d2b22e5bdbc0",
+   "bytes": 2005422,
+   "sha256": "6d3369a5178afb4e0197ab86aea9b4833546521f51d60a8f1a425d01b15b1f0f",
    "what": "jna-5.17.0.jar"
   },
   {
    "path": "libs/jopt-simple-5.0.4.jar",
-   "bytes": 78146,
-   "sha256": "df26cc58f235f477db07f753ba5a3ab243ebe5789d9f89ecf68dd62ea9a66c28",
+   "bytes": 79480,
+   "sha256": "06f18cfd68a0a421b5a262f08b0b036c680f24c100f9a6ef3e566d32952c4ab8",
    "what": "jopt-simple-5.0.4.jar"
   },
   {
    "path": "libs/commons-compress-1.28.0.jar",
-   "bytes": 1117221,
-   "sha256": "e1522945218456f3649a39bc4afd70ce4bd466221519dba7d378f2141a4642ca",
+   "bytes": 1116938,
+   "sha256": "2bf9ef249ba3be03cec85bde194167929bcbb305ddaf42f8a2ba976b115aa1ed",
    "what": "commons-compress-1.28.0.jar"
   },
   {
    "path": "libs/commons-lang3-3.19.0.jar",
-   "bytes": 709075,
-   "sha256": "32733ab4bc90b45b63eb72677d886961003fd4ed113e07b1028f9877cb2ac735",
+   "bytes": 709341,
+   "sha256": "92775476b2580b7316734ef5adaf96cba5d9afeae11f0d59f97be66f9f82faf7",
    "what": "commons-lang3-3.19.0.jar"
   },
   {
    "path": "libs/log4j-api-2.25.2.jar",
-   "bytes": 349595,
-   "sha256": "9fd66c9fe0bea06fa9666c147989a46cafaa92b4a88753697d3945cc43338cbb",
+   "bytes": 350462,
+   "sha256": "d95c9f6ac5171690e0f0e81c8e276271809f4c6ad262343441d940b14a795b26",
    "what": "log4j-api-2.25.2.jar"
   },
   {
    "path": "libs/log4j-core-2.25.2.jar",
-   "bytes": 2018265,
-   "sha256": "e50db7701430ff907981850ef527a41d51a53dd0017f53a0860afcbab8570277",
+   "bytes": 2017533,
+   "sha256": "6fff13d20f70041c8a71e417e03ddb7d1d4060b7272988f1a6a37e986cacf603",
    "what": "log4j-core-2.25.2.jar"
   },
   {
    "path": "libs/log4j-slf4j2-impl-2.25.2.jar",
-   "bytes": 30232,
-   "sha256": "faffe8c867d59f813fb4bd1edf5354bfe86125811a7c9b305e5d225da8e7ea54",
+   "bytes": 31299,
+   "sha256": "d6ac14fc852d4a3b83477a27f702dac254ab358e650a681506c13b90ef0bb006",
    "what": "log4j-slf4j2-impl-2.25.2.jar"
   },
   {
    "path": "libs/jorbis-0.0.17.jar",
-   "bytes": 99701,
-   "sha256": "e067f29a3701426b67ed973036949c6e58ca5bb53eef7240b2e71e286d252a9e",
+   "bytes": 102141,
+   "sha256": "4559972a40a7f1385a038144c530de795ad1afef531330334f1305b1c3e6ebb6",
    "what": "jorbis-0.0.17.jar"
   },
   {
    "path": "libs/joml-1.10.8.jar",
-   "bytes": 778846,
-   "sha256": "bf19510145178df82cd3bd37edd514c13f411531ec5545299fd3abcbc98fe7c2",
+   "bytes": 782656,
+   "sha256": "f3748254890cfd90a24e4024bb4807c965883e31bcee2dd061cb05e5876a208e",
    "what": "joml-1.10.8.jar"
   },
   {
    "path": "libs/jspecify-1.0.0.jar",
-   "bytes": 3819,
-   "sha256": "1fad6e6be7557781e4d33729d49ae1cdc8fdda6fe477bb0cc68ce351eafdfbab",
+   "bytes": 5152,
+   "sha256": "c921d67fb137c258c78b9205fc70feddf99b498a8b59fdfdb7cb8ec63163bf82",
    "what": "jspecify-1.0.0.jar"
   },
   {
    "path": "libs/slf4j-api-2.0.17.jar",
-   "bytes": 69908,
-   "sha256": "7b751d952061954d5abfed7181c1f645d336091b679891591d63329c622eb832",
+   "bytes": 71209,
+   "sha256": "ee1e4504d57cb74a0a9f9472aedd0605e1cb406adec2838ed8c8177bab07e8b1",
    "what": "slf4j-api-2.0.17.jar"
   },
   {
    "path": "mods/fabric-api-0.141.6+1.21.11.jar",
-   "bytes": 2461005,
-   "sha256": "9269f737056ad86ce10fbe0b6b0c849467b495c2bf9ea30318de23f7766d115c",
+   "bytes": 2461010,
+   "sha256": "c0cc3f7269d7dbef550c4dc5d7be2a8594ba2192b8a5f37698f10cdaa2177b53",
    "what": "fabric-api-0.141.6+1.21.11.jar (backported)"
   },
   {
    "path": "mods/sodium-fabric-0.8.14+mc1.21.11.jar",
    "bytes": 1834166,
-   "sha256": "4fe6052ca7b7ae602ef71512ee3833ab6a0deb381720de78e1c5466dcb50083f",
+   "sha256": "20bf7bd1b5b00e24abe83ae910c0d272874c2cda0c2478a6abf46648c48e4847",
    "what": "sodium-fabric-0.8.14+mc1.21.11.jar (backported)"
   },
   {
@@ -473,7 +473,7 @@
    "what": "minecraft/textures/gui/title/background/panorama_overlay.png"
   }
  ],
- "total_bytes": 97947732,
+ "total_bytes": 98145462,
  "counts": {
   "files": 78,
   "libraries": 51,

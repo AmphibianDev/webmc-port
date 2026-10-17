@@ -112,6 +112,24 @@ jobs:
           cp site/loader-play.html site/loader/play.html
           ls -la site/loader site/loader/natives | head -12
 
+      - name: Build the real-JVM page's bundle (1.21.11 on Java 17, under Fabric)
+        # The client for this route is Java 21 bytecode and the browser JVM stops at 17, so it is fetched from
+        # Mojang and lowered here (tools/backport17.py), together with any library that is Java 21 too. The
+        # page itself then runs Fabric Loader - fetched live from maven.fabricmc.net, which does send CORS -
+        # so mods load at play time rather than being compiled in. Nothing of the game is committed: work/ is
+        # git-ignored and this is deployed, not stored.
+        run: |
+          set -euo pipefail
+          # Fabric API comes from Fabric's own maven, which is where the loader comes from too: it is the
+          # one mod almost every other mod needs, and it is fetched here rather than committed.
+          mkdir -p /tmp/jvm-mods
+          FABRIC_API="https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/0.141.6+1.21.11/fabric-api-0.141.6+1.21.11.jar"
+          curl -fsSL --retry 3 --max-time 300 -o "/tmp/jvm-mods/fabric-api-0.141.6+1.21.11.jar" "$FABRIC_API" \
+            || echo "::warning::fabric-api could not be fetched; the bundle will carry no mods"
+          python3 tools/jvm_prepare.py --version 1.21.11 \
+            $(ls /tmp/jvm-mods/*.jar 2>/dev/null | sed 's/^/--mods /' | tr '\n' ' ')
+          du -sh site/jvm/1.21.11 2>/dev/null || true
+
       - name: Build our own loader, and the example mod
         # The one jar on the critical path that is our code: it starts a vanilla mod, and it is what
         # tells Fabric where the game and the mods are. Java 8 bytecode, so the same jar runs in
