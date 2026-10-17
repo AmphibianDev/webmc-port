@@ -122,6 +122,14 @@ jobs:
           set -euo pipefail
           # Fabric API comes from Fabric's own maven, which is where the loader comes from too: it is the
           # one mod almost every other mod needs, and it is fetched here rather than committed.
+          # ASM is what the backport is written against, and a runner has neither the developer's
+          # toolchain nor a maven cache: five jars from Maven Central, in the place the tool looks first.
+          mkdir -p work/asm
+          for artefact in asm asm-tree asm-commons asm-analysis asm-util; do
+            curl -fsSL --retry 3 --max-time 120 -o "work/asm/$artefact.jar" \
+              "https://repo1.maven.org/maven2/org/ow2/asm/$artefact/9.8/$artefact-9.8.jar" || true
+          done
+          ls -la work/asm | head -8
           mkdir -p /tmp/jvm-mods
           FABRIC_API="https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/0.141.6+1.21.11/fabric-api-0.141.6+1.21.11.jar"
           curl -fsSL --retry 3 --max-time 300 -o "/tmp/jvm-mods/fabric-api-0.141.6+1.21.11.jar" "$FABRIC_API" \

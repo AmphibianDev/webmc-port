@@ -72,6 +72,17 @@ public class Probe {
 
 
 def java_home(version: int) -> pathlib.Path | None:
+    # A runner does not have ~/.jdks: setup-java puts the JDK wherever it likes and exports JAVA_HOME,
+    # plus JAVA_HOME_<version>_<arch> for the ones it installed. Both are checked, so this works on a
+    # machine that installs JDKs and on one that is handed them.
+    for variable in (f"JAVA_HOME_{version}", f"JAVA_HOME_{version}_X64", f"JAVA_HOME_{version}_ARM64"):
+        candidate = os.environ.get(variable)
+        if candidate and (pathlib.Path(candidate) / "bin" / "javac").is_file():
+            return pathlib.Path(candidate)
+    if version == 17:
+        candidate = os.environ.get("JAVA_HOME")
+        if candidate and (pathlib.Path(candidate) / "bin" / "javac").is_file():
+            return pathlib.Path(candidate)
     for candidate in sorted((pathlib.Path.home() / ".jdks").glob(f"*{version}*")) + sorted((pathlib.Path.home() / ".jdks").glob(f"jdk-{version}*")):
         home = candidate / "Contents" / "Home"
         if (home / "bin" / "javac").is_file():
@@ -83,15 +94,21 @@ def java_home(version: int) -> pathlib.Path | None:
 
 def asm_classpath() -> str:
     jars = []
-    engine = pathlib.Path.home() / "devspace" / "WebMC" / "webmc-engine" / "toolchain" / "m2" / "org" / "ow2" / "asm"
-    if engine.is_dir():
-        for name in ("asm", "asm-tree", "asm-commons", "asm-analysis", "asm-util"):
-            jars.extend(str(path) for path in sorted(engine.glob(f"{name}/*/*.jar")))
+    libraries = ("asm", "asm-tree", "asm-commons", "asm-analysis", "asm-util")
+    # Where ASM actually is, in the order of how likely: this repository's vendor directory, the
+    # developer's engine toolchain, and a maven cache or ~/.m2 - because a runner has none of the first
+    # two and the tool has to be able to say where it looked.
+    for directory in (ROOT / "work" / "asm", ROOT.parent / "webmc-engine" / "toolchain" / "m2" / "org" / "ow2" / "asm",
+                      pathlib.Path.home() / ".m2" / "repository" / "org" / "ow2" / "asm"):
+        if directory.is_dir():
+            for name in libraries:
+                jars.extend(str(path) for path in sorted(directory.glob(f"{name}/*/*.jar")))
+                jars.extend(str(path) for path in sorted(directory.glob(f"{name}/*.jar")))
     for name in ("asm.jar", "asm-tree.jar", "asm-commons.jar", "asm-analysis.jar", "asm-util.jar"):
         candidate = ROOT / "work" / "asm" / name
         if candidate.is_file() and candidate.stat().st_size > 20_000:
             jars.append(str(candidate))
-    return os.pathsep.join(jars)
+    return os.pathsep.join(dict.fromkeys(jars))
 
 
 def compile_tool(out: pathlib.Path) -> bool:
