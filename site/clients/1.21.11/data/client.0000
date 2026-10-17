@@ -721,7 +721,92 @@
 html.webmc-log #boot-screen, html.webmc-log #perf-hud, html.webmc-log #status, html.webmc-log [data-gaius-shell] { display: revert !important; }
 html.webmc-log #status { position: fixed; z-index: 2147483647; max-height: 45vh; overflow: auto; background: #000c; color: #dfe; font: 12px/1.4 ui-monospace, monospace; padding: 6px 8px; width: 100%; }
 </style>
-<script id="webmc-log-toggle">/* WebMC: ?log=1 brings the client console back, so a bug can be reported with its own stack trace instead of a description of a frozen screen. */try{if(/[?&]log=1/.test(location.search))document.documentElement.classList.add("webmc-log")}catch(e){}</script></head>
+<script id="webmc-log-toggle">/* WebMC: ?log=1 brings the client console back, and makes it worth reading: console output, uncaught errors, and a Worker that reports when the main thread is blocked. */try{if(/[?&]log=1/.test(location.search)){document.documentElement.classList.add("webmc-log");
+(function () {
+  if (window.__webmcLog) return;
+  window.__webmcLog = true;
+  var panel = document.getElementById("status");
+  if (!panel) {
+    panel = document.createElement("pre");
+    panel.id = "status";
+    document.body.appendChild(panel);
+  }
+  panel.setAttribute("aria-label", "client log");
+  var lines = [];
+  function stamp() {
+    var d = new Date();
+    return d.toTimeString().slice(0, 8) + "." + String(d.getMilliseconds()).padStart(3, "0");
+  }
+  function write(text, cls) {
+    lines.push(stamp() + "  " + text);
+    if (lines.length > 500) lines.shift();
+    var line = document.createElement("div");
+    if (cls) line.style.color = cls;
+    line.textContent = text;
+    panel.appendChild(line);
+    while (panel.childNodes.length > 500) panel.removeChild(panel.firstChild);
+    panel.scrollTop = panel.scrollHeight;
+  }
+  window.__webmcLogLines = lines;
+  // whatever the client prints, including the engine's own status channel
+  for (const level of ["log", "info", "warn", "error", "debug"]) {
+    const original = console[level] ? console[level].bind(console) : function () {};
+    console[level] = function () {
+      const text = Array.prototype.map.call(arguments, function (value) {
+        try { return typeof value === "string" ? value : JSON.stringify(value); } catch (e) { return String(value); }
+      }).join(" ");
+      write(text, level === "error" ? "#ff9b9b" : level === "warn" ? "#ffd28a" : "");
+      original.apply(null, arguments);
+    };
+  }
+  window.addEventListener("error", function (event) {
+    write("uncaught: " + (event.message || event.error) + " at " + (event.filename || "?") + ":" + (event.lineno || 0),
+      "#ff9b9b");
+  });
+  window.addEventListener("unhandledrejection", function (event) {
+    write("unhandled rejection: " + (event.reason && (event.reason.stack || event.reason.message) || event.reason),
+      "#ff9b9b");
+  });
+
+  // a Worker keeps ticking while the page is blocked, so it can say *that* the page is blocked
+  var blob = new Blob(["setInterval(function(){postMessage(Date.now())},1000)"], { type: "text/javascript" });
+  try {
+    var beat = new Worker(URL.createObjectURL(blob));
+    var last = Date.now();
+    beat.onmessage = function () {
+      var age = Date.now() - last;
+      last = Date.now();
+      if (age > 2500) write("the page's main thread was blocked for " + Math.round(age / 1000) + "s", "#ffd28a");
+    };
+    var watch = setInterval(function () {
+      if (Date.now() - last > 4000) {
+        // the worker is alive and the page is not: the next line it prints is what the freeze looked like
+        document.title = "frozen (" + Math.round((Date.now() - last) / 1000) + "s) — WebMC";
+      }
+    }, 1000);
+  } catch (e) { write("no worker available to watch the main thread: " + e); }
+
+  // a copy button, because the point of a log is to be sent to somebody
+  var bar = document.createElement("div");
+  bar.style.cssText = "position:sticky;bottom:0;background:#000c;padding:4px 6px;display:flex;gap:8px";
+  var copy = document.createElement("button");
+  copy.textContent = "copy the log";
+  copy.style.cssText = "background:#3c8527;color:#fff;border:0;border-radius:3px;padding:3px 10px;font:12px system-ui";
+  copy.onclick = function () {
+    navigator.clipboard.writeText(window.__webmcLogLines.join("\n")).then(function () {
+      copy.textContent = "copied (" + window.__webmcLogLines.length + " lines)";
+    }, function () { copy.textContent = "could not copy — select the text"; });
+  };
+  var clear = document.createElement("button");
+  clear.textContent = "clear";
+  clear.style.cssText = "background:#333;color:#fff;border:0;border-radius:3px;padding:3px 10px;font:12px system-ui";
+  clear.onclick = function () { panel.textContent = ""; panel.appendChild(bar); };
+  bar.appendChild(copy);
+  bar.appendChild(clear);
+  panel.appendChild(bar);
+  write("WebMC log: " + navigator.userAgent);
+})();
+}}catch(e){}</script></head>
 <body>
 <div id="webmc-boot">
   <div class="panel">
