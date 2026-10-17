@@ -143,6 +143,8 @@ def main(argv=None) -> int:
     parser.add_argument("--port", type=int, default=8777)
     parser.add_argument("--timeout", type=int, default=600, help="seconds to wait for a report")
     parser.add_argument("--browser", default=None)
+    parser.add_argument("--keep", action="store_true", help="keep the work directory (the browser's log)")
+    parser.add_argument("--console", action="store_true", help="print every console line, not a summary")
     args = parser.parse_args(argv)
 
     browser = args.browser or find_browser()
@@ -211,10 +213,14 @@ def main(argv=None) -> int:
 
         print("\n--- the browser's console, last lines ---")
         text = log.read_text(errors="replace") if log.exists() else ""
-        interesting = [line for line in text.splitlines()
-                       if any(word in line for word in ("CONSOLE", "ERROR", "error", "Uncaught"))]
-        for line in interesting[-30:]:
+        console = [line.split("CONSOLE:", 1)[1] if "CONSOLE:" in line else line
+                   for line in text.splitlines()
+                   if any(word in line for word in ("CONSOLE", "ERROR", "error", "Uncaught"))]
+        shown = console if args.console else console[-30:]
+        for line in shown:
             print("  " + line.strip()[:300])
+        if args.keep:
+            print(f"\n(kept: {work})")
 
         if not report:
             print("\nFAILED: the page never reported")
@@ -229,7 +235,8 @@ def main(argv=None) -> int:
     finally:
         if server:
             server.shutdown()
-        shutil.rmtree(work, ignore_errors=True)
+        if not args.keep:
+            shutil.rmtree(work, ignore_errors=True)
 
 
 if __name__ == "__main__":

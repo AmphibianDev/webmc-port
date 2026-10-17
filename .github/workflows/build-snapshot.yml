@@ -796,6 +796,13 @@ jobs:
                     "at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                     "note": "compiled by build-snapshot.yml from the official client"}
           state_path = pathlib.Path("/tmp/state-record.json")
+          # `state` has to be *read* before it can be added to: this line used to assign into a name that
+          # was never defined, so every build that got this far died here - after the 55 minutes of
+          # compiling - with "NameError: name 'state' is not defined" and published nothing. The file it
+          # writes is a complete state.json (the next step copies it over state.json), so it starts from
+          # the one in the tree and replaces this version's entry.
+          state_file = pathlib.Path("state.json")
+          state = json.loads(state_file.read_text()) if state_file.is_file() else {}
           packed = pathlib.Path("site", "clients", version, "index.html")
           if packed.is_file():
               record["packed"] = f"clients/{version}/"
