@@ -4,15 +4,15 @@
  "client": "Gaius-webmc.html",
  "gateway": null,
  "mods": [],
- "bytes": 128918199,
- "total": 128918199,
+ "bytes": 128918192,
+ "total": 128918192,
  "chunk_bytes": 20971520,
- "sha256": "ad2e62c5527b56e19321fe540a4eb854a52ff9132ec6358da679af3d9a44158e",
+ "sha256": "9c06a6800bf3c9a1cf43ef1c0f920c6bfc10538e91608ac401333e08a3ba4596",
  "chunks": [
   {
    "path": "data/client.0000",
-   "size": 20972463,
-   "sha256": "a8f0044bb1a25edb7dbdb5514133256ad4fcac40233c3fd5fc6e29287dde945a"
+   "size": 20972456,
+   "sha256": "5a8aa103dcc04e4979a7ff0ded80b1e418fdce6b85df7217572456a37e26e197"
   },
   {
    "path": "data/client.0001",
