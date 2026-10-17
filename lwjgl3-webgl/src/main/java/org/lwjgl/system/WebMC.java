@@ -95,8 +95,15 @@ public final class WebMC {
     public static native void texSubImageFromJava(int target, int level, int xOffset, int yOffset, int width,
                                                   int height, int format, int type, byte[] pixels);
 
-    /** Pixels *out* of the framebuffer: JavaScript reads them into an array and Java copies it in. */
-    public static native byte[] readPixelsToArray(int x, int y, int width, int height, int format, int type);
+    /**
+     * Pixels *out* of the framebuffer, into a Java array.
+     *
+     * The array is passed in rather than returned: a Java byte[] reaches JavaScript as an array-like
+     * object, and a Uint8Array returned for a Java byte[] fails to convert ("Invalid type conversion
+     * attempted"). So JavaScript keeps its own view for WebGL and copies into this one.
+     */
+    public static native void readPixelsInto(int x, int y, int width, int height, int format, int type,
+                                             byte[] into);
 
     public static native void log(String message);
 

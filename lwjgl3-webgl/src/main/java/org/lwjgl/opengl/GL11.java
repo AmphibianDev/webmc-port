@@ -688,8 +688,12 @@ public final class GL11 {
      * hand them over) and they are copied into the arena here. One copy, at the boundary.
      */
     public static void glReadPixels(int x, int y, int width, int height, int format, int type, long pixels) {
-        byte[] read = org.lwjgl.system.WebMC.readPixelsToArray(x, y, width, height, format, type);
-        if (pixels != 0L && read != null) {
+        // RGBA, four bytes per pixel: this is what the client asks for, and what the array is sized for.
+        // The array goes *in* rather than coming back: a Java byte[] reaches JavaScript as an array-like
+        // object it can write into, while a Uint8Array returned for a Java byte[] fails to convert.
+        byte[] read = new byte[Math.max(1, width) * Math.max(1, height) * 4];
+        org.lwjgl.system.WebMC.readPixelsInto(x, y, width, height, format, type, read);
+        if (pixels != 0L) {
             org.lwjgl.system.WebMCArena.write(pixels, read);
         }
     }

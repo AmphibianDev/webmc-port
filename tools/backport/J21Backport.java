@@ -269,6 +269,10 @@ public final class J21Backport {
         // A class the JVM cannot resolve is as fatal as a method it cannot find, so both are audited.
         ClassLoader probe = J21Backport.class.getClassLoader();
 
+        // What has already been written: a jar can arrive with the shim inside it (a second pass over a mod that
+        // is a bundle does exactly that), and ZipOutputStream refuses a duplicate entry by throwing away the
+        // whole output.
+        Set<String> written = new LinkedHashSet<>();
         try (ZipFile archive = new ZipFile(input.toFile());
              ZipOutputStream out = new ZipOutputStream(Files.newOutputStream(output))) {
             Enumeration<? extends ZipEntry> entries = archive.entries();
@@ -291,6 +295,7 @@ public final class J21Backport {
                 }
                 if (entry.isDirectory() || !entryName.endsWith(".class")) {
                     writeUnchanged(archive, entry, out);
+                    written.add(entryName);
                     continue;
                 }
                 byte[] original;
@@ -306,6 +311,7 @@ public final class J21Backport {
                     failed.add(entry.getName());
                     backported = original;
                 }
+                written.add(entry.getName());
                 ZipEntry copy = new ZipEntry(entry.getName());
                 copy.setTime(entry.getTime());
                 out.putNextEntry(copy);

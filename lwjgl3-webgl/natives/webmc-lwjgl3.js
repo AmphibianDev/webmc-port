@@ -365,9 +365,14 @@ function Java_org_lwjgl_glfw_GLFW_glfwPollEvents_inner(lib) { deliverEvents(lib)
 function Java_org_lwjgl_glfw_GLFW_glfwWaitEvents(lib) { deliverEvents(lib); }
 function Java_org_lwjgl_glfw_GLFW_glfwWaitEventsTimeout(lib, seconds) { deliverEvents(lib); }
 function Java_org_lwjgl_glfw_GLFW_glfwSwapBuffers_inner(lib, window) {
-  // WebGL composites when the frame is free; the count is what the harness asserts on
+  // WebGL composites when the frame is free; the count is what the harness asserts on. It goes on the
+  // canvas: `window` here is a handle - a number - and writing a property onto it threw
+  // "Cannot create property 'webmcFrames' on number '1'" every frame.
   state.swapCount += 1;
-  window.webmcFrames = state.swapCount;
+  const canvas = state.windows.get(window);
+  if (canvas) {
+    canvas.webmcFrames = state.swapCount;
+  }
 }
 function Java_org_lwjgl_glfw_GLFW_glfwSwapInterval(lib, interval) {}
 function Java_org_lwjgl_glfw_GLFW_glfwGetTime() { return (performance.now() - state.started) / 1000; }
@@ -961,6 +966,11 @@ function webmcUint8(bytes) {
 }
 
 function Java_org_lwjgl_system_WebMC_bufferDataFromJava(lib, target, size, bytes, usage) {
+  const bound = gl().getParameter(gl().ARRAY_BUFFER_BINDING);
+  if (target === gl().ARRAY_BUFFER && !bound) {
+    throw new Error("bufferData with no buffer bound to GL_ARRAY_BUFFER (buffer handles: "
+                    + [...handles.buffer.keys()].join(",") + ")");
+  }
   const data = webmcUint8(bytes);
   // WebGL2's bufferData is either (target, size, usage) or (target, data, usage): there is no four
   // argument form, and calling one anyway is how this failed with "parameter 2 is not of type
@@ -986,11 +996,15 @@ function Java_org_lwjgl_system_WebMC_texSubImageFromJava(lib, target, level, xOf
   gl().texSubImage2D(target, level, xOffset, yOffset, width, height, format, type, webmcUint8(pixels));
 }
 
-// The pixels land in an array this side and are copied into the arena by the caller.
-function Java_org_lwjgl_system_WebMC_readPixelsToArray(lib, x, y, width, height, format, type) {
-  const pixels = new Uint8Array(Math.max(1, width) * Math.max(1, height) * 4);
-  gl().readPixels(x, y, width, height, format, type, pixels);
-  return pixels;
+// Pixels are read into a view of our own and copied into the caller's Java array element by element.
+// Returning a Uint8Array for a Java byte[] does not work - CheerpJ answers "Invalid type conversion
+// attempted" - and a Java byte[] is not a view WebGL will accept. Both ends need their own form.
+function Java_org_lwjgl_system_WebMC_readPixelsInto(lib, x, y, width, height, format, type, into) {
+  const view = new Uint8Array(Math.max(1, width) * Math.max(1, height) * 4);
+  gl().readPixels(x, y, width, height, format, type, view);
+  for (let index = 0; index < view.length && index < into.length; index++) {
+    into[index] = view[index];
+  }
 }
 
 function Java_org_lwjgl_system_WebMC_nmemGetShort(lib, address) { return VIEW.getInt16(webmcBytes("nmemGetShort", address, 2), true); }
@@ -1279,7 +1293,7 @@ export const natives = {
   Java_org_lwjgl_system_WebMC_nmemSlice: webmcNamed("Java_org_lwjgl_system_WebMC_nmemSlice", webmcNative(Java_org_lwjgl_system_WebMC_nmemSlice)),
   Java_org_lwjgl_system_WebMC_nmemUTF8: webmcNamed("Java_org_lwjgl_system_WebMC_nmemUTF8", webmcNative(Java_org_lwjgl_system_WebMC_nmemUTF8)),
   Java_org_lwjgl_system_WebMC_nmemWriteBytes: webmcNamed("Java_org_lwjgl_system_WebMC_nmemWriteBytes", webmcNative(Java_org_lwjgl_system_WebMC_nmemWriteBytes)),
-  Java_org_lwjgl_system_WebMC_readPixelsToArray: webmcNamed("Java_org_lwjgl_system_WebMC_readPixelsToArray", webmcNative(Java_org_lwjgl_system_WebMC_readPixelsToArray)),
+  Java_org_lwjgl_system_WebMC_readPixelsInto: webmcNamed("Java_org_lwjgl_system_WebMC_readPixelsInto", webmcNative(Java_org_lwjgl_system_WebMC_readPixelsInto)),
   Java_org_lwjgl_system_WebMC_texImageFromJava: webmcNamed("Java_org_lwjgl_system_WebMC_texImageFromJava", webmcNative(Java_org_lwjgl_system_WebMC_texImageFromJava)),
   Java_org_lwjgl_system_WebMC_texSubImageFromJava: webmcNamed("Java_org_lwjgl_system_WebMC_texSubImageFromJava", webmcNative(Java_org_lwjgl_system_WebMC_texSubImageFromJava)),
 };

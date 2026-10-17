@@ -275,7 +275,7 @@
   "nmemSlice",
   "nmemUTF8",
   "nmemWriteBytes",
-  "readPixelsToArray",
+  "readPixelsInto",
   "texImageFromJava",
   "texSubImageFromJava"
  ]
