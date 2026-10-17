@@ -203,27 +203,29 @@ public final class MemoryUtil {
     }
 
     public static void memPutFloat(long address, float value) {
-        WebMC.nmemPutFloat(address, value);
+        WebMCArena.slab(address).putFloat(WebMCArena.offset(address), value);
     }
 
     public static float memGetFloat(long address) {
-        return WebMC.nmemGetFloat(address);
+        return WebMCArena.slab(address).getFloat(WebMCArena.offset(address));
     }
 
     // demanded by the client; the JavaScript behind it is in natives/webmc-lwjgl3.js
-    public static void memPutShort(long arg0, short arg1) { throw new UnsupportedOperationException("org.lwjgl.system.MemoryUtil.memPutShort"); }
+    public static void memPutShort(long address, short value) {
+        WebMC.nmemPutShort(address, value);
+    }
 
 
     public static short memGetShort(long address) {
-        return WebMC.nmemGetShort(address);
+        return WebMCArena.slab(address).getShort(WebMCArena.offset(address));
     }
 
     public static long memGetLong(long address) {
-        return WebMC.nmemGetLong(address);
+        return WebMCArena.slab(address).getLong(WebMCArena.offset(address));
     }
 
     public static void memPutLong(long address, long value) {
-        WebMC.nmemPutLong(address, value);
+        WebMCArena.slab(address).putLong(WebMCArena.offset(address), value);
     }
 
     /** The bytes at an address, as a direct buffer: how a struct hands back an array field. */
