@@ -78,4 +78,7 @@ public final class GL15 {
     // implemented in natives/webmc-lwjgl3.js (declared here because no measured
     // client calls it, so the generated surface does not mention it)
     public static native void nglGenBuffers(int count, long pointers);
+
+    // demanded by the client; the JavaScript behind it is in natives/webmc-lwjgl3.js
+    public static void glBufferSubData(int arg0, long arg1, java.nio.ByteBuffer arg2) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL15.glBufferSubData"); }
 }

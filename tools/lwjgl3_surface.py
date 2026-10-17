@@ -73,7 +73,11 @@ def read_constant_pool(data: bytes) -> list:
             pool[index] = struct.unpack_from(">H", data, offset)[0]
             offset += 2
         elif tag in (9, 10, 11, 17, 18):  # refs: class + NameAndType
-            pool[index] = struct.unpack_from(">HH", data, offset)
+            # the tag is kept, not just the pair: without it a field reference and a method reference are
+            # indistinguishable, and this file labelled every one of them a method (a field read arrived as
+            # a call to `GL_ARB_buffer_storageZ`, Z being the field descriptor). A shim generated from that
+            # list declares methods where the client reads fields, and the client dies with NoSuchFieldError.
+            pool[index] = (tag, *struct.unpack_from(">HH", data, offset))
             offset += 4
         elif tag == 12:  # NameAndType
             pool[index] = struct.unpack_from(">HH", data, offset)
@@ -102,10 +106,10 @@ def references(data: bytes) -> set[str]:
     """Every org/lwjgl method and field this class file refers to."""
     pool = read_constant_pool(data)
     found: set[str] = set()
-    for tag, entry in enumerate(pool):
-        if not isinstance(entry, tuple) or len(entry) != 2:
+    for entry in pool:
+        if not isinstance(entry, tuple) or len(entry) != 3:
             continue
-        class_index, name_and_type = entry
+        tag, class_index, name_and_type = entry
         owner = class_name(pool, class_index)
         if not owner.startswith("org/lwjgl"):
             continue
@@ -114,8 +118,17 @@ def references(data: bytes) -> set[str]:
             continue
         name, descriptor = utf8(pool, name_type[0]), utf8(pool, name_type[1])
         if name:
-            kind = "F" if tag == 9 else "M"
-            found.add(f"{kind}:{owner.replace('/', '.')}#{name}{descriptor}")
+            # 9 Fieldref and 17 Dynamic are reads of a field; 10 Methodref, 11 InterfaceMethodref and
+            # 18 InvokeDynamic call one.
+            #
+            # A field is written `name:descriptor`, a method `name(descriptor)`: for a method the descriptor
+            # starts with a bracket so the two never ran together, but for a field they did - `GL_ARB_debug_
+            # output` and its `Z` became the member "GL_ARB_debug_outputZ", which is not a name that exists
+            # anywhere, and a skeleton built from it invented a static method for what is really a field.
+            if tag in (9, 17):
+                found.add(f"F:{owner.replace('/', '.')}#{name}:{descriptor}")
+            else:
+                found.add(f"M:{owner.replace('.', '.').replace('/', '.')}#{name}{descriptor}")
     return found
 
 

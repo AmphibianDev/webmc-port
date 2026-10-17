@@ -49,4 +49,12 @@ public final class KHRDebug {
 
     public static void glDebugMessageControl(int arg0, int arg1, int arg2, int[] arg3, boolean arg4) { throw new UnsupportedOperationException("org.lwjgl.opengl.KHRDebug.glDebugMessageControl"); }
 
+    // demanded by the client; the JavaScript behind it is in natives/webmc-lwjgl3.js
+    public static void glObjectLabel(int arg0, int arg1, java.lang.CharSequence arg2) { throw new UnsupportedOperationException("org.lwjgl.opengl.KHRDebug.glObjectLabel"); }
+
+    // demanded by the client; the JavaScript behind it is in natives/webmc-lwjgl3.js
+    public static void glPopDebugGroup() { throw new UnsupportedOperationException("org.lwjgl.opengl.KHRDebug.glPopDebugGroup"); }
+
+    // demanded by the client; the JavaScript behind it is in natives/webmc-lwjgl3.js
+    public static void glPushDebugGroup(int arg0, int arg1, java.lang.CharSequence arg2) { throw new UnsupportedOperationException("org.lwjgl.opengl.KHRDebug.glPushDebugGroup"); }
 }

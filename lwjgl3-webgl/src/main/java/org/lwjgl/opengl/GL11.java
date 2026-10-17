@@ -739,4 +739,10 @@ public final class GL11 {
     // implemented in natives/webmc-lwjgl3.js (declared here because no measured
     // client calls it, so the generated surface does not mention it)
     public static native void nglDrawArrays(int mode, int first, int count);
+
+    // demanded by the client; the JavaScript behind it is in natives/webmc-lwjgl3.js
+    public static void glDrawBuffer(int arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glDrawBuffer"); }
+
+    // demanded by the client; the JavaScript behind it is in natives/webmc-lwjgl3.js
+    public static float glGetFloat(int arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glGetFloat"); }
 }

@@ -8,8 +8,6 @@ public final class GLCapabilities {
     // constants: javac folds these into a client, so they exist for our own code
     public static final int ADDRESS_BUFFER_SIZE = 2228;
 
-    public static void GL_ARB_debug_outputZ() { throw new UnsupportedOperationException("org.lwjgl.opengl.GLCapabilities.GL_ARB_debug_outputZ"); }
-
     public static void GL_ARB_fragment_shaderZ() { throw new UnsupportedOperationException("org.lwjgl.opengl.GLCapabilities.GL_ARB_fragment_shaderZ"); }
 
     public static void GL_ARB_framebuffer_objectZ() { throw new UnsupportedOperationException("org.lwjgl.opengl.GLCapabilities.GL_ARB_framebuffer_objectZ"); }
@@ -32,8 +30,6 @@ public final class GLCapabilities {
 
     public static void GL_EXT_framebuffer_objectZ() { throw new UnsupportedOperationException("org.lwjgl.opengl.GLCapabilities.GL_EXT_framebuffer_objectZ"); }
 
-    public static void GL_KHR_debugZ() { throw new UnsupportedOperationException("org.lwjgl.opengl.GLCapabilities.GL_KHR_debugZ"); }
-
     public static void GL_NV_fog_distanceZ() { throw new UnsupportedOperationException("org.lwjgl.opengl.GLCapabilities.GL_NV_fog_distanceZ"); }
 
     public static void OpenGL13Z() { throw new UnsupportedOperationException("org.lwjgl.opengl.GLCapabilities.OpenGL13Z"); }
@@ -48,4 +44,34 @@ public final class GLCapabilities {
 
     public static void OpenGL30Z() { throw new UnsupportedOperationException("org.lwjgl.opengl.GLCapabilities.OpenGL30Z"); }
 
+    // demanded by the client; the JavaScript behind it is in natives/webmc-lwjgl3.js
+
+    // demanded by the client; the JavaScript behind it is in natives/webmc-lwjgl3.js
+
+    // demanded by the client; the JavaScript behind it is in natives/webmc-lwjgl3.js
+
+    // demanded by the client; the JavaScript behind it is in natives/webmc-lwjgl3.js
+
+    // demanded by the client; the JavaScript behind it is in natives/webmc-lwjgl3.js
+
+    // demanded by the client; set by createCapabilities(), as in the real LWJGL
+    public boolean GL_ARB_buffer_storage = false;
+
+    // demanded by the client; set by createCapabilities(), as in the real LWJGL
+    public boolean GL_ARB_debug_output = false;
+
+    // demanded by the client; set by createCapabilities(), as in the real LWJGL
+    public boolean GL_ARB_direct_state_access = false;
+
+    // demanded by the client; set by createCapabilities(), as in the real LWJGL
+    public boolean GL_ARB_vertex_attrib_binding = false;
+
+    // demanded by the client; set by createCapabilities(), as in the real LWJGL
+    public boolean GL_EXT_debug_label = false;
+
+    // demanded by the client; set by createCapabilities(), as in the real LWJGL
+    public boolean GL_EXT_texture_filter_anisotropic = false;
+
+    // demanded by the client; set by createCapabilities(), as in the real LWJGL
+    public boolean GL_KHR_debug = false;
 }

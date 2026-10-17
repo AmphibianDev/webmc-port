@@ -96,4 +96,7 @@ public final class MemoryStack implements AutoCloseable {
             frames.remove(frames.size() - 1);
         }
     }
+
+    // demanded by the client; the JavaScript behind it is in natives/webmc-lwjgl3.js
+    public static int getPointer() { throw new UnsupportedOperationException("org.lwjgl.system.MemoryStack.getPointer"); }
 }

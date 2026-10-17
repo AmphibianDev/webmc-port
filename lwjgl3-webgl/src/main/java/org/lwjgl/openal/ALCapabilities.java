@@ -5,8 +5,9 @@ package org.lwjgl.openal;
 public final class ALCapabilities {
     private ALCapabilities() {}
 
-    public static void AL_EXT_LINEAR_DISTANCEZ() { throw new UnsupportedOperationException("org.lwjgl.openal.ALCapabilities.AL_EXT_LINEAR_DISTANCEZ"); }
+    // demanded by the client; set by createCapabilities(), as in the real LWJGL
+    public boolean AL_EXT_LINEAR_DISTANCE = false;
 
-    public static void AL_EXT_source_distance_modelZ() { throw new UnsupportedOperationException("org.lwjgl.openal.ALCapabilities.AL_EXT_source_distance_modelZ"); }
-
+    // demanded by the client; set by createCapabilities(), as in the real LWJGL
+    public boolean AL_EXT_source_distance_model = false;
 }

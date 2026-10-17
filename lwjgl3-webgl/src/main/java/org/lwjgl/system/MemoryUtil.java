@@ -209,4 +209,7 @@ public final class MemoryUtil {
     public static float memGetFloat(long address) {
         return WebMC.nmemGetFloat(address);
     }
+
+    // demanded by the client; the JavaScript behind it is in natives/webmc-lwjgl3.js
+    public static void memPutShort(long arg0, short arg1) { throw new UnsupportedOperationException("org.lwjgl.system.MemoryUtil.memPutShort"); }
 }

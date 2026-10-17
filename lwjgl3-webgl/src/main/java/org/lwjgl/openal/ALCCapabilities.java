@@ -5,10 +5,11 @@ package org.lwjgl.openal;
 public final class ALCCapabilities {
     private ALCCapabilities() {}
 
-    public static void ALC_SOFT_HRTFZ() { throw new UnsupportedOperationException("org.lwjgl.openal.ALCCapabilities.ALC_SOFT_HRTFZ"); }
-
     public static void OpenALC10Z() { throw new UnsupportedOperationException("org.lwjgl.openal.ALCCapabilities.OpenALC10Z"); }
 
-    public static void OpenALC11Z() { throw new UnsupportedOperationException("org.lwjgl.openal.ALCCapabilities.OpenALC11Z"); }
+    // demanded by the client; set by createCapabilities(), as in the real LWJGL
+    public boolean ALC_SOFT_HRTF = false;
 
+    // demanded by the client; set by createCapabilities(), as in the real LWJGL
+    public boolean OpenALC11 = false;
 }

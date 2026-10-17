@@ -287,4 +287,10 @@ public final class GL30 {
     // implemented in natives/webmc-lwjgl3.js (declared here because no measured
     // client calls it, so the generated surface does not mention it)
     public static native void nglGenVertexArrays(int count, long pointers);
+
+    // demanded by the client; the JavaScript behind it is in natives/webmc-lwjgl3.js
+    public static void glFlushMappedBufferRange(int arg0, long arg1, long arg2) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL30.glFlushMappedBufferRange"); }
+
+    // demanded by the client; the JavaScript behind it is in natives/webmc-lwjgl3.js
+    public static java.nio.ByteBuffer glMapBufferRange(int arg0, long arg1, long arg2, int arg3) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL30.glMapBufferRange"); }
 }
