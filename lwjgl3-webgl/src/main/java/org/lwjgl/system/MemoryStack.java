@@ -115,5 +115,12 @@ public final class MemoryStack implements AutoCloseable {
     }
 
     // demanded by the client; the JavaScript behind it is in natives/webmc-lwjgl3.js
-    public static int getPointer() { throw new UnsupportedOperationException("org.lwjgl.system.MemoryStack.getPointer"); }
+    /**
+     * LWJGL's stack pointer, for code that saves and restores the stack around a block. In this shim a stack is a
+     * list of allocations, so the pointer is how many of them were out when it was taken.
+     */
+    public static int getPointer() {
+        MemoryStack current = MemoryStack.stackGet();
+        return current == null ? 0 : current.addresses.size();
+    }
 }

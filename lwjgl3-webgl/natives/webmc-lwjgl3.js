@@ -2058,6 +2058,26 @@ function Java_org_lwjgl_util_tinyfd_TinyFileDialogs_tinyfd_messageBox(lib, arg0,
   return 1;
 }
 
+function Java_org_lwjgl_opengl_ARBVertexAttribBinding_glBindVertexBuffer(lib, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11) {
+  note("glBindVertexBuffer: WebGL 2 has no vertex-attrib binding indirection; it is a no-op");
+}
+
+function Java_org_lwjgl_opengl_ARBVertexAttribBinding_glVertexAttribBinding(lib, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11) {
+  note("glVertexAttribBinding: WebGL 2 binds an attribute to a buffer directly, through glVertexAttribPointer");
+}
+
+function Java_org_lwjgl_opengl_ARBVertexAttribBinding_glVertexAttribFormat(lib, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11) {
+  note("glVertexAttribFormat: WebGL 2 has no format indirection; the layout comes from glVertexAttribPointer");
+}
+
+function Java_org_lwjgl_opengl_ARBVertexAttribBinding_glVertexAttribIFormat(lib, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11) {
+  note("glVertexAttribIFormat: as glVertexAttribFormat, there is no format indirection in WebGL 2");
+}
+
+function Java_org_lwjgl_opengl_GL11C_glBindTexture(lib, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11) {
+  return Java_org_lwjgl_opengl_GL11_glBindTexture(lib, arg0, arg1);
+}
+
 function Java_org_lwjgl_system_BufferUtils_createByteBuffer(lib, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11) {
   /* A direct ByteBuffer over the arena. The address is what matters - every native call in this file reads and
      writes through it - so the buffer is created with the JVM's own memory and its address registered, which is
@@ -2222,6 +2242,11 @@ const GENERATED = {
   Java_org_lwjgl_system_WebMC_hasGlExtension: webmcNamed("Java_org_lwjgl_system_WebMC_hasGlExtension", webmcNative(Java_org_lwjgl_system_WebMC_hasGlExtension, name.includes("l"))),
   Java_org_lwjgl_system_WebMC_glVersion: webmcNamed("Java_org_lwjgl_system_WebMC_glVersion", webmcNative(Java_org_lwjgl_system_WebMC_glVersion, name.includes("l"))),
   Java_org_lwjgl_util_tinyfd_TinyFileDialogs_tinyfd_messageBox: webmcNamed("Java_org_lwjgl_util_tinyfd_TinyFileDialogs_tinyfd_messageBox", webmcNative(Java_org_lwjgl_util_tinyfd_TinyFileDialogs_tinyfd_messageBox, name.includes("l"))),
+  Java_org_lwjgl_opengl_ARBVertexAttribBinding_glBindVertexBuffer: webmcNamed("Java_org_lwjgl_opengl_ARBVertexAttribBinding_glBindVertexBuffer", webmcNative(Java_org_lwjgl_opengl_ARBVertexAttribBinding_glBindVertexBuffer, name.includes("l"))),
+  Java_org_lwjgl_opengl_ARBVertexAttribBinding_glVertexAttribBinding: webmcNamed("Java_org_lwjgl_opengl_ARBVertexAttribBinding_glVertexAttribBinding", webmcNative(Java_org_lwjgl_opengl_ARBVertexAttribBinding_glVertexAttribBinding, name.includes("l"))),
+  Java_org_lwjgl_opengl_ARBVertexAttribBinding_glVertexAttribFormat: webmcNamed("Java_org_lwjgl_opengl_ARBVertexAttribBinding_glVertexAttribFormat", webmcNative(Java_org_lwjgl_opengl_ARBVertexAttribBinding_glVertexAttribFormat, name.includes("l"))),
+  Java_org_lwjgl_opengl_ARBVertexAttribBinding_glVertexAttribIFormat: webmcNamed("Java_org_lwjgl_opengl_ARBVertexAttribBinding_glVertexAttribIFormat", webmcNative(Java_org_lwjgl_opengl_ARBVertexAttribBinding_glVertexAttribIFormat, name.includes("l"))),
+  Java_org_lwjgl_opengl_GL11C_glBindTexture: webmcNamed("Java_org_lwjgl_opengl_GL11C_glBindTexture", webmcNative(Java_org_lwjgl_opengl_GL11C_glBindTexture, name.includes("l"))),
   Java_org_lwjgl_system_BufferUtils_createByteBuffer: webmcNamed("Java_org_lwjgl_system_BufferUtils_createByteBuffer", webmcNative(Java_org_lwjgl_system_BufferUtils_createByteBuffer, name.includes("l"))),
 };
 

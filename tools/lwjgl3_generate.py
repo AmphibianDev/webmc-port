@@ -684,6 +684,26 @@ HANDWRITTEN = {
   // a browser page cannot open a native message box; the client uses this for "there is a problem" on startup
   return 1;
 """,
+# ---- the same vertex-layout calls, under the extension name the client asks for ----
+# WebGL 2 has no attrib-binding indirection, so these are the notes that say so; they exist under ARB's name
+# because that is what this client's capabilities check reads (and the shim reports it absent, so a client that
+# respects that will not come here at all).
+"Java_org_lwjgl_opengl_ARBVertexAttribBinding_glBindVertexBuffer": """
+  note("glBindVertexBuffer: WebGL 2 has no vertex-attrib binding indirection; it is a no-op");
+""",
+"Java_org_lwjgl_opengl_ARBVertexAttribBinding_glVertexAttribBinding": """
+  note("glVertexAttribBinding: WebGL 2 binds an attribute to a buffer directly, through glVertexAttribPointer");
+""",
+"Java_org_lwjgl_opengl_ARBVertexAttribBinding_glVertexAttribFormat": """
+  note("glVertexAttribFormat: WebGL 2 has no format indirection; the layout comes from glVertexAttribPointer");
+""",
+"Java_org_lwjgl_opengl_ARBVertexAttribBinding_glVertexAttribIFormat": """
+  note("glVertexAttribIFormat: as glVertexAttribFormat, there is no format indirection in WebGL 2");
+""",
+"Java_org_lwjgl_opengl_GL11C_glBindTexture": """
+  return Java_org_lwjgl_opengl_GL11_glBindTexture(lib, arg0, arg1);
+""",
+
 "Java_org_lwjgl_system_BufferUtils_createByteBuffer": """
   /* A direct ByteBuffer over the arena. The address is what matters - every native call in this file reads and
      writes through it - so the buffer is created with the JVM's own memory and its address registered, which is
