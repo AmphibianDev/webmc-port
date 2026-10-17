@@ -66,6 +66,10 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FieldNode;
+import org.objectweb.asm.tree.LabelNode;
+import org.objectweb.asm.tree.FieldInsnNode;
+import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.TypeInsnNode;
@@ -199,69 +203,98 @@ public final class __CLASS__ {
         new ClassReader(input).accept(node, 0);
         boolean injected = false;
         int calls = 0;
-        for (MethodNode method : node.methods) {
-            if (!method.name.equals("<clinit>")) {
-                continue;
-            }
-            // Before the static initialiser's *return*, not before its last node: a compiled method often ends
-            // with a label (a local variable's end, an exception handler's target), so "the last node" is
-            // something after the return - which is unreachable, and an ahead-of-time compiler is entitled to
-            // drop it. That is not a theoretical hazard: it is how a baked mod came out of a build with its
-            // class in the jar and its code nowhere, while every step reported success.
-            AbstractInsnNode exit = null;
-            for (AbstractInsnNode node2 = method.instructions.getLast(); node2 != null; node2 = node2.getPrevious()) {
-                if (node2.getOpcode() >= Opcodes.IRETURN && node2.getOpcode() <= Opcodes.RETURN) {
-                    exit = node2;
+
+        // Where the baked mods are started matters. From the client's static initialiser it happens before the
+        // client has bootstrapped anything, and a mod that touches a registry there drags Minecraft's own
+        // bootstrap into the compile - which is how a build died with "Method java.lang.invoke.MethodHandle.invoke
+        // was not found" inside BuiltInRegistries.<clinit>: a path the client itself never reaches, so the
+        // compiler never had to compile it before. The first tick is the moment the client is up, and it is
+        // where this project's other bake (the workspace engines' loader mixin) starts mods too.
+        MethodNode startFrom = null;
+        String startName = "<clinit>";
+        for (String wanted : new String[] { "runTick", "tick" }) {
+            for (MethodNode method : node.methods) {
+                if (method.name.equals(wanted)) {
+                    startFrom = method;
+                    startName = wanted;
                     break;
                 }
             }
-            if (exit == null) {
-                throw new IllegalStateException("the static initialiser of net/minecraft/client/Minecraft does "
-                        + "not return, which this patcher does not know how to handle");
+            if (startFrom != null) {
+                break;
             }
-            // One call per baked mod, written as bytecode rather than as generated Java: a source file would have to
-            // name the mod's package, and the engine compiles its sources before the patched classes are on its
-            // classpath - which is a compile error, not a shortcut. The entrypoint's own methods are folded into
-            // this class first (see WebMcMixinApplier.mergeEntrypoint) where that is possible: a class that only a
-            // patch introduced did not survive to the compiled output, twice, while the jar had it both times.
-            if (!folded.isEmpty()) {
-                for (String signature : folded) {
-                    int split = signature.indexOf('(');
-                    String name = signature.substring(0, split);
-                    String descriptor = signature.substring(split);
-                    InsnList callMerged = new InsnList();
-                    callMerged.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "net/minecraft/client/Minecraft",
-                            name, descriptor, false));
-                    method.instructions.insertBefore(exit, callMerged);
-                    injected = true;
-                    calls++;
+        }
+        if (startFrom == null) {
+            for (MethodNode method : node.methods) {
+                if (method.name.equals("<clinit>")) {
+                    startFrom = method;
+                    startName = "<clinit>";
+                    break;
                 }
-                System.out.println("__CLASS__: " + folded.size() + " folded method(s) called from the client"
-                        + " class itself: no new class has to reach the compiler");
             }
+        }
+        if (startFrom == null) {
+            throw new IllegalStateException("net/minecraft/client/Minecraft has no method to start the baked mods"
+                    + " from (looked for runTick, tick and a static initialiser); this client's shape is not the one"
+                    + " this patcher knows");
+        }
+
+        // The calls go *before* the start method's return, behind a one-shot guard set at its top: appending
+        // them at the end would place them after the return, where an ahead-of-time compiler is entitled to
+        // drop them - which is how a baked mod once came out of a build with its class in the jar and its code
+        // nowhere, while every step reported success.
+        AbstractInsnNode exit = null;
+        for (AbstractInsnNode node2 = startFrom.instructions.getLast(); node2 != null; node2 = node2.getPrevious()) {
+            if (node2.getOpcode() >= Opcodes.IRETURN && node2.getOpcode() <= Opcodes.RETURN) {
+                exit = node2;
+                break;
+            }
+        }
+        if (exit == null) {
+            throw new IllegalStateException("the client's " + startName + "() does not return, which this patcher"
+                    + " does not know how to handle");
+        }
+        if (node.fields.stream().noneMatch(f -> f.name.equals("webmc$modsStarted"))) {
+            node.fields.add(new FieldNode(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC,
+                    "webmc$modsStarted", "Z", null, null));
+        }
+        LabelNode alreadyStarted = new LabelNode();
+        InsnList guard = new InsnList();
+        guard.add(new FieldInsnNode(Opcodes.GETSTATIC, "net/minecraft/client/Minecraft", "webmc$modsStarted", "Z"));
+        guard.add(new JumpInsnNode(Opcodes.IFNE, alreadyStarted));
+        guard.add(new InsnNode(Opcodes.ICONST_1));
+        guard.add(new FieldInsnNode(Opcodes.PUTSTATIC, "net/minecraft/client/Minecraft", "webmc$modsStarted", "Z"));
+        startFrom.instructions.insert(guard);
+
+        InsnList body = new InsnList();
+        if (!folded.isEmpty()) {
+            for (String signature : folded) {
+                int split = signature.indexOf('(');
+                String name = signature.substring(0, split);
+                String descriptor = signature.substring(split);
+                body.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "net/minecraft/client/Minecraft", name, descriptor,
+                        false));
+                calls++;
+            }
+            System.out.println("__CLASS__: " + folded.size() + " folded method(s) called from the client class"
+                    + " itself: no new class has to reach the compiler");
+        } else {
             for (Entry entry : entries) {
-                if (folded.isEmpty()) {
-                    method.instructions.insertBefore(exit, call(entry));
-                    injected = true;
-                    calls++;
-                }
+                body.add(call(entry));
+                calls++;
             }
-            break;
         }
-        if (!injected) {
-            throw new IllegalStateException("net/minecraft/client/Minecraft has no static initialiser to "
-                    + "call the baked mods from; this client's shape is not the one this patcher knows");
-        }
-        // and prove it, in the log: the injection happened into this method, this many times, before this opcode
-        System.out.println("__CLASS__: " + calls + " call(s) inserted before the static initialiser's return");
+        body.add(alreadyStarted);
+        startFrom.instructions.insertBefore(exit, body);
+        injected = true;
 
         ClassWriter writer = new ClassWriter(0);
         node.accept(writer);
         Path target = output.resolve(CLIENT);
         Files.createDirectories(target.getParent());
         Files.write(target, writer.toByteArray());
-        System.out.println("__CLASS__: injected " + entries.size()
-                + " baked entrypoint call(s) into the client's static initialiser");
+        System.out.println("__CLASS__: " + calls + " baked entrypoint call(s) into the client's " + startName
+                + "(), behind a one-shot guard: the mods start on the first tick, after the client is up");
         for (Entry entry : entries) {
             System.out.println("__CLASS__:   " + entry.owner().replace('/', '.') + "." + entry.method() + "()");
         }
@@ -347,7 +380,13 @@ public final class __CLASS__ {
                 //  * a nested jar that needs a JVM tells us so: netty's Unsafe paths, javassist and
                 //    reflections (runtime bytecode and class scanning) cannot exist in a compiled tab.
                 //    They are skipped by name, and the reason is printed.
-                boolean skipNested = nestedFileName.matches("^(netty-|javassist|reflections|discord-ipc).*");
+                // netty is the awkward one: the client has its own copy (keep it - the mod's newer one would
+                // change the client's networking), but a mod may carry the socks handlers that only exist in
+                // its own version, and something it ships needs them. So the handlers are copied, the rest of
+                // netty is not.
+                boolean skipNested = nestedFileName.matches("^netty-.*")
+                        && !nestedFileName.matches("^netty-(codec-socks|handler-proxy).*")
+                        || nestedFileName.matches("^(javassist|reflections|discord-ipc).*");
                 if (skipNested) {
                     System.out.println("__CLASS__:   skipped " + nestedFileName
                             + " (a nested library that needs a JVM: Unsafe, runtime bytecode or class scanning)");

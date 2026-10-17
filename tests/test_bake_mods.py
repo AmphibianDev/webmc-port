@@ -139,14 +139,17 @@ def test_bake(tmp: pathlib.Path) -> None:
           'System.getenv("WEBMC_MODS")' in source)
     check("it copies classes rather than recompiling them",
           "Files.write(target, stream.readAllBytes())" in source)
-    check("and it injects its call into the client's static initialiser",
-          'method.name.equals("<clinit>")' in source and "INVOKEVIRTUAL" in source)
-    check("before the return rather than before the last node",
+    check("it starts the mods from the client's own tick, not from its static initialiser",
+          '"runTick", "tick"' in source and 'startName = "<clinit>"' in source,
+          "a mod that touches a registry from a static initialiser drags Minecraft's own bootstrap into the compile")
+    check("behind a one-shot guard, so the mods start once",
+          "webmc$modsStarted" in source and "JumpInsnNode(Opcodes.IFNE, alreadyStarted)" in source)
+    check("and before the return rather than before the last node",
           "node2.getOpcode() >= Opcodes.IRETURN" in source and "instructions.getLast()" in source
           and "instructions.insertBefore(exit" in source,
           "a method that ends with a label has code after its return, and a compiler may drop it")
-    check("and it says in the log how many calls it inserted",
-          "call(s) inserted before the static initialiser's return" in source)
+    check("and it says in the log how many calls it inserted, and where",
+          "entrypoint call(s) into the client's" in source and "behind a one-shot guard" in source)
 
     check("a hook source left by an older bake is deleted, not built on", not stale.is_file())
     check("a jar with no descriptor is a library, not something to name on a loading screen",
@@ -305,7 +308,8 @@ def test_patcher_runs(tmp: pathlib.Path) -> None:
                           f"dev.gaius.tools.{bake_mods.PATCHER_CLASS}", str(client_jar), str(output),
                           "1.21.11"], capture_output=True, text=True, env=environment)
     check("it runs against a client jar and reports what it did",
-          run.returncode == 0 and "injected" in run.stdout, (run.stdout + run.stderr)[:300])
+          run.returncode == 0 and "entrypoint call(s) into the client's" in run.stdout,
+          (run.stdout + run.stderr)[:300])
     check("the mod's own class is copied into the client's patch output",
           (output / "com" / "example" / "HelloFabricMod.class").is_file())
     check("and the client class is rewritten", (output / "net" / "minecraft" / "client" / "Minecraft.class").is_file())
