@@ -3,6 +3,7 @@ import org.objectweb.asm.ConstantDynamic;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.commons.ClassRemapper;
@@ -20,6 +21,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.jar.JarEntry;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
@@ -53,8 +55,16 @@ public final class J21Backport {
     /** Methods that arrived in Java 21 on types that Java 17 already has: call sites become shim calls. */
     private static final Map<String, Map<String, String>> NEW_METHODS = new LinkedHashMap<>();
     /** Types that do not exist in Java 17: references become the type they extend. */
-    /** Owners whose new methods are static: the shim call keeps the original descriptor, with no receiver. */
-    private static final Set<String> STATIC_OWNERS = new LinkedHashSet<>(Set.of("java/lang/Math"));
+    /**
+     * The new members that are *static*, by owner and name.
+     *
+     * Staticness is per member, not per owner: `Thread.ofPlatform()` is static and `Thread.threadId()` is
+     * not, and treating one like the other produces a call to a shim method that does not exist - which is
+     * exactly what "NoSuchMethodError: webmc.j21.J21.builderName(java.lang.Object)" was.
+     */
+    private static final Set<String> STATIC_MEMBERS = new LinkedHashSet<>(Set.of(
+            "java/lang/Math#clamp",
+            "java/lang/Thread#sleep"));
 
     /**
      * The new members, by name, for *any* owner.
@@ -67,10 +77,125 @@ public final class J21Backport {
      */
     private static final Map<String, String> NEW_BY_NAME = new LinkedHashMap<>();
 
-    static {
-        for (Map<String, String> rewrites : NEW_METHODS.values()) {
-            NEW_BY_NAME.putAll(rewrites);
+    /**
+     * The names that may be matched for *any* owner, and the owners they may be matched on.
+     *
+     * A call is often addressed to a concrete class (`ImmutableList.getFirst()`), which is why matching by
+     * name is needed at all - but a name alone is not enough: `RenderPipeline$UniformDescription.name()` is
+     * a record accessor, and rewriting that into a thread-builder call is how a tool breaks a jar. So the
+     * list methods are matched across the collection types, and everything else only on its own owner.
+     */
+    private static final Set<String> LIST_METHODS = new LinkedHashSet<>(Set.of(
+            "getFirst", "getLast", "addFirst", "addLast", "removeFirst", "removeLast", "reversed"));
+
+    /**
+     * Types that really are Lists, worked out from the jars on the client's classpath.
+     *
+     * The JDK's own hierarchy is not enough: `ImmutableList.getFirst()` is addressed to Guava's class, and
+     * the client calls it (that is how this list came to exist). Guessing from a package name failed in
+     * both directions - it rewrote `Iterables.getFirst(a, b)` and `Comparator.reversed()`, which are not
+     * lists at all - so the hierarchy is *read*: a class is a List when its superclass or one of its
+     * interfaces says so, transitively, across the jars this tool was given.
+     */
+    private static final Set<String> LIST_TYPES = new LinkedHashSet<>(Set.of("java/util/List"));
+    private static final Map<String, String> HIERARCHY = new LinkedHashMap<>();
+
+    private static void readHierarchy(List<Path> jars) throws IOException {
+        for (Path jar : jars) {
+            if (!Files.isRegularFile(jar)) {
+                continue;
+            }
+            try (java.util.jar.JarFile archive = new java.util.jar.JarFile(jar.toFile())) {
+                java.util.Enumeration<JarEntry> entries = archive.entries();
+                while (entries.hasMoreElements()) {
+                    JarEntry entry = entries.nextElement();
+                    if (!entry.getName().endsWith(".class")) {
+                        continue;
+                    }
+                    try (InputStream stream = archive.getInputStream(entry)) {
+                        byte[] bytes = stream.readAllBytes();
+                        ClassReader reader = new ClassReader(bytes);
+                        HIERARCHY.put(reader.getClassName(), reader.getSuperName());
+                        for (String iface : reader.getInterfaces()) {
+                            HIERARCHY.merge(reader.getClassName(), iface, (a, b) -> a + "," + b);
+                        }
+                    } catch (RuntimeException | IOException ignored) {
+                        // a class this cannot read contributes no hierarchy, which only makes the matching
+                        // more conservative
+                    }
+                }
+            }
         }
+        // then the closure: anything whose chain reaches java/util/List is a List
+        for (String type : HIERARCHY.keySet()) {
+            if (reachesList(type, new LinkedHashSet<>())) {
+                LIST_TYPES.add(type);
+            }
+        }
+        System.out.println("types that are Lists, read from the classpath: " + LIST_TYPES.size());
+    }
+
+    private static boolean reachesList(String type, Set<String> seen) {
+        if (type == null || !seen.add(type)) {
+            return false;
+        }
+        if (type.equals("java/util/List") || type.equals("java/util/AbstractList")) {
+            return true;
+        }
+        String parents = HIERARCHY.get(type);
+        if (parents == null) {
+            return false;
+        }
+        for (String parent : parents.split(",")) {
+            if (reachesList(parent, seen)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Whether this call is one of the new members, given its owner *and* its descriptor.
+     *
+     * The descriptor matters as much as the name: Guava has `Iterables.getFirst(Iterable, T)`, which is
+     * older than Java 21 and takes two arguments, while Java 21's `List.getFirst()` takes none. Matching on
+     * the name alone rewrote the Guava call into the shim's one-argument form, and the JVM said
+     * "Operand stack underflow" - which is a kind way of saying the tool made nonsense bytecode.
+     */
+    private static String replacementFor(String owner, String member, String descriptor) {
+        // Thread.sleep(long) has been there since Java 1.0 and Thread.sleep(Duration) arrived in Java 19:
+        // the name alone cannot tell them apart, so this one member is matched on its descriptor.
+        if (owner.equals("java/lang/Thread") && member.equals("sleep")
+                && !"(Ljava/time/Duration;)V".equals(descriptor)) {
+            return null;
+        }
+        Map<String, String> exact = NEW_METHODS.get(owner);
+        if (exact != null && exact.containsKey(member)) {
+            return exact.get(member);
+        }
+        // A call is not always addressed to the interface: the client calls `ImmutableList.getFirst()` and
+        // fastutil's own `ObjectArrayList.getFirst()` too, so the *owner* has to be allowed to differ - but
+        // only when it really is a List (read from the classpath's hierarchy, not guessed from a package
+        // name) and only when the descriptor has the shape Java 21's method has. Both of those checks exist
+        // because the looser versions of this broke the client: a record accessor called `name()`, Guava's
+        // two-argument `Iterables.getFirst(a, b)` ("Operand stack underflow"), and `Comparator.reversed()`
+        // cast to a List.
+        if (LIST_METHODS.contains(member) && LIST_TYPES.contains(owner) && hasJava21Arity(member, descriptor)) {
+            return NEW_BY_NAME.get(member);
+        }
+        return null;
+    }
+
+    /** Java 21's list methods take no arguments, except the two that add one. */
+    private static boolean hasJava21Arity(String member, String descriptor) {
+        if (descriptor == null || !descriptor.startsWith("(")) {
+            return false;
+        }
+        int arguments = org.objectweb.asm.Type.getArgumentCount(descriptor);
+        return switch (member) {
+            case "addFirst", "addLast" -> arguments == 1;
+            default -> arguments == 0;
+        };
     }
 
     private static final Map<String, String> NEW_TYPES = new LinkedHashMap<>(Map.of(
@@ -79,7 +204,8 @@ public final class J21Backport {
             "java/util/SequencedMap", "java/util/Map",
             // Java 21's MatchException, thrown by pattern matching in a switch, is in 151 of the client's
             // catch clauses and does not exist in Java 17 at all. It becomes our own class of the same shape.
-            "java/lang/MatchException", "webmc/j21/MatchException"));
+            "java/lang/MatchException", "webmc/j21/MatchException",
+            "java/time/Duration", "java/time/Duration"));
 
     static {
         Map<String, String> list = new LinkedHashMap<>();
@@ -98,8 +224,14 @@ public final class J21Backport {
         NEW_METHODS.put("java/lang/Math", math);
         Map<String, String> thread = new LinkedHashMap<>();
         thread.put("threadId", "threadId");
+        // Java 19 added sleep(Duration); Java 17 has only the (long, int) form
+        thread.put("sleep", "sleepDuration");
         NEW_METHODS.put("java/lang/Thread", thread);
-        NEW_METHODS.put("java/lang/Thread$Builder", new LinkedHashMap<>(Map.of("name", "threadName")));
+        // filled here, at the end of the same static block, because Java runs static initialisers in
+        // textual order and an empty table would silently rewrite nothing at all
+        for (Map<String, String> rewrites : NEW_METHODS.values()) {
+            NEW_BY_NAME.putAll(rewrites);
+        }
     }
 
     private J21Backport() {
@@ -120,14 +252,20 @@ public final class J21Backport {
     }
 
     public static void main(String[] args) throws IOException {
-        if (args.length != 2) {
-            System.err.println("usage: J21Backport <input.jar> <output.jar>");
+        if (args.length < 2) {
+            System.err.println("usage: J21Backport <input.jar> <output.jar> [<library.jar> …]");
             System.exit(2);
         }
         Path input = Path.of(args[0]);
         Path output = Path.of(args[1]);
+        List<Path> libraries = new ArrayList<>();
+        for (int i = 2; i < args.length; i++) {
+            libraries.add(Path.of(args[i]));
+        }
+        readHierarchy(libraries);
         Tally tally = new Tally();
         List<String> remaining = new ArrayList<>();
+        List<String> failed = new ArrayList<>();
 
         // A class the JVM cannot resolve is as fatal as a method it cannot find, so both are audited.
         ClassLoader probe = J21Backport.class.getClassLoader();
@@ -160,7 +298,15 @@ public final class J21Backport {
                 try (InputStream stream = archive.getInputStream(entry)) {
                     original = stream.readAllBytes();
                 }
-                byte[] backported = backport(entry.getName(), original, tally, remaining);
+                byte[] backported;
+                try {
+                    backported = backport(entry.getName(), original, tally, remaining);
+                } catch (RuntimeException failure) {
+                    System.out.println("! " + entry.getName() + " could not be backported (" + failure + "): copied"
+                            + " unchanged, and named here rather than failing the whole jar");
+                    failed.add(entry.getName());
+                    backported = original;
+                }
                 ZipEntry copy = new ZipEntry(entry.getName());
                 copy.setTime(entry.getTime());
                 out.putNextEntry(copy);
@@ -191,6 +337,12 @@ public final class J21Backport {
         System.out.println("method calls rewritten:   " + tally.methodRewrites);
         for (Map.Entry<String, Integer> entry : tally.methods.entrySet()) {
             System.out.println("   " + entry.getValue() + "× " + entry.getKey());
+        }
+        if (!failed.isEmpty()) {
+            System.out.println("classes copied unchanged after a failed backport: " + failed.size());
+            for (String line : failed.subList(0, Math.min(10, failed.size()))) {
+                System.out.println("   " + line);
+            }
         }
         if (!remaining.isEmpty()) {
             System.out.println("STILL JAVA 21 (" + remaining.size() + "): the backport is incomplete, and a build must not");
@@ -298,13 +450,13 @@ public final class J21Backport {
                         if (handle == null) {
                             return null;
                         }
-                        String replacement = NEW_BY_NAME.get(handle.getName());
-                        if (replacement == null) {
+                        String replacement = replacementFor(handle.getOwner(), handle.getName(), handle.getDesc());
+                        if (replacement == null || handle.getDesc() == null || !handle.getDesc().startsWith("(")) {
                             return handle;
                         }
                         tally.method(replacement);
-                        String receiver = STATIC_OWNERS.contains(handle.getOwner()) ? handle.getOwner()
-                                : shimReceiverType(handle.getName());
+                        boolean isStatic = STATIC_MEMBERS.contains(handle.getOwner() + "#" + handle.getName());
+                        String receiver = isStatic ? handle.getOwner() : shimReceiverType(handle.getName());
                         return new Handle(Opcodes.H_INVOKESTATIC, "webmc/j21/J21", replacement,
                                 shimDescriptor(receiver, handle.getName(), handle.getDesc()), false);
                     }
@@ -350,8 +502,18 @@ public final class J21Backport {
                     @Override
                     public void visitMethodInsn(int opcode, String owner, String calledName, String calledDescriptor,
                                                 boolean isInterface) {
-                        String replacement = NEW_BY_NAME.get(calledName);
-                        if (replacement != null && !STATIC_OWNERS.contains(owner)) {
+                        if (owner.contains("fastutil") && calledName.equals("getFirst")) {
+                            System.out.println("  DEBUG owner=" + owner + " inListMethods=" + LIST_METHODS.contains(calledName)
+                                    + " inListTypes=" + LIST_TYPES.contains(owner)
+                                    + " arity=" + hasJava21Arity(calledName, calledDescriptor)
+                                    + " byName=" + NEW_BY_NAME.get(calledName)
+                                    + " byNameSize=" + NEW_BY_NAME.size()
+                                    + " desc=" + calledDescriptor);
+                        }
+                        String replacement = replacementFor(owner, calledName, calledDescriptor);
+                        boolean isStatic = STATIC_MEMBERS.contains(owner + "#" + calledName);
+                        if (replacement != null && calledDescriptor != null && calledDescriptor.startsWith("(")
+                                && !isStatic) {
                             tally.method(replacement);
                             // The shim takes a List (or Thread) as its first argument: cast the receiver, so a
                             // concrete type like Guava's ImmutableList is accepted where the interface is
@@ -361,7 +523,7 @@ public final class J21Backport {
                                     shimDescriptor(shimReceiverType(calledName), calledName, calledDescriptor), false);
                             return;
                         }
-                        if (replacement != null) {
+                        if (replacement != null && calledDescriptor != null && calledDescriptor.startsWith("(")) {
                             tally.method(replacement);
                             super.visitMethodInsn(Opcodes.INVOKESTATIC, "webmc/j21/J21", replacement,
                                     shimDescriptor(owner, calledName, calledDescriptor), false);
@@ -385,16 +547,22 @@ public final class J21Backport {
      * names a method nobody wrote - "int java.lang.Math.clamp(long, int, int)" was the first one.
      */
     /** What the shim's first parameter is for a given new method: the list methods take a List, the rest. */
-    private static String shimReceiverType(String name) {
-        return switch (name) {
+    private static String shimReceiverType(String member) {
+        // the *original* member name, as the client wrote it
+        return switch (member) {
             case "getFirst", "getLast", "addFirst", "addLast", "removeFirst", "removeLast", "reversed" -> "java/util/List";
-            case "threadId" -> "java/lang/Thread";
+            case "threadId", "sleep" -> "java/lang/Thread";
             default -> "java/lang/Object";
         };
     }
 
     private static String shimDescriptor(String owner, String name, String descriptor) {
-        if (STATIC_OWNERS.contains(owner)) {
+        if (descriptor == null || !descriptor.startsWith("(")) {
+            // a field handle, not a method: nothing here applies, and building a method descriptor out of
+            // a field descriptor is how this tool once crashed inside ASM with an index error
+            throw new IllegalArgumentException("not a method descriptor: " + descriptor);
+        }
+        if (STATIC_MEMBERS.contains(owner + "#" + name)) {
             return descriptor;
         }
         String prefix = "L" + owner + ";";
@@ -408,18 +576,43 @@ public final class J21Backport {
             remaining.add(name + ": the class version is still " + reader.readUnsignedShort(6));
         }
         reader.accept(new ClassVisitor(Opcodes.ASM9) {
-            private void flag(String owner, String member, String descriptor) {
-                if (NEW_BY_NAME.containsKey(member) && !STATIC_OWNERS.contains(owner)) {
-                    remaining.add(name + ": " + owner + "#" + member + descriptor);
+            /**
+             * A declaration's own descriptor. A field or method declared as `SequencedMap` is as fatal as a
+             * call to it, and a scan of the constant pool cannot tell a live declaration from a stale entry,
+             * because the pool of a rewritten class keeps the names it no longer uses. This reads what ASM
+             * was actually handed, so it can.
+             */
+            private void flagDescriptor(String descriptor, String what) {
+                if (descriptor == null || descriptor.isEmpty()) {
+                    return;
                 }
-                if (NEW_BY_NAME.containsKey(member) && STATIC_OWNERS.contains(owner)) {
+                for (String type : Set.of("java/util/SequencedMap", "java/util/SequencedSet",
+                        "java/util/SequencedCollection", "java/lang/MatchException")) {
+                    if (descriptor.contains("L" + type + ";")) {
+                        remaining.add(name + ": " + what + " is declared as " + type);
+                    }
+                }
+            }
+
+            private void flag(String owner, String member, String descriptor) {
+                if (owner.startsWith("webmc/j21/")) {
+                    return; // the shim implements these: flagging it would report the fix as the problem
+                }
+                if (replacementFor(owner, member, descriptor) != null) {
                     remaining.add(name + ": " + owner + "#" + member + descriptor);
                 }
             }
 
             @Override
+            public FieldVisitor visitField(int access, String fieldName, String descriptor, String signature,
+                                           Object value) {
+                flagDescriptor(descriptor, "field " + fieldName);
+                return super.visitField(access, fieldName, descriptor, signature, value);
+            }
+            @Override
             public MethodVisitor visitMethod(int access, String methodName, String descriptor, String signature,
                                              String[] exceptions) {
+                flagDescriptor(descriptor, "method " + methodName);
                 return new MethodVisitor(Opcodes.ASM9) {
                     @Override
                     public void visitMethodInsn(int opcode, String owner, String calledName, String calledDescriptor,

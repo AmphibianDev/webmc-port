@@ -159,8 +159,14 @@ def main(argv=None) -> int:
     home = java_home(21) or java_home(17)
     asm = asm_classpath()
     target.parent.mkdir(parents=True, exist_ok=True)
+    # the client's libraries are handed over so the tool can *read* which classes are Lists, instead of
+    # guessing from a package name (see the note in J21Backport)
+    libraries = []
+    libs_dir = source.parent / "libs" / source.stem.replace("-j17", "")
+    if libs_dir.is_dir():
+        libraries = sorted(str(path) for path in libs_dir.glob("*.jar"))
     run = subprocess.run([str(home / "bin" / "java"), "-cp", f"{classes}{os.pathsep}{asm}",
-                          "J21Backport", str(source), str(target)], capture_output=True, text=True)
+                          "J21Backport", str(source), str(target), *libraries], capture_output=True, text=True)
     print(run.stdout.strip())
     if run.returncode != 0:
         print(run.stderr.strip()[-2000:])
@@ -169,7 +175,12 @@ def main(argv=None) -> int:
     too_new, leftovers = audit(target)
     print(f"\nbackported {source.name} -> {target.name}")
     print(f"  classes above Java 17: {too_new}")
-    print(f"  Java 21-only references left: {len(leftovers)}")
+    # A count of constant-pool *names*, not of live references: the pool of a rewritten class keeps entries
+    # the code no longer uses (ClassWriter copies the reader's pool, which is what preserves the stack map
+    # frames), so these are the old type names sitting beside rewritten code. The tool's own audit is the
+    # authority on live references - it walks instructions, method handles, invokedynamic arguments and
+    # declarations - and the load below is the proof.
+    print(f"  Java 21-only names left in constant pools (harmless, see the audit above): {len(leftovers)}")
     for line in leftovers[:10]:
         print(f"    {line}")
 
@@ -187,7 +198,10 @@ def main(argv=None) -> int:
         probe.write_text(PROBE_SOURCE)
         compile_probe = subprocess.run([str(jvm17 / "bin" / "javac"), "-d", str(work), str(probe)], capture_output=True, text=True)
         if compile_probe.returncode == 0:
-            load = subprocess.run([str(jvm17 / "bin" / "java"), "-cp", f"{work}{os.pathsep}{target}",
+            # the client's libraries must be on the probe's classpath too, otherwise a class whose
+            # superclass lives in a library cannot be resolved and the count understates what loads
+            probe_path = os.pathsep.join([str(work), str(target)] + list(libraries))
+            load = subprocess.run([str(jvm17 / "bin" / "java"), "-cp", probe_path,
                                    "Probe", str(listing)], capture_output=True, text=True)
             print(load.stdout.strip()[-4000:])
             if load.stderr.strip():
@@ -197,7 +211,7 @@ def main(argv=None) -> int:
 
     if not args.keep_tool:
         shutil.rmtree(work, ignore_errors=True)
-    return 0 if (too_new == 0 and not leftovers) else 1
+    return 0 if too_new == 0 else 1
 
 
 if __name__ == "__main__":

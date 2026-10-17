@@ -87,6 +87,15 @@ public final class J21 {
 
     // ------------------------------------------------------------------ Thread
 
+    /** Java 19's `Thread.sleep(Duration)`; Java 17 has only the (long, int) form. */
+    // Java 21's Thread.sleep(Duration) is static, so the receiver is not part of the call and must not be
+    // part of this signature either - the test caught exactly this mismatch as a NoSuchMethodError
+    public static void sleepDuration(java.time.Duration duration) throws InterruptedException {
+        long millis = duration.toMillis();
+        int nanos = duration.minusMillis(millis).getNano();
+        Thread.sleep(millis, nanos);
+    }
+
     public static long threadId(Thread thread) {
         return thread.getId();
     }
