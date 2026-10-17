@@ -16,6 +16,12 @@ public final class WebMC {
     private WebMC() {
     }
 
+    /** Whether the WebGL context supports an extension; the browser is the only authority on that. */
+    public static native boolean hasGlExtension(String name);
+
+    /** What the GL context says it is, for the client's log. */
+    public static native String glVersion();
+
     public static native long nmemAlloc(long size);
 
     public static native void nmemFree(long address);

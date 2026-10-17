@@ -26,26 +26,37 @@ public final class ALC10 {
     public static final int ALC_SYNC = 4105;
     public static final int ALC_TRUE = 1;
 
-    public static boolean alcCloseDevice(long arg0) { throw new UnsupportedOperationException("org.lwjgl.openal.ALC10.alcCloseDevice"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native boolean alcCloseDevice(long arg0);
 
-    public static long alcCreateContext(long arg0, java.nio.IntBuffer arg1) { throw new UnsupportedOperationException("org.lwjgl.openal.ALC10.alcCreateContext"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native long alcCreateContext(long arg0, java.nio.IntBuffer arg1);
 
-    public static void alcDestroyContext(long arg0) { throw new UnsupportedOperationException("org.lwjgl.openal.ALC10.alcDestroyContext"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void alcDestroyContext(long arg0);
 
-    public static int alcGetError(long arg0) { throw new UnsupportedOperationException("org.lwjgl.openal.ALC10.alcGetError"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native int alcGetError(long arg0);
 
-    public static int alcGetInteger(long arg0, int arg1) { throw new UnsupportedOperationException("org.lwjgl.openal.ALC10.alcGetInteger"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native int alcGetInteger(long arg0, int arg1);
 
-    public static void alcGetIntegerv(long arg0, int arg1, java.nio.IntBuffer arg2) { throw new UnsupportedOperationException("org.lwjgl.openal.ALC10.alcGetIntegerv"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void alcGetIntegerv(long arg0, int arg1, java.nio.IntBuffer arg2);
 
-    public static java.lang.String alcGetString(long arg0, int arg1) { throw new UnsupportedOperationException("org.lwjgl.openal.ALC10.alcGetString"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native java.lang.String alcGetString(long arg0, int arg1);
 
-    public static boolean alcIsExtensionPresent(long arg0, java.lang.CharSequence arg1) { throw new UnsupportedOperationException("org.lwjgl.openal.ALC10.alcIsExtensionPresent"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native boolean alcIsExtensionPresent(long arg0, java.lang.CharSequence arg1);
 
-    public static boolean alcMakeContextCurrent(long arg0) { throw new UnsupportedOperationException("org.lwjgl.openal.ALC10.alcMakeContextCurrent"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native boolean alcMakeContextCurrent(long arg0);
 
-    public static long alcOpenDevice(java.lang.CharSequence arg0) { throw new UnsupportedOperationException("org.lwjgl.openal.ALC10.alcOpenDevice"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native long alcOpenDevice(java.lang.CharSequence arg0);
 
-    public static long alcOpenDevice(java.nio.ByteBuffer arg0) { throw new UnsupportedOperationException("org.lwjgl.openal.ALC10.alcOpenDevice"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native long alcOpenDevice(java.nio.ByteBuffer arg0);
 
 }

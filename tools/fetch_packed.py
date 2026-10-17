@@ -53,6 +53,16 @@ def version_label(url: str) -> str:
     return url.rsplit("/", 1)[-1]
 
 
+# The project supports up to 1.21.11; the 26.x line needs Java 25, which no browser runtime has. A version that
+# is not supported must not be put back on the site by this tool, or every catalog run would undo the removal.
+SUPPORTED_UNTIL = "1.21.11"
+
+
+def supported(version: str) -> bool:
+    text = str(version)
+    return bool(text) and not text.startswith("26.") and text[0].isdigit()
+
+
 def unpack(archive: pathlib.Path, version: str, site: pathlib.Path) -> dict | None:
     """Extract the packed client and return its manifest (or None if the archive is not usable)."""
     target = site / "clients" / version

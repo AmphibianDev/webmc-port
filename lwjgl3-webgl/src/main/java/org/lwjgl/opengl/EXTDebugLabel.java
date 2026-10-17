@@ -13,6 +13,7 @@ public final class EXTDebugLabel {
     public static final int GL_SHADER_OBJECT_EXT = 35656;
     public static final int GL_VERTEX_ARRAY_OBJECT_EXT = 37204;
 
-    public static void glLabelObjectEXT(int arg0, int arg1, java.lang.CharSequence arg2) { throw new UnsupportedOperationException("org.lwjgl.opengl.EXTDebugLabel.glLabelObjectEXT"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glLabelObjectEXT(int arg0, int arg1, java.lang.CharSequence arg2);
 
 }

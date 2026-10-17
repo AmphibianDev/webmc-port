@@ -573,9 +573,11 @@ public final class GL11 {
 
     public static void glDeleteLists(int arg0, int arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glDeleteLists"); }
 
-    public static void glDeleteTextures(int arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glDeleteTextures"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glDeleteTextures(int arg0);
 
-    public static void glDeleteTextures(int[] arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glDeleteTextures"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glDeleteTextures(int[] arg0);
 
     // implemented in natives/webmc-lwjgl3.js
     public static native void glDepthFunc(int arg0);
@@ -613,9 +615,11 @@ public final class GL11 {
 
     public static int glGenLists(int arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glGenLists"); }
 
-    public static int glGenTextures() { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glGenTextures"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native int glGenTextures();
 
-    public static void glGenTextures(int[] arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glGenTextures"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glGenTextures(int[] arg0);
 
     // implemented in natives/webmc-lwjgl3.js
     public static native int glGetError();
@@ -630,7 +634,8 @@ public final class GL11 {
 
     public static void glGetTexImage(int arg0, int arg1, int arg2, int arg3, long arg4) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glGetTexImage"); }
 
-    public static int glGetTexLevelParameteri(int arg0, int arg1, int arg2) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glGetTexLevelParameteri"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native int glGetTexLevelParameteri(int arg0, int arg1, int arg2);
 
     public static void glLightModelfv(int arg0, java.nio.FloatBuffer arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glLightModelfv"); }
 
@@ -641,7 +646,8 @@ public final class GL11 {
 
     public static void glLoadIdentity() { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glLoadIdentity"); }
 
-    public static void glLogicOp(int arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glLogicOp"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glLogicOp(int arg0);
 
     public static void glMatrixMode(int arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glMatrixMode"); }
 
@@ -662,9 +668,11 @@ public final class GL11 {
 
     public static void glPixelTransferf(int arg0, float arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glPixelTransferf"); }
 
-    public static void glPolygonMode(int arg0, int arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glPolygonMode"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glPolygonMode(int arg0, int arg1);
 
-    public static void glPolygonOffset(float arg0, float arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glPolygonOffset"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glPolygonOffset(float arg0, float arg1);
 
     public static void glPopAttrib() { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glPopAttrib"); }
 
@@ -741,7 +749,8 @@ public final class GL11 {
     public static native void nglDrawArrays(int mode, int first, int count);
 
     // demanded by the client; the JavaScript behind it is in natives/webmc-lwjgl3.js
-    public static void glDrawBuffer(int arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glDrawBuffer"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glDrawBuffer(int arg0);
 
     // demanded by the client; the JavaScript behind it is in natives/webmc-lwjgl3.js
     // implemented in natives/webmc-lwjgl3.js

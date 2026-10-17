@@ -71,16 +71,22 @@ public final class GL32 {
     public static final int GL_UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE_ARRAY = 37133;
     public static final int GL_WAIT_FAILED = 37149;
 
-    public static void glBindBufferRange(int arg0, int arg1, int arg2, long arg3, long arg4) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL32.glBindBufferRange"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glBindBufferRange(int arg0, int arg1, int arg2, long arg3, long arg4);
 
-    public static int glClientWaitSync(long arg0, int arg1, long arg2) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL32.glClientWaitSync"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native int glClientWaitSync(long arg0, int arg1, long arg2);
 
-    public static void glDeleteSync(long arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL32.glDeleteSync"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glDeleteSync(long arg0);
 
-    public static void glDrawElementsBaseVertex(int arg0, int arg1, int arg2, long arg3, int arg4) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL32.glDrawElementsBaseVertex"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glDrawElementsBaseVertex(int arg0, int arg1, int arg2, long arg3, int arg4);
 
-    public static void glDrawElementsInstancedBaseVertex(int arg0, int arg1, int arg2, long arg3, int arg4, int arg5) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL32.glDrawElementsInstancedBaseVertex"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glDrawElementsInstancedBaseVertex(int arg0, int arg1, int arg2, long arg3, int arg4, int arg5);
 
-    public static long glFenceSync(int arg0, int arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL32.glFenceSync"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native long glFenceSync(int arg0, int arg1);
 
 }

@@ -60,17 +60,22 @@ public final class GL15 {
     // implemented in natives/webmc-lwjgl3.js
     public static native void glBindBuffer(int arg0, int arg1);
 
-    public static void glBufferData(int arg0, long arg1, int arg2) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL15.glBufferData"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glBufferData(int arg0, long arg1, int arg2);
 
-    public static void glBufferData(int arg0, java.nio.ByteBuffer arg1, int arg2) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL15.glBufferData"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glBufferData(int arg0, java.nio.ByteBuffer arg1, int arg2);
 
-    public static void glDeleteBuffers(int arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL15.glDeleteBuffers"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glDeleteBuffers(int arg0);
 
-    public static int glGenBuffers() { throw new UnsupportedOperationException("org.lwjgl.opengl.GL15.glGenBuffers"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native int glGenBuffers();
 
     public static java.nio.ByteBuffer glMapBuffer(int arg0, int arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL15.glMapBuffer"); }
 
-    public static boolean glUnmapBuffer(int arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL15.glUnmapBuffer"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native boolean glUnmapBuffer(int arg0);
 
     // implemented in natives/webmc-lwjgl3.js (declared here because no measured
     // client calls it, so the generated surface does not mention it)
@@ -80,5 +85,6 @@ public final class GL15 {
     public static native void nglGenBuffers(int count, long pointers);
 
     // demanded by the client; the JavaScript behind it is in natives/webmc-lwjgl3.js
-    public static void glBufferSubData(int arg0, long arg1, java.nio.ByteBuffer arg2) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL15.glBufferSubData"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glBufferSubData(int arg0, long arg1, java.nio.ByteBuffer arg2);
 }

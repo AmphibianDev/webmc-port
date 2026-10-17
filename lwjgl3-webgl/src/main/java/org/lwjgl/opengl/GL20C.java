@@ -87,6 +87,7 @@ public final class GL20C {
     public static final int GL_VERTEX_PROGRAM_POINT_SIZE = 34370;
     public static final int GL_VERTEX_SHADER = 35633;
 
-    public static void nglShaderSource(int arg0, int arg1, long arg2, long arg3) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL20C.nglShaderSource"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void nglShaderSource(int arg0, int arg1, long arg2, long arg3);
 
 }

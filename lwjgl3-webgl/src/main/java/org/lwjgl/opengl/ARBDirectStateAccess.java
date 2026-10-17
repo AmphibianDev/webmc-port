@@ -9,30 +9,43 @@ public final class ARBDirectStateAccess {
     public static final int GL_QUERY_TARGET = 33514;
     public static final int GL_TEXTURE_TARGET = 4102;
 
-    public static void glBlitNamedFramebuffer(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11) { throw new UnsupportedOperationException("org.lwjgl.opengl.ARBDirectStateAccess.glBlitNamedFramebuffer"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glBlitNamedFramebuffer(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8, int arg9, int arg10, int arg11);
 
-    public static void glCopyNamedBufferSubData(int arg0, int arg1, long arg2, long arg3, long arg4) { throw new UnsupportedOperationException("org.lwjgl.opengl.ARBDirectStateAccess.glCopyNamedBufferSubData"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glCopyNamedBufferSubData(int arg0, int arg1, long arg2, long arg3, long arg4);
 
-    public static int glCreateBuffers() { throw new UnsupportedOperationException("org.lwjgl.opengl.ARBDirectStateAccess.glCreateBuffers"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native int glCreateBuffers();
 
-    public static int glCreateFramebuffers() { throw new UnsupportedOperationException("org.lwjgl.opengl.ARBDirectStateAccess.glCreateFramebuffers"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native int glCreateFramebuffers();
 
-    public static void glFlushMappedNamedBufferRange(int arg0, long arg1, long arg2) { throw new UnsupportedOperationException("org.lwjgl.opengl.ARBDirectStateAccess.glFlushMappedNamedBufferRange"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glFlushMappedNamedBufferRange(int arg0, long arg1, long arg2);
 
-    public static java.nio.ByteBuffer glMapNamedBufferRange(int arg0, long arg1, long arg2, int arg3) { throw new UnsupportedOperationException("org.lwjgl.opengl.ARBDirectStateAccess.glMapNamedBufferRange"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native java.nio.ByteBuffer glMapNamedBufferRange(int arg0, long arg1, long arg2, int arg3);
 
-    public static void glNamedBufferData(int arg0, long arg1, int arg2) { throw new UnsupportedOperationException("org.lwjgl.opengl.ARBDirectStateAccess.glNamedBufferData"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glNamedBufferData(int arg0, long arg1, int arg2);
 
-    public static void glNamedBufferData(int arg0, java.nio.ByteBuffer arg1, int arg2) { throw new UnsupportedOperationException("org.lwjgl.opengl.ARBDirectStateAccess.glNamedBufferData"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glNamedBufferData(int arg0, java.nio.ByteBuffer arg1, int arg2);
 
-    public static void glNamedBufferStorage(int arg0, long arg1, int arg2) { throw new UnsupportedOperationException("org.lwjgl.opengl.ARBDirectStateAccess.glNamedBufferStorage"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glNamedBufferStorage(int arg0, long arg1, int arg2);
 
-    public static void glNamedBufferStorage(int arg0, java.nio.ByteBuffer arg1, int arg2) { throw new UnsupportedOperationException("org.lwjgl.opengl.ARBDirectStateAccess.glNamedBufferStorage"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glNamedBufferStorage(int arg0, java.nio.ByteBuffer arg1, int arg2);
 
-    public static void glNamedBufferSubData(int arg0, long arg1, java.nio.ByteBuffer arg2) { throw new UnsupportedOperationException("org.lwjgl.opengl.ARBDirectStateAccess.glNamedBufferSubData"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glNamedBufferSubData(int arg0, long arg1, java.nio.ByteBuffer arg2);
 
-    public static void glNamedFramebufferTexture(int arg0, int arg1, int arg2, int arg3) { throw new UnsupportedOperationException("org.lwjgl.opengl.ARBDirectStateAccess.glNamedFramebufferTexture"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glNamedFramebufferTexture(int arg0, int arg1, int arg2, int arg3);
 
-    public static boolean glUnmapNamedBuffer(int arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.ARBDirectStateAccess.glUnmapNamedBuffer"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native boolean glUnmapNamedBuffer(int arg0);
 
 }

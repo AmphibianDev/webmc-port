@@ -259,7 +259,8 @@ public final class GL30 {
     // implemented in natives/webmc-lwjgl3.js
     public static native int glCheckFramebufferStatus(int arg0);
 
-    public static void glDeleteFramebuffers(int arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL30.glDeleteFramebuffers"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glDeleteFramebuffers(int arg0);
 
     public static void glDeleteRenderbuffers(int arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL30.glDeleteRenderbuffers"); }
 
@@ -271,26 +272,31 @@ public final class GL30 {
     // implemented in natives/webmc-lwjgl3.js
     public static native void glFramebufferTexture2D(int arg0, int arg1, int arg2, int arg3, int arg4);
 
-    public static int glGenFramebuffers() { throw new UnsupportedOperationException("org.lwjgl.opengl.GL30.glGenFramebuffers"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native int glGenFramebuffers();
 
     public static int glGenRenderbuffers() { throw new UnsupportedOperationException("org.lwjgl.opengl.GL30.glGenRenderbuffers"); }
 
-    public static int glGenVertexArrays() { throw new UnsupportedOperationException("org.lwjgl.opengl.GL30.glGenVertexArrays"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native int glGenVertexArrays();
 
     public static int glGetFramebufferAttachmentParameteri(int arg0, int arg1, int arg2) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL30.glGetFramebufferAttachmentParameteri"); }
 
     // implemented in natives/webmc-lwjgl3.js
     public static native void glRenderbufferStorage(int arg0, int arg1, int arg2, int arg3);
 
-    public static void glVertexAttribIPointer(int arg0, int arg1, int arg2, int arg3, long arg4) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL30.glVertexAttribIPointer"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glVertexAttribIPointer(int arg0, int arg1, int arg2, int arg3, long arg4);
 
     // implemented in natives/webmc-lwjgl3.js (declared here because no measured
     // client calls it, so the generated surface does not mention it)
     public static native void nglGenVertexArrays(int count, long pointers);
 
     // demanded by the client; the JavaScript behind it is in natives/webmc-lwjgl3.js
-    public static void glFlushMappedBufferRange(int arg0, long arg1, long arg2) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL30.glFlushMappedBufferRange"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glFlushMappedBufferRange(int arg0, long arg1, long arg2);
 
     // demanded by the client; the JavaScript behind it is in natives/webmc-lwjgl3.js
-    public static java.nio.ByteBuffer glMapBufferRange(int arg0, long arg1, long arg2, int arg3) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL30.glMapBufferRange"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native java.nio.ByteBuffer glMapBufferRange(int arg0, long arg1, long arg2, int arg3);
 }

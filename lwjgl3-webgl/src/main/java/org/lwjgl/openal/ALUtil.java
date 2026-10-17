@@ -5,6 +5,7 @@ package org.lwjgl.openal;
 public final class ALUtil {
     private ALUtil() {}
 
-    public static java.util.List getStringList(long arg0, int arg1) { throw new UnsupportedOperationException("org.lwjgl.openal.ALUtil.getStringList"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native java.util.List getStringList(long arg0, int arg1);
 
 }

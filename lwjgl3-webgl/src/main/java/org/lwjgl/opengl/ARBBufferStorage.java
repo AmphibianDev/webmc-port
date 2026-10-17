@@ -14,8 +14,10 @@ public final class ARBBufferStorage {
     public static final int GL_MAP_COHERENT_BIT = 128;
     public static final int GL_MAP_PERSISTENT_BIT = 64;
 
-    public static void glBufferStorage(int arg0, long arg1, int arg2) { throw new UnsupportedOperationException("org.lwjgl.opengl.ARBBufferStorage.glBufferStorage"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glBufferStorage(int arg0, long arg1, int arg2);
 
-    public static void glBufferStorage(int arg0, java.nio.ByteBuffer arg1, int arg2) { throw new UnsupportedOperationException("org.lwjgl.opengl.ARBBufferStorage.glBufferStorage"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glBufferStorage(int arg0, java.nio.ByteBuffer arg1, int arg2);
 
 }

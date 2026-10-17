@@ -71,18 +71,23 @@ public final class GL32C {
     public static final int GL_UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE_ARRAY = 37133;
     public static final int GL_WAIT_FAILED = 37149;
 
-    public static void glBeginQuery(int arg0, int arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL32C.glBeginQuery"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glBeginQuery(int arg0, int arg1);
 
     public static void glBindBuffer(int arg0, int arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL32C.glBindBuffer"); }
 
     public static void glBufferData(int arg0, long arg1, int arg2) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL32C.glBufferData"); }
 
-    public static void glDeleteQueries(int arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL32C.glDeleteQueries"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glDeleteQueries(int arg0);
 
-    public static void glEndQuery(int arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL32C.glEndQuery"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glEndQuery(int arg0);
 
-    public static int glGenQueries() { throw new UnsupportedOperationException("org.lwjgl.opengl.GL32C.glGenQueries"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native int glGenQueries();
 
-    public static int glGetQueryObjecti(int arg0, int arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL32C.glGetQueryObjecti"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native int glGetQueryObjecti(int arg0, int arg1);
 
 }

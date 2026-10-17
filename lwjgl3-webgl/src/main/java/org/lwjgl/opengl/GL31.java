@@ -68,18 +68,25 @@ public final class GL31 {
     public static final int GL_UNSIGNED_INT_SAMPLER_2D_RECT = 36309;
     public static final int GL_UNSIGNED_INT_SAMPLER_BUFFER = 36312;
 
-    public static void glCopyBufferSubData(int arg0, int arg1, long arg2, long arg3, long arg4) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL31.glCopyBufferSubData"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glCopyBufferSubData(int arg0, int arg1, long arg2, long arg3, long arg4);
 
-    public static void glDrawArraysInstanced(int arg0, int arg1, int arg2, int arg3) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL31.glDrawArraysInstanced"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glDrawArraysInstanced(int arg0, int arg1, int arg2, int arg3);
 
-    public static void glDrawElementsInstanced(int arg0, int arg1, int arg2, long arg3, int arg4) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL31.glDrawElementsInstanced"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glDrawElementsInstanced(int arg0, int arg1, int arg2, long arg3, int arg4);
 
-    public static java.lang.String glGetActiveUniformBlockName(int arg0, int arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL31.glGetActiveUniformBlockName"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native java.lang.String glGetActiveUniformBlockName(int arg0, int arg1);
 
-    public static int glGetUniformBlockIndex(int arg0, java.lang.CharSequence arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL31.glGetUniformBlockIndex"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native int glGetUniformBlockIndex(int arg0, java.lang.CharSequence arg1);
 
-    public static void glTexBuffer(int arg0, int arg1, int arg2) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL31.glTexBuffer"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glTexBuffer(int arg0, int arg1, int arg2);
 
-    public static void glUniformBlockBinding(int arg0, int arg1, int arg2) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL31.glUniformBlockBinding"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glUniformBlockBinding(int arg0, int arg1, int arg2);
 
 }

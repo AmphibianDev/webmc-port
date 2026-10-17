@@ -5,6 +5,7 @@ package org.lwjgl.glfw;
 public final class GLFWNativeCocoa {
     private GLFWNativeCocoa() {}
 
-    public static long glfwGetCocoaWindow(long arg0) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFWNativeCocoa.glfwGetCocoaWindow"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native long glfwGetCocoaWindow(long arg0);
 
 }

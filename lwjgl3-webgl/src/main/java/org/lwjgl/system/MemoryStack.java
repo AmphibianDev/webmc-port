@@ -55,6 +55,19 @@ public final class MemoryStack implements AutoCloseable {
         return address;
     }
 
+    /**
+     * A raw address, for the cases a struct needs memory rather than a buffer: `GLFWImage.malloc` writes three
+     * fields into it, and the native reads them back through the address. The memory comes from the same arena
+     * everything else in this shim uses, and is released when the stack closes.
+     */
+    public long nmalloc(int size) {
+        long address = WebMC.nmemAlloc(size);
+        this.addresses.add(address);
+        return address;
+    }
+
+    private final java.util.List<Long> addresses = new java.util.ArrayList<>();
+
     public ByteBuffer malloc(int size) {
         return WebMCArena.window(allocate(size), size);
     }
@@ -88,6 +101,10 @@ public final class MemoryStack implements AutoCloseable {
     /** Free everything this frame handed out. */
     @Override
     public void close() {
+        for (long address : this.addresses) {
+            WebMC.nmemFree(address);
+        }
+        this.addresses.clear();
         for (int index = 0; index < count; index++) {
             WebMCArena.free(allocations[index][0]);
         }

@@ -370,7 +370,8 @@ public final class GLFW {
     // implemented in natives/webmc-lwjgl3.js
     public static native org.lwjgl.PointerBuffer glfwGetMonitors();
 
-    public static int glfwGetPlatform() { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwGetPlatform"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native int glfwGetPlatform();
 
     // implemented in natives/webmc-lwjgl3.js
     public static native long glfwGetPrimaryMonitor();
@@ -379,14 +380,32 @@ public final class GLFW {
     public static native double glfwGetTime();
 
     // implemented in natives/webmc-lwjgl3.js
-    public static native org.lwjgl.glfw.GLFWVidMode glfwGetVideoMode(long arg0);
+    /**
+     * The primary monitor's mode. The native fills a struct and returns its address; this wraps it, because that
+     * is what the client's code expects to call width() and height() on. The struct lives as long as GLFW's own
+     * copy, which is until the monitor disappears - so it is wrapped again on every call rather than cached here.
+     */
+    public static org.lwjgl.glfw.GLFWVidMode glfwGetVideoMode(long arg0) {
+        long address = nglfwGetVideoMode(arg0);
+        return address == 0 ? null : new org.lwjgl.glfw.GLFWVidMode(address);
+    }
+
+    private static native long nglfwGetVideoMode(long arg0);
 
     // implemented in natives/webmc-lwjgl3.js
-    public static native org.lwjgl.glfw.GLFWVidMode$Buffer glfwGetVideoModes(long arg0);
+    /** Every mode the monitor has. */
+    public static org.lwjgl.glfw.GLFWVidMode$Buffer glfwGetVideoModes(long arg0, int[] countOut) {
+        long address = nglfwGetVideoModes(arg0);
+        return address == 0 ? null : new org.lwjgl.glfw.GLFWVidMode$Buffer(address, countOut.length > 0 ? countOut[0] : 0);
+    }
 
-    public static long glfwGetWindowMonitor(long arg0) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwGetWindowMonitor"); }
+    private static native long nglfwGetVideoModes(long arg0);
 
-    public static void glfwGetWindowPos(long arg0, int[] arg1, int[] arg2) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwGetWindowPos"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native long glfwGetWindowMonitor(long arg0);
+
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glfwGetWindowPos(long arg0, int[] arg1, int[] arg2);
 
     // implemented in natives/webmc-lwjgl3.js
     public static native boolean glfwInit();
@@ -397,12 +416,14 @@ public final class GLFW {
     // implemented in natives/webmc-lwjgl3.js
     public static native void glfwPollEvents();
 
-    public static org.lwjgl.glfw.GLFWCharModsCallback glfwSetCharModsCallback(long arg0, org.lwjgl.glfw.GLFWCharModsCallbackI arg1) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwSetCharModsCallback"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native org.lwjgl.glfw.GLFWCharModsCallback glfwSetCharModsCallback(long arg0, org.lwjgl.glfw.GLFWCharModsCallbackI arg1);
 
     // implemented in natives/webmc-lwjgl3.js
     public static native void glfwSetClipboardString(long arg0, java.nio.ByteBuffer arg1);
 
-    public static org.lwjgl.glfw.GLFWCursorEnterCallback glfwSetCursorEnterCallback(long arg0, org.lwjgl.glfw.GLFWCursorEnterCallbackI arg1) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwSetCursorEnterCallback"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native org.lwjgl.glfw.GLFWCursorEnterCallback glfwSetCursorEnterCallback(long arg0, org.lwjgl.glfw.GLFWCursorEnterCallbackI arg1);
 
     // implemented in natives/webmc-lwjgl3.js
     public static native void glfwSetCursorPos(long arg0, double arg1, double arg2);
@@ -425,7 +446,8 @@ public final class GLFW {
     // implemented in natives/webmc-lwjgl3.js
     public static native org.lwjgl.glfw.GLFWKeyCallback glfwSetKeyCallback(long arg0, org.lwjgl.glfw.GLFWKeyCallbackI arg1);
 
-    public static org.lwjgl.glfw.GLFWMonitorCallback glfwSetMonitorCallback(org.lwjgl.glfw.GLFWMonitorCallbackI arg0) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwSetMonitorCallback"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native org.lwjgl.glfw.GLFWMonitorCallback glfwSetMonitorCallback(org.lwjgl.glfw.GLFWMonitorCallbackI arg0);
 
     // implemented in natives/webmc-lwjgl3.js
     public static native org.lwjgl.glfw.GLFWMouseButtonCallback glfwSetMouseButtonCallback(long arg0, org.lwjgl.glfw.GLFWMouseButtonCallbackI arg1);
@@ -439,7 +461,8 @@ public final class GLFW {
     // implemented in natives/webmc-lwjgl3.js
     public static native void glfwSetWindowIcon(long arg0, org.lwjgl.glfw.GLFWImage$Buffer arg1);
 
-    public static void glfwSetWindowMonitor(long arg0, long arg1, int arg2, int arg3, int arg4, int arg5, int arg6) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwSetWindowMonitor"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glfwSetWindowMonitor(long arg0, long arg1, int arg2, int arg3, int arg4, int arg5, int arg6);
 
     // implemented in natives/webmc-lwjgl3.js
     public static native org.lwjgl.glfw.GLFWWindowPosCallback glfwSetWindowPosCallback(long arg0, org.lwjgl.glfw.GLFWWindowPosCallbackI arg1);
@@ -481,8 +504,10 @@ public final class GLFW {
     public static native org.lwjgl.glfw.GLFWWindowCloseCallback glfwSetWindowCloseCallback(long arg0, org.lwjgl.glfw.GLFWWindowCloseCallbackI arg1);
 
     // demanded by the client; the JavaScript behind it is in natives/webmc-lwjgl3.js
-    public static org.lwjgl.glfw.GLFWWindowIconifyCallback glfwSetWindowIconifyCallback(long arg0, org.lwjgl.glfw.GLFWWindowIconifyCallbackI arg1) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwSetWindowIconifyCallback"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native org.lwjgl.glfw.GLFWWindowIconifyCallback glfwSetWindowIconifyCallback(long arg0, org.lwjgl.glfw.GLFWWindowIconifyCallbackI arg1);
 
     // demanded by the client; the JavaScript behind it is in natives/webmc-lwjgl3.js
-    public static void glfwSetWindowSizeLimits(long arg0, int arg1, int arg2, int arg3, int arg4) { throw new UnsupportedOperationException("org.lwjgl.glfw.GLFW.glfwSetWindowSizeLimits"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glfwSetWindowSizeLimits(long arg0, int arg1, int arg2, int arg3, int arg4);
 }

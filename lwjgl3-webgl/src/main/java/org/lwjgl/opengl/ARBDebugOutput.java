@@ -29,8 +29,10 @@ public final class ARBDebugOutput {
     public static final int GL_MAX_DEBUG_LOGGED_MESSAGES_ARB = 37188;
     public static final int GL_MAX_DEBUG_MESSAGE_LENGTH_ARB = 37187;
 
-    public static void glDebugMessageCallbackARB(org.lwjgl.opengl.GLDebugMessageARBCallbackI arg0, long arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.ARBDebugOutput.glDebugMessageCallbackARB"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glDebugMessageCallbackARB(org.lwjgl.opengl.GLDebugMessageARBCallbackI arg0, long arg1);
 
-    public static void glDebugMessageControlARB(int arg0, int arg1, int arg2, int[] arg3, boolean arg4) { throw new UnsupportedOperationException("org.lwjgl.opengl.ARBDebugOutput.glDebugMessageControlARB"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glDebugMessageControlARB(int arg0, int arg1, int arg2, int[] arg3, boolean arg4);
 
 }

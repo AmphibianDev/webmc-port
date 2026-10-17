@@ -14,6 +14,7 @@ public final class ALC11 {
     public static final int ALC_MONO_SOURCES = 4112;
     public static final int ALC_STEREO_SOURCES = 4113;
 
-    public static int alcGetInteger(long arg0, int arg1) { throw new UnsupportedOperationException("org.lwjgl.openal.ALC11.alcGetInteger"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native int alcGetInteger(long arg0, int arg1);
 
 }

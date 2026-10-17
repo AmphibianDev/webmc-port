@@ -62,68 +62,94 @@ public final class AL10 {
     public static final int AL_VENDOR = 45057;
     public static final int AL_VERSION = 45058;
 
-    public static void alBufferData(int arg0, int arg1, java.nio.ByteBuffer arg2, int arg3) { throw new UnsupportedOperationException("org.lwjgl.openal.AL10.alBufferData"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void alBufferData(int arg0, int arg1, java.nio.ByteBuffer arg2, int arg3);
 
-    public static void alDeleteBuffers(java.nio.IntBuffer arg0) { throw new UnsupportedOperationException("org.lwjgl.openal.AL10.alDeleteBuffers"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void alDeleteBuffers(java.nio.IntBuffer arg0);
 
-    public static void alDeleteBuffers(int[] arg0) { throw new UnsupportedOperationException("org.lwjgl.openal.AL10.alDeleteBuffers"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void alDeleteBuffers(int[] arg0);
 
-    public static void alDeleteSources(java.nio.IntBuffer arg0) { throw new UnsupportedOperationException("org.lwjgl.openal.AL10.alDeleteSources"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void alDeleteSources(java.nio.IntBuffer arg0);
 
-    public static void alDeleteSources(int[] arg0) { throw new UnsupportedOperationException("org.lwjgl.openal.AL10.alDeleteSources"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void alDeleteSources(int[] arg0);
 
     public static void alDopplerFactor(float arg0) { throw new UnsupportedOperationException("org.lwjgl.openal.AL10.alDopplerFactor"); }
 
     public static void alDopplerVelocity(float arg0) { throw new UnsupportedOperationException("org.lwjgl.openal.AL10.alDopplerVelocity"); }
 
-    public static void alEnable(int arg0) { throw new UnsupportedOperationException("org.lwjgl.openal.AL10.alEnable"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void alEnable(int arg0);
 
-    public static void alGenBuffers(java.nio.IntBuffer arg0) { throw new UnsupportedOperationException("org.lwjgl.openal.AL10.alGenBuffers"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void alGenBuffers(java.nio.IntBuffer arg0);
 
-    public static void alGenBuffers(int[] arg0) { throw new UnsupportedOperationException("org.lwjgl.openal.AL10.alGenBuffers"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void alGenBuffers(int[] arg0);
 
-    public static void alGenSources(java.nio.IntBuffer arg0) { throw new UnsupportedOperationException("org.lwjgl.openal.AL10.alGenSources"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void alGenSources(java.nio.IntBuffer arg0);
 
-    public static void alGenSources(int[] arg0) { throw new UnsupportedOperationException("org.lwjgl.openal.AL10.alGenSources"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void alGenSources(int[] arg0);
 
     public static int alGetBufferi(int arg0, int arg1) { throw new UnsupportedOperationException("org.lwjgl.openal.AL10.alGetBufferi"); }
 
-    public static int alGetError() { throw new UnsupportedOperationException("org.lwjgl.openal.AL10.alGetError"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native int alGetError();
 
-    public static int alGetSourcei(int arg0, int arg1) { throw new UnsupportedOperationException("org.lwjgl.openal.AL10.alGetSourcei"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native int alGetSourcei(int arg0, int arg1);
 
     public static boolean alIsBuffer(int arg0) { throw new UnsupportedOperationException("org.lwjgl.openal.AL10.alIsBuffer"); }
 
-    public static void alListener3f(int arg0, float arg1, float arg2, float arg3) { throw new UnsupportedOperationException("org.lwjgl.openal.AL10.alListener3f"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void alListener3f(int arg0, float arg1, float arg2, float arg3);
 
     public static void alListenerf(int arg0, float arg1) { throw new UnsupportedOperationException("org.lwjgl.openal.AL10.alListenerf"); }
 
-    public static void alListenerfv(int arg0, java.nio.FloatBuffer arg1) { throw new UnsupportedOperationException("org.lwjgl.openal.AL10.alListenerfv"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void alListenerfv(int arg0, java.nio.FloatBuffer arg1);
 
-    public static void alListenerfv(int arg0, float[] arg1) { throw new UnsupportedOperationException("org.lwjgl.openal.AL10.alListenerfv"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void alListenerfv(int arg0, float[] arg1);
 
-    public static void alSourcePause(int arg0) { throw new UnsupportedOperationException("org.lwjgl.openal.AL10.alSourcePause"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void alSourcePause(int arg0);
 
-    public static void alSourcePlay(int arg0) { throw new UnsupportedOperationException("org.lwjgl.openal.AL10.alSourcePlay"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void alSourcePlay(int arg0);
 
-    public static void alSourceQueueBuffers(int arg0, java.nio.IntBuffer arg1) { throw new UnsupportedOperationException("org.lwjgl.openal.AL10.alSourceQueueBuffers"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void alSourceQueueBuffers(int arg0, java.nio.IntBuffer arg1);
 
-    public static void alSourceQueueBuffers(int arg0, int[] arg1) { throw new UnsupportedOperationException("org.lwjgl.openal.AL10.alSourceQueueBuffers"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void alSourceQueueBuffers(int arg0, int[] arg1);
 
     public static void alSourceRewind(int arg0) { throw new UnsupportedOperationException("org.lwjgl.openal.AL10.alSourceRewind"); }
 
-    public static void alSourceStop(int arg0) { throw new UnsupportedOperationException("org.lwjgl.openal.AL10.alSourceStop"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void alSourceStop(int arg0);
 
-    public static void alSourceUnqueueBuffers(int arg0, java.nio.IntBuffer arg1) { throw new UnsupportedOperationException("org.lwjgl.openal.AL10.alSourceUnqueueBuffers"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void alSourceUnqueueBuffers(int arg0, java.nio.IntBuffer arg1);
 
-    public static void alSourceUnqueueBuffers(int arg0, int[] arg1) { throw new UnsupportedOperationException("org.lwjgl.openal.AL10.alSourceUnqueueBuffers"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void alSourceUnqueueBuffers(int arg0, int[] arg1);
 
-    public static void alSourcef(int arg0, int arg1, float arg2) { throw new UnsupportedOperationException("org.lwjgl.openal.AL10.alSourcef"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void alSourcef(int arg0, int arg1, float arg2);
 
-    public static void alSourcefv(int arg0, int arg1, java.nio.FloatBuffer arg2) { throw new UnsupportedOperationException("org.lwjgl.openal.AL10.alSourcefv"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void alSourcefv(int arg0, int arg1, java.nio.FloatBuffer arg2);
 
-    public static void alSourcefv(int arg0, int arg1, float[] arg2) { throw new UnsupportedOperationException("org.lwjgl.openal.AL10.alSourcefv"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void alSourcefv(int arg0, int arg1, float[] arg2);
 
-    public static void alSourcei(int arg0, int arg1, int arg2) { throw new UnsupportedOperationException("org.lwjgl.openal.AL10.alSourcei"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void alSourcei(int arg0, int arg1, int arg2);
 
 }

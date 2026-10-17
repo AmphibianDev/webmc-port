@@ -67,7 +67,7 @@ public final class MemoryUtil {
 
     // ---- views ------------------------------------------------------------------------------------
 
-    public static ByteBuffer memByteBuffer(long address, int capacity) {
+    public static ByteBuffer memByteBufferLegacy(long address, int capacity) {
         return WebMCArena.window(address, capacity);
     }
 
@@ -212,4 +212,22 @@ public final class MemoryUtil {
 
     // demanded by the client; the JavaScript behind it is in natives/webmc-lwjgl3.js
     public static void memPutShort(long arg0, short arg1) { throw new UnsupportedOperationException("org.lwjgl.system.MemoryUtil.memPutShort"); }
+
+
+    public static short memGetShort(long address) {
+        return WebMC.nmemGetShort(address);
+    }
+
+    public static long memGetLong(long address) {
+        return WebMC.nmemGetLong(address);
+    }
+
+    public static void memPutLong(long address, long value) {
+        WebMC.nmemPutLong(address, value);
+    }
+
+    /** The bytes at an address, as a direct buffer: how a struct hands back an array field. */
+    public static ByteBuffer memByteBuffer(long address, int capacity) {
+        return memByteBuffer(address, capacity, ByteOrder.nativeOrder());
+    }
 }

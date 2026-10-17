@@ -141,7 +141,8 @@ public final class GL20 {
     // implemented in natives/webmc-lwjgl3.js
     public static native void glLinkProgram(int arg0);
 
-    public static void glScissor(int arg0, int arg1, int arg2, int arg3) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL20.glScissor"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glScissor(int arg0, int arg1, int arg2, int arg3);
 
     // implemented in natives/webmc-lwjgl3.js
     public static native void glShaderSource(int arg0, java.lang.CharSequence arg1);
@@ -181,7 +182,8 @@ public final class GL20 {
     // implemented in natives/webmc-lwjgl3.js
     public static native void glUseProgram(int arg0);
 
-    public static void glVertexAttribPointer(int arg0, int arg1, int arg2, boolean arg3, int arg4, long arg5) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL20.glVertexAttribPointer"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glVertexAttribPointer(int arg0, int arg1, int arg2, boolean arg3, int arg4, long arg5);
 
     // implemented in natives/webmc-lwjgl3.js (declared here because no measured
     // client calls it, so the generated surface does not mention it)

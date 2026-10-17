@@ -23,14 +23,19 @@ public final class GL33C {
     public static final int GL_TIME_ELAPSED = 35007;
     public static final int GL_VERTEX_ATTRIB_ARRAY_DIVISOR = 35070;
 
-    public static void glBindSampler(int arg0, int arg1) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL33C.glBindSampler"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glBindSampler(int arg0, int arg1);
 
-    public static void glDeleteSamplers(int arg0) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL33C.glDeleteSamplers"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glDeleteSamplers(int arg0);
 
-    public static int glGenSamplers() { throw new UnsupportedOperationException("org.lwjgl.opengl.GL33C.glGenSamplers"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native int glGenSamplers();
 
-    public static void glSamplerParameterf(int arg0, int arg1, float arg2) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL33C.glSamplerParameterf"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glSamplerParameterf(int arg0, int arg1, float arg2);
 
-    public static void glSamplerParameteri(int arg0, int arg1, int arg2) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL33C.glSamplerParameteri"); }
+    // implemented in natives/webmc-lwjgl3.js
+    public static native void glSamplerParameteri(int arg0, int arg1, int arg2);
 
 }
