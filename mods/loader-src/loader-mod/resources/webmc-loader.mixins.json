@@ -1,0 +1,11 @@
+{
+  "required": true,
+  "package": "webmc.loader",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "WebMcLoaderMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

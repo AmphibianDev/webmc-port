@@ -1,0 +1,164 @@
+{
+  "note": "The repository's mods folder. Jars are dropped into mods/jars/ by hand (they are third-party binaries and git ignores them) and this file describes them, so the launcher can offer the right ones for a version and a mode. tools/launchplan.py reads this, checks every jar is really there, and stages the jars into the deployed site as site/mods/. Only add a mod you are licensed to redistribute.",
+  "mods": [
+    {
+      "id": "hello-webmc",
+      "name": "Hello WebMC",
+      "version": "1.0.0",
+      "file": "jars/hello-webmc.jar",
+      "entrypoint": "com.example.HelloMod",
+      "game": [
+        "*"
+      ],
+      "loaders": [
+        "vanilla"
+      ],
+      "side": "client",
+      "note": "Built from mods/examples/hello-webmc by tools/build_mods.py. Proves the loader's own mod door: no Minecraft classes, only the loader's API. It has to be built before it can be offered - a jar is never committed."
+    },
+    {
+      "id": "hello-fabric",
+      "name": "Hello Fabric",
+      "version": "1.0.0",
+      "file": "jars/hello-fabric.jar",
+      "entrypoint": "com.example.HelloFabricMod",
+      "game": [
+        "*"
+      ],
+      "loaders": [
+        "fabric",
+        "legacyfabric",
+        "aot"
+      ],
+      "side": "client",
+      "note": "a Fabric mod built from mods/examples/hello-fabric. On a version with a real JVM it is started by Fabric Loader at play time; on a compiled version the bake applies it before the compile. The one kind of mod that cannot work anywhere is one with native libraries."
+    },
+    {
+      "id": "hello-mixin",
+      "name": "Hello Mixin",
+      "version": "1.0.0",
+      "file": "jars/hello-mixin.jar",
+      "game": [
+        "*"
+      ],
+      "loaders": [
+        "fabric",
+        "aot"
+      ],
+      "side": "client",
+      "note": "A mixin: its code is merged into the client's own class files at build time, which is the only way a mixin can work in an ahead-of-time client. Built from mods/examples/hello-mixin by tools/build_mods.py, and baked the same way - opt in with a build tag such as build-1.21.11+hello-fabric,hello-mixin. MIXINS.md lists the mixin shapes that are applied and the ones that are refused by name."
+    },
+    {
+      "id": "meteor-client",
+      "name": "Meteor Client",
+      "version": "26.2-35",
+      "file": "vendor/meteor-client-26.2-35.jar",
+      "game": [
+        "26.2"
+      ],
+      "loaders": [
+        "fabric",
+        "aot"
+      ],
+      "side": "client",
+      "licence": "GPL-3.0",
+      "note": "The real thing, from meteorclient.com (its GitHub releases carry no jar). Committed rather than downloaded because GPL-3.0 allows redistribution and the build has to read it: 1340 classes, 233 mixin classes across six configs, an access widener, and its own copies of the Fabric API modules with a nested-jar layout. The bake applies entrypoints and a subset of mixins (MIXINS.md), so this is the honest test of how far that gets - the build log names every part it cannot apply instead of shipping a client that quietly ignores the mod."
+    },
+    {
+      "id": "fabric-api",
+      "name": "Fabric API",
+      "version": "0.161.0+26.2",
+      "file": "vendor/fabric-api-26.2.jar",
+      "game": [
+        "26.2"
+      ],
+      "loaders": [
+        "fabric",
+        "aot"
+      ],
+      "side": "client",
+      "licence": "Apache-2.0",
+      "note": "The real Fabric API, compiled into the client by the bake rather than shimmed member by member. 43 modules: 18 need nothing, 17 need one named adapter (files->OPFS, threads->scheduler, LWJGL->the port's natives), 8 are desktop-only and are left out with the reason. Redistributed under Apache-2.0 (see CREDITS.md)."
+    },
+    {
+      "id": "fabric-api",
+      "name": "Fabric API",
+      "version": "0.163.0+26.3",
+      "file": "vendor/fabric-api-26.3.jar",
+      "game": [
+        "26.3"
+      ],
+      "loaders": [
+        "fabric",
+        "aot"
+      ],
+      "side": "client",
+      "licence": "Apache-2.0",
+      "note": "The real Fabric API, compiled into the client by the bake rather than shimmed member by member. 43 modules: 18 need nothing, 17 need one named adapter (files->OPFS, threads->scheduler, LWJGL->the port's natives), 8 are desktop-only and are left out with the reason. Redistributed under Apache-2.0 (see CREDITS.md)."
+    },
+    {
+      "id": "sodium",
+      "name": "Sodium",
+      "version": "0.9.2+mc26.2",
+      "file": "vendor/sodium-fabric-0.9.2+mc26.2.jar",
+      "game": [
+        "26.2"
+      ],
+      "loaders": [
+        "fabric",
+        "aot"
+      ],
+      "side": "client",
+      "licence": "LGPL-3.0",
+      "note": "The renderer of the Fabric world, downloaded from Modrinth. Its 77 mixin classes all apply in the build-time merge."
+    },
+    {
+      "id": "lithium",
+      "name": "Lithium",
+      "version": "0.25.3+mc26.2",
+      "file": "vendor/lithium-fabric-0.25.3+mc26.2.jar",
+      "game": [
+        "26.2"
+      ],
+      "loaders": [
+        "fabric",
+        "aot"
+      ],
+      "side": "client",
+      "licence": "LGPL-3.0",
+      "note": "Server-side game logic optimisations that a client build carries too; 253 of its 262 mixins apply, and the rest are named in the build log."
+    },
+    {
+      "id": "modmenu",
+      "name": "Mod Menu",
+      "version": "20.0.3",
+      "file": "vendor/modmenu-20.0.3.jar",
+      "game": [
+        "26.2"
+      ],
+      "loaders": [
+        "fabric",
+        "aot"
+      ],
+      "side": "client",
+      "licence": "MIT",
+      "note": "A list of what is loaded. A good first mod to bake: it shows the other mods, so 'did it work' is visible in the client."
+    },
+    {
+      "id": "placeholder-api",
+      "name": "Text Placeholder API",
+      "version": "3.1.0-beta.1+26.2",
+      "file": "vendor/placeholder-api-3.1.0-beta.1+26.2.jar",
+      "game": [
+        "26.2"
+      ],
+      "loaders": [
+        "fabric",
+        "aot"
+      ],
+      "side": "client",
+      "licence": "MPL-2.0",
+      "note": "A dependency of Mod Menu (and of anything that formats text with placeholders), downloaded from Modrinth."
+    }
+  ]
+}

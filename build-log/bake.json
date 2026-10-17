@@ -1,0 +1,196 @@
+{
+ "version": "26.2",
+ "mod_ids": [
+  "fabric-api-base",
+  "fabric-lifecycle-events-v1",
+  "fabric-renderer-api-v1",
+  "fabric-rendering-fluids-v1",
+  "fabric-rendering-v1",
+  "fabric-transitive-access-wideners-v1",
+  "sodium"
+ ],
+ "libraries": [
+  "webmc-mixin-shims"
+ ],
+ "patcher": "WebMcModBakePatcher",
+ "patcher_env": "",
+ "patch_set": "modern",
+ "patcher_route": "extraPatchers",
+ "mods": [
+  {
+   "file": "fabric-api-base-2.0.6+fcdff87f5d.jar",
+   "is_library": false,
+   "id": "fabric-api-base",
+   "name": "Fabric API Base",
+   "version": "2.0.6+fcdff87f5d",
+   "entrypoint": null,
+   "classes": 17,
+   "mixin_configs": [],
+   "mixin_classes": 0,
+   "environment": "*",
+   "needs_mixins": false,
+   "shipped": "../engine/port/work/26.2/webmc-mods/fabric-api-base-2.0.6+fcdff87f5d.jar"
+  },
+  {
+   "file": "fabric-lifecycle-events-v1-4.1.9+ffef5f675d.jar",
+   "is_library": false,
+   "id": "fabric-lifecycle-events-v1",
+   "name": "Fabric Lifecycle Events (v1)",
+   "version": "4.1.9+ffef5f675d",
+   "entrypoint": "net.fabricmc.fabric.impl.client.event.lifecycle.ClientLifecycleEventsImpl",
+   "classes": 89,
+   "mixin_configs": [
+    "fabric-lifecycle-events-v1.mixins.json",
+    "fabric-lifecycle-events-v1.client.mixins.json"
+   ],
+   "mixin_classes": 26,
+   "environment": "*",
+   "needs_mixins": true,
+   "shipped": "../engine/port/work/26.2/webmc-mods/fabric-lifecycle-events-v1-4.1.9+ffef5f675d.jar"
+  },
+  {
+   "file": "fabric-renderer-api-v1-17.0.16+79385d0b5d.jar",
+   "is_library": false,
+   "id": "fabric-renderer-api-v1",
+   "name": "Fabric Renderer API (v1)",
+   "version": "17.0.16+79385d0b5d",
+   "entrypoint": "net.fabricmc.fabric.impl.client.renderer.DebugOverlayClient",
+   "classes": 92,
+   "mixin_configs": [
+    "fabric-renderer-api-v1.mixins.json"
+   ],
+   "mixin_classes": 34,
+   "environment": "client",
+   "needs_mixins": true,
+   "shipped": "../engine/port/work/26.2/webmc-mods/fabric-renderer-api-v1-17.0.16+79385d0b5d.jar"
+  },
+  {
+   "file": "fabric-rendering-fluids-v1-6.0.6+3434d6d95d.jar",
+   "is_library": false,
+   "id": "fabric-rendering-fluids-v1",
+   "name": "Fabric Rendering Fluids (v1)",
+   "version": "6.0.6+3434d6d95d",
+   "entrypoint": null,
+   "classes": 12,
+   "mixin_configs": [
+    "fabric-rendering-fluids-v1.mixins.json"
+   ],
+   "mixin_classes": 3,
+   "environment": "both",
+   "needs_mixins": true,
+   "shipped": "../engine/port/work/26.2/webmc-mods/fabric-rendering-fluids-v1-6.0.6+3434d6d95d.jar"
+  },
+  {
+   "file": "fabric-rendering-v1-27.1.0+5af7744b5d.jar",
+   "is_library": false,
+   "id": "fabric-rendering-v1",
+   "name": "Fabric Rendering (v1)",
+   "version": "27.1.0+5af7744b5d",
+   "entrypoint": "net.fabricmc.fabric.impl.client.rendering.hud.HudStatusBarHeightRegistryImpl",
+   "classes": 167,
+   "mixin_configs": [
+    "fabric-rendering-v1.mixins.json"
+   ],
+   "mixin_classes": 60,
+   "environment": "client",
+   "needs_mixins": true,
+   "shipped": "../engine/port/work/26.2/webmc-mods/fabric-rendering-v1-27.1.0+5af7744b5d.jar"
+  },
+  {
+   "file": "fabric-transitive-access-wideners-v1-8.1.17+e2f63d3e5d.jar",
+   "is_library": false,
+   "id": "fabric-transitive-access-wideners-v1",
+   "name": "Fabric Transitive Access Wideners (v1)",
+   "version": "8.1.17+e2f63d3e5d",
+   "entrypoint": null,
+   "classes": 0,
+   "mixin_configs": [],
+   "mixin_classes": 0,
+   "environment": "*",
+   "needs_mixins": false,
+   "shipped": "../engine/port/work/26.2/webmc-mods/fabric-transitive-access-wideners-v1-8.1.17+e2f63d3e5d.jar"
+  },
+  {
+   "file": "sodium-fabric-0.9.2+mc26.2.jar",
+   "is_library": false,
+   "id": "sodium",
+   "name": "Sodium",
+   "version": "0.9.2+mc26.2",
+   "entrypoint": "net.caffeinemc.mods.sodium.fabric.SodiumFabricMod",
+   "classes": 798,
+   "mixin_configs": [
+    "sodium-common.mixins.json",
+    "sodium-fabric.mixins.json",
+    "sodium-frapi.mixins.json"
+   ],
+   "mixin_classes": 93,
+   "environment": "client",
+   "needs_mixins": true,
+   "shipped": "../engine/port/work/26.2/webmc-mods/sodium-fabric-0.9.2+mc26.2.jar"
+  },
+  {
+   "file": "webmc-mixin-shims.jar",
+   "is_library": true,
+   "id": "webmc-mixin-shims",
+   "name": "webmc-mixin-shims",
+   "version": null,
+   "entrypoint": null,
+   "classes": 23,
+   "mixin_configs": [],
+   "mixin_classes": 23,
+   "environment": "both",
+   "needs_mixins": true,
+   "shipped": "../engine/port/work/26.2/webmc-mods/webmc-mixin-shims.jar"
+  }
+ ],
+ "mod_jars": [
+  "../engine/port/work/26.2/webmc-mods/fabric-api-base-2.0.6+fcdff87f5d.jar",
+  "../engine/port/work/26.2/webmc-mods/fabric-lifecycle-events-v1-4.1.9+ffef5f675d.jar",
+  "../engine/port/work/26.2/webmc-mods/fabric-renderer-api-v1-17.0.16+79385d0b5d.jar",
+  "../engine/port/work/26.2/webmc-mods/fabric-rendering-fluids-v1-6.0.6+3434d6d95d.jar",
+  "../engine/port/work/26.2/webmc-mods/fabric-rendering-v1-27.1.0+5af7744b5d.jar",
+  "../engine/port/work/26.2/webmc-mods/fabric-transitive-access-wideners-v1-8.1.17+e2f63d3e5d.jar",
+  "../engine/port/work/26.2/webmc-mods/sodium-fabric-0.9.2+mc26.2.jar",
+  "../engine/port/work/26.2/webmc-mods/webmc-mixin-shims.jar"
+ ],
+ "webmc_mods": "../engine/port/work/26.2/webmc-mods/fabric-api-base-2.0.6+fcdff87f5d.jar:../engine/port/work/26.2/webmc-mods/fabric-lifecycle-events-v1-4.1.9+ffef5f675d.jar:../engine/port/work/26.2/webmc-mods/fabric-renderer-api-v1-17.0.16+79385d0b5d.jar:../engine/port/work/26.2/webmc-mods/fabric-rendering-fluids-v1-6.0.6+3434d6d95d.jar:../engine/port/work/26.2/webmc-mods/fabric-rendering-v1-27.1.0+5af7744b5d.jar:../engine/port/work/26.2/webmc-mods/fabric-transitive-access-wideners-v1-8.1.17+e2f63d3e5d.jar:../engine/port/work/26.2/webmc-mods/sodium-fabric-0.9.2+mc26.2.jar:../engine/port/work/26.2/webmc-mods/webmc-mixin-shims.jar",
+ "calls": [
+  {
+   "class": "net.fabricmc.fabric.impl.client.event.lifecycle.ClientLifecycleEventsImpl",
+   "id": "fabric-lifecycle-events-v1"
+  },
+  {
+   "class": "net.fabricmc.fabric.impl.client.renderer.DebugOverlayClient",
+   "id": "fabric-renderer-api-v1"
+  },
+  {
+   "class": "net.fabricmc.fabric.impl.client.rendering.hud.HudStatusBarHeightRegistryImpl",
+   "id": "fabric-rendering-v1"
+  },
+  {
+   "class": "net.caffeinemc.mods.sodium.fabric.SodiumFabricMod",
+   "id": "sodium"
+  }
+ ],
+ "mixin_applier": "port/tools/src/main/java/dev/gaius/tools/WebMcMixinApplier.java",
+ "mods_with_mixins": [
+  "fabric-lifecycle-events-v1",
+  "fabric-renderer-api-v1",
+  "fabric-rendering-fluids-v1",
+  "fabric-rendering-v1",
+  "sodium"
+ ],
+ "with_mixins": [
+  "fabric-lifecycle-events-v1",
+  "fabric-renderer-api-v1",
+  "fabric-rendering-fluids-v1",
+  "fabric-rendering-v1",
+  "sodium"
+ ],
+ "entrypoints": [
+  "fabric-lifecycle-events-v1",
+  "fabric-renderer-api-v1",
+  "fabric-rendering-v1",
+  "sodium"
+ ]
+}

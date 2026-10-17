@@ -1,0 +1,310 @@
+#!/usr/bin/env python3
+"""Put WebMC's boot screen in front of a compiled client, and take the client's own one out.
+
+    python3 tools/aot_shell.py --client dist/26.4-snapshot-4.html --out dist/26.4-boot.html \\
+        --remove '#splash,#boot-overlay,#loading'
+    python3 tools/aot_shell.py --client dist/x.html --check
+    python3 tools/aot_shell.py --shell-template --out dist/shell.html       # for a wasm-JVM kit
+
+Why: every compiled client (a TeaVM build, a Gaius build, an engine of our own) ships its own loading
+UI, and they look nothing like the game - so the first thing a player sees is somebody's web page, and
+then it is replaced by Minecraft. `site/boot/shell.html` copies the screen the game itself draws
+(black, centred progress text, a 200x2 bar, the game's GUI scale), and this tool puts it in front of a
+client and gets it out of the way again.
+
+Two insertion points, because the engines differ:
+
+  * a single-file client HTML -> the shell goes in after <body>, the old UI is removed by id, and a
+    small wiring script hands over on the first OpenGL draw call;
+  * a wasm-JVM kit (openjdk21-wasm-link) -> the same file is the kit's page shell, with its @SCRIPT@
+    placeholder left for the linker: that is what --shell-template writes.
+
+What this deliberately does not do: parse HTML properly, or guess at a client's internal loader. It
+injects, removes ids, patches one WebGL entry point, and reports exactly what it did - because a silent
+no-op here is a player looking at somebody's splash screen, and a silent wrong edit is a client that
+does not boot.
+"""
+
+from __future__ import annotations
+
+import argparse
+import base64
+import json
+import pathlib
+import re
+import sys
+
+HERE = pathlib.Path(__file__).resolve().parent
+ROOT = HERE.parent
+sys.path.insert(0, str(HERE))
+
+import debrand  # noqa: E402  (the engine-chrome list and the pass that applies it)
+
+SHELL = ROOT / "site" / "boot" / "shell.html"
+
+MARKER = 'id="webmc-boot"'
+WIRING_MARK = "Injected by tools/aot_shell.py"
+
+# The script injected with the shell: it patches the GL context, so the hand-over happens when the
+# game starts drawing, whatever the client is and with no cooperation from it.
+WIRING = f"""
+<script>
+/* {WIRING_MARK} - the hand-over, with no cooperation needed from the client. */
+(function () {{
+  "use strict";
+  if (!window.webmcBoot) {{ return; }}          // the shell did not load: nothing to hand over to
+  var handedOver = false;
+  function handOver() {{
+    if (handedOver) {{ return; }}
+    handedOver = true;
+    /* The game has drawn. Give it a few frames to finish its first screen, then fade: hiding on the
+       very first clear() would show a half-drawn title screen. */
+    setTimeout(function () {{ window.webmcBoot.ready(); }}, 400);
+  }}
+  function patch(proto) {{
+    if (!proto) {{ return 0; }}
+    var patched = 0;
+    ["drawElements", "drawArrays", "clear"].forEach(function (method) {{
+      var original = proto[method];
+      if (typeof original !== "function") {{ return; }}
+      proto[method] = function () {{
+        handOver();
+        return original.apply(this, arguments);
+      }};
+      patched++;
+    }});
+    return patched;
+  }}
+  var count = patch(window.WebGL2RenderingContext && WebGL2RenderingContext.prototype)
+            + patch(window.WebGLRenderingContext && WebGLRenderingContext.prototype);
+  document.addEventListener("webmc:ready", function () {{ handedOver = true; }});
+  if (!count && window.webmcBootHideOnLoad) {{ window.addEventListener("load", handOver); }}
+}})();
+</script>
+"""
+
+
+def shell_text() -> str:
+    if not SHELL.is_file():
+        raise SystemExit(f"{SHELL} is missing: the boot screen is part of this repository")
+    return SHELL.read_text()
+
+
+def style_block(dirt: pathlib.Path | None) -> str:
+    """The shell's own CSS, plus the real dirt texture when a build can supply one."""
+    block = re.search(r"<style>([\s\S]*?)</style>", shell_text())
+    if not block:
+        raise SystemExit(f"{SHELL} has no style block")
+    css = block.group(1)
+    if dirt:
+        data = base64.b64encode(dirt.read_bytes()).decode()
+        css += (f"\n  /* the real texture, passed in by the build (--dirt {dirt.name}) */\n"
+                f"  #webmc-boot.dirt {{ --webmc-dirt: url(\"data:image/png;base64,{data}\"); }}\n")
+    return f"<style>{css}</style>\n"
+
+
+def overlay(style: str, dirt: pathlib.Path | None) -> str:
+    """The overlay markup and its script: taken from the shell, so there is one implementation."""
+    body = re.search(r"<body>\s*([\s\S]*?)\s*</body>", shell_text())
+    if not body:
+        raise SystemExit(f"{SHELL} has no body")
+    markup = body.group(1).strip()
+    # a compiled client does not need the X11 mount point: that is for the wasm-JVM route, which uses
+    # the shell as its page template instead of injecting it
+    markup = markup.replace('<div id="x11-wasm-root"></div>', "").strip()
+    if style == "dirt":
+        markup = markup.replace(MARKER, MARKER + ' class="dirt"', 1)
+    return markup + "\n"
+
+
+def remove_element(html: str, selector: str) -> tuple[str, str]:
+    """Remove one element by #id. Returns (html, what happened)."""
+    return debrand.remove_element(html, selector)
+
+
+def build(client: str, style: str, dirt: pathlib.Path | None, remove: list[str], hide_on_gl: bool,
+          log=print) -> tuple[str, dict]:
+    """The whole edit: take the client's loading UI out, put ours in, wire the hand-over."""
+    report = {"removed": [], "injected": False, "bytes_before": len(client), "style": style}
+
+    html = client
+    # The engine's own chrome first, through the shared pass: it reads the page to decide what can go and what
+    # only has to be hidden, which one regex list cannot know. Ours is the loading screen, so its boot overlay
+    # goes either way - hidden if its script looks the overlay up, removed if nothing refers to it at all.
+    html, chrome = debrand.debrand(html, log=lambda *_: None, assume_engine=True, clear_brands=False)
+    report["chrome"] = chrome
+    report["removed"].extend(item["result"] for item in chrome["removed"])
+    for item in chrome["removed"]:
+        log(f"  removed {item['selector']}: {item['why']}")
+    for item in chrome["hidden"]:
+        log(f"  hid {item['selector']}: {item['why']} ({item['because']})")
+    # then whatever the caller asked for by name
+    for selector in tuple(remove):
+        html, what = remove_element(html, selector)
+        report["removed"].append(what)
+        log(f"  {what}")
+
+    if MARKER in html:
+        log("  the boot screen is already in this client: left alone (this tool is idempotent)")
+    else:
+        open_body = re.search(r"<body[^>]*>", html, re.I)
+        if not open_body:
+            raise SystemExit("this file has no <body>: it is not an HTML client, so the shell has to "
+                             "be inserted by that engine's packager instead")
+        markup = overlay(style, dirt)
+        html = html[:open_body.end()] + "\n" + markup + html[open_body.end():]
+        css = style_block(dirt)
+        # the chrome the shared pass left in place is already hidden by the stylesheet it added; this only adds
+        # ours, and only if the client does not carry it yet
+        if f'id="{debrand.STYLE_ID}"' not in html:
+            css += debrand.style_block(sorted(set(ENGINE_CHROME_HIDE) | {f"[{debrand.RUNTIME_MARKER}]"}))
+        html = html.replace("</head>", css + "</head>", 1) if "</head>" in html else css + html
+        report["injected"] = True
+        log(f"  injected the boot screen ({len(markup)} bytes of markup, {len(css)} bytes of style)")
+
+    if report["injected"] and hide_on_gl and WIRING_MARK not in html:
+        html = html.replace("</body>", WIRING + "</body>", 1) if "</body>" in html else html + WIRING
+        log("  wired the hand-over to the first OpenGL draw call, so no client has to cooperate")
+    elif hide_on_gl is False:
+        log("  the hand-over is the client's job: call webmcBoot.ready() or fire 'webmc:ready'")
+
+    report["bytes_after"] = len(html)
+    return html, report
+
+
+# Names that belong to the engines we borrow rather than to this project, and the engine's own chrome: both
+# lists live in tools/debrand.py, because the packer runs the same pass on every client it publishes and two
+# lists would drift. This module imports them rather than carrying a second copy.
+BRANDS = debrand.BRANDS
+
+# The engine's own chrome, by the ids it uses. Removed when it is a block of branding, hidden when the
+# client's own script needs to find it - `tools/debrand.py` decides which on the page itself, by looking at
+# whether the page's scripts refer to the id, and this is the list it decides from.
+ENGINE_CHROME_REMOVE = tuple(marker["selector"] for marker in debrand.CHROME if marker["remove"])
+ENGINE_CHROME_HIDE = tuple(marker["selector"] for marker in debrand.CHROME if not marker["remove"])
+# The hide rule uses the ids and the marker attribute the engine sets on anything it builds at run time.
+ENGINE_CHROME_SELECTOR = ", ".join(ENGINE_CHROME_HIDE) + ', [data-gaius-shell]'
+
+
+def brand_hits(client: str, brands: tuple = BRANDS) -> dict:
+    """Where borrowed branding appears, by context: ids/classes, visible text, and everything else."""
+    return debrand.brand_hits(client, brands)
+
+
+def strip_brand(client: str, brands: tuple = BRANDS, log=print) -> tuple[str, dict]:
+    """Take borrowed branding out of the *page*: titles, headings, and elements named after it.
+
+    The work is `tools/debrand.py`'s, so this tool and the packer cannot disagree about what "branding"
+    means. What it deliberately does not do is rewrite the compiled code - see that module's account.
+    """
+    return debrand.brand_pass(client, brands, log=log)
+
+
+def check(client: str, log=print) -> dict:
+    """What this client would need, without changing it."""
+    ids = re.findall(r'id="([\w-]+)"', client)
+    loading = [f"#{i}" for i in ids
+               if any(word in i.lower() for word in
+                      ("load", "splash", "boot", "progress", "start", "overlay", "menu"))]
+    findings = {
+        "size_mb": round(len(client) / 1048576, 1),
+        "has_body": bool(re.search(r"<body[^>]*>", client, re.I)),
+        "has_script": "<script" in client.lower(),
+        "has_canvas": "<canvas" in client.lower(),
+        "already_has_boot_screen": MARKER in client,
+        "loading_ui_ids": loading,
+        "ids": ids[:40],
+    }
+    log(f"  {findings['size_mb']} MB, body={findings['has_body']}, script={findings['has_script']}, "
+        f"canvas={findings['has_canvas']}, boot screen already in it={findings['already_has_boot_screen']}")
+    log("  ids that look like a loading UI: " + (", ".join(loading) if loading
+                                                 else "none found - pass --remove by hand"))
+    if not findings["has_body"]:
+        log("  ! no <body>: this packager does not produce a plain HTML page, so the shell has to be "
+            "inserted by that engine instead")
+    return findings
+
+
+def main(argv=None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--client", default=None, help="the compiled client HTML")
+    parser.add_argument("--out", default=None)
+    parser.add_argument("--style", default="dark", choices=("dark", "dirt"),
+                        help="dark is the screen 1.13 and newer draws; dirt is the classic one")
+    parser.add_argument("--dirt", default=None, help="a dirt texture to tile (with --style dirt)")
+    parser.add_argument("--remove", default="", help="comma-separated #ids to take out of the client")
+    parser.add_argument("--no-hide-on-gl", action="store_true",
+                        help="do not hand over on the first GL draw; the client must say when")
+    parser.add_argument("--shell-template", action="store_true",
+                        help="write the shell as a page template for a wasm-JVM kit (@SCRIPT@ intact)")
+    parser.add_argument("--check", action="store_true", help="report, change nothing")
+    parser.add_argument("--scan-brand", action="store_true",
+                        help="report which borrowed names are still on the page")
+    parser.add_argument("--strip-brand", action="store_true", default=True,
+                        help="remove borrowed branding from the page (default; --no-strip-brand to keep)")
+    parser.add_argument("--no-strip-brand", dest="strip_brand", action="store_false")
+    parser.add_argument("--brands", default="", help="comma-separated extra names to strip")
+    parser.add_argument("--print", action="store_true")
+    args = parser.parse_args(argv)
+
+    if args.shell_template:
+        if not args.out:
+            parser.error("--shell-template needs --out")
+        text = shell_text()
+        if args.dirt:
+            text = text.replace("</head>", style_block(pathlib.Path(args.dirt)) + "</head>", 1)
+        out = pathlib.Path(args.out)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(text)
+        print(f"wrote {out} ({len(text)} bytes), @SCRIPT@ left for the linker to substitute")
+        if "@SCRIPT@" not in text:
+            print("  note: this shell has no @SCRIPT@ placeholder - an engine that substitutes one "
+                  "will need it added, or will load its script itself")
+        return 0
+
+    if not args.client:
+        parser.error("--client is required (or --shell-template)")
+    client_path = pathlib.Path(args.client)
+    if not client_path.is_file():
+        print(f"no such client: {client_path}", file=sys.stderr)
+        return 2
+    client = client_path.read_text(errors="replace")
+
+    print(f"{client_path}")
+    brands = tuple(BRANDS) + tuple(b.strip().lower() for b in args.brands.split(",") if b.strip())
+    if args.check:
+        check(client)
+        if args.scan_brand:
+            hits = brand_hits(client, brands)
+            count = sum(len(value) for value in hits.values())
+            print(f"borrowed branding on this page: {count} hit(s)")
+            for key, value in hits.items():
+                if value:
+                    print(f"  {key}: {', '.join(str(v)[:60] for v in value[:6])}")
+        return 0
+
+    dirt = pathlib.Path(args.dirt) if args.dirt else None
+    if dirt and not dirt.is_file():
+        print(f"no such texture: {dirt}", file=sys.stderr)
+        return 2
+    html, report = build(client, args.style, dirt, [s for s in args.remove.split(",") if s.strip()],
+                         not args.no_hide_on_gl)
+    if args.strip_brand:
+        html, branding = strip_brand(html, brands)
+        report["branding"] = branding
+
+    if args.out:
+        out = pathlib.Path(args.out)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(html)
+        print(f"  wrote {out}: {report['bytes_before'] / 1048576:.1f} MB -> "
+              f"{report['bytes_after'] / 1048576:.1f} MB")
+    elif args.print:
+        print(html[:2000])
+    else:
+        print(json.dumps(report, indent=1))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

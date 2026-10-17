@@ -1,0 +1,58 @@
+26.2 -> 26.2 (release, 2026-06-16)
+  downloading the client from Mojang…
+  work/client-26.2.jar (37 MB, sha1 verified)
+  port fields copied from 26.2: patchSet='modern', extraPatchers=[], worldgenTelemetryMode='task-pulsed', clientDistribution='named'
+  the engine's own profile for 26.2 stays, with 1 version fact(s) refreshed from Mojang: official
+  patched port/scripts/build-overlays.sh: there is no other extension point for a patcher on the legacy-12111 chain: extraPatchers are rejected by the engine's own profile check, and this is the same helper the chain itself uses. It applies to every version on purpose: the block it adds only runs when WEBMC_MOD_PATCHER is set, and the bake sets that only for a version whose patch set cannot take an extraPatcher.
+  wrote port/tools/bringup/26.2.txt with 0 carried-over and 0 declared entr(y/ies)
+  ! no existing override directory under ../engine/port/overrides/client/src/versions: the new version starts with none, and the build will say which classes need one
+  no version-gated patcher was found: the shared patch chain is all that will run
+
+26.2: profile written, 0 override(s) from None, bring-up list created empty, patcher None
+{
+ "version": "26.2",
+ "profile": "port/versions/26.2.json",
+ "generated_profile": false,
+ "refreshed_from_mojang": [
+  "official"
+ ],
+ "started_from_newer_profile": false,
+ "protocol_note": null,
+ "java": 25,
+ "classFileVersion": 69,
+ "protocolVersion": 776,
+ "worldVersion": 4903,
+ "overrides": {
+  "copied_from": null,
+  "files": 0,
+  "mentions_old_version": [],
+  "created": false
+ },
+ "fixups": {
+  "file": "aot_fixups.json",
+  "applied": [
+   {
+    "file": "port/scripts/build-overlays.sh",
+    "why": "there is no other extension point for a patcher on the legacy-12111 chain: extraPatchers are rejected by the engine's own profile check, and this is the same helper the chain itself uses. It applies to every version on purpose: the block it adds only runs when WEBMC_MOD_PATCHER is set, and the bake sets that only for a version whose patch set cannot take an extraPatcher.",
+    "matches": 1
+   }
+  ],
+  "already": [],
+  "failed": []
+ },
+ "bringup": {
+  "path": "port/tools/bringup/26.2.txt",
+  "seeded_from": null,
+  "entries": 0,
+  "ours": 0
+ },
+ "patchers": {
+  "profile": "26.2",
+  "own_profile": true,
+  "patchers": [],
+  "will_run": null
+ },
+ "review": [],
+ "metaless": false
+}
+wrote /tmp/snapshot-report.json

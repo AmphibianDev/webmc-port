@@ -1,0 +1,7 @@
+command -v java: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.12-1/x64/bin/java
+command -v javac: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.12-1/x64/bin/javac
+JAVA_HOME inherited: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.12-1/x64
+derived home: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.12-1/x64
+openjdk version "21.0.12.1" 2026-08-18 LTS
+OpenJDK Runtime Environment Temurin-21.0.12.1+1 (build 21.0.12.1+1-LTS)
+javac 21.0.12.1

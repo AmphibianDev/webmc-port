@@ -1,0 +1,955 @@
+# Building the newest Minecraft snapshot for the browser, by ourselves.
+#
+# The launcher's other build job compiles a version an engine already has a profile for. This one
+# starts one step earlier: it asks Mojang for the newest snapshot, generates the version profile from
+# that version's own metadata (tools/aot_snapshot.py), copies the previous version's source overrides
+# as the starting point, seeds the engine's bring-up list, and then compiles the official client.
+# Nothing is downloaded prebuilt: the only client that goes in is the one Mojang serves, fetched here,
+# at build time, and the artifact that comes out is a compile of it.
+#
+# Two things are deliberately unusual, and both are because a 55-minute build on a runner whose logs
+# nobody can read is a waste of a day:
+#
+#   * **Every step tees to one log**, and a final `if: always()` step pushes a report plus the tail of
+#     that log to a `build-log` branch. Git is the channel: no token, no clicking through the web UI,
+#     and the next attempt can start from the actual error instead of a guess.
+#   * **The bring-up list is allowed** (`GAIUS_BRINGUP=1`), because a snapshot is by definition a
+#     version whose patch chain has not been brought up yet. Every skipped patch prints BRINGUP_SKIP
+#     and lands in the report, so "it built" can never quietly mean "it built with half the patches off".
+name: Build the latest snapshot
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Minecraft version, or latest-snapshot / latest-release"
+        required: false
+        type: string
+        default: "latest-snapshot"
+      engine_repo:
+        description: "The engine to build with. Empty means: ask the route, which is the usual answer"
+        required: false
+        type: string
+        default: ""
+      mods:
+        description: "Mods to bake in, comma-separated ids from mods/mods.json (empty = vanilla)"
+        required: false
+        type: string
+        default: ""
+      bringup:
+        description: "Allow the engine's bring-up list (skip patches whose port is not finished)"
+        required: false
+        type: boolean
+        default: true
+  push:
+    # A tag is a deliberate act, which is what a two-hour build should take to start. Branch pushes do
+    # not compile anything: tools/workflow_lint.py refuses a build that runs on one.
+    tags: ["build-*"]
+
+permissions:
+  contents: write
+  # to hand the packed client to the catalog job, which is the one that can put it on the site
+  actions: write
+
+concurrency:
+  # Per version, not per workflow: a second queued run supersedes a pending one in the same group, so a
+  # single group meant only one version could ever be waiting - dispatching another silently cancelled
+  # it. Different versions are independent builds and can share the machine pool; the same version twice
+  # still collapses to one.
+  group: webmc-port-snapshot-${{ inputs.version || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    name: Compile the newest snapshot
+    runs-on: ubuntu-latest
+    env:
+      # Deliberate, and named: the mixin patcher runs inside the engine's overlay chain (a later step
+      # than the bake), so the policy has to be visible to the whole job. A partial bake still produces
+      # a client, and every missing mixin part is listed in the log. Set to 0 to go back to
+      # "any unapplied part fails the build".
+      WEBMC_MODS_ALLOW_PARTIAL: "1"
+    # The engine's own figure is ~55 minutes; the TeaVM link is the part that can stretch. The runner
+    # limit is six hours, and this leaves room for two attempts' worth of pain.
+    timeout-minutes: 350
+    steps:
+      - name: Which version, and with which engine
+        id: want
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            # `build-1.21.11` or `build-1.21.11+hello-fabric`: a tag is the one way to start a build
+            # without a token, so the mod set travels in the tag name.
+            RAW="${GITHUB_REF_NAME#build-}"
+            VERSION="${RAW%%+*}"
+            MODS=""
+            # the quoted "+" matters: this was `case "$RAW" in *+)`, which never matches (the pattern is
+            # parsed as a literal `*+`, and a shell will not tell you), so a mod set was silently dropped
+            case "$RAW" in
+              *"+"*) MODS="${RAW#*+}" ;;
+              *) MODS="" ;;
+            esac
+            ENGINE=""
+          else
+            VERSION="${{ inputs.version }}"
+            MODS="${{ inputs.mods }}"
+            ENGINE="${{ inputs.engine_repo }}"
+          fi
+          [ -n "$VERSION" ] || VERSION="latest-snapshot"
+          # The engine is resolved *after* the checkout - the answer is in ports.json and routes.json, which are
+          # in the repository. A leftover copy of that resolution lived here and failed every dispatch in step 2,
+          # before the checkout it needed had run.
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "mods=$MODS" >> "$GITHUB_OUTPUT"
+          echo "engine=$ENGINE" >> "$GITHUB_OUTPUT"
+          echo "building $VERSION with $ENGINE${MODS:+ and mods $MODS}"
+          # said out loud, because "the bake never ran" was invisible in a 90,000-line log
+          echo "mods requested: ${MODS:-none}"
+
+      - name: Check out this repository
+        uses: actions/checkout@v7
+        with:
+          path: ours
+
+      - name: Which engine builds this version, and what kind it is
+        # After the checkout, not before: the answer is in ports.json and routes.json, which are in the repository.
+        # This step used to be two - one that named an engine for a tag-triggered run (the hardcoded one) and one
+        # that worked out its kind - and the split is what let a dispatch of 26.2 be checked out with an engine
+        # that cannot build it, failing an hour later inside a patch chain.
+        id: engine_kind
+        working-directory: ours
+        run: |
+          set -euo pipefail
+          WANTED="${{ steps.want.outputs.engine }}"
+          if [ -z "$WANTED" ]; then
+            WANTED="$(python3 tools/engine_for.py --version "${{ steps.want.outputs.version }}" --field repo 2>/dev/null || true)"
+          fi
+          if [ -z "$WANTED" ]; then
+            echo "::error::no enabled engine builds ${{ steps.want.outputs.version }}"
+            python3 tools/engine_for.py --version "${{ steps.want.outputs.version }}" || true
+            exit 1
+          fi
+          KIND="$(python3 - "$WANTED" <<'PY'
+          import json, pathlib, sys
+          # By repository or by id: the interactive path passes a repo and the tag path resolves one, and the two
+          # families have to be told apart correctly or the wrong family's steps run.
+          wanted = sys.argv[1]
+          engines = json.loads(pathlib.Path("ports.json").read_text())["engines"]
+          found = next((e for e in engines if (e.get("repo") or "") == wanted or (e.get("id") or "") == wanted), None)
+          print((found or {}).get("kind") or "unknown")
+          PY
+          )"
+          echo "engine=$WANTED" >> "$GITHUB_OUTPUT"
+          echo "kind=$KIND" >> "$GITHUB_OUTPUT"
+          echo "${{ steps.want.outputs.version }} is built by $WANTED, a $KIND engine"
+
+      - name: Check out the engine
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ steps.engine_kind.outputs.engine }}
+          path: engine
+          fetch-depth: 1
+          # The engine keeps part of its tree in Git LFS and its build reads it.
+          lfs: true
+
+      # 25 first, 21 second: setup-java leaves the last one on PATH, and 21 is what the 1.21 line and
+      # everything older asks for. 25 is installed *beside* it because the engine's own 26.3 profile says
+      # javaVersion 25 - and its scripts check that before doing anything else, so a 26.x build on a 21-only
+      # runner dies in the remap step with "requires JDK 25" and no clue in the version profile's direction.
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "25"
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Emscripten
+        # The engine builds its shader toolchain (GLSL -> SPIR-V) with emcc, so a runner without
+        # Emscripten stops forty minutes in with "build-wasm-shader-toolchain: emcc not found" - which
+        # is what happened on run 38553252969. Installed from the emsdk repository itself rather than a
+        # third-party action, so there is one less thing between this file and the build.
+        run: |
+          set -euo pipefail
+          git clone https://github.com/emscripten-core/emsdk.git /opt/emsdk
+          cd /opt/emsdk
+          # Pinned to the version the engine's shader toolchain checks for: `latest` is 6.0.12 and the engine
+          # refuses anything but 6.0.10 ("emscripten '6.0.12' is not the pinned 6.0.10"), which killed the 26.3
+          # compile thirty-four minutes in. A pinned toolchain is the engine's decision, and the runner follows it.
+          ./emsdk install 6.0.10
+          ./emsdk activate 6.0.10
+          source ./emsdk_env.sh
+          emcc --version | head -2
+          echo "EMSDK=/opt/emsdk" >> "$GITHUB_ENV"
+          echo "/opt/emsdk/upstream/emscripten" >> "$GITHUB_PATH"
+          echo "/opt/emsdk" >> "$GITHUB_PATH"
+
+      - name: Swap, because the link step spikes past this runner
+        # The engine's own figures are a 14 GB heap on a 24 GB machine; a runner has 16 GB and no swap, and
+        # when it is the OOM killer that ends the job nothing after it runs - not even the step that records
+        # what happened. 16 GB of swap turns that into a slow build instead of a silent death.
+        run: |
+          set -euo pipefail
+          sudo fallocate -l 16G /mnt/swapfile || sudo dd if=/dev/zero of=/mnt/swapfile bs=1M count=16384
+          sudo chmod 600 /mnt/swapfile
+          sudo mkswap /mnt/swapfile
+          sudo swapon /mnt/swapfile
+          swapon --show
+          free -g | head -2
+
+      - name: Tell the engine where the JDK is
+        # The overlay/release scripts ask for a JDK 21+ explicitly and stop with "Set GAIUS_JAVA_HOME to a
+        # compatible JDK installation" (build run 38592796753 for 1.21.10, after it had already patched
+        # 9,969 classes). setup-java puts one on PATH; this names it.
+        run: |
+          set -euo pipefail
+          # Derived from the java that is actually on PATH rather than from $JAVA_HOME: the engine checks
+          # for a JDK by looking for bin/javac next to bin/java, and a variable that points somewhere else
+          # (or nowhere) is exactly the failure the last three runs reported.
+          FOR_REAL="$(cd "$(dirname "$(command -v java)")/.." && pwd)"
+          {
+            echo "command -v java: $(command -v java)"
+            echo "command -v javac: $(command -v javac || echo none)"
+            echo "JAVA_HOME inherited: ${JAVA_HOME:-unset}"
+            echo "derived home: $FOR_REAL"
+            java -version 2>&1 | head -2
+            javac -version 2>&1 | head -1
+          } > /tmp/jdk.txt 2>&1
+          cat /tmp/jdk.txt
+          echo "GAIUS_JAVA_HOME=$FOR_REAL" >> "$GITHUB_ENV"
+          echo "JAVA_HOME=$FOR_REAL" >> "$GITHUB_ENV"
+          echo "$FOR_REAL/bin" >> "$GITHUB_PATH"
+          echo "JAVA_HOME was: ${JAVA_HOME:-unset}; using: $FOR_REAL"
+          ls "$FOR_REAL/bin" | head -6
+          "$FOR_REAL/bin/javac" -version
+          "$FOR_REAL/bin/java" -version 2>&1 | head -1
+
+      - name: Room to build in
+        # A 26.x client compile wants ~12 GB of disk on top of the toolchain the runner already has.
+        run: |
+          set -euo pipefail
+          df -h / | tail -1
+          # Not $AGENT_TOOLSDIRECTORY: the JDK and Node this job is already using live there.
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL \
+                      /usr/local/share/boost 2>/dev/null || true
+          df -h / | tail -1
+          command -v jq >/dev/null || sudo apt-get install -y jq
+          nproc; free -g | head -2
+
+      - name: Which route this version is on
+        # The same answer the launcher gives a player, from the same tool: real Java in the page, waiting on
+        # the shim, or compiled. It also says whether the engine can take a mod set at all - which is the
+        # difference between a modded build and a build that silently ignored the mods.
+        working-directory: ours
+        run: |
+          set -euo pipefail
+          python3 tools/route.py --version "${{ steps.want.outputs.version }}" | tee /tmp/route.txt
+          if [ -n "${{ steps.want.outputs.mods }}" ]; then
+            if grep -q "bakes_mods: false\|only when an engine" /tmp/route.txt; then
+              echo "::error::mods were requested (${REPO_MODS}) but the engine for this version cannot take a mod set"
+              exit 1
+            fi
+          fi
+
+      - name: Prepare the version for the engine
+        if: steps.engine_kind.outputs.kind != 'eaglercraft-workspace'
+        # Profile from Mojang's metadata and the version.json inside the client jar, the previous
+        # version's source overrides as a starting point, and a bring-up list. The client jar is
+        # fetched here (its sha1 checked against Mojang's) because the profile needs the three numbers
+        # only that file has.
+        working-directory: ours
+        run: |
+          set -euo pipefail
+          python3 tools/aot_snapshot.py --version "${{ steps.want.outputs.version }}" \
+            --engine ../engine --fetch --fixups tools/aot_fixups.json \
+            --bringup tools/aot_bringup.json \
+            --out /tmp/snapshot-report.json --print 2>&1 | tee /tmp/prepare.log
+          VERSION="$(python3 -c "import json;print(json.load(open('/tmp/snapshot-report.json'))['version'])")"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "resolved to $VERSION"
+
+      - name: Point the build at the JDK this version's profile asks for
+        if: steps.engine_kind.outputs.kind != 'eaglercraft-workspace'
+        # The profile is the authority: it says javaVersion per version, and the engine refuses to run on an
+        # older one. 21 stays the default for everything else, so this only ever *raises* the JDK, and it says
+        # which one it picked and why.
+        run: |
+          set -euo pipefail
+          PROFILE="engine/port/versions/$VERSION.json"
+          WANTED="$(python3 -c "import json,sys;print(json.load(open('$PROFILE')).get('javaVersion') or 21)" 2>/dev/null || echo 21)"
+          echo "the profile for $VERSION asks for Java $WANTED"
+          if [ "$WANTED" -ge 25 ] && [ -n "${JAVA_HOME_25_X64:-}" ]; then
+            echo "using the JVM installed for 25: $JAVA_HOME_25_X64"
+            echo "GAIUS_JAVA_HOME=$JAVA_HOME_25_X64" >> "$GITHUB_ENV"
+            echo "JAVA_HOME=$JAVA_HOME_25_X64" >> "$GITHUB_ENV"
+            echo "$JAVA_HOME_25_X64/bin" >> "$GITHUB_PATH"
+          else
+            echo "keeping the default JDK: $JAVA_HOME"
+            echo "GAIUS_JAVA_HOME=$JAVA_HOME" >> "$GITHUB_ENV"
+          fi
+
+      - name: Record what was prepared, before the expensive part
+        # If the compiler is killed later, this is what is left: which version, which patcher, which patches
+        # the bring-up list skipped, and the fixes that were applied. Pushing it now costs seconds.
+        run: |
+          set -uo pipefail
+          cd ours
+          mkdir -p build-log
+          cp /tmp/snapshot-report.json build-log/report.json 2>/dev/null || true
+          python3 - <<'PY' 2>/dev/null || true
+          import json, pathlib
+          path = pathlib.Path("build-log/report.json")
+          if path.is_file():
+              document = json.loads(path.read_text())
+              jdk = pathlib.Path("/tmp/jdk.txt")
+              if jdk.is_file():
+                  document["jdk"] = jdk.read_text().splitlines()
+              path.write_text(json.dumps(document, indent=1) + "\n")
+          PY
+          cp /tmp/snapshot-report.json "build-log/report-$VERSION.json" 2>/dev/null || true
+          echo "prepared" > build-log/status.txt
+          git add build-log
+          git -c user.name="webmc-port-bot" -c user.email="webmc-port-bot@users.noreply.github.com" \
+            commit -m "snapshot log: prepared $VERSION" || true
+          git push origin HEAD:refs/heads/build-log --force || echo "::warning::could not push the early report"
+
+      - name: Bake the mod set, if one was asked for
+        # Mods on a compiled client can only go in before the compile. Two kinds of engine, two bakes:
+        # a workspace has source hooks the bake tool knows, and a profile engine gets our generated
+        # patcher, which copies the mod's classes into the client and calls its entrypoint from the
+        # client's own static initialiser.
+        if: steps.want.outputs.mods != '' 
+        working-directory: ours
+        run: |
+          set -euo pipefail
+          # GitHub runs this step's shell with -e, so a failing pipeline aborts the step before
+          # the lines below can read PIPESTATUS and report *why* it failed. That is how a broken
+          # patch chain stayed unreadable for four runs.
+          set +e
+          mkdir -p /tmp/mods
+          # the example mods are source in this repository - mods/jars is git-ignored - so a build that
+          # wants to bake one has to compile it first, or the bake finds an empty folder and says so
+          python3 tools/build_mods.py 2>&1 | tail -3 | tee -a /tmp/build.log
+          # the callback classes a mixin's code constructs have to exist in the client it is merged into
+          # into /tmp/mods with the rest: one directory for "the jars this build bakes", so no later step
+          # has to know that one of them came from somewhere else
+          python3 tools/build_mixin_shims.py --out /tmp/mods/webmc-mixin-shims.jar 2>&1 | tail -2 | tee -a /tmp/build.log
+          python3 - "${{ steps.want.outputs.mods }}" <<'PY'
+          import json, pathlib, shutil, sys
+          wanted = [m.strip() for m in sys.argv[1].split(",") if m.strip()]
+          manifest = json.loads(pathlib.Path("mods/mods.json").read_text())
+          known = {mod["id"]: mod for mod in manifest["mods"]}
+          missing = [m for m in wanted if m not in known]
+          if missing:
+              raise SystemExit(f"not in mods/mods.json: {missing}")
+          for mod_id in wanted:
+              source = pathlib.Path("mods") / known[mod_id]["file"]
+              if not source.is_file():
+                  raise SystemExit(f"{mod_id}: {source} is not in this checkout (mods/jars is git-ignored)")
+              shutil.copyfile(source, pathlib.Path("/tmp/mods") / source.name)
+          print(f"mod set: {', '.join(wanted)}")
+          PY
+          # `set +e` is deliberate above (so a failing pipeline can be reported), which means this
+          # status has to be checked by hand: without it a mod jar that is missing from the checkout
+          # prints an error, the step carries on, and the bake runs with an empty mod set - a build
+          # that fails forty minutes later, in a place that says nothing about the real cause.
+          STAGE_STATUS=$?
+          if [ "$STAGE_STATUS" != "0" ]; then
+            echo "::error::the mod set could not be staged (exit $STAGE_STATUS): the bake would run with no mods"
+            exit "$STAGE_STATUS"
+          fi
+          # Fabric API is a bundle of forty-odd module jars and a mod uses a handful of them. Baking the
+          # whole bundle compiles modules nobody asked for - and those are precisely the ones a browser
+          # cannot carry (a second registry layer, the networking stack, Quilt compatibility, the
+          # game-test harness). So the modules this mod set actually calls are kept, their own
+          # dependencies are followed, and the rest are left out by name.
+          for bundle in /tmp/mods/fabric-api-2*.jar; do
+            [ -f "$bundle" ] || continue
+            rm -rf /tmp/mods-pruned
+            mkdir -p /tmp/mods-pruned
+            python3 tools/prune_fabric_api.py --fabric-api "$bundle" --mods /tmp/mods \
+              --out /tmp/mods-pruned 2>&1 | tee -a /tmp/build.log
+            if ls /tmp/mods-pruned/*.jar >/dev/null 2>&1; then
+              rm -f /tmp/mods/fabric-api-2*.jar
+              cp /tmp/mods-pruned/*.jar /tmp/mods/
+            fi
+          done
+          # Sodium generates part of its own mixin config with ASM at runtime. ASM is plain Java - no JVM
+          # internals - so a compiled client can carry it. The engine has already fetched it by now (the
+          # patcher pre-check below uses the same jars), so the bake set gets them too.
+          ASM_JARS="$(find ../engine -name 'asm-*.jar' 2>/dev/null | sort -u | tr '\n' ' ')"
+          for asm in $ASM_JARS; do
+            cp "$asm" /tmp/mods/ 2>/dev/null || true
+          done
+          echo "asm staged for the bake: $(printf '%s' "$ASM_JARS" | wc -w | tr -d ' ') jar(s)" | tee -a /tmp/build.log
+          ls -la /tmp/mods | tee -a /tmp/build.log
+          # The bake is the mod loader on the compiled row: it reads each jar's fabric.mod.json, prunes
+          # the mixins whose targets are not in this client, copies the classes and the Fabric API shims
+          # into the engine's source tree, and generates the entrypoint call the compiled client makes at
+          # startup. It runs *before* the compile, because there is no class loader afterwards.
+          if [ "${{ steps.engine_kind.outputs.kind }}" = "eaglercraft-workspace" ]; then
+            python3 mods/build_modded_workspace.py --workspace ../engine --mods /tmp/mods \
+              --out /tmp/bake 2>&1 | tee -a /tmp/build.log
+            echo "bake exit: ${PIPESTATUS[0]}"
+            find ../engine -name '*EaglerFabricLoader*' 2>/dev/null | head -3 || true
+          else
+            MOD_ARGS=""
+            # the mixin stubs are not a mod: they carry the callback classes a mixin's code constructs, and the
+            # client it is merged into needs them to compile. They ship with the client, listed last so a log
+            # reads as "the mods, then the shims".
+            for jar in /tmp/mods/*.jar; do
+              [ -f "$jar" ] && MOD_ARGS="$MOD_ARGS --mods $jar"
+            done
+            # A named, deliberate policy: a build with mixin parts missing is a failure by default, because
+            # a client that looks fine and behaves wrongly is the failure this repository already paid for.
+            # While the remaining parts are being closed, the build asks for the other policy - the client
+            # runs, and every unapplied part is printed into this log and recorded in the report.
+            python3 tools/bake_mods.py --engine ../engine --version "$VERSION" --mods-dir /tmp/mods \
+              --report /tmp/bake.json $MOD_ARGS 2>&1 | tee -a /tmp/build.log
+            BAKE_STATUS=${PIPESTATUS[0]}
+            echo "bake exit: $BAKE_STATUS"
+            [ "$BAKE_STATUS" = "0" ] || exit "$BAKE_STATUS"
+            # the patcher reads this while the engine's patch chain runs, which is the next thing after
+            # the fetch
+            python3 -c "import json;print('WEBMC_MODS=' + (json.load(open('/tmp/bake.json')).get('webmc_mods') or ''))" >> "$GITHUB_ENV"
+            python3 -c "import json;print(json.load(open('/tmp/bake.json')).get('patcher_env') or '')" >> "$GITHUB_ENV"
+            python3 -c "import json;d=json.load(open('/tmp/bake.json'));print('baked:', [m['id'] for m in d['mods']]);print('entrypoints:', d['entrypoints']);print('mixins to apply:', d.get('mods_with_mixins'))" | tee -a /tmp/build.log
+            # Pre-flight: compile the generated patcher here, with the ASM the engine fetches anyway, so a
+            # Java mistake costs two minutes instead of the hour the build takes to reach it.
+            PATCHER_CLASS="$(python3 -c "import sys; sys.path.insert(0, 'tools'); import bake_mods; print(bake_mods.PATCHER_CLASS)")"
+            ASM="$(find ../engine -name 'asm-*.jar' 2>/dev/null | sort -u | tr '\n' ':')"
+            if [ -n "$ASM" ]; then
+              mkdir -p /tmp/patcher-check
+              if javac -nowarn -cp "${ASM%:}" -d /tmp/patcher-check \
+                   "../engine/port/tools/src/main/java/dev/gaius/tools/$PATCHER_CLASS.java" 2>&1 | tee -a /tmp/build.log; then
+                echo "the generated patcher compiles" | tee -a /tmp/build.log
+              else
+                echo "::error::the generated patcher does not compile (see the log above)"
+                exit 1
+              fi
+            else
+              echo "no ASM jar found to pre-check the patcher with; the engine's own build will compile it" | tee -a /tmp/build.log
+            fi
+          fi
+
+      - name: Put the bake report and the log on the release
+        # The git push at the end of this job is the one step that keeps failing, and it is the step that
+        # carries the log to a branch. The release upload always works, so the report and the log go there too:
+        # a 55-minute build whose log nobody can open is a wasted day.
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          gh release view built-clients >/dev/null 2>&1 || gh release create built-clients \
+            --title "Built browser clients" \
+            --notes "Compiled from the official client by this repository's build jobs." || true
+          for file in /tmp/bake.json /tmp/build.log; do
+            [ -f "$file" ] && gh release upload built-clients "$file" --clobber 2>/dev/null || true
+          done
+          echo "uploaded: $(ls -la /tmp/bake.json /tmp/build.log 2>/dev/null | wc -l) file(s)"
+
+      - name: Fetch the client, its libraries and its assets
+        if: steps.engine_kind.outputs.kind != 'eaglercraft-workspace'
+        working-directory: engine
+        run: |
+          set -uo pipefail
+          # GitHub runs this step's shell with -e, so a failing pipeline aborts the step before
+          # the lines below can read PIPESTATUS and report *why* it failed. That is how a broken
+          # patch chain stayed unreadable for four runs.
+          set +e
+          export GAIUS_VERSION_PROFILE_PATH="versions/$VERSION.json"
+          bash port/scripts/fetch-version.sh 2>&1 | tee -a /tmp/build.log
+          STATUS=${PIPESTATUS[0]}
+          echo "fetch exit: $STATUS"
+          exit "$STATUS"
+
+      - name: Remap the client if this version is obfuscated
+        if: steps.engine_kind.outputs.kind != 'eaglercraft-workspace'
+        working-directory: engine
+        run: |
+          set -uo pipefail
+          # GitHub runs this step's shell with -e, so a failing pipeline aborts the step before
+          # the lines below can read PIPESTATUS and report *why* it failed. That is how a broken
+          # patch chain stayed unreadable for four runs.
+          set +e
+          export GAIUS_VERSION_PROFILE_PATH="versions/$VERSION.json"
+          bash port/scripts/remap-client.sh 2>&1 | tee -a /tmp/build.log
+          STATUS=${PIPESTATUS[0]}
+          echo "remap exit: $STATUS"
+          exit "$STATUS"
+
+      - name: Build the overlays (the patch chain, bring-up allowed)
+        if: steps.engine_kind.outputs.kind != 'eaglercraft-workspace'
+        # GAIUS_BRINGUP=1 lets the engine's bring-up list skip patches whose port is not finished. Every
+        # skip prints BRINGUP_SKIP, and this step fails if the log shows one that the list does not
+        # declare - the engine's own check-build-log-skips.mjs does that, and it is run here.
+        #
+        # The log goes to the release *from this step*, on failure: the steps after it are skipped when it fails,
+        # so a failure here used to leave nothing to read anywhere - which is how a broken patch chain stayed a
+        # mystery for three builds.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        working-directory: engine
+        run: |
+          set -uo pipefail
+          # GitHub runs this step's shell with -e, so a failing pipeline aborts the step before
+          # the lines below can read PIPESTATUS and report *why* it failed. That is how a broken
+          # patch chain stayed unreadable for four runs.
+          set +e
+          export GAIUS_VERSION_PROFILE_PATH="versions/$VERSION.json"
+          export GAIUS_BRINGUP="${{ inputs.bringup && '1' || '' }}"
+          # NOT JAVA_TOOL_OPTIONS: it makes every JVM print "Picked up JAVA_TOOL_OPTIONS: -Xmx2g", and the
+          # engine detects the JDK by parsing `javac -version` - so the cap made it reject the JDK it was
+          # given and fail with "requires JDK 21 or newer" on a machine that had one. The swap added
+          # earlier is what keeps the patch chain inside the runner's memory.
+          [ "${GITHUB_REF_TYPE}" = "tag" ] && export GAIUS_BRINGUP=1
+          echo "bring-up: ${GAIUS_BRINGUP:-off}"
+          # What the mod bake asked this step to do, recorded before the step that has to do it: an empty
+          # WEBMC_MODS or a missing WEBMC_MOD_PATCHER here is a build that will come out unmodded, and that
+          # has to be visible in the log rather than inferred later from a wasm file.
+          {
+            echo "mods to bake: ${WEBMC_MODS:-<none>}"
+            echo "mod patcher: ${WEBMC_MOD_PATCHER:-<none>}"
+            for path in ${WEBMC_MODS//:/ }; do [ -f "$path" ] && echo "  present: $path" || echo "  MISSING: $path"; done
+            if [ -n "${WEBMC_MOD_PATCHER:-}" ]; then
+              grep -c "WEBMC_MOD_PATCHER" port/scripts/build-overlays.sh | sed "s/^/  chain hook references: /"
+            fi
+          } 2>&1 | tee -a /tmp/build.log
+          bash port/scripts/build-overlays.sh 2>&1 | tee -a /tmp/build.log
+          STATUS=${PIPESTATUS[0]}
+          if [ "$STATUS" != "0" ]; then
+            echo "== the patch chain failed; the last lines go to the release and to the check run =="
+            tail -200 /tmp/build.log > /tmp/chain-failure.txt 2>/dev/null || true
+            gh release upload built-clients /tmp/chain-failure.txt --clobber 2>&1 || true
+            # Annotations are readable through the API (the job log is not, with this account's token), so the
+            # last lines of the failure are emitted as error annotations as well.
+            while IFS= read -r line; do
+              [ -n "$line" ] && echo "::error::$line"
+            done < <(tail -30 /tmp/build.log 2>/dev/null || true)
+          fi
+          # and what the chain left in the patched jar: the mod's own class, or nothing
+          if [ -n "${WEBMC_MODS:-}" ]; then
+            {
+              echo "== the patched client jar after the chain"
+              ls -la port/work/overlays/"$VERSION"/client-named-"$VERSION"-gaius.jar 2>/dev/null || echo "no patched jar"
+              unzip -l port/work/overlays/"$VERSION"/client-named-"$VERSION"-gaius.jar 2>/dev/null \
+                | grep -E "com/example|webmc" | head -10 || echo "no baked classes in the jar"
+            } 2>&1 | tee -a /tmp/build.log
+          fi
+          # When a mod set was baked, prove it is really in the jar the compiler will read: the mod's own classes,
+          # and the call our patcher injected into the client's static initialiser. A build that says "modded" and
+          # ships without the mod is the failure this repository has already paid for twice.
+          if [ -n "${WEBMC_MODS:-}" ] && [ "$STATUS" = "0" ]; then
+            PATCHED="port/work/overlays/$VERSION/client-named-$VERSION-gaius.jar"
+            {
+              echo "== the patched jar, after the chain"
+              ls -la "$PATCHED" 2>/dev/null || echo "no patched jar at $PATCHED"
+              MOD_CLASSES="$(unzip -Z1 "$PATCHED" 2>/dev/null | grep -c '^com/example/' || true)"
+              echo "mod classes in the jar: ${MOD_CLASSES:-0}"
+              INJECTED="$(javap -p -c -cp "$PATCHED" net.minecraft.client.Minecraft 2>/dev/null \
+                | grep -c -E 'HelloFabric|onInitializeClient' || true)"
+              echo "injected calls in the client class: ${INJECTED:-0}"
+              # The numbers go out as annotations too: they are the only channel this account can read, and the
+              # question "did the mod reach the jar the compiler reads" has now cost two builds.
+              echo "::warning::bake check: ${MOD_CLASSES:-0} mod class(es), ${INJECTED:-0} injected call(s) in $PATCHED"
+              if [ "${MOD_CLASSES:-0}" = "0" ] || [ "${INJECTED:-0}" = "0" ]; then
+                echo "::error::the mod set was requested and the patched jar has no trace of it"
+              fi
+            } 2>&1 | tee -a /tmp/build.log
+          fi
+          echo "overlays exit: $STATUS"
+          if [ -f port/tools/bringup/"$VERSION".txt ]; then
+            node port/scripts/check-build-log-skips.mjs "$VERSION" /tmp/build.log 2>&1 | tail -30 || true
+          fi
+          exit "$STATUS"
+
+      - name: Compile a workspace engine
+        if: steps.engine_kind.outputs.kind == 'eaglercraft-workspace'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        working-directory: engine
+        run: |
+          set -uo pipefail
+          # GitHub runs this step's shell with -e, so a failing pipeline aborts the step before
+          # the lines below can read PIPESTATUS and report *why* it failed. That is how a broken
+          # patch chain stayed unreadable for four runs.
+          set +e
+          {
+            echo "== the workspace compiles the client it already contains"
+            ./gradlew :game:compileJava --console=plain --no-daemon
+          } 2>&1 | tee -a /tmp/build.log
+          GRADLE_STATUS=${PIPESTATUS[0]}
+          echo "gradle exit: $GRADLE_STATUS"
+          [ "$GRADLE_STATUS" = "0" ] || exit "$GRADLE_STATUS"
+          {
+            echo "== and packages it as one page"
+            npm install --no-audit --no-fund
+            npm run build:single -- --output "dist/$VERSION.html"
+          } 2>&1 | tee -a /tmp/build.log
+          STATUS=${PIPESTATUS[0]}
+          if [ "$STATUS" != "0" ]; then
+            tail -200 /tmp/build.log > /tmp/compile-failure.txt 2>/dev/null || true
+            gh release upload built-clients /tmp/compile-failure.txt --clobber 2>&1 || true
+            # The tail of a Maven build is [INFO] noise: the lines that say what went wrong are above it. So the
+            # annotations carry the lines that look like a failure, then the last few lines for context.
+            grep -E "error:|ERROR|FAILED|Exception|Caused by|OutOfMemory|Killed|cannot find symbol|No such file" \
+              /tmp/build.log 2>/dev/null | tail -30 | while IFS= read -r line; do
+              echo "::error::${line:0:240}"
+            done
+            tail -8 /tmp/build.log 2>/dev/null | while IFS= read -r line; do
+              echo "::error::... $line"
+            done
+          fi
+          exit "$STATUS"
+
+      - name: Compile, link and package the release
+        if: steps.engine_kind.outputs.kind != 'eaglercraft-workspace'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        working-directory: engine
+        run: |
+          set -uo pipefail
+          # GitHub runs this step's shell with -e, so a failing pipeline aborts the step before
+          # the lines below can read PIPESTATUS and report *why* it failed. That is how a broken
+          # patch chain stayed unreadable for four runs.
+          set +e
+          export GAIUS_VERSION_PROFILE_PATH="versions/$VERSION.json"
+          # Deliberately below the engine's own 14 GB: the runner has 16 GB plus the swap added above, so
+          # the goal is to finish rather than to be fast. If this step dies with no log, it was memory.
+          export GRADLE_OPTS="-Xmx8g -Dorg.gradle.daemon=false -Dorg.gradle.parallel=true"
+          export NODE_OPTIONS="--max-old-space-size=5120"
+          ( while true; do sleep 60; free -g | awk 'NR==2 {print "  memory used " $3 " GB"; }'; done ) &
+          WATCH=$!
+          bash port/scripts/build-version-release.sh "$VERSION" 2>&1 | tee -a /tmp/build.log
+          STATUS=${PIPESTATUS[0]}
+          kill "$WATCH" 2>/dev/null || true
+          echo "release exit: $STATUS"
+          if [ "$STATUS" != "0" ]; then
+            tail -200 /tmp/build.log > /tmp/compile-failure.txt 2>/dev/null || true
+            gh release upload built-clients /tmp/compile-failure.txt --clobber 2>&1 || true
+            # The tail of a Maven build is [INFO] noise: the lines that say what went wrong are above it. So the
+            # annotations carry the lines that look like a failure, then the last few lines for context.
+            grep -E "error:|ERROR|FAILED|Exception|Caused by|OutOfMemory|Killed|cannot find symbol|No such file" \
+              /tmp/build.log 2>/dev/null | tail -30 | while IFS= read -r line; do
+              echo "::error::${line:0:240}"
+            done
+            tail -8 /tmp/build.log 2>/dev/null | while IFS= read -r line; do
+              echo "::error::... $line"
+            done
+          fi
+          exit "$STATUS"
+
+      - name: What the engine produced
+        run: |
+          set -euo pipefail
+          {
+            echo "## Snapshot build: $VERSION"
+            echo '```'
+            find engine/port/web/dist -maxdepth 2 -type f -printf '%10s  %p\n' 2>/dev/null | sort -rn | head -12 || true
+            ls -la engine/port/web/dist/"$VERSION" 2>/dev/null | head -12 || true
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Put our boot screen in front of the client
+        # The engine ships its own launcher page. What a player sees first should be the loading screen
+        # the game itself draws, so ours goes in front of it and hands over on the first GL draw.
+        working-directory: ours
+        run: |
+          set -euo pipefail
+          CLIENT="$(find ../engine/port/web/dist -name '*.html' -size +1M | sort | head -1 || true)"
+          if [ -z "$CLIENT" ]; then echo "::warning::no client HTML to wrap"; exit 0; fi
+          echo "client: $CLIENT ($(du -h "$CLIENT" | cut -f1))"
+          python3 tools/aot_shell.py --client "$CLIENT" --check 2>&1 | tee /tmp/shell-check.txt || true
+          REMOVE="$(python3 - "$CLIENT" <<'PY'
+          import re, sys, pathlib
+          text = pathlib.Path(sys.argv[1]).read_text(errors="replace")
+          ids = re.findall(r'id="([\w-]+)"', text)
+          # Only ids whose own name says they are the engine's loading UI: removing anything else from
+          # somebody else's packager is how a client stops booting.
+          wanted = [i for i in ids if any(word in i.lower() for word in
+                     ("loading", "splash", "boot-overlay", "bootoverlay", "progress"))
+                     and not any(word in i.lower() for word in ("canvas", "game", "root", "gl"))]
+          print(",".join("#" + i for i in dict.fromkeys(wanted)))
+          PY
+          )"
+          echo "engine loading UI to replace: ${REMOVE:-none found}"
+          OUT="dist/$(basename "$CLIENT" .html)-webmc.html"
+          mkdir -p dist
+          python3 tools/aot_shell.py --client "$CLIENT" --scan-brand
+          python3 tools/aot_shell.py --client "$CLIENT" --out "$OUT" --strip-brand ${REMOVE:+--remove "$REMOVE"}
+          ls -la dist/
+
+      - name: Pack the client as a page a player can open
+        # A 115 MB HTML file cannot be served as a page by any static host, so it is split into chunks
+        # with a hash each and a start page reassembles it in the browser. That page is what the launcher
+        # links: the player gets a tab, not a download.
+        working-directory: ours
+        run: |
+          set -euo pipefail
+          CLIENT="$(find dist -name '*-webmc.html' -size +1M | sort | head -1 || true)"
+          [ -n "$CLIENT" ] || CLIENT="$(find ../engine/port/web/dist -name '*.html' -size +5M | sort | head -1 || true)"
+          [ -n "$CLIENT" ] || { echo "::error::nothing to pack"; exit 1; }
+          # the baked mod set goes into the page, so a modded build is modded where a player can see it
+          BAKED=""
+          if [ -f /tmp/bake.json ]; then
+            BAKED="$(python3 -c "import json;print(','.join(json.load(open('/tmp/bake.json')).get('mod_ids') or []))" 2>/dev/null || true)"
+          fi
+          python3 tools/pack_client.py --client "$CLIENT" --out "site/clients/$VERSION" \
+            --title "Minecraft $VERSION" --chunk-mb 20 ${BAKED:+--mods "$BAKED"}
+          du -sh "site/clients/$VERSION" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish the packed client as a release asset
+        # The build job's git push is the least reliable part of it, and its release upload is the most
+        # reliable: so the packed page goes out as one archive named after the version, and the catalog
+        # job - which pushes without trouble - puts it on the site (tools/fetch_packed.py).
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          cd ours
+          if [ ! -d "site/clients/$VERSION" ]; then
+            echo "::warning::nothing was packed for $VERSION, so there is no page to publish"
+            exit 0
+          fi
+          SUFFIX=""
+          if [ -n "${{ steps.want.outputs.mods }}" ]; then
+            SUFFIX="+$(printf '%s' "${{ steps.want.outputs.mods }}" | tr ',' '+')"
+          fi
+          tar -czf "/tmp/packed-$VERSION$SUFFIX.tar.gz" -C site/clients "$VERSION"
+          ls -lh "/tmp/packed-$VERSION$SUFFIX.tar.gz"
+          gh release view built-clients >/dev/null 2>&1 || gh release create built-clients \
+            --title "Built browser clients" \
+            --notes "Compiled from the official client by this repository's build job." || true
+          gh release upload built-clients "/tmp/packed-$VERSION$SUFFIX.tar.gz" --clobber \
+            || echo "::warning::could not upload the packed client"
+
+      - name: Record that it built and packed, before the publish step
+        # The report is written to git here as well as at the end: a run that dies in the publish step (or
+        # is killed) still leaves the answer to "did it build, and what is in it".
+        run: |
+          set -uo pipefail
+          cd ours
+          mkdir -p build-log
+          python3 - "$VERSION" <<'PY' > build-log/report.json 2>&1
+          import datetime, json, pathlib, subprocess, sys
+          version = sys.argv[1]
+          report = {"version": version, "status_file": "packed",
+                    "at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "note": "written before the publish step, so a late failure still says this much"}
+          packed = pathlib.Path("site", "clients", version)
+          if packed.is_dir():
+              files = [path for path in packed.rglob("*") if path.is_file()]
+              report["packed_files"] = len(files)
+              report["packed_bytes"] = sum(path.stat().st_size for path in files)
+          print(json.dumps(report, indent=1))
+          PY
+          cp build-log/report.json "build-log/report-$VERSION.json" 2>/dev/null || true
+          echo "packed" > build-log/status.txt
+          git checkout -q --orphan build-log-packing 2>/dev/null || true
+          git rm -r -q --cached . >/dev/null 2>&1 || true
+          git add -f build-log
+          git -c user.name="webmc-port-bot" -c user.email="webmc-port-bot@users.noreply.github.com" \
+            commit -q -m "snapshot log: $VERSION packed" || echo "nothing to record"
+          git push -q -f origin HEAD:refs/heads/build-log || echo "::warning::could not push the report"
+
+      - name: Publish the client and record it
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          cd ours
+          # One name per build, mod set included: `client-26.2.html` for vanilla and
+          # `client-26.2+fabric.html` for a modded one. Before this they collided, so a modded client was
+          # overwritten by the next vanilla build of the same version and could not be inspected - which is
+          # exactly why "is the mod really in there" kept coming back empty.
+          SUFFIX=""
+          if [ -n "${{ steps.want.outputs.mods }}" ]; then
+            SUFFIX="+$(printf '%s' "${{ steps.want.outputs.mods }}" | tr ',' '+')"
+          fi
+          ASSET="client-$VERSION$SUFFIX.html"
+          CLIENT="$(find dist -name '*-webmc.html' -size +1M | sort | head -1 || true)"
+          [ -n "$CLIENT" ] || CLIENT="$(find ../engine/port/web/dist -name '*.html' -size +5M | sort | head -1 || true)"
+          if [ -z "$CLIENT" ]; then echo "::warning::nothing large enough to publish"; exit 0; fi
+          cp "$CLIENT" "/tmp/$ASSET"
+          echo "publishing $ASSET ($(du -h "/tmp/$ASSET" | cut -f1))"
+          gh release view built-clients >/dev/null 2>&1 || gh release create built-clients \
+            --title "Built browser clients" \
+            --notes "Compiled from the official client by this repository's build jobs." || true
+          gh release upload built-clients "/tmp/$ASSET" --clobber || {
+            echo "::warning::the asset upload failed; the packed page is already published above"
+          }
+          python3 - "$VERSION" "$ASSET" <<'PY'
+          import hashlib, json, os, pathlib, sys, datetime
+          version, asset = sys.argv[1], sys.argv[2]
+          repo = os.environ.get("GITHUB_REPOSITORY", "")
+          url = f"https://github.com/{repo}/releases/latest/download/{asset}"
+          blob = pathlib.Path("/tmp", asset)
+          record = {"url": url, "bytes": blob.stat().st_size if blob.is_file() else None,
+                    "sha256": hashlib.sha256(blob.read_bytes()).hexdigest() if blob.is_file() else None,
+                    "at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "note": "compiled by build-snapshot.yml from the official client"}
+          state_path = pathlib.Path("/tmp/state-record.json")
+          packed = pathlib.Path("site", "clients", version, "index.html")
+          if packed.is_file():
+              record["packed"] = f"clients/{version}/"
+              record["packed_bytes"] = sum(f.stat().st_size for f in pathlib.Path("site", "clients", version).rglob("*") if f.is_file())
+              print(f"packed page for {version}: {record['packed_bytes'] / 1048576:.0f} MB on the site")
+          state.setdefault("built", {})[version] = record
+          state_path.write_text(json.dumps(state, indent=2) + "\n")
+          print("the state record for", version, "is written for the publish step to apply to main")
+          PY
+          # Sync with main *before* writing, not after: the catalog job commits to main every few
+          # minutes, so a build that started from a tag is always behind, and rebasing a state.json that
+          # both sides changed is a conflict - which is how this step failed silently on the first run
+          # that got this far (1.21.11, 18:57: released, packed, and not on the site).
+          # The git push below is the step this repository cannot rely on (the account's transport is refused,
+          # see HOW-TO-USE.md). Everything that matters has already happened by now: the client is compiled,
+          # packed, and on the release as an asset, and the catalog job fetches it from there and deploys it. So a
+          # refused push is a warning, not a failed build - a green build that publishes is worth more than a red
+          # one that did the same work.
+          set +e
+          git config user.name "webmc-port-bot"
+          git config user.email "webmc-port-bot@users.noreply.github.com"
+          git fetch origin main
+          git checkout -q -B publish origin/main
+          # the packed page is untracked in this tree, so it survives the checkout; the record is now
+          # written against main's state
+          python3 tools/update.py --state state.json --write
+          cp /tmp/state-record.json state.json 2>/dev/null || true
+          git add state.json site/manifest.json
+          git add -f "site/clients/$VERSION" 2>/dev/null || true
+          git diff --cached --quiet || git commit -m "catalog: $VERSION compiled, packed and published"
+          {
+            echo "commit: $(git log -1 --oneline)"
+            echo "branch: $(git rev-parse --abbrev-ref HEAD)"
+            echo "parent: $(git log -2 --format='%h %s' | tail -1)"
+            echo "tracked client files: $(git diff --cached --name-only HEAD~1 2>/dev/null | grep -c '^site/clients' || echo 0)"
+            git push origin HEAD:main 2>&1 || echo "PUSH FAILED with $?"
+          } 2>&1 | tee /tmp/push.log
+          # The one write channel that works: release assets. The git push diagnostics go there so they
+          # are readable from anywhere without a token (the log branches cannot carry them, because the
+          # pushes they depend on are the thing that is failing).
+          gh release upload built-clients /tmp/push.log --clobber 2>/dev/null \
+            || echo "::warning::could not upload the push log"
+
+      - name: Record what happened, where git can read it
+        # The point of the whole job: a 55-minute build whose log nobody can open is a wasted day. This
+        # pushes the report and the tail of the log to a `build-log` branch, so the next attempt starts
+        # from the real error.
+        if: always()
+        run: |
+          set -uo pipefail
+          cd ours
+          mkdir -p build-log
+          STATUS="${{ job.status }}"
+          python3 - "$STATUS" <<'PY'
+          import json, os, pathlib, datetime, re
+          report = {"job_status": None, "at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "run": f"{os.environ.get('GITHUB_REPOSITORY')}/actions/runs/{os.environ.get('GITHUB_RUN_ID')}"}
+          try:
+              report.update(json.loads(pathlib.Path("/tmp/snapshot-report.json").read_text()))
+          except Exception as error:  # noqa: BLE001
+              report["report_error"] = str(error)
+          log = pathlib.Path("/tmp/build.log")
+          text = log.read_text(errors="replace") if log.is_file() else ""
+          report["log_bytes"] = len(text)
+          lines = text.splitlines()
+          # The first thing a person wants: what actually went wrong, and what was skipped. Maven's
+          # "BUILD SUCCESS" lines are noise here, and the previous attempt's report was mostly them.
+          report["errors"] = [line for line in lines
+                              if re.search(r"error:|Exception|FAILED|ERROR\]|OutOfMemory|Killed|not found",
+                                           line) and "BUILD SUCCESS" not in line][:60]
+          report["bringup_skips"] = [line for line in lines if "BRINGUP_SKIP" in line][-60:]
+          interesting = [line for line in lines if re.search(
+              r"BRINGUP_SKIP|PatchRegistry|Exception|Error|error:|FAILED|OutOfMemory|Killed|not found|"
+              r"exit \d+|BUILD |Patched |Redirected |Compiling ", line)]
+          report["interesting"] = interesting[-160:]
+          report["log_tail"] = lines[-40:]
+          pathlib.Path("build-log/report.json").write_text(json.dumps(report, indent=1) + "\n")
+          # Per version as well as "latest": one file overwritten by every run meant a version's own
+          # failure was erased by the next version's attempt.
+          version = report.get("version") or "unknown"
+          pathlib.Path(f"build-log/report-{version}.json").write_text(json.dumps(report, indent=1) + "\n")
+          pathlib.Path("build-log/last.log").write_text(text[-200000:])
+          print("\n".join(interesting[-40:]))
+          PY
+          echo "$STATUS" > build-log/status.txt
+          cp /tmp/prepare.log build-log/prepare.log 2>/dev/null || true
+          cp /tmp/shell-check.txt build-log/shell-check.txt 2>/dev/null || true
+          cp /tmp/push.log build-log/push.log 2>/dev/null || true
+          cp /tmp/bake.json build-log/bake.json 2>/dev/null || true
+          cp /tmp/jdk.txt build-log/jdk.txt 2>/dev/null || true
+          # An orphan branch, every time. Anything derived from HEAD can carry the commit the publish
+          # step pushed to main - which is how a successful run once replaced its own report on this
+          # branch with a catalog commit. An orphan has nothing but the log in it.
+          git checkout -q --orphan build-log-report
+          git rm -r -q --cached . >/dev/null 2>&1 || true
+          git add -f build-log
+          git -c user.name="webmc-port-bot" -c user.email="webmc-port-bot@users.noreply.github.com" \
+            commit -q -m "snapshot log: $(cat build-log/status.txt)" || echo "nothing to record"
+          git push -q -f origin HEAD:refs/heads/build-log || echo "::warning::could not push the log branch"
+
+      - name: Hand the packed client to the catalog job
+        # The build job's own push to main is the unreliable part (it failed on every run that got this
+        # far); the catalog job's push is ordinary. So the catalog job is asked to run, and it fetches
+        # what this run published as a release asset (tools/fetch_packed.py), records it, and deploys.
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          gh workflow run catalog.yml --ref main \
+            && echo "catalog job dispatched to pick up packed-$VERSION.tar.gz" \
+            || echo "::warning::could not dispatch the catalog job; the next scheduled run will pick it up"
+
+      - name: Put the whole log on the release, whatever happened
+        # The end of the job is the only place the whole log exists, and a build that failed in the patch chain
+        # is exactly the build whose log matters. The release upload is the write channel that has never failed
+        # here, which is why the log goes there and not only to a branch.
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          if [ ! -f /tmp/build.log ]; then
+            echo "no /tmp/build.log to upload"
+            exit 0
+          fi
+          {
+            echo "== build.log tail =="
+            tail -120 /tmp/build.log
+          } > /tmp/build-log-tail.txt
+          gh release view built-clients >/dev/null 2>&1 || gh release create built-clients \
+            --title "Built browser clients" \
+            --notes "Compiled from the official client by this repository's build jobs." || true
+          # One file at a time, and only the ones that exist: `gh release upload` with a missing path fails the
+          # whole command, so a vanilla build (no /tmp/bake.json) uploaded *nothing* - including the log, which
+          # is the only reason this step exists.
+          uploaded=0
+          for file in /tmp/build.log /tmp/build-log-tail.txt /tmp/bake.json; do
+            if [ -f "$file" ]; then
+              if gh release upload built-clients "$file" --clobber 2>&1; then
+                uploaded=$((uploaded + 1))
+              else
+                echo "::warning::could not upload $file"
+              fi
+            fi
+          done
+          echo "uploaded $uploaded log file(s)"
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: snapshot-${{ steps.want.outputs.version }}
+          path: |
+            ours/build-log
+            ours/dist
+            engine/port/web/dist
+          if-no-files-found: ignore

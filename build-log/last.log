@@ -1,0 +1,736 @@
+  hello-mixin: hello-mixin.jar (3 entries)
+  hello-webmc: hello-webmc.jar (5 entries)
+built 3 of 3 example mod(s) into mods/jars/
+    org/spongepowered/asm/mixin/injection/callback/CallbackInfoReturnable.class
+    org/spongepowered/asm/mixin/injection/invoke/arg/Args.class
+  fabric api: 44 module(s) in the bundle, 6 needed by this mod set
+  kept: fabric-api-base, fabric-lifecycle-events-v1, fabric-renderer-api-v1, fabric-rendering-fluids-v1, fabric-rendering-v1, fabric-transitive-access-wideners-v1
+  left out (not called, and a browser cannot compile what is not called): 38 module(s)
+  removed fabric-api-26.3.jar: the modules above stand in for it
+asm staged for the bake: 0 jar(s)
+total 3048
+drwxr-xr-x  2 runner runner    4096 Oct 17 07:32 .
+drwxrwxrwt 18 root   root      4096 Oct 17 07:32 ..
+-rw-r--r--  1 runner runner   59837 Oct 17 07:32 fabric-api-base-2.0.6+fcdff87f5d.jar
+-rw-r--r--  1 runner runner  215217 Oct 17 07:32 fabric-lifecycle-events-v1-4.1.9+ffef5f675d.jar
+-rw-r--r--  1 runner runner  291201 Oct 17 07:32 fabric-renderer-api-v1-17.0.16+79385d0b5d.jar
+-rw-r--r--  1 runner runner   49889 Oct 17 07:32 fabric-rendering-fluids-v1-6.0.6+3434d6d95d.jar
+-rw-r--r--  1 runner runner  498809 Oct 17 07:32 fabric-rendering-v1-27.1.0+5af7744b5d.jar
+-rw-r--r--  1 runner runner   82076 Oct 17 07:32 fabric-transitive-access-wideners-v1-8.1.17+e2f63d3e5d.jar
+-rw-r--r--  1 runner runner 1885572 Oct 17 07:32 sodium-fabric-0.9.2+mc26.2.jar
+-rw-r--r--  1 runner runner   11932 Oct 17 07:32 webmc-mixin-shims.jar
+  fabric-lifecycle-events-v1 carries mixins (2 config(s), 26 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  fabric-renderer-api-v1 carries mixins (1 config(s), 34 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  fabric-rendering-fluids-v1 carries mixins (1 config(s), 3 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  fabric-rendering-v1 carries mixins (1 config(s), 60 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  sodium carries mixins (3 config(s), 93 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  wrote port/tools/src/main/java/dev/gaius/tools/WebMcMixinApplier.java (the mixin applier the patcher calls)
+  wrote port/tools/src/main/java/dev/gaius/tools/WebMcModBakePatcher.java
+  1 jar(s) are libraries rather than mods (no descriptor, nothing to call): webmc-mixin-shims
+  each entrypoint is called from the client's static initialiser as bytecode
+  staged 47 shim source file(s) the mods compile against (com/sun/jna/Platform.java, com/sun/jna/platform/win32/Kernel32.java, com/sun/jna/platform/win32/Kernel32Util.java…)
+  port/versions/26.2.json: extraPatchers = ['WebMcModBakePatcher'] (patch set modern)
+baked 8 mod(s) into 26.2: entrypoints fabric-lifecycle-events-v1, fabric-renderer-api-v1, fabric-rendering-v1, sodium; mixins present in fabric-lifecycle-events-v1, fabric-renderer-api-v1, fabric-rendering-fluids-v1, fabric-rendering-v1, sodium (not applied)
+WEBMC_MODS=../engine/port/work/26.2/webmc-mods/fabric-api-base-2.0.6+fcdff87f5d.jar:../engine/port/work/26.2/webmc-mods/fabric-lifecycle-events-v1-4.1.9+ffef5f675d.jar:../engine/port/work/26.2/webmc-mods/fabric-renderer-api-v1-17.0.16+79385d0b5d.jar:../engine/port/work/26.2/webmc-mods/fabric-rendering-fluids-v1-6.0.6+3434d6d95d.jar:../engine/port/work/26.2/webmc-mods/fabric-rendering-v1-27.1.0+5af7744b5d.jar:../engine/port/work/26.2/webmc-mods/fabric-transitive-access-wideners-v1-8.1.17+e2f63d3e5d.jar:../engine/port/work/26.2/webmc-mods/sodium-fabric-0.9.2+mc26.2.jar:../engine/port/work/26.2/webmc-mods/webmc-mixin-shims.jar
+baked: ['fabric-api-base', 'fabric-lifecycle-events-v1', 'fabric-renderer-api-v1', 'fabric-rendering-fluids-v1', 'fabric-rendering-v1', 'fabric-transitive-access-wideners-v1', 'sodium', 'webmc-mixin-shims']
+entrypoints: ['fabric-lifecycle-events-v1', 'fabric-renderer-api-v1', 'fabric-rendering-v1', 'sodium']
+mixins to apply: ['fabric-lifecycle-events-v1', 'fabric-renderer-api-v1', 'fabric-rendering-fluids-v1', 'fabric-rendering-v1', 'sodium']
+no ASM jar found to pre-check the patcher with; the engine's own build will compile it
+Fetching Minecraft 26.2 client (named)
+Fetching Java libraries
+Fetching browser sound asset index 32
+Fetching browser gameplay sound assets
+Fetched and verified:
+  client:   /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/client-original.jar
+  mappings: not required for the named client distribution
+  libraries: 131
+  browser sound assets: 4572 playable, 1 metadata
+  browser Unicode font assets: 5
+{
+  "id": "26.2",
+  "protocol_version": 776,
+  "world_version": 4903,
+  "java_version": 25,
+  "pack_version": {
+    "resource_major": 88,
+    "resource_minor": 0,
+    "data_major": 107,
+    "data_minor": 1
+  }
+}
+{
+  "ok": true,
+  "profile": "26.2",
+  "protocolVersion": 776,
+  "worldVersion": 4903,
+  "javaVersion": 25,
+  "classFileVersion": 69,
+  "clientDistribution": "named",
+  "worldgenTelemetryMode": "task-pulsed",
+  "patchSet": "modern",
+  "extraPatchers": [
+    "WebMcModBakePatcher"
+  ],
+  "bringup": {
+    "list": "port/tools/bringup/26.2.txt",
+    "entries": 0
+  },
+  "packVersions": {
+    "resource": {
+      "major": 88,
+      "minor": 0
+    },
+    "data": {
+      "major": 107,
+      "minor": 1
+    }
+  },
+  "assetIndex": {
+    "id": "32",
+    "sha1": "edb1c85bb6a1227c35194c715f1687d6e52d125d"
+  },
+  "storage": {
+    "schema": 2,
+    "databaseName": "gaius-fs-v2-26.2",
+    "prefix": "gaius.fs.v2:26.2:",
+    "opfsDirectory": "regions-v2-26.2"
+  },
+  "checkedLocalMetadata": true,
+  "checkedClientVersion": true,
+  "checkedRemoteMetadata": false
+}
+Using the official named Minecraft 26.2 client without remapping
+Named client ready:
+  output:  /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/client-named.jar
+  classes: 10952
+  main:    net/minecraft/client/main/Main.class
+mods to bake: ../engine/port/work/26.2/webmc-mods/fabric-api-base-2.0.6+fcdff87f5d.jar:../engine/port/work/26.2/webmc-mods/fabric-lifecycle-events-v1-4.1.9+ffef5f675d.jar:../engine/port/work/26.2/webmc-mods/fabric-renderer-api-v1-17.0.16+79385d0b5d.jar:../engine/port/work/26.2/webmc-mods/fabric-rendering-fluids-v1-6.0.6+3434d6d95d.jar:../engine/port/work/26.2/webmc-mods/fabric-rendering-v1-27.1.0+5af7744b5d.jar:../engine/port/work/26.2/webmc-mods/fabric-transitive-access-wideners-v1-8.1.17+e2f63d3e5d.jar:../engine/port/work/26.2/webmc-mods/sodium-fabric-0.9.2+mc26.2.jar:../engine/port/work/26.2/webmc-mods/webmc-mixin-shims.jar
+mod patcher: <none>
+  present: ../engine/port/work/26.2/webmc-mods/fabric-api-base-2.0.6+fcdff87f5d.jar
+  present: ../engine/port/work/26.2/webmc-mods/fabric-lifecycle-events-v1-4.1.9+ffef5f675d.jar
+  present: ../engine/port/work/26.2/webmc-mods/fabric-renderer-api-v1-17.0.16+79385d0b5d.jar
+  present: ../engine/port/work/26.2/webmc-mods/fabric-rendering-fluids-v1-6.0.6+3434d6d95d.jar
+  present: ../engine/port/work/26.2/webmc-mods/fabric-rendering-v1-27.1.0+5af7744b5d.jar
+  present: ../engine/port/work/26.2/webmc-mods/fabric-transitive-access-wideners-v1-8.1.17+e2f63d3e5d.jar
+  present: ../engine/port/work/26.2/webmc-mods/sodium-fabric-0.9.2+mc26.2.jar
+  present: ../engine/port/work/26.2/webmc-mods/webmc-mixin-shims.jar
+GAIUS_BRINGUP=1 is ignored for release profile 26.2
+Bootstrapping Maven artifact org.teavm:teavm-classlib:0.15.0
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+  0 8946k    0 47943    0     0  54328      0  0:02:48 --:--:--  0:02:48 54295
+  7 8946k    7  695k    0     0   399k      0  0:00:22  0:00:01  0:00:21  399k
+ 69 8946k   69 6179k    0     0  2231k      0  0:00:04  0:00:02  0:00:02 2231k
+100 8946k  100 8946k    0     0  3035k      0  0:00:02  0:00:02 --:--:-- 3035k
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::staticFieldBase has been called by com.google.inject.internal.aop.HiddenClassDefiner (file:/home/runner/work/webmc-port/webmc-port/engine/port/work/tools/apache-maven-3.9.11/lib/guice-5.1.0-classes.jar)
+WARNING: Please consider reporting this to the maintainers of class com.google.inject.internal.aop.HiddenClassDefiner
+WARNING: sun.misc.Unsafe::staticFieldBase will be removed in a future release
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ------------------< org.apache.maven:standalone-pom >-------------------
+[INFO] Building Maven Stub Project (No POM) 1
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.8.1:get (default-cli) @ standalone-pom ---
+[INFO] Resolving org.teavm:teavm-classlib:jar:0.15.0
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  8.019 s
+[INFO] Finished at: 2026-10-17T07:34:13Z
+[INFO] ------------------------------------------------------------------------
+Bootstrapping Maven artifact org.teavm:teavm-interop:0.15.0
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::staticFieldBase has been called by com.google.inject.internal.aop.HiddenClassDefiner (file:/home/runner/work/webmc-port/webmc-port/engine/port/work/tools/apache-maven-3.9.11/lib/guice-5.1.0-classes.jar)
+WARNING: Please consider reporting this to the maintainers of class com.google.inject.internal.aop.HiddenClassDefiner
+WARNING: sun.misc.Unsafe::staticFieldBase will be removed in a future release
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ------------------< org.apache.maven:standalone-pom >-------------------
+[INFO] Building Maven Stub Project (No POM) 1
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.8.1:get (default-cli) @ standalone-pom ---
+[INFO] Resolving org.teavm:teavm-interop:jar:0.15.0
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  1.420 s
+[INFO] Finished at: 2026-10-17T07:34:16Z
+[INFO] ------------------------------------------------------------------------
+Bootstrapping Maven artifact org.teavm:teavm-jso:0.15.0
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::staticFieldBase has been called by com.google.inject.internal.aop.HiddenClassDefiner (file:/home/runner/work/webmc-port/webmc-port/engine/port/work/tools/apache-maven-3.9.11/lib/guice-5.1.0-classes.jar)
+WARNING: Please consider reporting this to the maintainers of class com.google.inject.internal.aop.HiddenClassDefiner
+WARNING: sun.misc.Unsafe::staticFieldBase will be removed in a future release
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ------------------< org.apache.maven:standalone-pom >-------------------
+[INFO] Building Maven Stub Project (No POM) 1
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.8.1:get (default-cli) @ standalone-pom ---
+[INFO] Resolving org.teavm:teavm-jso:jar:0.15.0
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  1.385 s
+[INFO] Finished at: 2026-10-17T07:34:18Z
+[INFO] ------------------------------------------------------------------------
+Bootstrapping Maven artifact org.teavm:teavm-jso-apis:0.15.0
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::staticFieldBase has been called by com.google.inject.internal.aop.HiddenClassDefiner (file:/home/runner/work/webmc-port/webmc-port/engine/port/work/tools/apache-maven-3.9.11/lib/guice-5.1.0-classes.jar)
+WARNING: Please consider reporting this to the maintainers of class com.google.inject.internal.aop.HiddenClassDefiner
+WARNING: sun.misc.Unsafe::staticFieldBase will be removed in a future release
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ------------------< org.apache.maven:standalone-pom >-------------------
+[INFO] Building Maven Stub Project (No POM) 1
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.8.1:get (default-cli) @ standalone-pom ---
+[INFO] Resolving org.teavm:teavm-jso-apis:jar:0.15.0
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  1.443 s
+[INFO] Finished at: 2026-10-17T07:34:21Z
+[INFO] ------------------------------------------------------------------------
+Bootstrapping Maven artifact org.teavm:teavm-core:0.15.0
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::staticFieldBase has been called by com.google.inject.internal.aop.HiddenClassDefiner (file:/home/runner/work/webmc-port/webmc-port/engine/port/work/tools/apache-maven-3.9.11/lib/guice-5.1.0-classes.jar)
+WARNING: Please consider reporting this to the maintainers of class com.google.inject.internal.aop.HiddenClassDefiner
+WARNING: sun.misc.Unsafe::staticFieldBase will be removed in a future release
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ------------------< org.apache.maven:standalone-pom >-------------------
+[INFO] Building Maven Stub Project (No POM) 1
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.8.1:get (default-cli) @ standalone-pom ---
+[INFO] Resolving org.teavm:teavm-core:jar:0.15.0
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  1.563 s
+[INFO] Finished at: 2026-10-17T07:34:24Z
+[INFO] ------------------------------------------------------------------------
+Bootstrapping Maven artifact org.teavm:teavm-platform:0.15.0
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::staticFieldBase has been called by com.google.inject.internal.aop.HiddenClassDefiner (file:/home/runner/work/webmc-port/webmc-port/engine/port/work/tools/apache-maven-3.9.11/lib/guice-5.1.0-classes.jar)
+WARNING: Please consider reporting this to the maintainers of class com.google.inject.internal.aop.HiddenClassDefiner
+WARNING: sun.misc.Unsafe::staticFieldBase will be removed in a future release
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ------------------< org.apache.maven:standalone-pom >-------------------
+[INFO] Building Maven Stub Project (No POM) 1
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.8.1:get (default-cli) @ standalone-pom ---
+[INFO] Resolving org.teavm:teavm-platform:jar:0.15.0
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  1.427 s
+[INFO] Finished at: 2026-10-17T07:34:27Z
+[INFO] ------------------------------------------------------------------------
+Bootstrapping Maven artifact com.jcraft:jzlib:1.1.3
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::staticFieldBase has been called by com.google.inject.internal.aop.HiddenClassDefiner (file:/home/runner/work/webmc-port/webmc-port/engine/port/work/tools/apache-maven-3.9.11/lib/guice-5.1.0-classes.jar)
+WARNING: Please consider reporting this to the maintainers of class com.google.inject.internal.aop.HiddenClassDefiner
+WARNING: sun.misc.Unsafe::staticFieldBase will be removed in a future release
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ------------------< org.apache.maven:standalone-pom >-------------------
+[INFO] Building Maven Stub Project (No POM) 1
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.8.1:get (default-cli) @ standalone-pom ---
+[INFO] Resolving com.jcraft:jzlib:jar:1.1.3
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  1.398 s
+[INFO] Finished at: 2026-10-17T07:34:30Z
+[INFO] ------------------------------------------------------------------------
+Bootstrapping Maven artifact org.ow2.asm:asm:9.8
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::staticFieldBase has been called by com.google.inject.internal.aop.HiddenClassDefiner (file:/home/runner/work/webmc-port/webmc-port/engine/port/work/tools/apache-maven-3.9.11/lib/guice-5.1.0-classes.jar)
+WARNING: Please consider reporting this to the maintainers of class com.google.inject.internal.aop.HiddenClassDefiner
+WARNING: sun.misc.Unsafe::staticFieldBase will be removed in a future release
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ------------------< org.apache.maven:standalone-pom >-------------------
+[INFO] Building Maven Stub Project (No POM) 1
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.8.1:get (default-cli) @ standalone-pom ---
+[INFO] Resolving org.ow2.asm:asm:jar:9.8
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  1.405 s
+[INFO] Finished at: 2026-10-17T07:34:32Z
+[INFO] ------------------------------------------------------------------------
+Bootstrapping Maven artifact org.ow2.asm:asm-tree:9.8
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::staticFieldBase has been called by com.google.inject.internal.aop.HiddenClassDefiner (file:/home/runner/work/webmc-port/webmc-port/engine/port/work/tools/apache-maven-3.9.11/lib/guice-5.1.0-classes.jar)
+WARNING: Please consider reporting this to the maintainers of class com.google.inject.internal.aop.HiddenClassDefiner
+WARNING: sun.misc.Unsafe::staticFieldBase will be removed in a future release
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ------------------< org.apache.maven:standalone-pom >-------------------
+[INFO] Building Maven Stub Project (No POM) 1
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.8.1:get (default-cli) @ standalone-pom ---
+[INFO] Resolving org.ow2.asm:asm-tree:jar:9.8
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  1.386 s
+[INFO] Finished at: 2026-10-17T07:34:35Z
+[INFO] ------------------------------------------------------------------------
+Using unmodified jtracy base: no source overrides at /home/runner/work/webmc-port/webmc-port/engine/port/overrides/libraries/jtracy/src/main/java
+Using unmodified oshi base: no source overrides at /home/runner/work/webmc-port/webmc-port/engine/port/overrides/libraries/oshi/src/main/java
+Note: /home/runner/work/webmc-port/webmc-port/engine/port/overrides/libraries/slf4j/src/main/java/org/slf4j/impl/BrowserLogger.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+Note: /home/runner/work/webmc-port/webmc-port/engine/port/overrides/libraries/mojang-logging/src/main/java/com/mojang/logging/LogUtils.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+Using unmodified joml base: no source overrides at /home/runner/work/webmc-port/webmc-port/engine/port/overrides/libraries/joml/src/main/java
+Verified jopt-simple browser line wrapping
+Patched jopt-simple File conversion for browser use
+Using unmodified guava base: no source overrides at /home/runner/work/webmc-port/webmc-port/engine/port/overrides/libraries/guava/src/main/java
+Using unmodified netty-common base: no source overrides at /home/runner/work/webmc-port/webmc-port/engine/port/overrides/libraries/netty-common/src/main/java
+Using unmodified netty-buffer base: no source overrides at /home/runner/work/webmc-port/webmc-port/engine/port/overrides/libraries/netty-buffer/src/main/java
+Using unmodified netty-codec-http base: no source overrides at /home/runner/work/webmc-port/webmc-port/engine/port/overrides/libraries/netty-codec-http/src/main/java
+Patched Netty RefCnt to the browser-safe atomic implementation
+Forced 12 Netty heap-buffer accessors onto portable byte arrays
+Verified Netty RefCnt atomic browser fallback
+Forced Netty byte-array operations onto portable implementations
+Replaced Netty's legacy high-byte String constructor
+Patched 6 LWJGL Callback methods
+Verified MemoryUtil.memCopy browser delegation
+Verified LWJGL browser architecture identity
+Verified LWJGL browser Platform os.name replacement
+Patched 25 Unsafe calls in 2 LWJGL classes
+Patched 2210 desktop native methods
+Patched required and optional LWJGL APIUtil methods
+Patched 6 LWJGL callback descriptors in lwjgl-3.4.1-unsafe.jar
+LWJGL module steps for Minecraft 26.2 (renderpearl client: false)
+Patched 0 Unsafe calls in 0 LWJGL classes
+Patched 26 LWJGL callback descriptors in lwjgl-glfw-3.4.1.jar
+Skipping LWJGL module lwjgl-sdl: not in the Minecraft 26.2 libraries
+Patched 334 OpenGL methods
+Patched 0 Unsafe calls in 0 LWJGL classes
+Patched 2160 desktop native methods
+Patched 3 LWJGL callback descriptors in lwjgl-opengl-3.4.1.jar
+Patched 0 Unsafe calls in 0 LWJGL classes
+Patched 0 desktop native methods
+Patched 30 LWJGL callback descriptors in lwjgl-freetype-3.4.1.jar
+Patched 0 Unsafe calls in 0 LWJGL classes
+Patched 174 desktop native methods
+Patched 9 LWJGL callback descriptors in lwjgl-stb-3.4.1.jar
+Patched 376 OpenAL methods
+Patched 0 desktop native methods
+Patched 4 LWJGL callback descriptors in lwjgl-openal-3.4.1.jar
+Patched 11 desktop native methods
+Patched 0 LWJGL callback descriptors in lwjgl-tinyfd-3.4.1.jar
+Patched 0 Unsafe calls in 0 LWJGL classes
+Patched 72 unsupported lwjgl-vma native/JNI entry points with fail-fast browser errors
+Patched 3 LWJGL callback descriptors in lwjgl-vma-3.4.1.jar
+Patched 0 Unsafe calls in 0 LWJGL classes
+Patched 1042 unsupported lwjgl-vulkan native/JNI entry points with fail-fast browser errors
+Patched 8 LWJGL callback descriptors in lwjgl-vulkan-3.4.1.jar
+Skipping LWJGL module lwjgl-shaderc: the Minecraft 26.2 client has no renderpearl OpenGL path
+Skipping LWJGL module lwjgl-spvc: the Minecraft 26.2 client has no renderpearl OpenGL path
+Patched 24 desktop native methods
+Patched TracyClient for browser use
+Compiling 58 Minecraft 26.2 browser overrides
+Instrumented exact decoded-packet queue accounting
+Released 26.2 static sprite NativeImages after atlas upload
+Instrumented MinecraftServer.pollTask active-work scope: returns=1
+Instrumented Mob.serverAiStep browser AI checkpoints=7, Mob.aiStep boundaries=2, LivingEntity.tick Mob fallback=1
+Cached worldgen record hash codes for profile 26.2: 19 targets
+Verified current single-view section mesh upload
+Instrumented NaturalSpawner generation spawn telemetry (26.2): returns=2, entityAdds=1
+Added the Relays button to JoinMultiplayerScreen
+Added the NativeImage.copyRect row-copy fast path
+Memoized BlockStateBase.Cache face sturdiness per support shape
+Instrumented 26.2 MappableRingBuffer.currentBuffer fence-result telemetry
+Instrumented 26.2 StagedVertexBuffer GPU pool cache: count=4 bytes=1048576 idle=3
+Verified current GpuFormat color/depth/stencil aspect semantics
+Cached current multi-buffer render pipeline topology
+Patched current GlCommandEncoder with 8-slot asynchronous GPU retire
+Patched current GlCommandEncoder draw path for WebGL
+Patched GameRenderer frame-scoped browser upload budget
+Verified current vanilla single-raycast block targeting
+Patched 26.2 early occlusion update before chunk prepare
+Patched 26.2 visible section refresh after late occlusion update
+Patched current section compiles to remain asynchronous
+Patched 26.2 loaded-chunk graph rebuild
+Patched 26.2 movement occlusion refresh + frustum notify
+Patched LevelExtractor captured-frustum short circuit
+Patched current section extraction with dirty-preserving backpressure
+Patched current section renderer with one lifecycle-owned runner
+Reduced current section renderer browser allocation units
+Instrumented current section compile and upload telemetry
+Verified current staged terrain uploads behind the browser compile budget
+Patched current section queue with linear-rebuild dirty/regular heaps
+Patched current staged terrain uploads with a resumable frame budget
+Instrumented staged terrain upload backlog telemetry
+PATCH_SUMMARY applied=179 dropped=0 bringupSkipped=0
+CHUNK_DRAW_TELEMETRY_PATCH_OK profile=26.2 levelMappings=1 lambdaArms=1 drawBegins=1 drawCommits=1
+Disabled desktop native-library bootstrap for Minecraft 26.2
+Forced Minecraft 26.2 browser graphics backend to OpenGL
+Pinned Minecraft 26.2 FAST and FANCY graphics preset distances at render=8 simulation=6 (FANCY was 16/12)
+Instrumented ChunkGenerationTask.runUntilWait active-work scope: returns=5
+Bounded Minecraft 26.2 chunk-generation layer at holder boundaries with pending macrotask continuation
+Bounded Minecraft 26.2 DistanceManager updates, ticket releases, and futures
+Made Minecraft 26.2 ChunkMap movement/tracking cooperative
+Made Minecraft 26.2 ChunkTrackingView difference cooperative
+Made Minecraft 26.2 changed-chunk broadcasts cooperative
+Bounded Minecraft 26.2 RegionFileStorage cache to 16 open files
+Patched GlBuffer mapped views to flush only their written ranges
+Moved Minecraft 26.2 frame targeting after camera extraction
+Guarded current section staging retries with one progress upload
+Bounded Minecraft 26.2 UberGpuBuffer heap cleanup
+NoiseChunk graph mapper rewrites: router=1, density=7
+Replaced Minecraft 26.2 ScopedValue file-fix context
+Patched 26.2 DownloadQueue with browser cooperative executor
+PATCH_SUMMARY applied=32 dropped=0 bringupSkipped=0
+Disabled the dedicated JSON-RPC management server for the browser Worker
+Patched worldgen PriorityConsecutiveExecutor with budgeted bookkeeping turns
+WebMcModBakePatcher: 17 class(es) from fabric-api-base-2.0.6+fcdff87f5d.jar (id fabric-api-base)
+WebMcModBakePatcher: 89 class(es) from fabric-lifecycle-events-v1-4.1.9+ffef5f675d.jar (id fabric-lifecycle-events-v1), entrypoint net.fabricmc.fabric.impl.event.lifecycle.LifecycleEventsImpl
+  mixin net.fabricmc.fabric.mixin.event.lifecycle.ChunkMapMixin -> net.minecraft.server.level.ChunkMap: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 1 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.event.lifecycle.EntityMixin -> net.minecraft.world.entity.Entity: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 6 member(s) copied, 0 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.event.lifecycle.LivingEntityMixin -> net.minecraft.world.entity.LivingEntity: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.event.lifecycle.MinecraftServerMixin -> net.minecraft.server.MinecraftServer: 0 overwritten, 10 injected, 0 redirected, 0 modified, 0 generated, 5 member(s) copied, 2 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.event.lifecycle.PersistentEntitySectionManagerMixin -> net.minecraft.world.level.entity.PersistentEntitySectionManager: 0 overwritten, 1 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.event.lifecycle.ServerLevelMixin -> net.minecraft.server.level.ServerLevel: 0 overwritten, 2 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 0 shadow(s) read
+WebMcModBakePatcher: 7 mixin part(s) were not applied in fabric-lifecycle-events-v1-4.1.9+ffef5f675d.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 92 class(es) from fabric-renderer-api-v1-17.0.16+79385d0b5d.jar (id fabric-renderer-api-v1), entrypoint net.fabricmc.fabric.impl.client.renderer.DebugOverlayClient
+WebMcModBakePatcher: 3 mixin part(s) were not applied in fabric-renderer-api-v1-17.0.16+79385d0b5d.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 12 class(es) from fabric-rendering-fluids-v1-6.0.6+3434d6d95d.jar (id fabric-rendering-fluids-v1)
+WebMcModBakePatcher: 1 mixin part(s) were not applied in fabric-rendering-fluids-v1-6.0.6+3434d6d95d.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 167 class(es) from fabric-rendering-v1-27.1.0+5af7744b5d.jar (id fabric-rendering-v1), entrypoint net.fabricmc.fabric.impl.client.rendering.hud.HudStatusBarHeightRegistryImpl
+  mixin net.fabricmc.fabric.mixin.client.rendering.AtlasManagerAccessor -> net.minecraft.client.resources.model.sprite.AtlasManager: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.client.rendering.AtlasManagerMixin -> net.minecraft.client.resources.model.sprite.AtlasManager: 0 overwritten, 0 injected, 0 redirected, 1 modified, 0 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.client.rendering.ClientLevelMixin -> net.minecraft.client.multiplayer.ClientLevel: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 3 member(s) copied, 1 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.client.rendering.EntityRenderDispatcherMixin -> net.minecraft.client.renderer.entity.EntityRenderDispatcher: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.client.rendering.GameRendererMixin -> net.minecraft.client.renderer.GameRenderer: 0 overwritten, 1 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 2 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.client.rendering.GuiGraphicsExtractorMixin -> net.minecraft.client.gui.GuiGraphicsExtractor: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.client.rendering.GuiRendererMixin -> net.minecraft.client.gui.render.GuiRenderer: 0 overwritten, 4 injected, 0 redirected, 2 modified, 0 generated, 4 member(s) copied, 1 shadow(s) read
+  ! net.fabricmc.fabric.mixin.client.rendering.GuiRendererMixin left net.minecraft.client.gui.render.GuiRenderer unmodified: java.lang.NegativeArraySizeException: -1
+  mixin net.fabricmc.fabric.mixin.client.rendering.LevelExtractorMixin -> net.minecraft.client.renderer.extract.LevelExtractor: 0 overwritten, 5 injected, 0 redirected, 0 modified, 0 generated, 2 member(s) copied, 3 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.client.rendering.LevelRendererMixin -> net.minecraft.client.renderer.LevelRenderer: 0 overwritten, 5 injected, 0 redirected, 1 modified, 0 generated, 3 member(s) copied, 3 shadow(s) read
+WebMcModBakePatcher: 8 mixin part(s) were not applied in fabric-rendering-v1-27.1.0+5af7744b5d.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 0 class(es) from fabric-transitive-access-wideners-v1-8.1.17+e2f63d3e5d.jar (id fabric-transitive-access-wideners-v1)
+  access widener fabric-transitive-access-wideners-v1.classtweaker: 19 change(s) applied to the client's classes
+WebMcModBakePatcher: 365 mixin part(s) were not applied in fabric-transitive-access-wideners-v1-8.1.17+e2f63d3e5d.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher:   rewrote a Java-version gap (see webmc.runtime.JdkCompat) in SodiumConfigBuilder.class
+WebMcModBakePatcher:   rewrote a Java-version gap (see webmc.runtime.JdkCompat) in Services.class
+WebMcModBakePatcher:   0 class(es) from fabric-api-base-2.0.4+ece063239c.jar (nested, id fabric-api-base, 17 kept the client's own copy)
+WebMcModBakePatcher:   13 class(es) from fabric-block-getter-api-v2-2.0.7+ec56b6019c.jar (nested, id fabric-block-getter-api-v2)
+WebMcModBakePatcher:   0 class(es) from fabric-lifecycle-events-v1-4.1.3+4575b05f9c.jar (nested, id fabric-lifecycle-events-v1, entrypoint net.fabricmc.fabric.impl.event.lifecycle.LifecycleEventsImpl, 89 kept the client's own copy)
+WebMcModBakePatcher:   4 class(es) from fabric-renderer-api-v1-14.0.1+eec4cc519c.jar (nested, id fabric-renderer-api-v1, entrypoint net.fabricmc.fabric.impl.client.renderer.DebugOverlayClient, 89 kept the client's own copy)
+WebMcModBakePatcher:   0 class(es) from fabric-rendering-fluids-v1-6.0.4+06488ac19c.jar (nested, id fabric-rendering-fluids-v1, 12 kept the client's own copy)
+WebMcModBakePatcher:   1 class(es) from fabric-rendering-v1-25.1.6+46a6d00c9c.jar (nested, id fabric-rendering-v1, entrypoint net.fabricmc.fabric.impl.client.rendering.hud.HudStatusBarHeightRegistryImpl, 150 kept the client's own copy)
+WebMcModBakePatcher:   11 class(es) from fabric-resource-loader-v0-3.3.20+4fc5413f9c.jar (nested, id fabric-resource-loader-v0)
+WebMcModBakePatcher:   76 class(es) from fabric-resource-loader-v1-2.0.13+9edec1269c.jar (nested, id fabric-resource-loader-v1)
+WebMcModBakePatcher:   0 class(es) from fabric-transitive-access-wideners-v1-8.1.3+e098252d9c.jar (nested, id fabric-transitive-access-wideners-v1)
+WebMcModBakePatcher: 903 class(es) from sodium-fabric-0.9.2+mc26.2.jar (id sodium), entrypoint net.caffeinemc.mods.sodium.fabric.SodiumFabricMod
+  access widener sodium-fabric.accesswidener: 1 change(s) applied to the client's classes
+  mixin net.caffeinemc.mods.sodium.mixin.frapi.MutableQuadViewImplMixin -> net.caffeinemc.mods.sodium.client.render.model.MutableQuadViewImpl: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 2 member(s) copied, 0 shadow(s) read
+  mixin net.caffeinemc.mods.sodium.mixin.frapi.QuadViewImplMixin -> net.caffeinemc.mods.sodium.client.render.model.QuadViewImpl: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 2 member(s) copied, 0 shadow(s) read
+WebMcModBakePatcher: 24 mixin part(s) were not applied in sodium-fabric-0.9.2+mc26.2.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 23 class(es) from webmc-mixin-shims.jar
+WebMcModBakePatcher: mixins touched 11 client class(es)
+WebMcModBakePatcher: PARTIAL BUILD (WEBMC_MODS_ALLOW_PARTIAL=1): 176 mixin part(s) could not be applied: the build log above names each one. The client runs without those parts, and this log is the list of them.
+WebMcModBakePatcher: copied 1303 class(es) from 8 mod jar(s)
+WebMcModBakePatcher: 7 baked entrypoint call(s) into the client's runTick(), behind a one-shot guard: the mods start on the first tick, after the client is up
+WebMcModBakePatcher:   net.fabricmc.fabric.impl.event.lifecycle.LifecycleEventsImpl.onInitialize()
+WebMcModBakePatcher:   net.fabricmc.fabric.impl.client.renderer.DebugOverlayClient.onInitializeClient()
+WebMcModBakePatcher:   net.fabricmc.fabric.impl.client.rendering.hud.HudStatusBarHeightRegistryImpl.onInitializeClient()
+WebMcModBakePatcher:   net.fabricmc.fabric.impl.event.lifecycle.LifecycleEventsImpl.onInitialize()
+WebMcModBakePatcher:   net.fabricmc.fabric.impl.client.renderer.DebugOverlayClient.onInitializeClient()
+WebMcModBakePatcher:   net.fabricmc.fabric.impl.client.rendering.hud.HudStatusBarHeightRegistryImpl.onInitializeClient()
+WebMcModBakePatcher:   net.caffeinemc.mods.sodium.fabric.SodiumFabricMod.onInitializeClient()
+/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/teavm-classlib-0.15.0-gaius.jar
+== the patched client jar after the chain
+-rw-r--r-- 1 runner runner 39001630 Oct 17 07:35 port/work/overlays/26.2/client-named-26.2-gaius.jar
+        0  2026-10-17 07:35   webmc/
+        0  2026-10-17 07:35   webmc/runtime/
+     1245  2026-10-17 07:35   webmc/runtime/JdkCompat$1.class
+     2598  2026-10-17 07:35   webmc/runtime/JdkCompat.class
+== the patched jar, after the chain
+-rw-r--r-- 1 runner runner 39001630 Oct 17 07:35 port/work/overlays/26.2/client-named-26.2-gaius.jar
+mod classes in the jar: 0
+injected calls in the client class: 5
+::warning::bake check: 0 mod class(es), 5 injected call(s) in port/work/overlays/26.2/client-named-26.2-gaius.jar
+::error::the mod set was requested and the patched jar has no trace of it
+Note: /home/runner/work/webmc-port/webmc-port/engine/port/overrides/libraries/slf4j/src/main/java/org/slf4j/impl/BrowserLogger.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+Note: /home/runner/work/webmc-port/webmc-port/engine/port/overrides/libraries/mojang-logging/src/main/java/com/mojang/logging/LogUtils.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+Patched Gson TypeToken.getParameterized for browser use
+Patched 13 Guava TypeToken witnesses for browser use
+Patched browser Gson TypeToken initializers
+Gson TypeToken browser smoke passed 1/1: 26.2
+{"profile":"26.2","jar":"port/work/overlays/26.2/client-named-26.2-gaius.jar","bytes":39024665,"gsonGetParameterizedCodeBytes":17,"dfuWitnesses":13}
+Staged browser sounds: 4572 copied
+Filtered browser sounds.json: 1816 events
+Vanilla asset pack: /home/runner/work/webmc-port/webmc-port/engine/port/target/26.2/.teavm-staging/client-87244-1792222549-21366/dist/vanilla-assets.pack.gz (24072 resources, 83379641 payload bytes, 56876567 gzip bytes, jar=19489, generated=4583, sha256=babb16fcced7c894ebe8179ef3038dcc7dc8cd0d87c295d1644969d3de99d5e3)
+Generated browser resource list: 28191 entries
+Embedded TeaVM resource subset: 4124 entries
+Mapped browser sound assets: 4572
+Mapped browser Unicode font assets: 5
+Compiling the official Minecraft 26.2 client with TeaVM
+POM: /home/runner/work/webmc-port/webmc-port/engine/port/target/26.2/generated-pom.xml
+Log: /home/runner/work/webmc-port/webmc-port/engine/port/target/26.2/teavm-build.log
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::staticFieldBase has been called by com.google.inject.internal.aop.HiddenClassDefiner (file:/home/runner/work/webmc-port/webmc-port/engine/port/work/tools/apache-maven-3.9.11/lib/guice-5.1.0-classes.jar)
+WARNING: Please consider reporting this to the maintainers of class com.google.inject.internal.aop.HiddenClassDefiner
+WARNING: sun.misc.Unsafe::staticFieldBase will be removed in a future release
+[INFO] Error stacktraces are turned on.
+[INFO] Scanning for projects...
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for dev.gaius:minecraft-26.2-browser:jar:0.1.0-SNAPSHOT
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.teavm:teavm-classlib-overlay:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/teavm-classlib-0.15.0-gaius.jar @ line 37, column 19
+[WARNING] 'dependencies.dependency.systemPath' for org.teavm:teavm-core:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/teavm-core-0.15.0-gaius.jar @ line 44, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft:client-named:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/client-named-26.2-gaius.jar @ line 76, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-000:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/at/yawk/lz4/lz4-java/1.10.1/lz4-java-1.10.1.jar @ line 83, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-001:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/com/azure/azure-json/1.4.0/azure-json-1.4.0.jar @ line 90, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-002:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/com/github/oshi/oshi-core/6.9.0/oshi-core-6.9.0.jar @ line 97, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-003:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/com/google/code/gson/gson/2.14.0/gson-2.14.0.jar @ line 104, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-004:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar @ line 111, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-005:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/com/google/guava/guava/33.6.0-jre/guava-33.6.0-jre.jar @ line 118, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-006:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/com/ibm/icu/icu4j/78.3/icu4j-78.3.jar @ line 125, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-007:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/com/microsoft/azure/msal4j/1.24.1/msal4j-1.24.1.jar @ line 132, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-008:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/com/mojang/authlib/9.0.75/authlib-9.0.75.jar @ line 139, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-009:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/com/mojang/blocklist/1.0.10/blocklist-1.0.10.jar @ line 146, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-010:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/com/mojang/brigadier/1.3.10/brigadier-1.3.10.jar @ line 153, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-011:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/com/mojang/datafixerupper/10.0.21/datafixerupper-10.0.21.jar @ line 160, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-012:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/com/mojang/jtracy/1.0.37/jtracy-1.0.37.jar @ line 167, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-013:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/com/mojang/logging/1.7.12/logging-1.7.12.jar @ line 174, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-014:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/com/mojang/patchy/2.2.10/patchy-2.2.10.jar @ line 181, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-015:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/com/mojang/text2speech/1.19.12/text2speech-1.19.12.jar @ line 188, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-016:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/commons-codec/commons-codec/1.22.0/commons-codec-1.22.0.jar @ line 195, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-017:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/commons-io/commons-io/2.20.0/commons-io-2.20.0.jar @ line 202, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-018:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/io/netty/netty-buffer/4.2.15.Final/netty-buffer-4.2.15.Final.jar @ line 209, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-019:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/io/netty/netty-codec-base/4.2.15.Final/netty-codec-base-4.2.15.Final.jar @ line 216, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-020:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/io/netty/netty-codec-compression/4.2.15.Final/netty-codec-compression-4.2.15.Final.jar @ line 223, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-021:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/io/netty/netty-codec-http/4.2.15.Final/netty-codec-http-4.2.15.Final.jar @ line 230, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-022:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/io/netty/netty-common/4.2.15.Final/netty-common-4.2.15.Final.jar @ line 237, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-023:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/io/netty/netty-handler/4.2.15.Final/netty-handler-4.2.15.Final.jar @ line 244, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-024:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/io/netty/netty-resolver/4.2.15.Final/netty-resolver-4.2.15.Final.jar @ line 251, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-025:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/io/netty/netty-transport-classes-epoll/4.2.15.Final/netty-transport-classes-epoll-4.2.15.Final.jar @ line 258, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-026:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/io/netty/netty-transport-classes-kqueue/4.2.15.Final/netty-transport-classes-kqueue-4.2.15.Final.jar @ line 265, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-027:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/io/netty/netty-transport-native-unix-common/4.2.15.Final/netty-transport-native-unix-common-4.2.15.Final.jar @ line 272, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-028:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/io/netty/netty-transport/4.2.15.Final/netty-transport-4.2.15.Final.jar @ line 279, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-029:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/it/unimi/dsi/fastutil/8.5.18/fastutil-8.5.18.jar @ line 286, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-030:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/net/sf/jopt-simple/jopt-simple/5.0.4/jopt-simple-5.0.4.jar @ line 293, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-031:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/apache/commons/commons-compress/1.28.0/commons-compress-1.28.0.jar @ line 300, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-032:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/org/apache/commons/commons-lang3/3.20.0/commons-lang3-3.20.0.jar @ line 307, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-033:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/org/apache/logging/log4j/log4j-api/2.26.0/log4j-api-2.26.0.jar @ line 314, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-034:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/org/jcraft/jorbis/0.0.17/jorbis-0.0.17.jar @ line 321, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-035:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/joml/joml/1.10.8/joml-1.10.8.jar @ line 328, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-036:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/org/jspecify/jspecify/1.0.0/jspecify-1.0.0.jar @ line 335, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-037:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/lwjgl/lwjgl-freetype/3.4.1/lwjgl-freetype-3.4.1.jar @ line 342, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-038:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/lwjgl/lwjgl-glfw/3.4.1/lwjgl-glfw-3.4.1.jar @ line 349, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-039:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/org/lwjgl/lwjgl-jemalloc/3.4.1/lwjgl-jemalloc-3.4.1.jar @ line 356, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-040:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/lwjgl/lwjgl-openal/3.4.1/lwjgl-openal-3.4.1.jar @ line 363, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-041:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/lwjgl/lwjgl-opengl/3.4.1/lwjgl-opengl-3.4.1.jar @ line 370, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-042:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/org/lwjgl/lwjgl-shaderc/3.4.1/lwjgl-shaderc-3.4.1.jar @ line 377, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-043:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/org/lwjgl/lwjgl-spvc/3.4.1/lwjgl-spvc-3.4.1.jar @ line 384, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-044:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/lwjgl/lwjgl-stb/3.4.1/lwjgl-stb-3.4.1.jar @ line 391, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-045:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/lwjgl/lwjgl-tinyfd/3.4.1/lwjgl-tinyfd-3.4.1.jar @ line 398, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-046:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/lwjgl/lwjgl-vma/3.4.1/lwjgl-vma-3.4.1.jar @ line 405, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-047:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/lwjgl/lwjgl-vulkan/3.4.1/lwjgl-vulkan-3.4.1.jar @ line 412, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-048:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/lwjgl/lwjgl/3.4.1/lwjgl-3.4.1-unsafe.jar @ line 419, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-049:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/slf4j/slf4j-api/2.0.17/slf4j-api-2.0.17.jar @ line 426, column 19
+[WARNING] 
+[WARNING] It is highly recommended to fix these problems because they threaten the stability of your build.
+[WARNING] 
+[WARNING] For this reason, future Maven versions might no longer support building such malformed projects.
+[WARNING] 
+[INFO] 
+[INFO] ------------------< dev.gaius:minecraft-26.2-browser >------------------
+[INFO] Building minecraft-26.2-browser 0.1.0-SNAPSHOT
+[INFO]   from generated-pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ minecraft-26.2-browser ---
+[INFO] Copying 1 resource from ../../src/main/resources to maven/classes
+[INFO] Copying 4580 resources from generated-resources to maven/classes
+[INFO] 
+[INFO] --- compiler:3.14.1:compile (default-compile) @ minecraft-26.2-browser ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 134 source files with javac [debug release 21] to maven/classes
+[INFO] /home/runner/work/webmc-port/webmc-port/engine/port/target/26.2/sources/dev/gaius/browser/BrowserHttpProxy.java: Some input files use or override a deprecated API.
+[INFO] /home/runner/work/webmc-port/webmc-port/engine/port/target/26.2/sources/dev/gaius/browser/BrowserHttpProxy.java: Recompile with -Xlint:deprecation for details.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ minecraft-26.2-browser ---
+[INFO] skip non existing resourceDirectory /home/runner/work/webmc-port/webmc-port/engine/port/target/26.2/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ minecraft-26.2-browser ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.2.5:test (default-test) @ minecraft-26.2-browser ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] --- jar:3.4.1:jar (default-jar) @ minecraft-26.2-browser ---
+[INFO] Building jar: /home/runner/work/webmc-port/webmc-port/engine/port/target/26.2/maven/minecraft-26.2-browser-0.1.0-SNAPSHOT.jar
+[INFO] 
+[INFO] --- org.teavm:teavm-maven-plugin:0.15.0:compile (compile-minecraft-client) @ minecraft-26.2-browser ---
+[INFO] Preparing classpath for TeaVM
+[INFO] Using the following classpath for TeaVM: /home/runner/.m2/repository/org/teavm/teavm-interop/0.15.0/teavm-interop-0.15.0.jar:/home/runner/.m2/repository/org/teavm/teavm-jso/0.15.0/teavm-jso-0.15.0.jar:/home/runner/.m2/repository/org/teavm/teavm-jso-apis/0.15.0/teavm-jso-apis-0.15.0.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/teavm-classlib-0.15.0-gaius.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/teavm-core-0.15.0-gaius.jar:/home/runner/.m2/repository/org/teavm/teavm-platform/0.15.0/teavm-platform-0.15.0.jar:/home/runner/.m2/repository/org/teavm/teavm-jso-impl/0.15.0/teavm-jso-impl-0.15.0.jar:/home/runner/.m2/repository/org/teavm/teavm-metaprogramming-impl/0.15.0/teavm-metaprogramming-impl-0.15.0.jar:/home/runner/.m2/repository/com/jcraft/jzlib/1.1.3/jzlib-1.1.3.jar:/home/runner/.m2/repository/joda-time/joda-time/2.12.2/joda-time-2.12.2.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/client-named-26.2-gaius.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/at/yawk/lz4/lz4-java/1.10.1/lz4-java-1.10.1.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/com/azure/azure-json/1.4.0/azure-json-1.4.0.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/com/github/oshi/oshi-core/6.9.0/oshi-core-6.9.0.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/com/google/code/gson/gson/2.14.0/gson-2.14.0.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/com/google/guava/guava/33.6.0-jre/guava-33.6.0-jre.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/com/ibm/icu/icu4j/78.3/icu4j-78.3.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/com/microsoft/azure/msal4j/1.24.1/msal4j-1.24.1.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/com/mojang/authlib/9.0.75/authlib-9.0.75.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/com/mojang/blocklist/1.0.10/blocklist-1.0.10.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/com/mojang/brigadier/1.3.10/brigadier-1.3.10.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/com/mojang/datafixerupper/10.0.21/datafixerupper-10.0.21.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/com/mojang/jtracy/1.0.37/jtracy-1.0.37.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/com/mojang/logging/1.7.12/logging-1.7.12.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/com/mojang/patchy/2.2.10/patchy-2.2.10.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/com/mojang/text2speech/1.19.12/text2speech-1.19.12.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/commons-codec/commons-codec/1.22.0/commons-codec-1.22.0.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/commons-io/commons-io/2.20.0/commons-io-2.20.0.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/io/netty/netty-buffer/4.2.15.Final/netty-buffer-4.2.15.Final.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/io/netty/netty-codec-base/4.2.15.Final/netty-codec-base-4.2.15.Final.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/io/netty/netty-codec-compression/4.2.15.Final/netty-codec-compression-4.2.15.Final.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/io/netty/netty-codec-http/4.2.15.Final/netty-codec-http-4.2.15.Final.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/io/netty/netty-common/4.2.15.Final/netty-common-4.2.15.Final.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/io/netty/netty-handler/4.2.15.Final/netty-handler-4.2.15.Final.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/io/netty/netty-resolver/4.2.15.Final/netty-resolver-4.2.15.Final.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/io/netty/netty-transport-classes-epoll/4.2.15.Final/netty-transport-classes-epoll-4.2.15.Final.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/io/netty/netty-transport-classes-kqueue/4.2.15.Final/netty-transport-classes-kqueue-4.2.15.Final.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/io/netty/netty-transport-native-unix-common/4.2.15.Final/netty-transport-native-unix-common-4.2.15.Final.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/io/netty/netty-transport/4.2.15.Final/netty-transport-4.2.15.Final.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/it/unimi/dsi/fastutil/8.5.18/fastutil-8.5.18.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/net/sf/jopt-simple/jopt-simple/5.0.4/jopt-simple-5.0.4.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/apache/commons/commons-compress/1.28.0/commons-compress-1.28.0.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/org/apache/commons/commons-lang3/3.20.0/commons-lang3-3.20.0.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/org/apache/logging/log4j/log4j-api/2.26.0/log4j-api-2.26.0.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/org/jcraft/jorbis/0.0.17/jorbis-0.0.17.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/joml/joml/1.10.8/joml-1.10.8.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/org/jspecify/jspecify/1.0.0/jspecify-1.0.0.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/lwjgl/lwjgl-freetype/3.4.1/lwjgl-freetype-3.4.1.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/lwjgl/lwjgl-glfw/3.4.1/lwjgl-glfw-3.4.1.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/org/lwjgl/lwjgl-jemalloc/3.4.1/lwjgl-jemalloc-3.4.1.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/lwjgl/lwjgl-openal/3.4.1/lwjgl-openal-3.4.1.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/lwjgl/lwjgl-opengl/3.4.1/lwjgl-opengl-3.4.1.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/org/lwjgl/lwjgl-shaderc/3.4.1/lwjgl-shaderc-3.4.1.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/org/lwjgl/lwjgl-spvc/3.4.1/lwjgl-spvc-3.4.1.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/lwjgl/lwjgl-stb/3.4.1/lwjgl-stb-3.4.1.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/lwjgl/lwjgl-tinyfd/3.4.1/lwjgl-tinyfd-3.4.1.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/lwjgl/lwjgl-vma/3.4.1/lwjgl-vma-3.4.1.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/lwjgl/lwjgl-vulkan/3.4.1/lwjgl-vulkan-3.4.1.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/lwjgl/lwjgl/3.4.1/lwjgl-3.4.1-unsafe.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/slf4j/slf4j-api/2.0.17/slf4j-api-2.0.17.jar:/home/runner/work/webmc-port/webmc-port/engine/port/target/26.2/maven/classes
+[INFO] Running TeaVM
+[INFO] Output file successfully built
+[INFO] Classes compiled: 37893
+[INFO] Methods compiled: 212398
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  27:07 min
+[INFO] Finished at: 2026-10-17T08:04:27Z
+[INFO] ------------------------------------------------------------------------
+Gap report: /home/runner/work/webmc-port/webmc-port/engine/port/target/26.2/teavm-gap.md
+Gap data:   /home/runner/work/webmc-port/webmc-port/engine/port/target/26.2/teavm-gap.json
+Patched TeaVM JS finite-safe long conversion in /home/runner/work/webmc-port/webmc-port/engine/port/target/26.2/.teavm-staging/client-87244-1792222549-21366/dist/classes.js (1 occurrence).
+Patched: /home/runner/work/webmc-port/webmc-port/engine/port/target/26.2/.teavm-staging/client-87244-1792222549-21366/dist/index.html
+Build identity: /home/runner/work/webmc-port/webmc-port/engine/port/target/26.2/.teavm-staging/client-87244-1792222549-21366/dist/classes.js.build.json
+Build identity: /home/runner/work/webmc-port/webmc-port/engine/port/target/26.2/.teavm-staging/client-87244-1792222549-21366/dist/vanilla-assets.pack.gz.build.json
+TeaVM compiler profile: /home/runner/work/webmc-port/webmc-port/engine/port/web/dist/26.2/classes.js.release.json
+Compiling the official Minecraft server Worker with TeaVM
+POM: /home/runner/work/webmc-port/webmc-port/engine/port/target/26.2/server-worker/generated-pom.xml
+Log: /home/runner/work/webmc-port/webmc-port/engine/port/target/26.2/server-worker/teavm-build.log
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::staticFieldBase has been called by com.google.inject.internal.aop.HiddenClassDefiner (file:/home/runner/work/webmc-port/webmc-port/engine/port/work/tools/apache-maven-3.9.11/lib/guice-5.1.0-classes.jar)
+WARNING: Please consider reporting this to the maintainers of class com.google.inject.internal.aop.HiddenClassDefiner
+WARNING: sun.misc.Unsafe::staticFieldBase will be removed in a future release
+[INFO] Error stacktraces are turned on.
+[INFO] Scanning for projects...
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for dev.gaius:minecraft-26.2-browser:jar:0.1.0-SNAPSHOT
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.teavm:teavm-classlib-overlay:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/teavm-classlib-0.15.0-gaius.jar @ line 37, column 19
+[WARNING] 'dependencies.dependency.systemPath' for org.teavm:teavm-core:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/teavm-core-0.15.0-gaius.jar @ line 44, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft:client-named:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/client-named-26.2-gaius.jar @ line 76, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-000:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/at/yawk/lz4/lz4-java/1.10.1/lz4-java-1.10.1.jar @ line 83, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-001:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/com/github/oshi/oshi-core/6.9.0/oshi-core-6.9.0.jar @ line 90, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-002:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/com/google/code/gson/gson/2.14.0/gson-2.14.0.jar @ line 97, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-003:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar @ line 104, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-004:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/com/google/guava/guava/33.6.0-jre/guava-33.6.0-jre.jar @ line 111, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-005:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/com/ibm/icu/icu4j/78.3/icu4j-78.3.jar @ line 118, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-006:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/com/mojang/authlib/9.0.75/authlib-9.0.75.jar @ line 125, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-007:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/com/mojang/blocklist/1.0.10/blocklist-1.0.10.jar @ line 132, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-008:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/com/mojang/brigadier/1.3.10/brigadier-1.3.10.jar @ line 139, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-009:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/com/mojang/datafixerupper/10.0.21/datafixerupper-10.0.21.jar @ line 146, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-010:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/com/mojang/jtracy/1.0.37/jtracy-1.0.37.jar @ line 153, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-011:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/com/mojang/logging/1.7.12/logging-1.7.12.jar @ line 160, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-012:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/com/mojang/patchy/2.2.10/patchy-2.2.10.jar @ line 167, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-013:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/com/mojang/text2speech/1.19.12/text2speech-1.19.12.jar @ line 174, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-014:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/commons-codec/commons-codec/1.22.0/commons-codec-1.22.0.jar @ line 181, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-015:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/commons-io/commons-io/2.20.0/commons-io-2.20.0.jar @ line 188, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-016:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/io/netty/netty-buffer/4.2.15.Final/netty-buffer-4.2.15.Final.jar @ line 195, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-017:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/io/netty/netty-codec-base/4.2.15.Final/netty-codec-base-4.2.15.Final.jar @ line 202, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-018:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/io/netty/netty-codec-compression/4.2.15.Final/netty-codec-compression-4.2.15.Final.jar @ line 209, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-019:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/io/netty/netty-codec-http/4.2.15.Final/netty-codec-http-4.2.15.Final.jar @ line 216, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-020:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/io/netty/netty-common/4.2.15.Final/netty-common-4.2.15.Final.jar @ line 223, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-021:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/io/netty/netty-handler/4.2.15.Final/netty-handler-4.2.15.Final.jar @ line 230, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-022:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/io/netty/netty-resolver/4.2.15.Final/netty-resolver-4.2.15.Final.jar @ line 237, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-023:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/io/netty/netty-transport-classes-epoll/4.2.15.Final/netty-transport-classes-epoll-4.2.15.Final.jar @ line 244, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-024:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/io/netty/netty-transport-classes-kqueue/4.2.15.Final/netty-transport-classes-kqueue-4.2.15.Final.jar @ line 251, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-025:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/io/netty/netty-transport-native-unix-common/4.2.15.Final/netty-transport-native-unix-common-4.2.15.Final.jar @ line 258, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-026:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/io/netty/netty-transport/4.2.15.Final/netty-transport-4.2.15.Final.jar @ line 265, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-027:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/it/unimi/dsi/fastutil/8.5.18/fastutil-8.5.18.jar @ line 272, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-028:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/net/sf/jopt-simple/jopt-simple/5.0.4/jopt-simple-5.0.4.jar @ line 279, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-029:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/apache/commons/commons-compress/1.28.0/commons-compress-1.28.0.jar @ line 286, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-030:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/org/apache/commons/commons-lang3/3.20.0/commons-lang3-3.20.0.jar @ line 293, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-031:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/org/apache/logging/log4j/log4j-api/2.26.0/log4j-api-2.26.0.jar @ line 300, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-032:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/org/apache/logging/log4j/log4j-core/2.26.0/log4j-core-2.26.0.jar @ line 307, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-033:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/org/apache/logging/log4j/log4j-slf4j2-impl/2.26.0/log4j-slf4j2-impl-2.26.0.jar @ line 314, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-034:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/org/jcraft/jorbis/0.0.17/jorbis-0.0.17.jar @ line 321, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-035:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/joml/joml/1.10.8/joml-1.10.8.jar @ line 328, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-036:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/org/jspecify/jspecify/1.0.0/jspecify-1.0.0.jar @ line 335, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-037:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/lwjgl/lwjgl-freetype/3.4.1/lwjgl-freetype-3.4.1.jar @ line 342, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-038:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/lwjgl/lwjgl-glfw/3.4.1/lwjgl-glfw-3.4.1.jar @ line 349, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-039:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/org/lwjgl/lwjgl-jemalloc/3.4.1/lwjgl-jemalloc-3.4.1.jar @ line 356, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-040:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/lwjgl/lwjgl-openal/3.4.1/lwjgl-openal-3.4.1.jar @ line 363, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-041:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/lwjgl/lwjgl-opengl/3.4.1/lwjgl-opengl-3.4.1.jar @ line 370, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-042:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/org/lwjgl/lwjgl-shaderc/3.4.1/lwjgl-shaderc-3.4.1.jar @ line 377, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-043:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/org/lwjgl/lwjgl-spvc/3.4.1/lwjgl-spvc-3.4.1.jar @ line 384, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-044:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/lwjgl/lwjgl-stb/3.4.1/lwjgl-stb-3.4.1.jar @ line 391, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-045:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/lwjgl/lwjgl-tinyfd/3.4.1/lwjgl-tinyfd-3.4.1.jar @ line 398, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-046:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/lwjgl/lwjgl-vma/3.4.1/lwjgl-vma-3.4.1.jar @ line 405, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-047:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/lwjgl/lwjgl-vulkan/3.4.1/lwjgl-vulkan-3.4.1.jar @ line 412, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-048:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/lwjgl/lwjgl/3.4.1/lwjgl-3.4.1-unsafe.jar @ line 419, column 19
+[WARNING] 'dependencies.dependency.systemPath' for dev.gaius.minecraft.library:library-049:jar should use a variable instead of a hard-coded path /home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/slf4j/slf4j-api/2.0.17/slf4j-api-2.0.17.jar @ line 426, column 19
+[WARNING] 
+[WARNING] It is highly recommended to fix these problems because they threaten the stability of your build.
+[WARNING] 
+[WARNING] For this reason, future Maven versions might no longer support building such malformed projects.
+[WARNING] 
+[INFO] 
+[INFO] ------------------< dev.gaius:minecraft-26.2-browser >------------------
+[INFO] Building minecraft-26.2-browser 0.1.0-SNAPSHOT
+[INFO]   from generated-pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ minecraft-26.2-browser ---
+[INFO] Copying 1 resource from ../../../src/main/resources to maven/classes
+[INFO] Copying 1 resource from generated-resources to maven/classes
+[INFO] 
+[INFO] --- compiler:3.14.1:compile (default-compile) @ minecraft-26.2-browser ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 134 source files with javac [debug release 21] to maven/classes
+[INFO] /home/runner/work/webmc-port/webmc-port/engine/port/target/26.2/sources/dev/gaius/browser/BrowserHttpProxy.java: Some input files use or override a deprecated API.
+[INFO] /home/runner/work/webmc-port/webmc-port/engine/port/target/26.2/sources/dev/gaius/browser/BrowserHttpProxy.java: Recompile with -Xlint:deprecation for details.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ minecraft-26.2-browser ---
+[INFO] skip non existing resourceDirectory /home/runner/work/webmc-port/webmc-port/engine/port/target/26.2/server-worker/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ minecraft-26.2-browser ---
+[INFO] No sources to compile
+[INFO] 
+[INFO] --- surefire:3.2.5:test (default-test) @ minecraft-26.2-browser ---
+[INFO] No tests to run.
+[INFO] 
+[INFO] --- jar:3.4.1:jar (default-jar) @ minecraft-26.2-browser ---
+[INFO] Building jar: /home/runner/work/webmc-port/webmc-port/engine/port/target/26.2/server-worker/maven/minecraft-26.2-browser-0.1.0-SNAPSHOT.jar
+[INFO] 
+[INFO] --- org.teavm:teavm-maven-plugin:0.15.0:compile (compile-minecraft-client) @ minecraft-26.2-browser ---
+[INFO] Preparing classpath for TeaVM
+[INFO] Using the following classpath for TeaVM: /home/runner/.m2/repository/org/teavm/teavm-interop/0.15.0/teavm-interop-0.15.0.jar:/home/runner/.m2/repository/org/teavm/teavm-jso/0.15.0/teavm-jso-0.15.0.jar:/home/runner/.m2/repository/org/teavm/teavm-jso-apis/0.15.0/teavm-jso-apis-0.15.0.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/teavm-classlib-0.15.0-gaius.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/teavm-core-0.15.0-gaius.jar:/home/runner/.m2/repository/org/teavm/teavm-platform/0.15.0/teavm-platform-0.15.0.jar:/home/runner/.m2/repository/org/teavm/teavm-jso-impl/0.15.0/teavm-jso-impl-0.15.0.jar:/home/runner/.m2/repository/org/teavm/teavm-metaprogramming-impl/0.15.0/teavm-metaprogramming-impl-0.15.0.jar:/home/runner/.m2/repository/com/jcraft/jzlib/1.1.3/jzlib-1.1.3.jar:/home/runner/.m2/repository/joda-time/joda-time/2.12.2/joda-time-2.12.2.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/client-named-26.2-gaius.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/at/yawk/lz4/lz4-java/1.10.1/lz4-java-1.10.1.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/com/github/oshi/oshi-core/6.9.0/oshi-core-6.9.0.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/com/google/code/gson/gson/2.14.0/gson-2.14.0.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/com/google/guava/guava/33.6.0-jre/guava-33.6.0-jre.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/com/ibm/icu/icu4j/78.3/icu4j-78.3.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/com/mojang/authlib/9.0.75/authlib-9.0.75.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/com/mojang/blocklist/1.0.10/blocklist-1.0.10.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/com/mojang/brigadier/1.3.10/brigadier-1.3.10.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/com/mojang/datafixerupper/10.0.21/datafixerupper-10.0.21.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/com/mojang/jtracy/1.0.37/jtracy-1.0.37.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/com/mojang/logging/1.7.12/logging-1.7.12.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/com/mojang/patchy/2.2.10/patchy-2.2.10.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/com/mojang/text2speech/1.19.12/text2speech-1.19.12.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/commons-codec/commons-codec/1.22.0/commons-codec-1.22.0.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/commons-io/commons-io/2.20.0/commons-io-2.20.0.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/io/netty/netty-buffer/4.2.15.Final/netty-buffer-4.2.15.Final.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/io/netty/netty-codec-base/4.2.15.Final/netty-codec-base-4.2.15.Final.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/io/netty/netty-codec-compression/4.2.15.Final/netty-codec-compression-4.2.15.Final.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/io/netty/netty-codec-http/4.2.15.Final/netty-codec-http-4.2.15.Final.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/io/netty/netty-common/4.2.15.Final/netty-common-4.2.15.Final.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/io/netty/netty-handler/4.2.15.Final/netty-handler-4.2.15.Final.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/io/netty/netty-resolver/4.2.15.Final/netty-resolver-4.2.15.Final.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/io/netty/netty-transport-classes-epoll/4.2.15.Final/netty-transport-classes-epoll-4.2.15.Final.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/io/netty/netty-transport-classes-kqueue/4.2.15.Final/netty-transport-classes-kqueue-4.2.15.Final.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/io/netty/netty-transport-native-unix-common/4.2.15.Final/netty-transport-native-unix-common-4.2.15.Final.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/io/netty/netty-transport/4.2.15.Final/netty-transport-4.2.15.Final.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/it/unimi/dsi/fastutil/8.5.18/fastutil-8.5.18.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/net/sf/jopt-simple/jopt-simple/5.0.4/jopt-simple-5.0.4.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/apache/commons/commons-compress/1.28.0/commons-compress-1.28.0.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/org/apache/commons/commons-lang3/3.20.0/commons-lang3-3.20.0.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/org/apache/logging/log4j/log4j-api/2.26.0/log4j-api-2.26.0.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/org/apache/logging/log4j/log4j-core/2.26.0/log4j-core-2.26.0.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/org/apache/logging/log4j/log4j-slf4j2-impl/2.26.0/log4j-slf4j2-impl-2.26.0.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/org/jcraft/jorbis/0.0.17/jorbis-0.0.17.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/joml/joml/1.10.8/joml-1.10.8.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/org/jspecify/jspecify/1.0.0/jspecify-1.0.0.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/lwjgl/lwjgl-freetype/3.4.1/lwjgl-freetype-3.4.1.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/lwjgl/lwjgl-glfw/3.4.1/lwjgl-glfw-3.4.1.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/org/lwjgl/lwjgl-jemalloc/3.4.1/lwjgl-jemalloc-3.4.1.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/lwjgl/lwjgl-openal/3.4.1/lwjgl-openal-3.4.1.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/lwjgl/lwjgl-opengl/3.4.1/lwjgl-opengl-3.4.1.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/org/lwjgl/lwjgl-shaderc/3.4.1/lwjgl-shaderc-3.4.1.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/26.2/libraries/org/lwjgl/lwjgl-spvc/3.4.1/lwjgl-spvc-3.4.1.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/lwjgl/lwjgl-stb/3.4.1/lwjgl-stb-3.4.1.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/lwjgl/lwjgl-tinyfd/3.4.1/lwjgl-tinyfd-3.4.1.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/lwjgl/lwjgl-vma/3.4.1/lwjgl-vma-3.4.1.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/lwjgl/lwjgl-vulkan/3.4.1/lwjgl-vulkan-3.4.1.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/lwjgl/lwjgl/3.4.1/lwjgl-3.4.1-unsafe.jar:/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/26.2/libraries/org/slf4j/slf4j-api/2.0.17/slf4j-api-2.0.17.jar:/home/runner/work/webmc-port/webmc-port/engine/port/target/26.2/server-worker/maven/classes
+[INFO] Running TeaVM
+[INFO] Output file successfully built
+[INFO] Classes compiled: 29505
+[INFO] Methods compiled: 166170
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  14:05 min
+[INFO] Finished at: 2026-10-17T08:19:51Z
+[INFO] ------------------------------------------------------------------------
+Gap report: /home/runner/work/webmc-port/webmc-port/engine/port/target/26.2/server-worker/teavm-gap.md
+Gap data:   /home/runner/work/webmc-port/webmc-port/engine/port/target/26.2/server-worker/teavm-gap.json
+Patched TeaVM JS finite-safe long conversion in /home/runner/work/webmc-port/webmc-port/engine/port/target/26.2/.teavm-staging/server-worker-87244-1792222549-21366/dist/singleplayer-server.js (1 occurrence).
+Injected TeaVM server Worker coroutine input pump in /home/runner/work/webmc-port/webmc-port/engine/port/target/26.2/.teavm-staging/server-worker-87244-1792222549-21366/dist/singleplayer-server.js.
+Build identity: /home/runner/work/webmc-port/webmc-port/engine/port/target/26.2/.teavm-staging/server-worker-87244-1792222549-21366/dist/singleplayer-server.js.build.json
+Build identity: /home/runner/work/webmc-port/webmc-port/engine/port/target/26.2/.teavm-staging/server-worker-87244-1792222549-21366/dist/singleplayer-server-worker.js.build.json
+TeaVM compiler profile: /home/runner/work/webmc-port/webmc-port/engine/port/target/26.2/.teavm-staging/server-worker-87244-1792222549-21366/dist/singleplayer-server.js.release.json
+Patched: /home/runner/work/webmc-port/webmc-port/engine/port/web/dist/26.2/index.html
+wasm-ld/ld.lld was not found; using the deterministic Wasm generator.
+Generating the Gaius Wasm hot-path module directly.
+Generated Wasm hot-path module: /home/runner/work/webmc-port/webmc-port/engine/port/web/dist/26.2/gaius-hotpath.wasm (2072 bytes)
+Build identity: /home/runner/work/webmc-port/webmc-port/engine/port/web/dist/26.2/gaius-hotpath.wasm.build.json
+Build identity: /home/runner/work/webmc-port/webmc-port/engine/port/web/dist/26.2/relay-nodes.json.build.json
+Compressed 14 dist assets in /home/runner/work/webmc-port/webmc-port/engine/port/web/dist/26.2
+Portable Gaius manifest: /home/runner/work/webmc-port/webmc-port/engine/port/web/dist/26.2/Gaius.manifest.json (5515 bytes)
+Portable Gaius HTML: /home/runner/work/webmc-port/webmc-port/engine/port/web/dist/26.2/Gaius.html (120918365 bytes)
+Compressed 2 dist assets in /home/runner/work/webmc-port/webmc-port/engine/port/web/dist/26.2
+BUILD_EXIT=0
