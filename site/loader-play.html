@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>WebMC — starting</title>
+<script src="https://cjrtnc.leaningtech.com/4.3/loader.js"></script>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; color: #ddd;
+               font: 14px/1.6 ui-monospace, Menlo, monospace; overflow: hidden; }
+  #canvas { width: 100vw; height: 100vh; display: block; background: #000; }
+  #overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+             flex-direction: column; gap: 14px; background: rgba(0,0,0,.82); text-align: center; }
+  button { font: inherit; font-size: 17px; padding: 14px 26px; background: #2a5c3a; color: #fff;
+           border: 1px solid #3d7d51; border-radius: 5px; cursor: pointer; }
+  .muted { color: #888; max-width: 38rem; }
+  pre { position: fixed; left: 8px; bottom: 8px; margin: 0; max-height: 30%; overflow: auto;
+        background: rgba(0,0,0,.55); border: 1px solid #222; padding: 6px; color: #9c9; font-size: 12px; }
+</style>
+</head>
+<body>
+<canvas id="canvas" width="854" height="480"></canvas>
+<div id="overlay">
+  <h1 style="margin:0;font-size:20px">WebMC</h1>
+  <button id="go">▶ Start fullscreen</button>
+  <p class="muted">
+    The browser only grants fullscreen after a click, so this one is unavoidable. Everything after it
+    happens on its own.
+  </p>
+  <p class="muted" id="note">the loader's boot test runs here: a real JVM, our LWJGL 3 under it</p>
+</div>
+<pre id="log"></pre>
+<script type="module">
+  // The client runs in its own tab, fullscreen, because that is what a game wants: no browser chrome
+  // eating the picture, and the keyboard belongs to the canvas rather than to the page around it.
+  const canvas = document.getElementById("canvas");
+  const overlay = document.getElementById("overlay");
+  const log = (line) => { document.getElementById("log").textContent += line + "\n"; };
+  let started = false;
+
+  window.webmcCanvasElement = canvas;
+
+  async function goFullscreen() {
+    try { await document.documentElement.requestFullscreen({ navigationUI: "hide" }); } catch (error) {
+      log("fullscreen refused: " + error.message);
+    }
+    canvas.focus();
+  }
+
+  document.getElementById("go").addEventListener("click", async () => {
+    if (started) return;
+    started = true;
+    await goFullscreen();
+    overlay.remove();
+    await boot();
+  });
+
+  async function boot() {
+    try {
+      const shim = await import(new URL("natives/webmc-lwjgl3.js", import.meta.url).href);
+      log("shim imported, " + shim.count + " natives");
+      await cheerpjInit({ version: 17, natives: shim.natives, status: "none" });
+      log("cheerpjInit done (java 17 mode)");
+      const code = await cheerpjRunMain("webmc.BootTest", "/app/app.jar");
+      log("exit code " + code);
+      const javaLog = window.webmc && window.webmc.log ? window.webmc.log() : [];
+      for (const line of javaLog) { log(line); }
+      log("frames drawn: " + (window.webmc ? window.webmc.frames() : "?"));
+      if (window.webmc && window.webmc.glInfo()) {
+        log("gl: " + JSON.stringify(window.webmc.glInfo()));
+      }
+    } catch (error) {
+      log("FAILED: " + (error && error.message ? error.message : error));
+      log(String(error && error.stack ? error.stack.split("\n")[0] : ""));
+    }
+  }
+
+  let wasFullscreen = false;
+  // a run that never finishes still has to explain itself, so the Java log is shown as it grows
+  let printed = 0;
+  setInterval(() => {
+    const lines = window.webmc && window.webmc.log ? window.webmc.log() : [];
+    while (printed < lines.length) { log(lines[printed]); printed++; }
+  }, 3000);
+
+  document.addEventListener("fullscreenchange", () => {
+    // only a real exit is worth a line: entering fires this too, and the overlay being removed fires it
+    // again, which is how one Escape turned into two messages
+    if (document.fullscreenElement) { wasFullscreen = true; return; }
+    if (wasFullscreen && started) { log("left fullscreen (double click the canvas to re-enter)"); }
+    wasFullscreen = false;
+  });
+  canvas.addEventListener("dblclick", goFullscreen);
+</script>
+</body>
+</html>

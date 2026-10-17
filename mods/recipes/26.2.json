@@ -1,0 +1,52 @@
+{
+  "version": "26.2",
+  "label": "26.2 + Fabric mods",
+  "note": "First target. Built by the build-time Fabric loader (modded/fabloader.py): the mods' classes are compiled into the client with TeaVM and the Fabric API calls they make are shimmed. One HTML per mod set.",
+  "base": {
+    "kind": "ported source tree (patcher output)",
+    "workspace_repo": "CynTheSolveroftheabsolutefabric/Eaglercraft-26.2-Workspace",
+    "workspace_commit": "pinned at first successful build",
+    "game_source": "game/src/main/java",
+    "platform": "platform-teavm/src/main/java",
+    "toolchain": "wasm-toolchain/",
+    "inputs_not_in_repo": [
+      "official Minecraft 26.2 client JAR (builder-supplied; never redistributed)",
+      "game resources/assets fetched by the patcher's 'Get official resources' step"
+    ],
+    "tools": { "java": 25, "node": "22+", "ram": "16 GiB (>=10 GiB heap)" }
+  },
+  "pipeline": [
+    { "step": "scan", "cmd": "python3 modded/fabloader.py --workspace <ws> --mods mods/ --out plan/", "gate": "exit 0: no impossible mods, no missing hook sites" },
+    { "step": "shims", "produces": "platform-teavm or game module implementing plan/shims.json (7 members for modmenu+zoomify)" },
+    { "step": "hook-patches", "patches": [
+      { "file": "game/src/main/java/net/minecraft/client/Minecraft.java", "anchor": "runTick", "insert": "ClientTickEvents.END_CLIENT_TICK.invoker().onEndTick(client)" },
+      { "file": "game/src/main/java/net/minecraft/client/gui/screens/Screen.java", "anchor": "protected void init()", "insert": "ScreenEvents.AFTER_INIT.invoker().afterInit(client, this)" },
+      { "file": "game/src/main/java/net/minecraft/client/KeyMapping.java", "anchor": "ALL", "insert": "KeyMappingHelper.registerKeyMapping(mapping) routes into ALL/MAP" },
+      { "file": "game/src/main/java/net/minecraft/client/multiplayer/ClientPacketListener.java", "anchor": "CommandDispatcher", "insert": "ClientCommandRegistrationCallback.EVENT.invoker().register(dispatcher, context)" }
+    ] },
+    { "step": "compile", "cmd": "./gradlew :game:compileJava --console=plain --no-daemon" },
+    { "step": "link", "cmd": "node wasm-toolchain/link-web-target-standalone.js client" },
+    { "step": "package", "cmd": "node wasm-toolchain/build-single-html.js --reuse-client --reuse-mesh --reuse-server --fast-package --output dist/26.2-<mods-hash>.html" },
+    { "step": "publish", "produces": "docs/clients/26.2-<mods-hash>.html + an entry in docs/builds.json with mods[] so the launcher shows the chips" }
+  ],
+  "mods": [
+    { "id": "modmenu", "version": "20.0.3", "env": "client", "verdict": "portable, needs shims",
+      "shims": ["client/event/lifecycle/v1", "client/screen/v1", "client/keymapping/v1"],
+      "injections": 3, "remap": false },
+    { "id": "zoomify", "version": "2.16.3+26.4", "env": "client", "verdict": "portable, needs shims",
+      "shims": ["client/event/lifecycle/v1", "client/keymapping/v1", "client/command/v2"],
+      "injections": 2, "remap": false,
+      "extra": ["needs fabric-language-kotlin adapter", "needs yet_another_config_lib_v3 (YACL)"] }
+  ],
+  "runtime_mods_available_without_rebuild": {
+    "mechanism": "globalThis.EaglerModResourceRegistry (page-side, v1, validated)",
+    "can_ship_at_runtime": ["resource packs / textures", "models", "language files", "declared virtual blockstates"],
+    "cannot": ["behaviour changes (those are the compiled-in shims above)"]
+  },
+  "success_criteria": [
+    "plan/ exits 0 for the mod set",
+    "client boots in the check-clients workflow with the mods listed",
+    "modmenu appears in the mod list and opening its screen does not crash",
+    "zoomify's zoom keybind works (proves KeyMappingHelper + tick + Kotlin adapter)"
+  ]
+}

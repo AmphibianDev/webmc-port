@@ -1,0 +1,163 @@
+{
+ "mainClass": "net.minecraft.client.main.Main",
+ "releaseTime": "2017-09-18T08:39:46+00:00",
+ "id": "1.12.2",
+ "assetIndex": {
+  "id": "1.12",
+  "sha1": "a21e1ded1a24ea1548dd8db0cf30b6acb02655a9",
+  "size": 143136,
+  "totalSize": 129843781,
+  "url": "https://piston-meta.mojang.com/v1/packages/a21e1ded1a24ea1548dd8db0cf30b6acb02655a9/1.12.json"
+ },
+ "type": "release",
+ "javaVersion": {
+  "component": "jre-legacy",
+  "majorVersion": 8
+ },
+ "libraries": [
+  {
+   "downloads": {
+    "artifact": {
+     "path": "com/mojang/patchy/1.3.9/patchy-1.3.9.jar",
+     "sha1": "eb8bb7b66fa0e2152b1b40b3856e82f7619439ee",
+     "size": 23581,
+     "url": "https://libraries.minecraft.net/com/mojang/patchy/1.3.9/patchy-1.3.9.jar"
+    }
+   },
+   "name": "com.mojang:patchy:1.3.9"
+  },
+  {
+   "downloads": {
+    "artifact": {
+     "path": "oshi-project/oshi-core/1.1/oshi-core-1.1.jar",
+     "sha1": "9ddf7b048a8d701be231c0f4f95fd986198fd2d8",
+     "size": 30973,
+     "url": "https://libraries.minecraft.net/oshi-project/oshi-core/1.1/oshi-core-1.1.jar"
+    }
+   },
+   "name": "oshi-project:oshi-core:1.1"
+  },
+  {
+   "downloads": {
+    "artifact": {
+     "path": "net/java/dev/jna/jna/4.4.0/jna-4.4.0.jar",
+     "sha1": "cb208278274bf12ebdb56c61bd7407e6f774d65a",
+     "size": 1091208,
+     "url": "https://libraries.minecraft.net/net/java/dev/jna/jna/4.4.0/jna-4.4.0.jar"
+    }
+   },
+   "name": "net.java.dev.jna:jna:4.4.0"
+  },
+  {
+   "downloads": {
+    "artifact": {
+     "path": "net/java/dev/jna/platform/3.4.0/platform-3.4.0.jar",
+     "sha1": "e3f70017be8100d3d6923f50b3d2ee17714e9c13",
+     "size": 913436,
+     "url": "https://libraries.minecraft.net/net/java/dev/jna/platform/3.4.0/platform-3.4.0.jar"
+    }
+   },
+   "name": "net.java.dev.jna:platform:3.4.0"
+  },
+  {
+   "downloads": {
+    "artifact": {
+     "path": "com/ibm/icu/icu4j-core-mojang/51.2/icu4j-core-mojang-51.2.jar",
+     "sha1": "63d216a9311cca6be337c1e458e587f99d382b84",
+     "size": 1634692,
+     "url": "https://libraries.minecraft.net/com/ibm/icu/icu4j-core-mojang/51.2/icu4j-core-mojang-51.2.jar"
+    }
+   },
+   "name": "com.ibm.icu:icu4j-core-mojang:51.2"
+  },
+  {
+   "downloads": {
+    "artifact": {
+     "path": "net/sf/jopt-simple/jopt-simple/5.0.3/jopt-simple-5.0.3.jar",
+     "sha1": "cdd846cfc4e0f7eefafc02c0f5dce32b9303aa2a",
+     "size": 78175,
+     "url": "https://libraries.minecraft.net/net/sf/jopt-simple/jopt-simple/5.0.3/jopt-simple-5.0.3.jar"
+    }
+   },
+   "name": "net.sf.jopt-simple:jopt-simple:5.0.3"
+  },
+  {
+   "downloads": {
+    "artifact": {
+     "path": "com/paulscode/codecjorbis/20101023/codecjorbis-20101023.jar",
+     "sha1": "c73b5636faf089d9f00e8732a829577de25237ee",
+     "size": 103871,
+     "url": "https://libraries.minecraft.net/com/paulscode/codecjorbis/20101023/codecjorbis-20101023.jar"
+    }
+   },
+   "name": "com.paulscode:codecjorbis:20101023"
+  },
+  {
+   "downloads": {
+    "artifact": {
+     "path": "com/paulscode/codecwav/20101023/codecwav-20101023.jar",
+     "sha1": "12f031cfe88fef5c1dd36c563c0a3a69bd7261da",
+     "size": 5618,
+     "url": "https://libraries.minecraft.net/com/paulscode/codecwav/20101023/codecwav-20101023.jar"
+    }
+   },
+   "name": "com.paulscode:codecwav:20101023"
+  },
+  {
+   "downloads": {
+    "artifact": {
+     "path": "com/paulscode/libraryjavasound/20101123/libraryjavasound-20101123.jar",
+     "sha1": "5c5e304366f75f9eaa2e8cca546a1fb6109348b3",
+     "size": 21679,
+     "url": "https://libraries.minecraft.net/com/paulscode/libraryjavasound/20101123/libraryjavasound-20101123.jar"
+    }
+   },
+   "name": "com.paulscode:libraryjavasound:20101123"
+  },
+  {
+   "downloads": {
+    "artifact": {
+     "path": "com/paulscode/librarylwjglopenal/20100824/librarylwjglopenal-20100824.jar",
+     "sha1": "73e80d0794c39665aec3f62eee88ca91676674ef",
+     "size": 18981,
+     "url": "https://libraries.minecraft.net/com/paulscode/librarylwjglopenal/20100824/librarylwjglopenal-20100824.jar"
+    }
+   },
+   "name": "com.paulscode:librarylwjglopenal:20100824"
+  },
+  {
+   "downloads": {
+    "artifact": {
+     "path": "com/paulscode/soundsystem/20120107/soundsystem-20120107.jar",
+     "sha1": "419c05fe9be71f792b2d76cfc9b67f1ed0fec7f6",
+     "size": 65020,
+     "url": "https://libraries.minecraft.net/com/paulscode/soundsystem/20120107/soundsystem-20120107.jar"
+    }
+   },
+   "name": "com.paulscode:soundsystem:20120107"
+  },
+  {
+   "downloads": {
+    "artifact": {
+     "path": "io/netty/netty-all/4.1.9.Final/netty-all-4.1.9.Final.jar",
+     "sha1": "0097860965d6a0a6b98e7f569f3f966727b8db75",
+     "size": 3511093,
+     "url": "https://libraries.minecraft.net/io/netty/netty-all/4.1.9.Final/netty-all-4.1.9.Final.jar"
+    }
+   },
+   "name": "io.netty:netty-all:4.1.9.Final"
+  }
+ ],
+ "downloads": {
+  "client": {
+   "sha1": "0f275bc1547d01fa5f56ba34bdc87d981ee12daf",
+   "size": 10180113,
+   "url": "https://piston-data.mojang.com/v1/objects/0f275bc1547d01fa5f56ba34bdc87d981ee12daf/client.jar"
+  },
+  "server": {
+   "sha1": "886945bfb2b978778c3a0288fd7fab09d315b25f",
+   "size": 30222121,
+   "url": "https://piston-data.mojang.com/v1/objects/886945bfb2b978778c3a0288fd7fab09d315b25f/server.jar"
+  }
+ }
+}

@@ -1,0 +1,483 @@
+{
+ "version": "1.21.11",
+ "note": "Assembled by tools/jvm_bundle.py. The libraries and assets are here because their hosts send no CORS header; the client is here because it is the backported one. Fabric is fetched at play time from maven.fabricmc.net, which does allow it.",
+ "client": "client.jar",
+ "assets_index": "assets/indexes/1.21.11.json",
+ "files": [
+  {
+   "path": "client.jar",
+   "bytes": 27557397,
+   "sha256": "da4e06f43a884c99d619545c13e1e22b20eabe86e5a740ef8d9a91896b67e958",
+   "what": "the official 1.21.11 client, backported to Java 17"
+  },
+  {
+   "path": "libs/lz4-java-1.8.1.jar",
+   "bytes": 683071,
+   "sha256": "1de8ff91b90fba9d4896b8617ed3594c2e4390d321d5a92c34f80e62e406c1b0",
+   "what": "lz4-java-1.8.1.jar"
+  },
+  {
+   "path": "libs/java-objc-bridge-1.1.jar",
+   "bytes": 1330045,
+   "sha256": "77e34a13bccffc6c8b1a0e3ed46ddb0ea7dd56f2104ecdfacaaec9e4054ac332",
+   "what": "java-objc-bridge-1.1.jar"
+  },
+  {
+   "path": "libs/azure-json-1.4.0.jar",
+   "bytes": 325945,
+   "sha256": "c50bc998cd1a6c689f8644b51c206217bf2da09d5b949e777490a60290cc3a0d",
+   "what": "azure-json-1.4.0.jar"
+  },
+  {
+   "path": "libs/oshi-core-6.9.0.jar",
+   "bytes": 1022125,
+   "sha256": "b29ba9bce041e6ea822203d5b5a692660c87551241510ebc76eedffe684844c7",
+   "what": "oshi-core-6.9.0.jar"
+  },
+  {
+   "path": "libs/gson-2.13.2.jar",
+   "bytes": 289901,
+   "sha256": "dd0ce1b55a3ed2080cb70f9c655850cda86c206862310009dcb5e5c95265a5e0",
+   "what": "gson-2.13.2.jar"
+  },
+  {
+   "path": "libs/failureaccess-1.0.3.jar",
+   "bytes": 10763,
+   "sha256": "cbfc3906b19b8f55dd7cfd6dfe0aa4532e834250d7f080bd8d211a3e246b59cb",
+   "what": "failureaccess-1.0.3.jar"
+  },
+  {
+   "path": "libs/guava-33.5.0-jre.jar",
+   "bytes": 3017283,
+   "sha256": "1e301f0c52ac248b0b14fdc3d12283c77252d4d6f48521d572e7d8c4c2cc4ac7",
+   "what": "guava-33.5.0-jre.jar"
+  },
+  {
+   "path": "libs/icu4j-77.1.jar",
+   "bytes": 14663227,
+   "sha256": "b3640b9f416a4411fd33c59abbeea8fd57d024c23e1819bf9673220a97499fe3",
+   "what": "icu4j-77.1.jar"
+  },
+  {
+   "path": "libs/msal4j-1.23.1.jar",
+   "bytes": 392813,
+   "sha256": "414d4fe3c66c7bb1a741014f352e5f0a8329172703e7fbb0020d232a8c8385b1",
+   "what": "msal4j-1.23.1.jar"
+  },
+  {
+   "path": "libs/authlib-7.0.61.jar",
+   "bytes": 116084,
+   "sha256": "09a152617bd23c86bf59db1f9ba82ede23ec8f691a824d6c5dec4f0175f82aa4",
+   "what": "authlib-7.0.61.jar"
+  },
+  {
+   "path": "libs/blocklist-1.0.10.jar",
+   "bytes": 964,
+   "sha256": "830bfd639c8db49236bbd8e45d3a2b8c96c56ff654a10118654958a6235d4c44",
+   "what": "blocklist-1.0.10.jar"
+  },
+  {
+   "path": "libs/brigadier-1.3.10.jar",
+   "bytes": 80082,
+   "sha256": "c8ee4136e474ac7723ca2b432ec8d1a2bc88ef7d1ec57c314ba9e33cdc83dd75",
+   "what": "brigadier-1.3.10.jar"
+  },
+  {
+   "path": "libs/datafixerupper-9.0.19.jar",
+   "bytes": 731440,
+   "sha256": "9653a39cf5c4853cc98628d902dcb23ffeb2755122ecc563bde38c8f60c0b61e",
+   "what": "datafixerupper-9.0.19.jar"
+  },
+  {
+   "path": "libs/jtracy-1.0.37.jar",
+   "bytes": 14787,
+   "sha256": "a3255c724be1493a40b5e4043cc3c5462d7cbee6a509179b0ff9805d40df4d40",
+   "what": "jtracy-1.0.37.jar"
+  },
+  {
+   "path": "libs/jtracy-1.0.37-natives-linux.jar",
+   "bytes": 193951,
+   "sha256": "4b22779ea24eecd3e3cf6eb06030ca85b833dd8b7a169bf3b88afd6c1676cc68",
+   "what": "jtracy-1.0.37-natives-linux.jar"
+  },
+  {
+   "path": "libs/jtracy-1.0.37-natives-macos.jar",
+   "bytes": 179562,
+   "sha256": "ae5d69a0a6d86454a51add09da195ee81b60a05ca791e1f7b508975a0a592d26",
+   "what": "jtracy-1.0.37-natives-macos.jar"
+  },
+  {
+   "path": "libs/jtracy-1.0.37-natives-macos-arm64.jar",
+   "bytes": 193249,
+   "sha256": "e87149fd9d689f625adef9510771f9917d15e4834757223cad4876b438ea5682",
+   "what": "jtracy-1.0.37-natives-macos-arm64.jar"
+  },
+  {
+   "path": "libs/jtracy-1.0.37-natives-windows.jar",
+   "bytes": 46763,
+   "sha256": "219c2aab0f1453901df8cd39886659dc5159a9c1139264c14f06baebf49b9730",
+   "what": "jtracy-1.0.37-natives-windows.jar"
+  },
+  {
+   "path": "libs/logging-1.6.11.jar",
+   "bytes": 20706,
+   "sha256": "5d803eb7348a27468c6172daef2f0d77260dd63cde377ebfa73e36789ae8fcee",
+   "what": "logging-1.6.11.jar"
+  },
+  {
+   "path": "libs/patchy-2.2.10.jar",
+   "bytes": 4439,
+   "sha256": "16d70e7968b45caffc81576268eb000f473fb60bf257182d3447dea8ec919d5a",
+   "what": "patchy-2.2.10.jar"
+  },
+  {
+   "path": "libs/text2speech-1.18.11.jar",
+   "bytes": 13842,
+   "sha256": "587f08aa316ee4d6a9f39f77d3ba7d8a83425da53aa74938a1f034a4e3fc255f",
+   "what": "text2speech-1.18.11.jar"
+  },
+  {
+   "path": "libs/commons-codec-1.19.0.jar",
+   "bytes": 374716,
+   "sha256": "5c3881e4f556855e9c532927ee0c9dfde94cc66760d5805c031a59887070af5f",
+   "what": "commons-codec-1.19.0.jar"
+  },
+  {
+   "path": "libs/commons-io-2.20.0.jar",
+   "bytes": 563971,
+   "sha256": "df90bba0fe3cb586b7f164e78fe8f8f4da3f2dd5c27fa645f888100ccc25dd72",
+   "what": "commons-io-2.20.0.jar"
+  },
+  {
+   "path": "libs/netty-buffer-4.2.7.Final.jar",
+   "bytes": 373323,
+   "sha256": "b81613c8ed22b1cc39eccf2a28bd0c1d4561fb2e5e542061617ef4ce1d228bf5",
+   "what": "netty-buffer-4.2.7.Final.jar"
+  },
+  {
+   "path": "libs/netty-codec-base-4.2.7.Final.jar",
+   "bytes": 152980,
+   "sha256": "6360415b7c87160afcde5e7d4946c35539b9f043e8166c91a7fff95cc6067d9f",
+   "what": "netty-codec-base-4.2.7.Final.jar"
+  },
+  {
+   "path": "libs/netty-codec-compression-4.2.7.Final.jar",
+   "bytes": 182886,
+   "sha256": "edd53ad34991804301a46571113d8ffb4d6f67e6d874674dafbb915724275cb3",
+   "what": "netty-codec-compression-4.2.7.Final.jar"
+  },
+  {
+   "path": "libs/netty-codec-http-4.2.7.Final.jar",
+   "bytes": 683327,
+   "sha256": "2984dd38420a61c4dd68fcacc51ffc528eb46f73f7795cdafdb3a4d6fcb76862",
+   "what": "netty-codec-http-4.2.7.Final.jar"
+  },
+  {
+   "path": "libs/netty-common-4.2.7.Final.jar",
+   "bytes": 789111,
+   "sha256": "2345bc0ed5843fa57aa49eba67529485c3a1d420fcf0429324c8220c7a80e9a6",
+   "what": "netty-common-4.2.7.Final.jar"
+  },
+  {
+   "path": "libs/netty-handler-4.2.7.Final.jar",
+   "bytes": 581349,
+   "sha256": "21d063409c12dbcec46d380c8856a0f7b6a5b68bb5f1d005eb065b4d64146cb3",
+   "what": "netty-handler-4.2.7.Final.jar"
+  },
+  {
+   "path": "libs/netty-resolver-4.2.7.Final.jar",
+   "bytes": 38454,
+   "sha256": "7e4d569867e6c08437fb21a220ea01c294b0e38f01149b683c895a1bcd928438",
+   "what": "netty-resolver-4.2.7.Final.jar"
+  },
+  {
+   "path": "libs/netty-transport-classes-epoll-4.2.7.Final.jar",
+   "bytes": 156228,
+   "sha256": "4492948e6a7694398e5197cf15ed2e21d6662a739d010ae666fa276e7222853c",
+   "what": "netty-transport-classes-epoll-4.2.7.Final.jar"
+  },
+  {
+   "path": "libs/netty-transport-classes-kqueue-4.2.7.Final.jar",
+   "bytes": 117794,
+   "sha256": "a3eb1c94ae1a6be9e1d1ec52c3f5c510a75b04b8ef1ea86b7e77b3f1287ae3cc",
+   "what": "netty-transport-classes-kqueue-4.2.7.Final.jar"
+  },
+  {
+   "path": "libs/netty-transport-native-epoll-4.2.7.Final-linux-aarch_64.jar",
+   "bytes": 43408,
+   "sha256": "2f0c7309d7df48a88fb374c02cfb446e1a1e5fb597fb02d773c70ac07da2c268",
+   "what": "netty-transport-native-epoll-4.2.7.Final-linux-aarch_64.jar"
+  },
+  {
+   "path": "libs/netty-transport-native-epoll-4.2.7.Final-linux-x86_64.jar",
+   "bytes": 41810,
+   "sha256": "7f395c8fdbe6990f7664408b57d919042401b893178fcba48bebf1a61bf78618",
+   "what": "netty-transport-native-epoll-4.2.7.Final-linux-x86_64.jar"
+  },
+  {
+   "path": "libs/netty-transport-native-kqueue-4.2.7.Final-osx-aarch_64.jar",
+   "bytes": 27122,
+   "sha256": "7647a69558e3d49a352781c2ae81a97e16b442d7c6565a06b4ae0f15298489d5",
+   "what": "netty-transport-native-kqueue-4.2.7.Final-osx-aarch_64.jar"
+  },
+  {
+   "path": "libs/netty-transport-native-kqueue-4.2.7.Final-osx-x86_64.jar",
+   "bytes": 26463,
+   "sha256": "a29c08b6895746aaca796e72a429bc705f40267feb35f75cd8fbbcd4de6de99f",
+   "what": "netty-transport-native-kqueue-4.2.7.Final-osx-x86_64.jar"
+  },
+  {
+   "path": "libs/netty-transport-native-unix-common-4.2.7.Final.jar",
+   "bytes": 46861,
+   "sha256": "736703b3f6d127e182f5be888b6e15732b0c08d6634e00725352a6a9d19974b2",
+   "what": "netty-transport-native-unix-common-4.2.7.Final.jar"
+  },
+  {
+   "path": "libs/netty-transport-4.2.7.Final.jar",
+   "bytes": 562559,
+   "sha256": "aadc6fb05c14fb789368ca3f854721549c72f6c0d81798bbccf9de1bb716892b",
+   "what": "netty-transport-4.2.7.Final.jar"
+  },
+  {
+   "path": "libs/fastutil-8.5.18.jar",
+   "bytes": 23965563,
+   "sha256": "9094ae67d01d0ad246f886f11ad557fc2e79c72cbf3feed83e1512a8ae90a74a",
+   "what": "fastutil-8.5.18.jar"
+  },
+  {
+   "path": "libs/jna-platform-5.17.0.jar",
+   "bytes": 1378617,
+   "sha256": "b7e3d46c87bad2eb409b0e704916bcd81206168e357312dfddd0e253679cd9e0",
+   "what": "jna-platform-5.17.0.jar"
+  },
+  {
+   "path": "libs/jna-5.17.0.jar",
+   "bytes": 2002589,
+   "sha256": "b3a9408e7c51e08ef0e3bfcc08f443f6ec0f6191ba8cd7c18d53d2b22e5bdbc0",
+   "what": "jna-5.17.0.jar"
+  },
+  {
+   "path": "libs/jopt-simple-5.0.4.jar",
+   "bytes": 78146,
+   "sha256": "df26cc58f235f477db07f753ba5a3ab243ebe5789d9f89ecf68dd62ea9a66c28",
+   "what": "jopt-simple-5.0.4.jar"
+  },
+  {
+   "path": "libs/commons-compress-1.28.0.jar",
+   "bytes": 1117221,
+   "sha256": "e1522945218456f3649a39bc4afd70ce4bd466221519dba7d378f2141a4642ca",
+   "what": "commons-compress-1.28.0.jar"
+  },
+  {
+   "path": "libs/commons-lang3-3.19.0.jar",
+   "bytes": 709075,
+   "sha256": "32733ab4bc90b45b63eb72677d886961003fd4ed113e07b1028f9877cb2ac735",
+   "what": "commons-lang3-3.19.0.jar"
+  },
+  {
+   "path": "libs/log4j-api-2.25.2.jar",
+   "bytes": 349595,
+   "sha256": "9fd66c9fe0bea06fa9666c147989a46cafaa92b4a88753697d3945cc43338cbb",
+   "what": "log4j-api-2.25.2.jar"
+  },
+  {
+   "path": "libs/log4j-core-2.25.2.jar",
+   "bytes": 2018265,
+   "sha256": "e50db7701430ff907981850ef527a41d51a53dd0017f53a0860afcbab8570277",
+   "what": "log4j-core-2.25.2.jar"
+  },
+  {
+   "path": "libs/log4j-slf4j2-impl-2.25.2.jar",
+   "bytes": 30232,
+   "sha256": "faffe8c867d59f813fb4bd1edf5354bfe86125811a7c9b305e5d225da8e7ea54",
+   "what": "log4j-slf4j2-impl-2.25.2.jar"
+  },
+  {
+   "path": "libs/jorbis-0.0.17.jar",
+   "bytes": 99701,
+   "sha256": "e067f29a3701426b67ed973036949c6e58ca5bb53eef7240b2e71e286d252a9e",
+   "what": "jorbis-0.0.17.jar"
+  },
+  {
+   "path": "libs/joml-1.10.8.jar",
+   "bytes": 778846,
+   "sha256": "bf19510145178df82cd3bd37edd514c13f411531ec5545299fd3abcbc98fe7c2",
+   "what": "joml-1.10.8.jar"
+  },
+  {
+   "path": "libs/jspecify-1.0.0.jar",
+   "bytes": 3819,
+   "sha256": "1fad6e6be7557781e4d33729d49ae1cdc8fdda6fe477bb0cc68ce351eafdfbab",
+   "what": "jspecify-1.0.0.jar"
+  },
+  {
+   "path": "libs/slf4j-api-2.0.17.jar",
+   "bytes": 69908,
+   "sha256": "7b751d952061954d5abfed7181c1f645d336091b679891591d63329c622eb832",
+   "what": "slf4j-api-2.0.17.jar"
+  },
+  {
+   "path": "mods/fabric-api-0.141.6+1.21.11.jar",
+   "bytes": 2461005,
+   "sha256": "9269f737056ad86ce10fbe0b6b0c849467b495c2bf9ea30318de23f7766d115c",
+   "what": "fabric-api-0.141.6+1.21.11.jar (backported)"
+  },
+  {
+   "path": "mods/sodium-fabric-0.8.14+mc1.21.11.jar",
+   "bytes": 1834166,
+   "sha256": "4fe6052ca7b7ae602ef71512ee3833ab6a0deb381720de78e1c5466dcb50083f",
+   "what": "sodium-fabric-0.8.14+mc1.21.11.jar (backported)"
+  },
+  {
+   "path": "assets/objects/b6/b62ca8ec10d07e6bf5ac8dae0c8c1d2e6a1e3356",
+   "bytes": 9101,
+   "sha256": "be785e1c671c5f8a8ef39aa8b8bcdd116804626ba03f5b1bc3700d399fb45bc3",
+   "what": "icons/icon_128x128.png"
+  },
+  {
+   "path": "assets/objects/5f/5ff04807c356f1beed0b86ccf659b44b9983e3fa",
+   "bytes": 781,
+   "sha256": "23a0e228c33a2353d625d9ebfc62997a227d7b7f463ab0d9f9d9d98a424f7de8",
+   "what": "icons/icon_16x16.png"
+  },
+  {
+   "path": "assets/objects/80/8030dd9dc315c0381d52c4782ea36c6baf6e8135",
+   "bytes": 19642,
+   "sha256": "5b5df681f08a229566125e8974191a1252b136309ad39132c616763b3e56e4e4",
+   "what": "icons/icon_256x256.png"
+  },
+  {
+   "path": "assets/objects/af/af96f55a90eaf11b327f1b5f8834a051027dc506",
+   "bytes": 2063,
+   "sha256": "580ba697b652aa80088d23126ae3ecbd45c2d9e26979511f445dbc6a71845b27",
+   "what": "icons/icon_32x32.png"
+  },
+  {
+   "path": "assets/objects/b8/b80b6e9ff01c78c624df5429e1d3dcd3d5130834",
+   "bytes": 3409,
+   "sha256": "c474d91a8591df001a4817327a43ce58a9964765b8507751fb855b04077bd413",
+   "what": "icons/icon_48x48.png"
+  },
+  {
+   "path": "assets/objects/f0/f00657542252858a721e715a2e888a9226404e35",
+   "bytes": 374665,
+   "sha256": "cd8fbbf47ef6b69dc65176c94426e9711a115baa1b505a545c954e167b8a30c5",
+   "what": "icons/minecraft.icns"
+  },
+  {
+   "path": "assets/objects/95/958d57021d8009de55d6e9e19957a72545e3c30c",
+   "bytes": 9083,
+   "sha256": "c21c036fbfeb945b660f7cefdba805755127104f0fe1ca583a8943d3d6d9606e",
+   "what": "icons/snapshot/icon_128x128.png"
+  },
+  {
+   "path": "assets/objects/94/949afe72d4d3d785dab52d8baaefeb0e38b3c067",
+   "bytes": 783,
+   "sha256": "978da5860e5eba38e1884b285492c2d752ad7fc662373e20c12dbbbda132f842",
+   "what": "icons/snapshot/icon_16x16.png"
+  },
+  {
+   "path": "assets/objects/9f/9f84f917a09facacf1235eed3fa77789e4554afb",
+   "bytes": 19683,
+   "sha256": "c816c4b5554c88e6f049b308a6b6c97916819395dab72133fdf45ab15fd40d52",
+   "what": "icons/snapshot/icon_256x256.png"
+  },
+  {
+   "path": "assets/objects/26/26ad18d9f4ef0a71255459b5f01b738b81dbc7dc",
+   "bytes": 1970,
+   "sha256": "17d0e586c6a70665333d7672c8c54577dfd48ad1d94f61def92e20103347947c",
+   "what": "icons/snapshot/icon_32x32.png"
+  },
+  {
+   "path": "assets/objects/df/df274fe57c49ef1af6d218703d805db76a5c8af9",
+   "bytes": 3225,
+   "sha256": "2f8780bf08e78188c2523cf79063bf59b8c3441a09de805800686638b230a4e0",
+   "what": "icons/snapshot/icon_48x48.png"
+  },
+  {
+   "path": "assets/objects/65/65ebca3306ccd6d7f9d5de8f1cc7a1216d80246d",
+   "bytes": 318515,
+   "sha256": "37b81379aed67ded9763079ba256d9740353f97f5b455b79e67c43873df4ce93",
+   "what": "icons/snapshot/minecraft.icns"
+  },
+  {
+   "path": "assets/objects/40/402ded0eebd448033ef415e861a17513075f80e7",
+   "bytes": 3993,
+   "sha256": "8b0624ab98ad3e6d4038b581f3cc83c497587a92e764da7784f7a4dfd528c1be",
+   "what": "minecraft/font/include/unifont.json"
+  },
+  {
+   "path": "assets/objects/db/db5582c177aca966ba1a9b062cead233a262a939",
+   "bytes": 136,
+   "sha256": "f930b6cc37353ee5c149a18eadf7a6d492a8bfd02ad63b8782ed4afc528800d5",
+   "what": "minecraft/font/include/unifont_pua.json"
+  },
+  {
+   "path": "assets/objects/cc/ccd5ac4767ce0a9c71d1dd62f2dc25449789b5dd",
+   "bytes": 1559654,
+   "sha256": "aea3e9918b0d31de6f94623080f04c31c8c16a5b1a2e8d99ab39f1acdddd30f7",
+   "what": "minecraft/font/unifont.zip"
+  },
+  {
+   "path": "assets/objects/59/590470ab0f17afb73a4e41d9cb56fdbe069d275a",
+   "bytes": 234900,
+   "sha256": "a14d2da4f452442691791c834cf55aae43f8b435a4736eea44cb327435bca20e",
+   "what": "minecraft/font/unifont_jp.zip"
+  },
+  {
+   "path": "assets/objects/d7/d7caa0e3aa5eb656c51817ae4bfbf3c4d72cdaad",
+   "bytes": 100360,
+   "sha256": "65388145333f6ceffe2be67790183a77d45b97236248ac1eab3befe6a17979d7",
+   "what": "minecraft/font/unifont_pua.zip"
+  },
+  {
+   "path": "assets/objects/af/af28e43df0b60875348cecd1c1f65e2325b54204",
+   "bytes": 625075,
+   "sha256": "01f3d261ed23a8a5ddee4ce6ca864432ef15dcae664eb5daadf34ac5d85d0120",
+   "what": "minecraft/textures/gui/title/background/panorama_0.png"
+  },
+  {
+   "path": "assets/objects/15/15e3d77a4555455d752fde55b2661c159bee59ba",
+   "bytes": 693845,
+   "sha256": "f5f4d0331e6dc8835a7849a46f4f45b01ce8f66690431f8410a170a1e843ad7f",
+   "what": "minecraft/textures/gui/title/background/panorama_1.png"
+  },
+  {
+   "path": "assets/objects/bc/bc648a153191d8490fbaaa49e89c62240c6b2936",
+   "bytes": 510165,
+   "sha256": "3edbf7f99fc686a60c949187838e1442cd3ffc10c485bfe4871ca25541ab9771",
+   "what": "minecraft/textures/gui/title/background/panorama_2.png"
+  },
+  {
+   "path": "assets/objects/79/79795659716b1f0ad2b2b3078933acb7c86327d9",
+   "bytes": 460570,
+   "sha256": "0b8df1ad39e4e9da983eab25be705d6b559bd77b0cdb2147f0e3a16c26dffb63",
+   "what": "minecraft/textures/gui/title/background/panorama_3.png"
+  },
+  {
+   "path": "assets/objects/64/64d2b763bb3bcfcaee67ba1b9351b0a83c209ae7",
+   "bytes": 247400,
+   "sha256": "442e2726aa6f523b54a9d4208e40a4768e891dffff7e311f39b74f08e7918e9e",
+   "what": "minecraft/textures/gui/title/background/panorama_4.png"
+  },
+  {
+   "path": "assets/objects/4e/4ef46fd3165dcd588f4b2d945d4aacca9ad90d42",
+   "bytes": 201079,
+   "sha256": "8d54fcfb66e3c23d8b211b88708a5e7d9d908dcd52d36ee5a963c8e036b2bce3",
+   "what": "minecraft/textures/gui/title/background/panorama_5.png"
+  },
+  {
+   "path": "assets/objects/9d/9dd32387135eefa7ab95996d52a5ca4cec8a3b30",
+   "bytes": 86,
+   "sha256": "4cabea349b45c137de6ab4472303fb20fb94b07a119c8926aa54575ffbab91e6",
+   "what": "minecraft/textures/gui/title/background/panorama_overlay.png"
+  }
+ ],
+ "total_bytes": 97947732,
+ "counts": {
+  "files": 78,
+  "libraries": 51,
+  "assets": 24,
+  "mods": 2
+ }
+}

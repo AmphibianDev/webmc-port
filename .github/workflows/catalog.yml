@@ -1,0 +1,221 @@
+name: Catalog and site
+
+# Two jobs, on purpose:
+#
+#   catalog  - reads Mojang's version list, decides what each new version needs, rebuilds the
+#              launcher page and deploys it. Runs daily and on demand. Cheap: seconds.
+#   build    - compiles one version with an engine (Gaius for modern releases). Manual, because
+#              it wants a big machine and the better part of an hour, and because a build
+#              should be a decision rather than a cron.
+#
+# Nothing here fetches the game on the catalog path, and the repository never holds a client.
+
+on:
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+    inputs:
+      build_version:
+        description: "Also build this version (leave empty for catalog only)"
+        required: false
+        type: string
+  push:
+    branches: [main]
+    paths: ["tools/**", "tests/**", "site/**", "ports.json", ".github/workflows/catalog.yml"]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  # Fast, page-refreshing work: a newer push should replace an older run. The long compile lives in
+  # build-snapshot.yml precisely so this can stay aggressive without killing a build.
+  group: webmc-port-catalog
+  cancel-in-progress: true
+
+jobs:
+  catalog:
+    name: Version catalog and launcher page
+    runs-on: ubuntu-latest
+    # A catalog run is seconds of work, but a step that hangs on a slow host should give the runner
+    # back rather than hold it: tools/workflow_lint.py requires this on every job.
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Tests
+        run: |
+          set -euo pipefail
+          python3 tests/test_pipeline.py
+          python3 tests/test_launchplan.py
+          node tests/test_site.mjs
+
+      - name: What the catalog says right now
+        run: |
+          set -euo pipefail
+          {
+            echo "## Latest versions"
+            python3 tools/plan.py --kinds release,snapshot --limit 12
+            echo
+            echo "## Old versions that have a prebuilt client"
+            python3 tools/plan.py --kinds old_beta,old_alpha --limit 8
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Classify what a browser JVM can run (the real-Java route)
+        # One small request per version, cached in state.json, so the catalog converges over runs
+        # instead of asking Mojang about 857 versions at once. This is what makes the launch route
+        # cover the whole LWJGL-2 family rather than nine hand-picked versions.
+        # Never fatal: if Mojang is unreachable the page should still deploy with the verdicts it
+        # already has cached, and the next run picks up where this one stopped.
+        run: |
+          python3 tools/jvm_route.py --state state.json --limit 120 --write --print \
+            || echo "::warning::could not classify any more versions this run; keeping the cache"
+
+      - name: Vendor the libraries a version's client needs to start
+        # 1.12.2 declares 37 libraries; handing the JVM two of them is why every version failed to
+        # start. Deduplicated by sha1, so the pool grows far more slowly than the version count, and
+        # site/libs is git-ignored: these are third-party jars, deployed but never committed.
+        run: |
+          # Releases first, newest first, then snapshots: these are what make a version start, and
+          # the pool is deduplicated by sha1 so it grows far more slowly than the version count.
+          python3 tools/vendor_libs.py --from-manifest site/manifest.json --limit 25 --out site/libs \
+            || echo "::warning::could not vendor more libraries this run"
+          du -sh site/libs 2>/dev/null || true
+
+      - name: Build the loader page (the shim, its natives, and the boot test)
+        # Published so the loader can be opened in a real browser without cloning anything: the page, the
+        # jar, and the JavaScript implementations. Nothing of the game - the Java program here is our own
+        # twenty-line boot test.
+        run: |
+          set -euo pipefail
+          mkdir -p site/loader/classes
+          find lwjgl3-webgl/src/main/java -name "*.java" > /tmp/loader-sources.txt
+          # the shim on its own first: the real-JVM page needs it as a jar on the client's classpath, and
+          # the boot test's jar below deliberately has the test class in it
+          javac --release 17 -nowarn -d /tmp/shim-classes @/tmp/loader-sources.txt
+          (cd /tmp/shim-classes && jar --create --file "$GITHUB_WORKSPACE/site/loader/webmc-lwjgl3.jar" .)
+          echo "lwjgl3-webgl/test/BootTest.java" >> /tmp/loader-sources.txt
+          javac --release 17 -nowarn -d site/loader/classes @/tmp/loader-sources.txt
+          (cd site/loader/classes && jar --create --file ../app.jar .)
+          rm -rf site/loader/classes
+          mkdir -p site/loader/natives
+          cp lwjgl3-webgl/natives/webmc-lwjgl3.js site/loader/natives/
+          # the real-JVM page imports it from the site root; a stale copy there is a page that runs an old
+          # shim and says nothing about it
+          cp lwjgl3-webgl/natives/webmc-lwjgl3.js site/lwjgl3-webmc-lwjgl3.js
+          cp lwjgl3-webgl/test/boot.html site/loader/index.html
+          cp site/loader-play.html site/loader/play.html
+          ls -la site/loader site/loader/natives | head -12
+
+      - name: Build our own loader, and the example mod
+        # The one jar on the critical path that is our code: it starts a vanilla mod, and it is what
+        # tells Fabric where the game and the mods are. Java 8 bytecode, so the same jar runs in
+        # CheerpJ's Java 8 mode (the LWJGL 2 clients) and its 17 mode (1.13 - 1.20.4).
+        run: |
+          set -euo pipefail
+          python3 tools/build_loader.py
+          python3 tools/build_mods.py || echo "::warning::the example mod did not build; the manifest lists it and the launcher reports it as missing"
+          python3 tests/test_loader.py
+
+      - name: Check that every play link is alive and servable
+        run: |
+          python3 tools/check_links.py --state state.json --write --limit 60 \
+            || echo "::warning::link check did not finish"
+
+      - name: Refresh what Fabric supports (the launcher's Fabric column, both Fabrics)
+        # Two meta calls cover the whole catalogue, and two more cover Legacy Fabric - which is the
+        # only Fabric the LWJGL 2 clients (1.8.9 - 1.12.2) have. If a meta is down the committed copy
+        # from the last successful refresh is kept, so the page degrades to slightly stale data.
+        run: |
+          set -euo pipefail
+          python3 tools/fabric.py --out site/fabric.json --legacy-out site/legacy-fabric.json --print \
+            || { echo "::warning::fabric meta unreachable; keeping the committed site/fabric.json"; \
+                 cp fixtures/fabric.json site/fabric.json; }
+
+      - name: Update the state and the page's manifest
+        run: python3 tools/update.py --strict-urls --write
+
+      - name: Put any packed clients on the site
+        # A packed client is published as a release asset by the build job (the one write channel that
+        # always works) and unpacked here, where pushing to main is ordinary.
+        run: |
+          set -euo pipefail
+          python3 tools/fetch_packed.py --all --record || echo "::warning::no packed client could be fetched"
+          ls -la site/clients 2>/dev/null | head -5 || true
+
+      - name: Check the packed clients we are about to publish, from the outside
+        # The build job checked its own work as it went. This reads the files the way a visitor's browser will -
+        # the manifest, each chunk's hash, the boot screen, the branding, the mod set - because a page that is
+        # wrong in one of those ways is wrong for everybody, and this is the last place it can be caught.
+        run: |
+          set -euo pipefail
+          failed=0
+          for dir in site/clients/*/; do
+            [ -f "$dir/manifest.json" ] || continue
+            echo "::group::$dir"
+            # advisories do not block a publish: they are things the next build fixes, and a catalogue
+            # that refuses to deploy because a compiled client contains somebody's product name never deploys
+            python3 tools/verify_client.py --dir "$dir" || failed=1
+            echo "::endgroup::"
+          done
+          # A page that fails this is published broken: say so as an error, so the job (and the person watching
+          # it) sees the failure rather than a green tick over a broken download.
+          [ "$failed" = "0" ] || { echo "::error::a packed client does not survive being read from the outside"; exit 1; }
+
+      - name: How each version runs, for the launcher
+        # One file the page reads next to the catalog: route (real Java / waiting on the shim / compiled),
+        # which engine builds it, that engine's licence, and whether it can take a mod set at all.
+        run: python3 tools/route.py --export site/routes.json --manifest site/manifest.json
+
+      - name: Write the launch plans and stage the mods folder
+        # Everything a launch needs, per version and per mode, as data. The page fetches one plan for
+        # the one version being started, and the mod jars it names are copied out of mods/jars/ into
+        # the deployed site (they are git-ignored: a mod jar is somebody else's binary).
+        run: |
+          set -euo pipefail
+          python3 tools/launchplan.py --write --stage site/mods --limit 40
+
+      - name: Keep the catalog in the repository
+        run: |
+          set -euo pipefail
+          git config user.name "webmc-port-bot"
+          git config user.email "webmc-port-bot@users.noreply.github.com"
+          git add state.json site/manifest.json site/fabric.json site/legacy-fabric.json
+          git add -f site/clients 2>/dev/null || true
+          git diff --cached --quiet && echo "catalog unchanged" && exit 0
+          git commit -m "catalog: refresh the version list"
+          for attempt in 1 2 3; do
+            git push && break
+            git pull --rebase && continue
+          done
+
+      - name: Vendor the platform pieces the launch page needs (no game files)
+        # A real JVM in a page needs a platform layer: CheerpJ runs the JVM, cheerpj-natives
+        # (Apache-2.0) implements LWJGL's native methods in JavaScript, and LWJGL itself (BSD) is
+        # the Java side of the graphics API. None of it is Minecraft, and the game itself is never
+        # touched here: the launch page fetches that from Mojang in the visitor's browser.
+        run: |
+          set -euo pipefail
+          mkdir -p site/lwjgl-natives site/lwjgl
+          curl -fsSL --retry 3 --max-time 300 \
+            https://github.com/leaningtech/cheerpj-natives/archive/refs/heads/main.tar.gz | tar -xz -C /tmp
+          cp -r /tmp/cheerpj-natives-main/natives/. site/lwjgl-natives/
+          for jar in \
+            "org/lwjgl/lwjgl/lwjgl/2.9.3/lwjgl-2.9.3.jar" \
+            "org/lwjgl/lwjgl/lwjgl_util/2.9.3/lwjgl_util-2.9.3.jar"; do
+            curl -fsSL --retry 3 --max-time 300 "https://repo1.maven.org/maven2/$jar" \
+              --output "site/lwjgl/$(basename "$jar")"
+          done
+          echo "natives: $(ls site/lwjgl-natives | head -3 | tr '\n' ' ')"
+          echo "lwjgl:   $(ls site/lwjgl | tr '\n' ' ')"
+
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+      - uses: actions/deploy-pages@v5

@@ -1,0 +1,23 @@
+{
+ "note": "Cached engine files, copied so tools/aot_fixups.json can be checked without a build. They are MIT-licensed (see CREDITS.md): the files are here to prove our patches still match them, not to build anything from this repository.",
+ "repo": "https://github.com/TypeThe0ry/Gaius",
+ "commit": "f111ec1488a6bfd2d8e89ab9e9bcd72ea6b25245",
+ "fetched": "2026-10-15T12:09:20Z",
+ "files": {
+  "port/overrides/libraries/lwjgl-opengl/src/main/java/org/lwjgl/opengl/BrowserOpenGL.java": {
+   "bytes": 392627
+  },
+  "port/scripts/build-overlays.sh": {
+   "bytes": 46738
+  },
+  "port/scripts/check-version-profile.mjs": {
+   "bytes": 15483
+  },
+  "port/scripts/fetch-version.sh": {
+   "bytes": 7092
+  },
+  "port/tools/src/main/java/dev/gaius/tools/GuavaFutureStatePatcher.java": {
+   "bytes": 4063
+  }
+ }
+}

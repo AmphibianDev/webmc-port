@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Minecraft 1.21.11 — a real JVM in the page</title>
+<!--
+  The real-JVM route: the official client, backported to Java 17, running under CheerpJ with Fabric Loader - so
+  mods are loaded at play time, not compiled in. Nothing here is an ahead-of-time build of Minecraft.
+
+  Every file it needs, and where it comes from, was checked rather than assumed:
+
+    jvm/1.21.11/*        this site      the client, its libraries and a title-screen slice of its assets. Here
+                                        because libraries.minecraft.net and resources.download.minecraft.net send
+                                        no CORS header, so a page cannot fetch them (tools/jvm_bundle.py says so).
+    maven.fabricmc.net   at play time   Fabric Loader, Mixin, ASM and the intermediary mappings: that host does
+                                        send access-control-allow-origin, so they are fetched live, not vendored.
+    ?mods=<url,url>      wherever you    your own mods. They must already be Java 17: a mod for 1.21.11 is Java 21
+                         point it at     bytecode, and tools/backport_mods.py is what lowers it. The bundle carries
+                                        Fabric API and Sodium done that way.
+-->
+<style>
+  :root { --bg:#141415; --panel:#1e1e1f; --edge:#3a3a3d; --text:#e9e9ea; --muted:#9c9ca1;
+          --green:#3c8527; --green-2:#4b9e32; --code:#0f0f10; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--text); overflow:hidden;
+               font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
+  #app { display:grid; grid-template-rows:auto 1fr auto; height:100vh; }
+  header { display:flex; align-items:center; gap:14px; padding:12px 18px; background:var(--panel);
+           border-bottom:1px solid #000; }
+  header b { font-size:16px; }
+  header .where { color:var(--muted); font-size:13px; }
+  header a { color:#8fc7ff; text-decoration:none; font-size:13px; }
+  #stage { position:relative; background:#0b0b0c; overflow:hidden; }
+  #stage canvas { display:block; width:100%; height:100%; outline:none; }
+  #overlay { position:absolute; inset:0; display:grid; place-items:center; background:#0b0b0cf0; padding:24px;
+             transition:opacity .5s; }
+  #overlay.gone { opacity:0; pointer-events:none; }
+  .card { width:min(660px,92vw); max-height:88vh; overflow-y:auto; background:var(--panel);
+          border:1px solid var(--edge); border-radius:8px; padding:22px 24px; }
+  .card h1 { margin:0 0 6px; font-size:22px; }
+  .card p { margin:0 0 10px; color:var(--muted); }
+  .bar { height:8px; background:#0e0e10; border-radius:999px; overflow:hidden; margin:16px 0 8px; }
+  .bar i { display:block; height:100%; width:0; background:var(--green); transition:width .3s; }
+  #status { font-size:13.5px; color:var(--muted); min-height:20px; }
+  #log { background:var(--code); border:1px solid var(--edge); border-radius:6px; padding:10px; margin-top:14px;
+         font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; color:#c3c3c9; max-height:220px;
+         overflow-y:auto; white-space:pre-wrap; display:none; }
+  #log.shown { display:block; }
+  .actions { display:flex; gap:10px; align-items:center; margin-top:16px; flex-wrap:wrap; }
+  .play { background:var(--green); border:0; color:#fff; border-radius:5px; font-weight:700; letter-spacing:.06em;
+          padding:12px 30px; font-size:15px; }
+  .play:hover { background:var(--green-2); }
+  .ghost { background:none; border:1px solid var(--edge); color:var(--text); border-radius:5px; padding:11px 16px; }
+  .note { font-size:12.5px; color:var(--muted); margin-top:12px; }
+  .err { color:#ff9b9b; } .ok { color:#b9e69f; } .warn { color:#ffd28a; }
+  footer { display:flex; gap:14px; align-items:center; padding:8px 18px; background:var(--panel);
+           border-top:1px solid #000; color:var(--muted); font-size:12.5px; }
+  footer a { color:#8fc7ff; text-decoration:none; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <b>Minecraft 1.21.11</b>
+    <span class="where">the official client on a real JVM in this page — Fabric and mods load at play time</span>
+    <span style="flex:1"></span>
+    <a href="https://amphibiandev.github.io/webmc-launcher/" target="_blank" rel="noopener">Launcher</a>
+    <a href="https://github.com/AmphibianDev/webmc-port" target="_blank" rel="noopener">Source</a>
+  </header>
+
+  <div id="stage">
+    <div id="overlay">
+      <div class="card">
+        <h1 id="title">Starting 1.21.11</h1>
+        <p id="lead">The client, its libraries and Fabric are fetched once and then cached. The first start also
+          downloads the JVM runtime this page runs Java in.</p>
+        <div class="bar" id="bar"><i></i></div>
+        <div id="status">looking for CheerpJ…</div>
+        <div id="log"></div>
+        <div class="actions">
+          <button class="play" id="go" hidden>PLAY</button>
+          <button class="ghost" id="retry" hidden>Try again</button>
+          <button class="ghost" id="logbtn">Show the log</button>
+        </div>
+        <p class="note">Not an official Minecraft product. Nothing is compiled ahead of time: this is the game's own
+          jar, its own libraries, Fabric Loader, and whatever mods are in the bundle or in the URL.</p>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <span>not an official Minecraft product — the client is served from this site's own copy of Mojang's jar</span>
+    <span style="flex:1"></span>
+    <a href="#" id="loglink">?log=1</a>
+  </footer>
+</div>
+
+<script type="module">
+import { natives } from "./lwjgl3-webmc-lwjgl3.js";
+
+const params = new URLSearchParams(location.search);
+const el = (id) => document.getElementById(id);
+const version = (params.get("version") || "1.21.11").replace(/[^0-9A-Za-z._-]/g, "");
+const username = (params.get("username") || "WebMC").replace(/[^A-Za-z0-9_]/g, "").slice(0, 16) || "WebMC";
+const FABRIC_MAVEN = "https://maven.fabricmc.net";
+const BASE = new URL(".", location.href);
+
+function log(line, cls = "") {
+  const box = el("log");
+  const row = document.createElement("div");
+  if (cls) row.className = cls;
+  row.textContent = line;
+  box.append(row);
+  box.scrollTop = box.scrollHeight;
+  // The panel is what a person reads; this is what a headless browser - and anyone with devtools open -
+  // can read. Without it the only way to know where a launch stopped was to look at the page by hand.
+  (cls === "err" ? console.error : console.log)("[jvm] " + line);
+}
+const status = (text) => { el("status").textContent = text; };
+const progress = (fraction) => { el("bar").firstElementChild.style.width = `${Math.max(0, Math.min(1, fraction)) * 100}%`; };
+const showLog = () => el("log").classList.add("shown");
+if (params.get("log") === "1") showLog();
+el("logbtn").addEventListener("click", showLog);
+
+/* A missing CORS header is invisible from here: the fetch simply fails. One HEAD per host, before the work, so a
+   page that cannot fetch Fabric says that instead of failing inside the loader with "no Mixin". */
+async function reachable(url) {
+  try {
+    return (await fetch(url, { method: "HEAD", mode: "cors" })).ok;
+  } catch {
+    return false;
+  }
+}
+
+const RUNTIMES = ["https://cjrtnc.leaningtech.com/4.3/loader.js"];
+
+async function loadCheerpJ() {
+  for (const url of RUNTIMES) {
+    if (typeof globalThis.cheerpjInit === "function") return url;
+    try {
+      await new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = url;
+        script.onload = resolve;
+        script.onerror = () => reject(new Error(`${url} did not load`));
+        document.head.append(script);
+      });
+    } catch (problem) {
+      log(String(problem.message || problem), "warn");
+      continue;
+    }
+    if (typeof globalThis.cheerpjInit === "function") return url;
+  }
+  return null;
+}
+
+/* CheerpJ has renamed its file API across releases; every name it has used is tried. */
+function fileWriter() {
+  for (const name of ["cheerpjAddBinaryFile", "cheerpjAddFile", "cheerpOSAddFile", "cheerpjAddStringFile",
+                      "cheerpOSAddStringFile"]) {
+    if (typeof globalThis[name] === "function") return globalThis[name].bind(globalThis);
+  }
+  return null;
+}
+
+async function fetchCached(url) {
+  const cache = await caches.open("webmc-jvm-v1").catch(() => null);
+  if (cache) {
+    const hit = await cache.match(url);
+    if (hit) return new Uint8Array(await hit.arrayBuffer());
+  }
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`${url}: ${response.status} ${response.statusText}`);
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  if (cache) await cache.put(url, new Response(bytes)).catch(() => {});
+  return bytes;
+}
+
+async function mount(url, dest, label) {
+  const bytes = await fetchCached(url);
+  const write = fileWriter();
+  if (!write) throw new Error("no CheerpJ file API on this page");
+  await write(dest, bytes);
+  log(`${label || dest}: ${(bytes.length / 1048576).toFixed(1)} MB`);
+  return bytes;
+}
+
+async function start() {
+  el("title").textContent = `Starting ${version}`;
+  const loader = await loadCheerpJ();
+  if (!loader) {
+    status("CheerpJ did not load");
+    el("lead").textContent = "The Java runtime lives at cjrtnc.leaningtech.com and nothing on this page works "
+      + "without it: an ad-blocker, an offline network or a strict content-security policy stops it.";
+    log("loader.js did not define cheerpjInit", "err");
+    el("retry").hidden = false;
+    return;
+  }
+  log(`CheerpJ loaded from ${loader}`, "ok");
+  status("reading what to install…");
+
+  const manifest = await (await fetch(new URL(`jvm/${version}/manifest.json`, BASE))).json();
+  log(`the bundle has ${manifest.counts.files} file(s), ${(manifest.total_bytes / 1048576).toFixed(0)} MB: `
+      + `${manifest.counts.libraries} libraries, ${manifest.counts.assets} assets, ${manifest.counts.mods} mods`);
+
+  /* Fabric, from the Maven that allows a page to fetch it. These are the loader's own dependencies, read from its
+     installer metadata, so the versions match - a mismatched Mixin fails inside the loader, not here. */
+  const FABRIC = [
+    "net/fabricmc/fabric-loader/0.19.5/fabric-loader-0.19.5.jar",
+    "net/fabricmc/sponge-mixin/0.17.4+mixin.0.8.7/sponge-mixin-0.17.4+mixin.0.8.7.jar",
+    "net/fabricmc/intermediary/1.21.11/intermediary-1.21.11-v2.jar",
+    "org/ow2/asm/asm/9.10.1/asm-9.10.1.jar",
+    "org/ow2/asm/asm-tree/9.10.1/asm-tree-9.10.1.jar",
+    "org/ow2/asm/asm-commons/9.10.1/asm-commons-9.10.1.jar",
+    "org/ow2/asm/asm-analysis/9.10.1/asm-analysis-9.10.1.jar",
+    "org/ow2/asm/asm-util/9.10.1/asm-util-9.10.1.jar",
+  ];
+  if (!(await reachable(`${FABRIC_MAVEN}/${FABRIC[0]}`))) {
+    log("maven.fabricmc.net is not reachable from this page; without Fabric this route has nothing to run", "err");
+    status("Fabric is unreachable");
+    el("retry").hidden = false;
+    return;
+  }
+
+  const ownMods = (params.get("mods") || "").split(",").map((part) => part.trim()).filter(Boolean);
+
+  status("starting the JVM (Java 17)…");
+  await cheerpjInit({
+    version: 17,
+    natives,
+    javaProperties: [
+      `fabric.gameJarPath=/str/${version}-client.jar`,
+      "fabric.development=false",
+      "fabric.log.level=info",
+    ],
+  });
+  log("the JVM is up", "ok");
+
+  const total = manifest.files.length + FABRIC.length + ownMods.length;
+  let done = 0;
+  const tick = (label) => {
+    done += 1;
+    progress(done / total);
+    status(`installing ${done}/${total}: ${label}`);
+  };
+
+  for (const entry of manifest.files) {
+    const dest = entry.path === "client.jar" ? `/str/${version}-client.jar`
+      : entry.path.startsWith("assets/") ? `/str/assets/${entry.path.slice("assets/".length)}`
+      : entry.path.startsWith("mods/") ? `/str/mods/${entry.path.slice("mods/".length)}`
+      : `/str/webmc/${entry.path}`;
+    await mount(new URL(`jvm/${version}/${entry.path}`, BASE).href, dest, entry.what || entry.path);
+    tick(entry.path);
+  }
+  for (const path of FABRIC) {
+    const name = path.split("/").pop();
+    await mount(`${FABRIC_MAVEN}/${path}`, `/str/webmc/${name}`, name);
+    tick(name);
+  }
+  for (const url of ownMods) {
+    const name = url.split("/").pop().split("?")[0];
+    try {
+      await mount(url, `/str/mods/${name}`, name);
+    } catch (problem) {
+      log(`${name}: could not be fetched (${problem.message || problem}). A mod has to be Java 17 already - run `
+        + "tools/backport_mods.py on it, or build it with the launcher.", "err");
+    }
+    tick(name);
+  }
+  progress(1);
+
+  // The shim's own classes go first: this repository *is* LWJGL 3 for the browser, and the bundle
+  // deliberately carries no org.lwjgl jars for that reason. Without this jar the client stops at
+  // "Unable to initialize main class", which names the symptom and not the cause.
+  const SHIM = "loader/webmc-lwjgl3.jar";
+  await mount(new URL(SHIM, BASE).href, `/str/webmc/webmc-lwjgl3.jar`, "the LWJGL 3 shim");
+  const classpath = [
+    "/str/webmc/webmc-lwjgl3.jar",
+    `/str/${version}-client.jar`,
+    ...manifest.files.filter((entry) => entry.path.startsWith("libs/"))
+      .map((entry) => `/str/webmc/libs/${entry.path.slice(5)}`),
+    ...FABRIC.map((path) => `/str/webmc/${path.split("/").pop()}`),
+  ];
+  status("starting Minecraft under Fabric…");
+  el("lead").textContent = "The game is starting. Fabric reads mods/ at play time, so the bundle's mods and "
+    + "anything from ?mods= are loaded now — not compiled in.";
+  // ?main= picks the class to start: KnotClient loads mods at play time, net.minecraft.client.main.Main
+  // starts the client alone. Both are legitimate launches, and being able to choose is what turns "it did
+  // not start" into "which half did not start".
+  const main = params.get("main") || "net.fabricmc.loader.impl.launch.knot.KnotClient";
+  log(`running ${main}`);
+  el("go").hidden = false;
+
+  cheerpjCreateDisplay(-1, -1, el("stage"));
+  const code = await cheerpjRunMain("webmc.Launch", classpath.join(":"), main,
+    "--username", username, "--version", version, "--gameDir", ".",
+    "--assetsDir", "/str/assets", "--assetIndex", version,
+    "--uuid", "0", "--accessToken", "0", "--userType", "legacy");
+  log(`the client exited with code ${code}`, code === 0 ? "ok" : "warn");
+  el("overlay").classList.remove("gone");
+  el("title").textContent = code === 0 ? "The client stopped" : `The client stopped with code ${code}`;
+  el("retry").hidden = false;
+}
+
+el("go").addEventListener("click", () => {
+  el("overlay").classList.add("gone");
+  el("stage").querySelector("canvas")?.focus?.();
+});
+el("retry").addEventListener("click", () => location.reload());
+el("loglink").addEventListener("click", (event) => {
+  event.preventDefault();
+  const url = new URL(location.href);
+  url.searchParams.set("log", "1");
+  location.href = url;
+});
+
+start().catch((problem) => {
+  log(String(problem.stack || problem), "err");
+  status("something went wrong");
+  el("lead").textContent = String(problem.message || problem);
+  el("retry").hidden = false;
+});
+</script>
+</body>
+</html>
