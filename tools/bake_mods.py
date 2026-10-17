@@ -558,10 +558,11 @@ public final class __CLASS__ {
         if (end < 0) {
             return null;
         }
-        String value = json.substring(quote + 1, end);
-        // "com.example.Hello::onInitializeClient" and "com.example.Hello" are both legal
-        int separator = value.indexOf("::");
-        return separator < 0 ? value : value.substring(0, separator);
+        // "com.example.Hello::onInitializeClient" and "com.example.Hello" are both legal, and the method
+        // name has to survive this: Fabric API's own modules name their entrypoint `::init` and
+        // `::clientInit`, so inventing `onInitialize` from a stripped class name is how a build failed with
+        // "Method net.fabricmc.fabric.impl.networking.CommonPacketsImpl.onInitialize()V was not found".
+        return json.substring(quote + 1, end);
     }
 }
 '''
