@@ -105,6 +105,30 @@ public final class WebMC {
     public static native void readPixelsInto(int x, int y, int width, int height, int format, int type,
                                              byte[] into);
 
+    /**
+     * Copy results JavaScript wrote into its own heap into the arena, where Java can read them.
+     *
+     * Every "n" call that returns values through a pointer is in this shape: the JavaScript side has no
+     * way to write Java memory, so it writes where it can and this moves the bytes across. Without it the
+     * game reads the arena, gets zeros, and binds buffer 0 - which is a silent, confusing nothing.
+     */
+    public static void copyJsToArena(long jsAddress, long arenaAddress, int bytes) {
+        if (jsAddress == 0L || arenaAddress == 0L || bytes <= 0) {
+            return;
+        }
+        byte[] scratch = new byte[bytes];
+        nmemReadBytes(jsAddress, scratch, 0, bytes);
+        WebMCArena.write(arenaAddress, scratch);
+    }
+
+    /** Name generation, writing into JavaScript's own heap: copyJsToArena moves the result across. */
+    public static native void genBuffers(int count, long pointers);
+
+    /** A buffer bind, reached from Java so the value that arrives is visible. */
+    public static native void bindBuffer(int target, int buffer);
+
+    public static native void genVertexArrays(int count, long pointers);
+
     public static native void log(String message);
 
     /** And the same for the lines that are already StringBuffered. */

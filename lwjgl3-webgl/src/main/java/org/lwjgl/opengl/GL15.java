@@ -58,7 +58,9 @@ public final class GL15 {
     public static final int GL_WRITE_ONLY = 35001;
 
     // implemented in natives/webmc-lwjgl3.js
-    public static native void glBindBuffer(int arg0, int arg1);
+    public static void glBindBuffer(int target, int buffer) {
+        org.lwjgl.system.WebMC.bindBuffer(target, buffer);
+    }
 
     // implemented in natives/webmc-lwjgl3.js
     public static native void glBufferData(int arg0, long arg1, int arg2);
@@ -96,7 +98,20 @@ public final class GL15 {
     }
     // implemented in natives/webmc-lwjgl3.js (declared here because no measured
     // client calls it, so the generated surface does not mention it)
-    public static native void nglGenBuffers(int count, long pointers);
+    /**
+     * The results are produced in JavaScript's own heap and copied into the arena: JavaScript
+     * cannot write arena memory, and this call returns names *through a pointer*.
+     */
+    public static void nglGenBuffers(int count, long pointers) {
+        int bytes = Math.max(1, count) * 4;
+        long scratch = org.lwjgl.system.WebMC.nmemAlloc(bytes);
+        try {
+            org.lwjgl.system.WebMC.genBuffers(count, scratch);
+            org.lwjgl.system.WebMC.copyJsToArena(scratch, pointers, bytes);
+        } finally {
+            org.lwjgl.system.WebMC.nmemFree(scratch);
+        }
+    }
 
     // demanded by the client; the JavaScript behind it is in natives/webmc-lwjgl3.js
     // implemented in natives/webmc-lwjgl3.js

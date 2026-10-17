@@ -250,8 +250,11 @@
  "org.lwjgl.system.WebMC": [
   "arenaCapacity",
   "arenaUsed",
+  "bindBuffer",
   "bufferDataFromJava",
   "bufferSubDataFromJava",
+  "genBuffers",
+  "genVertexArrays",
   "log",
   "logText",
   "nmemASCII",
