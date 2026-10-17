@@ -180,6 +180,10 @@ def run(command, **kwargs):
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--main", default="webmc.BootTest",
+                        help="the Java class to run (with --source, any program against the shim)")
+    parser.add_argument("--source", action="append", default=[],
+                        help="extra Java source files to compile with the shim")
     parser.add_argument("--page", default=None,
                         help="serve this directory (with index.html) instead of building the boot test")
     parser.add_argument("--query", default="")
@@ -202,6 +206,15 @@ def main(argv=None) -> int:
 
     if args.fresh_profile:
         shutil.rmtree(args.profile, ignore_errors=True)
+    # A clone of the warm profile, per run: the profile is what makes CheerpJ's runtime cheap to reuse (it
+    # is a download), and it is also what a killed browser leaves locked. Cloning gets both - and `cp -c`
+    # clones on APFS, so it costs nothing.
+    warm = pathlib.Path(args.profile)
+    profile = pathlib.Path(f"{warm}-run-{os.getpid()}")
+    shutil.rmtree(profile, ignore_errors=True)
+    if warm.is_dir():
+        subprocess.run(["cp", "-c", "-R", str(warm), str(profile)], capture_output=True)
+    profile.mkdir(parents=True, exist_ok=True)
     browser = args.browser or find_browser()
     if not browser:
         print("no browser found: install Chrome, or let Playwright install one")
@@ -214,22 +227,43 @@ def main(argv=None) -> int:
         if args.page:
             # a directory or a single file: a client page lives in the site, not alone
             directory = pathlib.Path(args.page).resolve()
-            url = f"http://127.0.0.1:{args.port}/index.html{args.query}"
+            url = None
         else:
             print("compiling the shim and the boot test…")
-            jar = compile_java(work, extra_sources=[ROOT / "lwjgl3-webgl" / "test" / "BootTest.java"])
-            (work / "index.html").write_text((ROOT / "lwjgl3-webgl" / "test" / "boot.html").read_text())
+            sources = [pathlib.Path(source) for source in args.source] or \
+                [ROOT / "lwjgl3-webgl" / "test" / "BootTest.java"]
+            jar = compile_java(work, extra_sources=sources)
+            # the page runs one class by name: rewrite that one line rather than keep a second copy of it
+            page = (ROOT / "lwjgl3-webgl" / "test" / "boot.html").read_text()
+            page = page.replace('cheerpjRunMain("webmc.BootTest"', f'cheerpjRunMain("{args.main}"')
+            (work / "index.html").write_text(page)
             shutil.copytree(ROOT / "lwjgl3-webgl" / "natives", work / "natives", dirs_exist_ok=True)
             print(f"  app.jar: {jar.stat().st_size} bytes")
             directory = work
-            url = f"http://127.0.0.1:{args.port}/index.html"
+            url = None
 
-        server = collector(directory, args.port, reports, {"on": args.isolate})
+        # a previous run that was killed leaves the port bound, and the error that produces ("Address already
+        # in use") looks like a broken tool rather than a stale server
+        server = None
+        for attempt in range(6):
+            try:
+                server = collector(directory, args.port + attempt, reports, {"on": args.isolate})
+                if attempt:
+                    print(f"port {args.port} was busy; using {args.port + attempt}")
+                args.port = args.port + attempt
+                break
+            except OSError:
+                continue
+        if server is None:
+            print(f"no free port between {args.port} and {args.port + 5}")
+            return 2
+        if url is None:
+            url = f"http://127.0.0.1:{args.port}/index.html{args.query}"
         print(f"serving {directory} on {args.port}")
         print(f"browser: {browser}")
 
         flags = [browser, "--headless=new", "--no-sandbox", "--window-size=400,400",
-                 f"--user-data-dir={pathlib.Path(args.profile)}", "--enable-logging=stderr", "--v=0"]
+                 f"--user-data-dir={profile}", "--enable-logging=stderr", "--v=0"]
         flags += [f"--{name}" for name in BUILTIN]
         # only the host the loader and runtime actually come from: mapping more of them cost a five minute
         # hang that this narrowing fixed, and the extra ones can be asked for by name

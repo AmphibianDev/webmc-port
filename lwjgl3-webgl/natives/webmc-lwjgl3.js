@@ -946,12 +946,375 @@ function Java_org_lwjgl_system_WebMC_bindBuffer(lib, target, buffer) {
   Java_org_lwjgl_opengl_GL11_glBindBuffer(lib, target, buffer);
 }
 
+// STB image, over the PNG decoder above. The pixels land in this side's heap because their size is not
+// known until the image is decoded; the Java side copies them into the arena.
+// The last decoded image, so the size can be asked for one scalar at a time: a native that takes two
+// arrays never reaches JavaScript, and the address has to travel as a single value.
+const webmcStb = { width: 0, height: 0, components: 0, scratch: 0 };
+
+function Java_org_lwjgl_system_WebMC_stbLoad(lib, address, length) {
+  webmcStb.width = 0;
+  webmcStb.height = 0;
+  webmcStb.components = 0;
+  webmcStb.scratch = 0;
+  const bytes = length > 0 ? U8.subarray(address, address + length) : null;
+  const image = bytes ? webmcDecodePng(bytes) : null;
+  if (!image) {
+    return;
+  }
+  const size = image.width * image.height * 4;
+  const scratch = webmcAlloc(size);
+  U8.set(image.rgba, scratch);
+  webmcStb.width = image.width;
+  webmcStb.height = image.height;
+  webmcStb.components = 4;
+  webmcStb.scratch = scratch;
+}
+
+function Java_org_lwjgl_system_WebMC_stbScratch() { return webmcStb.scratch; }
+
+// ------------------------------------------------------------------- glyphs, because FreeType is Java
+//
+// FreeType reads font files; a browser cannot rasterise an arbitrary font file synchronously (FontFace is
+// asynchronous), so the glyphs come from the canvas with a generic family instead. The shapes are not
+// Minecraft's font, the metrics are the canvas's - and text renders, is measurable, and is the right
+// height, which is what the client needs to draw a menu.
+const webmcGlyph = { width: 0, rows: 0, pitch: 0, left: 0, top: 0, advance: 0 };
+
+function webmcGlyphCanvas(pixelSize) {
+  if (!webmcGlyph.canvas || webmcGlyph.canvasSize < pixelSize) {
+    const size = Math.max(8, Math.ceil(pixelSize * 2));
+    webmcGlyph.canvas = document.createElement("canvas");
+    webmcGlyph.canvas.width = size;
+    webmcGlyph.canvas.height = size;
+    webmcGlyph.canvasSize = size;
+  }
+  const canvas = webmcGlyph.canvas;
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  context.font = pixelSize + "px monospace";
+  context.textBaseline = "alphabetic";
+  context.fillStyle = "#fff";
+  return context;
+}
+
+function Java_org_lwjgl_system_WebMC_freetypeGlyph(lib, glyphPoint, pixelSize, bitmap) {
+  const context = webmcGlyphCanvas(pixelSize);
+  const text = String.fromCodePoint(glyphPoint);
+  const metrics = context.measureText(text);
+  const width = Math.max(1, Math.ceil(metrics.actualBoundingBoxRight + metrics.actualBoundingBoxLeft) + 1);
+  const rows = Math.max(1, Math.ceil(metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent) + 1);
+  const baseline = Math.ceil(metrics.actualBoundingBoxAscent) + 1;
+  context.fillText(text, 1, baseline);
+  const image = context.getImageData(0, 0, width, rows).data;
+  const pitch = width;
+  let ink = 0;
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < width; x++) {
+      const alpha = image[(y * width + x) * 4 + 3];
+      bitmap[y * pitch + x] = alpha;
+      if (alpha > 32) ink += 1;
+    }
+  }
+  webmcGlyph.width = width;
+  webmcGlyph.rows = rows;
+  webmcGlyph.pitch = pitch;
+  webmcGlyph.left = 0;
+  webmcGlyph.top = Math.ceil(metrics.actualBoundingBoxAscent);
+  webmcGlyph.advance = Math.max(1, Math.round(metrics.width));
+  webmcGlyph.ink = ink;
+  if (typeof console !== "undefined") {
+    console.log("[shim] glyph " + glyphPoint + " size=" + pixelSize + " -> " + width + "x" + rows
+                + " advance=" + webmcGlyph.advance + " ascent=" + metrics.actualBoundingBoxAscent
+                + " ink=" + webmcGlyph.ink);
+  }
+}
+
+function Java_org_lwjgl_system_WebMC_freetypeWidth() { return webmcGlyph.width; }
+function Java_org_lwjgl_system_WebMC_freetypeRows() { return webmcGlyph.rows; }
+function Java_org_lwjgl_system_WebMC_freetypePitch() { return webmcGlyph.pitch; }
+function Java_org_lwjgl_system_WebMC_freetypeLeft() { return webmcGlyph.left; }
+function Java_org_lwjgl_system_WebMC_freetypeTop() { return webmcGlyph.top; }
+function Java_org_lwjgl_system_WebMC_freetypeAdvance() { return webmcGlyph.advance; }
+
+function Java_org_lwjgl_system_WebMC_stbWidth() { return webmcStb.width; }
+function Java_org_lwjgl_system_WebMC_stbHeight() { return webmcStb.height; }
+function Java_org_lwjgl_system_WebMC_stbComponents() { return webmcStb.components; }
+
+function Java_org_lwjgl_system_WebMC_stbFreeScratch(lib, scratch) {
+  webmcFree(scratch);
+}
+
 function Java_org_lwjgl_system_WebMC_genBuffers(lib, count, pointers) {
   Java_org_lwjgl_opengl_GL11_nglGenBuffers(lib, count, pointers);
 }
 
 function Java_org_lwjgl_system_WebMC_genVertexArrays(lib, count, pointers) {
   Java_org_lwjgl_opengl_GL30_nglGenVertexArrays(lib, count, pointers);
+}
+
+// ---------------------------------------------------------------------- PNG, because STB is JS here
+//
+// Minecraft loads every texture through stbi_load_from_memory, and a browser has no synchronous way to
+// decode an image (an <img>, createImageBitmap and DecompressionStream are all asynchronous, and a
+// native cannot await). So this is an inflate and a PNG decoder, written out: it is the smallest correct
+// thing that can turn 16x16 of blocks into pixels, and it runs once per texture at load.
+function webmcInflate(input, start, length, limit) {
+  let bitPosition = 0;
+  // A decoder handed something that is not deflate data can run for ever: the bit reader walks off the
+  // end, the Huffman tables return nonsense symbols, and a plausible-looking length/distance pair copies
+  // in a loop. Both a read past the input and an output past what the caller expects end it here, which
+  // is the difference between "this file is not an image" and a browser tab that stops responding.
+  const budget = (limit || 0) > 0 ? limit : 1 << 26;
+  const end = start + length;
+  const readBit = () => {
+    const byte = input[start + (bitPosition >> 3)];
+    if (byte === undefined) {
+      throw new RangeError("deflate stream ended");
+    }
+    const bit = (byte >> (bitPosition & 7)) & 1;
+    bitPosition += 1;
+    return bit;
+  };
+  const readBits = (count) => {
+    let value = 0;
+    for (let index = 0; index < count; index++) {
+      value |= readBit() << index;
+    }
+    return value;
+  };
+  const out = [];
+  const huffman = (lengths) => {
+    // canonical Huffman: counts per length, then first code per length, decoded bit by bit
+    let maxBits = 0;
+    for (const length of lengths) {
+      if (length > maxBits) maxBits = length;
+    }
+    const counts = new Array(maxBits + 1).fill(0);
+    for (const length of lengths) {
+      if (length) counts[length] += 1;
+    }
+    const firstCode = new Array(maxBits + 1).fill(0);
+    let code = 0;
+    for (let bits = 1; bits <= maxBits; bits++) {
+      code = (code + counts[bits - 1]) << 1;
+      firstCode[bits] = code;
+    }
+    const symbols = [];
+    for (let symbol = 0; symbol < lengths.length; symbol++) {
+      if (lengths[symbol]) symbols.push(symbol);
+    }
+    symbols.sort((a, b) => lengths[a] - lengths[b] || a - b);
+    const table = new Map();
+    let index = 0;
+    for (let bits = 1; bits <= maxBits; bits++) {
+      for (let count = 0; count < counts[bits]; count++) {
+        table.set(bits + ":" + firstCode[bits], symbols[index]);
+        index += 1;
+        firstCode[bits] += 1;
+      }
+    }
+    return (maxBits === 0) ? () => -1 : () => {
+      let code = 0;
+      for (let bits = 1; bits <= maxBits; bits++) {
+        code = (code << 1) | readBit();
+        const found = table.get(bits + ":" + code);
+        if (found !== undefined) return found;
+      }
+      return -1;
+    };
+  };
+  const LENGTH_BASE = [3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31, 35, 43, 51, 59, 67, 83, 99,
+                       115, 131, 163, 195, 227, 258];
+  const LENGTH_EXTRA = [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0];
+  const DIST_BASE = [1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193, 257, 385, 513, 769, 1025,
+                     1537, 2049, 3073, 4097, 6145, 8193, 12289, 16385, 24577];
+  const DIST_EXTRA = [0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13];
+  let finalBlock = false;
+  try {
+  while (!finalBlock) {
+    finalBlock = readBit() === 1;
+    const type = readBits(2);
+    if (type === 0) {
+      bitPosition = (bitPosition + 7) & ~7;
+      const at = start + (bitPosition >> 3);
+      const size = input[at] | (input[at + 1] << 8);
+      bitPosition += 32;
+      for (let index = 0; index < size; index++) {
+        out.push(input[start + (bitPosition >> 3)]);
+        bitPosition += 8;
+      }
+      continue;
+    }
+    let literal;
+    let distance;
+    if (type === 1) {
+      const literalLengths = new Array(288).fill(0);
+      for (let symbol = 0; symbol < 144; symbol++) literalLengths[symbol] = 8;
+      for (let symbol = 144; symbol < 256; symbol++) literalLengths[symbol] = 9;
+      for (let symbol = 256; symbol < 280; symbol++) literalLengths[symbol] = 7;
+      for (let symbol = 280; symbol < 288; symbol++) literalLengths[symbol] = 8;
+      literal = huffman(literalLengths);
+      distance = huffman(new Array(30).fill(5));
+    } else if (type === 2) {
+      const literalCount = readBits(5) + 257;
+      const distanceCount = readBits(5) + 1;
+      const codeCount = readBits(4) + 4;
+      const order = [16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15];
+      const codeLengths = new Array(19).fill(0);
+      for (let index = 0; index < codeCount; index++) {
+        codeLengths[order[index]] = readBits(3);
+      }
+      const codeDecoder = huffman(codeLengths);
+      const lengths = [];
+      while (lengths.length < literalCount + distanceCount) {
+        const symbol = codeDecoder();
+        if (symbol < 0) return null;
+        if (symbol < 16) {
+          lengths.push(symbol);
+        } else if (symbol === 16) {
+          const previous = lengths[lengths.length - 1];
+          const repeat = readBits(2) + 3;
+          for (let index = 0; index < repeat; index++) lengths.push(previous);
+        } else if (symbol === 17) {
+          const repeat = readBits(3) + 3;
+          for (let index = 0; index < repeat; index++) lengths.push(0);
+        } else {
+          const repeat = readBits(7) + 11;
+          for (let index = 0; index < repeat; index++) lengths.push(0);
+        }
+      }
+      literal = huffman(lengths.slice(0, literalCount));
+      distance = huffman(lengths.slice(literalCount));
+    } else {
+      return null;
+    }
+    for (;;) {
+      const symbol = literal();
+      if (symbol < 0) return null;
+      if (symbol < 256) {
+        out.push(symbol);
+      } else if (symbol === 256) {
+        break;
+      } else {
+        const lengthIndex = symbol - 257;
+        if (out.length > budget) {
+          throw new RangeError("the decoded data is larger than expected");
+        }
+        const copyLength = LENGTH_BASE[lengthIndex] + readBits(LENGTH_EXTRA[lengthIndex]);
+        const distanceSymbol = distance();
+        if (distanceSymbol < 0) return null;
+        const copyDistance = DIST_BASE[distanceSymbol] + readBits(DIST_EXTRA[distanceSymbol]);
+        const from = out.length - copyDistance;
+        for (let index = 0; index < copyLength; index++) {
+          out.push(out[from + index]);
+        }
+      }
+    }
+  }
+  } catch (error) {
+    return null;
+  }
+  return Uint8Array.from(out);
+}
+
+/** PNG -> RGBA8. IHDR, PLTE, tRNS and IDAT are all Minecraft's textures use. */
+function webmcDecodePng(bytes) {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  let offset = 8;
+  let width = 0;
+  let height = 0;
+  let depth = 8;
+  let colourType = 6;
+  let palette = null;
+  let transparency = null;
+  const data = [];
+  while (offset + 8 <= bytes.length) {
+    const length = view.getUint32(offset);
+    const type = String.fromCharCode(bytes[offset + 4], bytes[offset + 5], bytes[offset + 6], bytes[offset + 7]);
+    const body = offset + 8;
+    if (type === "IHDR") {
+      width = view.getUint32(body);
+      height = view.getUint32(body + 4);
+      depth = bytes[body + 8];
+      colourType = bytes[body + 9];
+    } else if (type === "PLTE") {
+      palette = bytes.subarray(body, body + length);
+    } else if (type === "tRNS") {
+      transparency = bytes.subarray(body, body + length);
+    } else if (type === "IDAT") {
+      for (let index = 0; index < length; index++) data.push(bytes[body + index]);
+    } else if (type === "IEND") {
+      break;
+    }
+    offset = body + length + 4;
+  }
+  // An IDAT is a *zlib* stream: two bytes of header and four of Adler-32 around the deflate data. Inflating
+  // from byte zero makes the header look like a block header and the decode spirals.
+  const all = Uint8Array.from(data);
+  const zlibWrapped = all.length > 6 && (all[0] & 0x0f) === 8 && ((all[0] << 8 | all[1]) % 31) === 0;
+  const channelsGuess = { 0: 1, 2: 3, 3: 1, 4: 2, 6: 4 }[colourType] || 4;
+  const expected = (Math.ceil(width * channelsGuess * depth / 8) + 1) * height;
+  const raw = webmcInflate(all, zlibWrapped ? 2 : 0, all.length - (zlibWrapped ? 6 : 0), expected);
+  if (!raw) return null;
+  const channels = { 0: 1, 2: 3, 3: 1, 4: 2, 6: 4 }[colourType];
+  if (!channels) return null;
+  const bitsPerPixel = channels * depth;
+  const stride = Math.ceil(width * bitsPerPixel / 8);
+  const rgba = new Uint8Array(width * height * 4);
+  const previous = new Uint8Array(stride);
+  const line = new Uint8Array(stride);
+  let at = 0;
+  for (let y = 0; y < height; y++) {
+    const filter = raw[at++];
+    for (let index = 0; index < stride; index++) {
+      const value = raw[at + index] || 0;
+      const left = index >= channels * depth / 8 ? line[index - Math.ceil(channels * depth / 8)] : 0;
+      const up = previous[index];
+      const upLeft = index >= channels * depth / 8 ? previous[index - Math.ceil(channels * depth / 8)] : 0;
+      let result = value;
+      if (filter === 1) result = value + left;
+      else if (filter === 2) result = value + up;
+      else if (filter === 3) result = value + ((left + up) >> 1);
+      else if (filter === 4) {
+        const p = left + up - upLeft;
+        const pa = Math.abs(p - left);
+        const pb = Math.abs(p - up);
+        const pc = Math.abs(p - upLeft);
+        result = value + (pa <= pb && pa <= pc ? left : (pb <= pc ? up : upLeft));
+      }
+      line[index] = result & 0xff;
+    }
+    at += stride;
+    for (let x = 0; x < width; x++) {
+      let red = 0;
+      let green = 0;
+      let blue = 0;
+      let alpha = 255;
+      const pixel = x * channels * depth / 8;
+      if (colourType === 0) {
+        red = green = blue = line[pixel];
+      } else if (colourType === 2) {
+        red = line[pixel]; green = line[pixel + 1]; blue = line[pixel + 2];
+      } else if (colourType === 3) {
+        const index = line[pixel];
+        red = palette[index * 3]; green = palette[index * 3 + 1]; blue = palette[index * 3 + 2];
+        alpha = transparency && index < transparency.length ? transparency[index] : 255;
+      } else if (colourType === 4) {
+        red = green = blue = line[pixel];
+        alpha = line[pixel + 1];
+      } else {
+        red = line[pixel]; green = line[pixel + 1]; blue = line[pixel + 2]; alpha = line[pixel + 3];
+      }
+      const target = (y * width + x) * 4;
+      rgba[target] = red;
+      rgba[target + 1] = green;
+      rgba[target + 2] = blue;
+      rgba[target + 3] = alpha;
+    }
+    previous.set(line.subarray(0, stride));
+  }
+  return { width, height, rgba };
 }
 
 // ------------------------------------------------------------ the arena, seen from JavaScript
@@ -1315,6 +1678,13 @@ export const natives = {
   Java_org_lwjgl_system_WebMC_bindBuffer: webmcNamed("Java_org_lwjgl_system_WebMC_bindBuffer", webmcNative(Java_org_lwjgl_system_WebMC_bindBuffer)),
   Java_org_lwjgl_system_WebMC_bufferDataFromJava: webmcNamed("Java_org_lwjgl_system_WebMC_bufferDataFromJava", webmcNative(Java_org_lwjgl_system_WebMC_bufferDataFromJava)),
   Java_org_lwjgl_system_WebMC_bufferSubDataFromJava: webmcNamed("Java_org_lwjgl_system_WebMC_bufferSubDataFromJava", webmcNative(Java_org_lwjgl_system_WebMC_bufferSubDataFromJava)),
+  Java_org_lwjgl_system_WebMC_freetypeAdvance: webmcNamed("Java_org_lwjgl_system_WebMC_freetypeAdvance", webmcNative(Java_org_lwjgl_system_WebMC_freetypeAdvance)),
+  Java_org_lwjgl_system_WebMC_freetypeGlyph: webmcNamed("Java_org_lwjgl_system_WebMC_freetypeGlyph", webmcNative(Java_org_lwjgl_system_WebMC_freetypeGlyph)),
+  Java_org_lwjgl_system_WebMC_freetypeLeft: webmcNamed("Java_org_lwjgl_system_WebMC_freetypeLeft", webmcNative(Java_org_lwjgl_system_WebMC_freetypeLeft)),
+  Java_org_lwjgl_system_WebMC_freetypePitch: webmcNamed("Java_org_lwjgl_system_WebMC_freetypePitch", webmcNative(Java_org_lwjgl_system_WebMC_freetypePitch)),
+  Java_org_lwjgl_system_WebMC_freetypeRows: webmcNamed("Java_org_lwjgl_system_WebMC_freetypeRows", webmcNative(Java_org_lwjgl_system_WebMC_freetypeRows)),
+  Java_org_lwjgl_system_WebMC_freetypeTop: webmcNamed("Java_org_lwjgl_system_WebMC_freetypeTop", webmcNative(Java_org_lwjgl_system_WebMC_freetypeTop)),
+  Java_org_lwjgl_system_WebMC_freetypeWidth: webmcNamed("Java_org_lwjgl_system_WebMC_freetypeWidth", webmcNative(Java_org_lwjgl_system_WebMC_freetypeWidth)),
   Java_org_lwjgl_system_WebMC_genBuffers: webmcNamed("Java_org_lwjgl_system_WebMC_genBuffers", webmcNative(Java_org_lwjgl_system_WebMC_genBuffers)),
   Java_org_lwjgl_system_WebMC_genVertexArrays: webmcNamed("Java_org_lwjgl_system_WebMC_genVertexArrays", webmcNative(Java_org_lwjgl_system_WebMC_genVertexArrays)),
   Java_org_lwjgl_system_WebMC_log: webmcNamed("Java_org_lwjgl_system_WebMC_log", webmcNative(Java_org_lwjgl_system_WebMC_log)),
@@ -1341,8 +1711,14 @@ export const natives = {
   Java_org_lwjgl_system_WebMC_nmemUTF8: webmcNamed("Java_org_lwjgl_system_WebMC_nmemUTF8", webmcNative(Java_org_lwjgl_system_WebMC_nmemUTF8)),
   Java_org_lwjgl_system_WebMC_nmemWriteBytes: webmcNamed("Java_org_lwjgl_system_WebMC_nmemWriteBytes", webmcNative(Java_org_lwjgl_system_WebMC_nmemWriteBytes)),
   Java_org_lwjgl_system_WebMC_readPixelsInto: webmcNamed("Java_org_lwjgl_system_WebMC_readPixelsInto", webmcNative(Java_org_lwjgl_system_WebMC_readPixelsInto)),
+  Java_org_lwjgl_system_WebMC_stbComponents: webmcNamed("Java_org_lwjgl_system_WebMC_stbComponents", webmcNative(Java_org_lwjgl_system_WebMC_stbComponents)),
+  Java_org_lwjgl_system_WebMC_stbFreeScratch: webmcNamed("Java_org_lwjgl_system_WebMC_stbFreeScratch", webmcNative(Java_org_lwjgl_system_WebMC_stbFreeScratch)),
+  Java_org_lwjgl_system_WebMC_stbHeight: webmcNamed("Java_org_lwjgl_system_WebMC_stbHeight", webmcNative(Java_org_lwjgl_system_WebMC_stbHeight)),
+  Java_org_lwjgl_system_WebMC_stbLoad: webmcNamed("Java_org_lwjgl_system_WebMC_stbLoad", webmcNative(Java_org_lwjgl_system_WebMC_stbLoad)),
+  Java_org_lwjgl_system_WebMC_stbScratch: webmcNamed("Java_org_lwjgl_system_WebMC_stbScratch", webmcNative(Java_org_lwjgl_system_WebMC_stbScratch)),
+  Java_org_lwjgl_system_WebMC_stbWidth: webmcNamed("Java_org_lwjgl_system_WebMC_stbWidth", webmcNative(Java_org_lwjgl_system_WebMC_stbWidth)),
   Java_org_lwjgl_system_WebMC_texImageFromJava: webmcNamed("Java_org_lwjgl_system_WebMC_texImageFromJava", webmcNative(Java_org_lwjgl_system_WebMC_texImageFromJava)),
   Java_org_lwjgl_system_WebMC_texSubImageFromJava: webmcNamed("Java_org_lwjgl_system_WebMC_texSubImageFromJava", webmcNative(Java_org_lwjgl_system_WebMC_texSubImageFromJava)),
 };
 
-export const count = 224;
+export const count = 237;

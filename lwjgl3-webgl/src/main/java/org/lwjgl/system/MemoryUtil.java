@@ -198,6 +198,7 @@ public final class MemoryUtil {
     }
 
     /** Kept because clients name it; the arena already orders buffers natively. */
+    /** The two-argument form is the implementation; the three-argument one is the alias. */
     public static ByteBuffer memByteBuffer(long address, int capacity, ByteOrder ignored) {
         return memByteBuffer(address, capacity);
     }
@@ -229,7 +230,14 @@ public final class MemoryUtil {
     }
 
     /** The bytes at an address, as a direct buffer: how a struct hands back an array field. */
+    /**
+     * A view of the arena. This was recursion: the three-argument form called this one and this one called
+     * the three-argument form, so reading a glyph's pixels overflowed the stack in the middle of STB
+     * FreeType's own struct.
+     */
     public static ByteBuffer memByteBuffer(long address, int capacity) {
-        return memByteBuffer(address, capacity, ByteOrder.nativeOrder());
+        ByteBuffer view = WebMCArena.window(address, capacity);
+        WebMCArena.remember(view, address);
+        return view;
     }
 }

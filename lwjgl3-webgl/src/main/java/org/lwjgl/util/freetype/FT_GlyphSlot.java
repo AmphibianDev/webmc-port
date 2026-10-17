@@ -12,13 +12,16 @@ import org.lwjgl.system.Struct;
  * other fields are there in the struct and simply not reached through this class - the layout is the whole
  * reason the offsets below are written out.
  */
+// HANDWRITTEN: the offsets below are the real FT_GlyphSlotRec layout, read from LWJGL's own FT_GlyphSlot
+// with its native library loaded. The generator's guesses were wrong in a way that overlapped fields:
+// it had ADVANCE at 88 and BITMAP at 96, so the bitmap's pitch landed on bitmap_left.
 public class FT_GlyphSlot extends Struct {
 
-    public static final int SIZEOF = 120;
-    private static final int ADVANCE = 88;
-    private static final int BITMAP = 96;
-    private static final int BITMAP_LEFT = 104;
-    private static final int BITMAP_TOP = 108;
+    public static final int SIZEOF = 304;
+    private static final int ADVANCE = 128;
+    private static final int BITMAP = 152;
+    private static final int BITMAP_LEFT = 192;
+    private static final int BITMAP_TOP = 196;
 
     public FT_GlyphSlot(long address) {
         super(address);

@@ -121,6 +121,49 @@ public final class WebMC {
         WebMCArena.write(arenaAddress, scratch);
     }
 
+    /**
+     * Decode a PNG (and whatever else STB is handed) and leave the pixels in JavaScript's own heap.
+     *
+     * The image arrives as an address in JavaScript's heap, not as a byte[]: the bytes are pushed across
+     * with nmemWriteBytes (which takes an array and returns nothing - that shape is proven) and this call
+     * takes only scalars. What comes back is scalars too, because the size is not known until the image is
+     * decoded: the address here, then stbWidth/stbHeight/stbComponents/stbScratch.
+     */
+    public static native void stbLoad(long address, int length);
+
+    /** Where the last decode put its pixels, in JavaScript's heap. */
+    public static native long stbScratch();
+
+    public static native int stbWidth();
+
+    public static native int stbHeight();
+
+    public static native int stbComponents();
+
+    /**
+     * Rasterise one glyph into a Java array.
+     *
+     * The array is written from this side, which works; reading a Java array element by element from here
+     * does not. glyphPoint is the character, not a font's glyph index - see FreeType.
+     */
+    public static native void freetypeGlyph(int glyphPoint, int pixelSize, byte[] bitmap);
+
+    /** The metrics of the last rasterised glyph. */
+    public static native int freetypeWidth();
+
+    public static native int freetypeRows();
+
+    public static native int freetypePitch();
+
+    public static native int freetypeLeft();
+
+    public static native int freetypeTop();
+
+    public static native int freetypeAdvance();
+
+    /** Give back the scratch the decoder allocated. */
+    public static native void stbFreeScratch(long scratch);
+
     /** Name generation, writing into JavaScript's own heap: copyJsToArena moves the result across. */
     public static native void genBuffers(int count, long pointers);
 
