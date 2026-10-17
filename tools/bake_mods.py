@@ -302,6 +302,52 @@ public final class __CLASS__ {
     }
 
     /**
+     * Java 21 methods TeaVM's class library does not have, rewritten to helpers this client carries.
+     *
+     * A mod is compiled against Java 21 and may use anything in it; TeaVM implements its own standard
+     * library, and it stops at `String.splitWithDelimiters`. Rewriting the call is honest and local: the
+     * replacement does the same thing under the same name (webmc.runtime.JdkCompat), and the log says which
+     * class was rewritten, so a person reading a build log knows exactly what changed in it.
+     */
+    private static void rewriteJava21(Path classFile) throws IOException {
+        ClassNode node = new ClassNode();
+        try {
+            try (InputStream stream = Files.newInputStream(classFile)) {
+                new ClassReader(stream).accept(node, 0);
+            }
+        } catch (IOException | RuntimeException error) {
+            // An entry named .class that is not one is left exactly as it is: rewriting is an improvement,
+            // and a class nobody can read is not something this pass can improve.
+            return;
+        }
+        boolean changed = false;
+        for (MethodNode method : node.methods) {
+            for (AbstractInsnNode instruction = method.instructions.getFirst(); instruction != null;
+                 instruction = instruction.getNext()) {
+                if (!(instruction instanceof MethodInsnNode call)) {
+                    continue;
+                }
+                if (!"java/lang/String".equals(call.owner) || !"splitWithDelimiters".equals(call.name)) {
+                    continue;
+                }
+                if (!"(Ljava/lang/String;I)[Ljava/lang/String;".equals(call.desc)) {
+                    continue;
+                }
+                method.instructions.set(call, new MethodInsnNode(Opcodes.INVOKESTATIC, "webmc/runtime/JdkCompat",
+                        "splitWithDelimiters", "(Ljava/lang/String;Ljava/lang/String;I)[Ljava/lang/String;", false));
+                changed = true;
+            }
+        }
+        if (!changed) {
+            return;
+        }
+        ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+        node.accept(writer);
+        Files.write(classFile, writer.toByteArray());
+        System.out.println("__CLASS__:   rewrote String.splitWithDelimiters (Java 21) in " + classFile.getFileName());
+    }
+
+    /**
      * Call one entrypoint.
      *
      * Fabric has two shapes and both are common: a class with a no-argument constructor whose
@@ -392,6 +438,8 @@ public final class __CLASS__ {
                 try (var stream = archive.getInputStream(entry)) {
                     Files.write(target, stream.readAllBytes());
                 }
+                Path target2 = output.resolve(entry.getName());
+                rewriteJava21(target2);
                 copiedNames.add(entry.getName());
                 copied += 1;
             }
