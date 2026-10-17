@@ -364,6 +364,22 @@ jobs:
             echo "::error::the mod set could not be staged (exit $STAGE_STATUS): the bake would run with no mods"
             exit "$STAGE_STATUS"
           fi
+          # Fabric API is a bundle of forty-odd module jars and a mod uses a handful of them. Baking the
+          # whole bundle compiles modules nobody asked for - and those are precisely the ones a browser
+          # cannot carry (a second registry layer, the networking stack, Quilt compatibility, the
+          # game-test harness). So the modules this mod set actually calls are kept, their own
+          # dependencies are followed, and the rest are left out by name.
+          for bundle in /tmp/mods/fabric-api-2*.jar; do
+            [ -f "$bundle" ] || continue
+            rm -rf /tmp/mods-pruned
+            mkdir -p /tmp/mods-pruned
+            python3 tools/prune_fabric_api.py --fabric-api "$bundle" --mods /tmp/mods \
+              --out /tmp/mods-pruned 2>&1 | tee -a /tmp/build.log
+            if ls /tmp/mods-pruned/*.jar >/dev/null 2>&1; then
+              rm -f /tmp/mods/fabric-api-2*.jar
+              cp /tmp/mods-pruned/*.jar /tmp/mods/
+            fi
+          done
           ls -la /tmp/mods | tee -a /tmp/build.log
           # The bake is the mod loader on the compiled row: it reads each jar's fabric.mod.json, prunes
           # the mixins whose targets are not in this client, copies the classes and the Fabric API shims
