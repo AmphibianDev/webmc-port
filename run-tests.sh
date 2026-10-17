@@ -4,6 +4,7 @@ set -uo pipefail
 cd "$(dirname "$0")"
 failed=0
 echo "== version pipeline"; python3 tests/test_pipeline.py || failed=1
+echo; echo "== the build worker (a player's mods on GitHub Actions, without a token in the page)"; node tests/test_build_worker.mjs || failed=1
 echo; echo "== launcher page"; node tests/test_site.mjs || failed=1
 echo; echo "== the boot screen (vanilla-styled, injected into a client)"; python3 tests/test_aot_shell.py || failed=1
 echo; echo "== the gateway (WebSocket to TCP: a typed server address, a real socket)"; node tests/test_gateway.mjs || failed=1

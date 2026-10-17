@@ -69,7 +69,7 @@ def host_resolver_rules(hosts=NEEDED_HOSTS) -> str:
     return ",".join(rules)
 
 
-def collector(directory: pathlib.Path, port: int, reports: dict):
+def collector(directory: pathlib.Path, port: int, reports: dict, isolate: dict):
     """A file server that keeps the last POSTed report, and can set the headers CheerpJ asks for.
 
     Cross-origin isolation is offered because it is what makes SharedArrayBuffer exist, and a browser
@@ -81,13 +81,15 @@ def collector(directory: pathlib.Path, port: int, reports: dict):
             super().__init__(*args, directory=str(directory), **kwargs)
 
         def end_headers(self):
-            # credentialless, not require-corp: the loader comes from CheerpJ's CDN, which serves no
-            # Cross-Origin-Resource-Policy header, and require-corp would block it - the page then fails
-            # with "cheerpjInit is not defined", which reads like a broken page rather than a blocked
-            # script. credentialless still gives a cross-origin isolated context, so threads work.
-            self.send_header("cross-origin-opener-policy", "same-origin")
-            self.send_header("cross-origin-embedder-policy", "credentialless")
-            self.send_header("cross-origin-resource-policy", "cross-origin")
+            # Off unless asked for. cross-origin isolation is what SharedArrayBuffer needs, but CheerpJ's
+            # own loader and runtime come from its CDN without Cross-Origin-Resource-Policy, and a page
+            # that sets these headers around it hung in cheerpjRunMain for fifteen minutes without a word
+            # - while the identical page served without them ran Java in ninety seconds. So: opt in, and
+            # only for a page that needs the isolation for its own reasons.
+            if isolate["on"]:
+                self.send_header("cross-origin-opener-policy", "same-origin")
+                self.send_header("cross-origin-embedder-policy", "credentialless")
+                self.send_header("cross-origin-resource-policy", "cross-origin")
             super().end_headers()
 
         def log_message(self, *args):
@@ -146,6 +148,10 @@ def main(argv=None) -> int:
     parser.add_argument("--browser", default=None)
     parser.add_argument("--keep", action="store_true", help="keep the work directory (the browser's log)")
     parser.add_argument("--console", action="store_true", help="print every console line, not a summary")
+    parser.add_argument("--isolate", action="store_true",
+                        help="serve with cross-origin isolation (SharedArrayBuffer); see the note in the handler")
+    parser.add_argument("--resolve-extra", default="",
+                        help="comma separated hosts to also map through 1.1.1.1 (the client's own hosts)")
     parser.add_argument("--profile", default="/tmp/webmc-browser-profile",
                         help="a browser profile that survives runs: CheerpJ downloads its JVM once, and a "
                              "fresh profile per run means paying that download every time (minutes)")
@@ -161,6 +167,7 @@ def main(argv=None) -> int:
     server = None
     try:
         if args.page:
+            # a directory or a single file: a client page lives in the site, not alone
             directory = pathlib.Path(args.page).resolve()
             url = f"http://127.0.0.1:{args.port}/index.html{args.query}"
         else:
@@ -172,14 +179,16 @@ def main(argv=None) -> int:
             directory = work
             url = f"http://127.0.0.1:{args.port}/index.html"
 
-        server = collector(directory, args.port, reports)
+        server = collector(directory, args.port, reports, {"on": args.isolate})
         print(f"serving {directory} on {args.port}")
         print(f"browser: {browser}")
 
         flags = [browser, "--headless=new", "--no-sandbox", "--window-size=400,400",
                  f"--user-data-dir={pathlib.Path(args.profile)}", "--enable-logging=stderr", "--v=0"]
         flags += [f"--{name}" for name in BUILTIN]
-        rules = host_resolver_rules()
+        hosts = list(NEEDED_HOSTS[:3])  # CheerpJ's own hosts: the runtime comes from them
+        hosts += [host for host in args.resolve_extra.split(",") if host]
+        rules = host_resolver_rules(hosts)
         if rules:
             flags.append(f"--host-resolver-rules={rules}")
             print(f"resolver overrides: {rules}")
