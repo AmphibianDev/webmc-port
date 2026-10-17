@@ -9,6 +9,126 @@ package org.slf4j;
 public interface Logger {
     String getName();
 
+    default boolean isTraceEnabled(Marker marker) {
+        return isTraceEnabled();
+    }
+
+    default boolean isDebugEnabled(Marker marker) {
+        return isDebugEnabled();
+    }
+
+    default boolean isInfoEnabled(Marker marker) {
+        return isInfoEnabled();
+    }
+
+    default boolean isWarnEnabled(Marker marker) {
+        return isWarnEnabled();
+    }
+
+    default boolean isErrorEnabled(Marker marker) {
+        return isErrorEnabled();
+    }
+
+    default void trace(Marker marker, String message) {
+        trace(message);
+    }
+
+    default void trace(Marker marker, String format, Object argument) {
+        trace(format, argument);
+    }
+
+    default void trace(Marker marker, String format, Object first, Object second) {
+        trace(format, first, second);
+    }
+
+    default void trace(Marker marker, String format, Object... arguments) {
+        trace(format, arguments);
+    }
+
+    default void trace(Marker marker, String message, Throwable error) {
+        trace(message, error);
+    }
+
+    default void debug(Marker marker, String message) {
+        debug(message);
+    }
+
+    default void debug(Marker marker, String format, Object argument) {
+        debug(format, argument);
+    }
+
+    default void debug(Marker marker, String format, Object first, Object second) {
+        debug(format, first, second);
+    }
+
+    default void debug(Marker marker, String format, Object... arguments) {
+        debug(format, arguments);
+    }
+
+    default void debug(Marker marker, String message, Throwable error) {
+        debug(message, error);
+    }
+
+    default void info(Marker marker, String message) {
+        info(message);
+    }
+
+    default void info(Marker marker, String format, Object argument) {
+        info(format, argument);
+    }
+
+    default void info(Marker marker, String format, Object first, Object second) {
+        info(format, first, second);
+    }
+
+    default void info(Marker marker, String format, Object... arguments) {
+        info(format, arguments);
+    }
+
+    default void info(Marker marker, String message, Throwable error) {
+        info(message, error);
+    }
+
+    default void warn(Marker marker, String message) {
+        warn(message);
+    }
+
+    default void warn(Marker marker, String format, Object argument) {
+        warn(format, argument);
+    }
+
+    default void warn(Marker marker, String format, Object first, Object second) {
+        warn(format, first, second);
+    }
+
+    default void warn(Marker marker, String format, Object... arguments) {
+        warn(format, arguments);
+    }
+
+    default void warn(Marker marker, String message, Throwable error) {
+        warn(message, error);
+    }
+
+    default void error(Marker marker, String message) {
+        error(message);
+    }
+
+    default void error(Marker marker, String format, Object argument) {
+        error(format, argument);
+    }
+
+    default void error(Marker marker, String format, Object first, Object second) {
+        error(format, first, second);
+    }
+
+    default void error(Marker marker, String format, Object... arguments) {
+        error(format, arguments);
+    }
+
+    default void error(Marker marker, String message, Throwable error) {
+        error(message, error);
+    }
+
     default boolean isTraceEnabled() {
         return false;
     }

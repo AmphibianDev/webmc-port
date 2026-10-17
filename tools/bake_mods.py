@@ -339,6 +339,20 @@ public final class __CLASS__ {
                 if (!nested.getName().startsWith("META-INF/jars/") || !nested.getName().endsWith(".jar")) {
                     continue;
                 }
+                String nestedFileName = nested.getName().substring("META-INF/jars/".length());
+                // Two rules, both learned from a real compile:
+                //  * a nested jar never replaces a class the client already has - the client's own
+                //    libraries (netty, gson, guava, fastutil) are the ones it was built against, and a
+                //    mod's newer copy of them changes the client's own behaviour;
+                //  * a nested jar that needs a JVM tells us so: netty's Unsafe paths, javassist and
+                //    reflections (runtime bytecode and class scanning) cannot exist in a compiled tab.
+                //    They are skipped by name, and the reason is printed.
+                boolean skipNested = nestedFileName.matches("^(netty-|javassist|reflections|discord-ipc).*");
+                if (skipNested) {
+                    System.out.println("__CLASS__:   skipped " + nestedFileName
+                            + " (a nested library that needs a JVM: Unsafe, runtime bytecode or class scanning)");
+                    continue;
+                }
                 byte[] nestedBytes;
                 try (var stream = archive.getInputStream(nested)) {
                     nestedBytes = stream.readAllBytes();
@@ -346,6 +360,7 @@ public final class __CLASS__ {
                 String nestedName = nested.getName().substring("META-INF/jars/".length());
                 Map<String, String> nestedDescriptor = new LinkedHashMap<>();
                 int nestedCopied = 0;
+                int keptClient = 0;
                 try (ZipInputStream inner = new ZipInputStream(new ByteArrayInputStream(nestedBytes))) {
                     ZipEntry innerEntry;
                     while ((innerEntry = inner.getNextEntry()) != null) {
@@ -365,6 +380,13 @@ public final class __CLASS__ {
                             continue;
                         }
                         Path target = output.resolve(name);
+                        if (Files.exists(target) && !copiedNames.contains(name)) {
+                            // the client's own copy wins, and it counts as present for reference checks
+                            inner.readAllBytes();
+                            copiedNames.add(name);
+                            keptClient += 1;
+                            continue;
+                        }
                         Files.createDirectories(target.getParent());
                         Files.write(target, inner.readAllBytes());
                         copiedNames.add(name);
@@ -385,7 +407,8 @@ public final class __CLASS__ {
                     }
                 }
                 System.out.println("__CLASS__:   " + nestedCopied + " class(es) from " + nestedName + " (nested"
-                        + (nestedDescriptor.get("id") == null ? "" : ", id " + nestedDescriptor.get("id")) + nestedCall + ")");
+                        + (nestedDescriptor.get("id") == null ? "" : ", id " + nestedDescriptor.get("id")) + nestedCall
+                        + (keptClient > 0 ? ", " + keptClient + " kept the client's own copy" : "") + ")");
             }
         }
         System.out.println("__CLASS__: " + copied + " class(es) from " + mod.getFileName()
