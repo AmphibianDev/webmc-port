@@ -162,6 +162,44 @@ export function base64(bytes) {
 
 /* ------------------------------------------------------------------------------------ the two endpoints */
 
+/**
+ * What the run is doing, step by step.
+ *
+ * GitHub does not stream an in-progress run's log - the logs endpoint hands back a zip of a finished job -
+ * but it does say which step is running, which is what a progress bar needs to move, and when a job fails it
+ * keeps its *annotations*, which are the `::error::` lines the workflow printed. Those two are the honest
+ * version of "stream the build log": where it is now, and what went wrong.
+ */
+export async function runSteps(env, runId) {
+  const repo = env.REPO || DEFAULTS.repo;
+  const response = await github(env, `/repos/${repo}/actions/runs/${runId}/jobs`);
+  if (!response.ok) return { steps: [], percent: null };
+  const jobs = (await response.json()).jobs || [];
+  const steps = [];
+  for (const job of jobs) {
+    for (const step of job.steps || []) {
+      steps.push({ name: step.name, status: step.status, conclusion: step.conclusion, number: step.number });
+    }
+  }
+  const finished = steps.filter((step) => step.conclusion).length;
+  const problems = [];
+  for (const job of jobs) {
+    if (job.conclusion && job.conclusion !== "success" && job.check_run_id) {
+      const annotations = await github(env, `/repos/${repo}/check-runs/${job.check_run_id}/annotations`);
+      if (annotations.ok) {
+        for (const annotation of (await annotations.json()) || []) {
+          if (annotation.message) problems.push(`${annotation.level || "failure"}: ${annotation.message}`);
+        }
+      }
+    }
+  }
+  return {
+    steps,
+    percent: steps.length ? Math.round((finished / steps.length) * 100) : null,
+    problems: problems.slice(0, 12),
+  };
+}
+
 /** What a finished build published: the branch carries the version it was for. */
 async function buildInfo(env, id) {
   const repo = env.REPO || DEFAULTS.repo;
@@ -190,10 +228,14 @@ export async function runStatus(env, id) {
     return { state: "none", detail: "nothing has been started for this mod set" };
   }
   const run = list[0];
+  const detail = await runSteps(env, run.id);
   if (run.status === "completed") {
     if (run.conclusion !== "success") {
+      // the annotations are the workflow's own ::error:: lines: without them a failed build is one word
       return { state: "failed", stage: "failed", run: run.html_url,
-               detail: `the build ${run.conclusion}`, error: `the build ${run.conclusion}` };
+               steps: detail.steps, problems: detail.problems,
+               detail: detail.problems.length ? detail.problems[0] : `the build ${run.conclusion}`,
+               error: detail.problems.length ? detail.problems[0] : `the build ${run.conclusion}` };
     }
     // The version is on the branch, because a run does not answer with its own inputs: without it there is
     // no way to say which page came out of this build.
@@ -202,6 +244,8 @@ export async function runStatus(env, id) {
     return {
       state: "done",
       stage: "done",
+      steps: detail.steps,
+      problems: detail.problems,
       client,
       version: info?.version || null,
       mods: info?.mods || null,
@@ -209,10 +253,15 @@ export async function runStatus(env, id) {
       detail: client ? "the client is published" : "the build finished; the page could not be named",
     };
   }
+  const current = detail.steps.find((step) => step.status === "in_progress");
   return {
     state: "building",
     stage: run.status === "in_progress" ? "compiling" : "queued",
-    detail: `${run.status} on the build machine`,
+    percent: detail.percent,
+    steps: detail.steps,
+    problems: detail.problems,
+    step: current ? current.name : null,
+    detail: current ? current.name : `${run.status} on the build machine`,
     run: run.html_url,
   };
 }

@@ -165,6 +165,16 @@ def style_block(selectors: list[str]) -> str:
     if not selectors:
         return ""
     rules = "".join(f"{selector} {{ display: none !important; }}\n" for selector in selectors)
+    # Hiding the engine's status console took away the only place a player can read the client's own log -
+    # the Java stack trace, the worldgen messages, the reason a world did not finish loading. So the hiding
+    # is reversible: `?log=1` on the page brings it back, and the launcher offers that as a link. A console
+    # nobody can open is how a bug becomes a guess.
+    if selectors:
+        shown = ", ".join(f"html.webmc-log {selector}" for selector in selectors)
+        rules += (f"{shown} {{ display: revert !important; }}\n"
+                  "html.webmc-log #status { position: fixed; z-index: 2147483647; max-height: 45vh; "
+                  "overflow: auto; background: #000c; color: #dfe; font: 12px/1.4 ui-monospace, monospace; "
+                  "padding: 6px 8px; width: 100%; }\n")
     return (f'{STYLE_MARK}\n'
             f"/* WebMC: the engine's own chrome, hidden rather than removed where its script looks it up. */\n"
             + rules + "</style>\n")

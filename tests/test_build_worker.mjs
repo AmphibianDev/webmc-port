@@ -169,21 +169,52 @@ console.log("\nthe endpoints, against a fake GitHub");
   check("a finished build reports the page it published",
     body.state === "done" && body.client.endsWith("/clients/26.2/"), JSON.stringify(body));
 
-  globalThis.fetch = async (url) => String(url).includes("/actions/runs?")
-    ? new Response(JSON.stringify({ workflow_runs: [
-        { status: "in_progress", conclusion: null, html_url: "https://github.com/run/2" }] }), { status: 200 })
-    : new Response("{}", { status: 200 });
+  globalThis.fetch = async (url) => {
+    const target = String(url);
+    if (target.includes("/actions/runs?")) {
+      return new Response(JSON.stringify({ workflow_runs: [
+        { id: 77, status: "in_progress", conclusion: null, html_url: "https://github.com/run/2" }] }), { status: 200 });
+    }
+    if (target.includes("/jobs")) {
+      return new Response(JSON.stringify({ jobs: [{ html_url: "https://github.com/job/1", steps: [
+        { number: 1, name: "Set up job", status: "completed", conclusion: "success" },
+        { number: 2, name: "Compile the newest snapshot", status: "completed", conclusion: "success" },
+        { number: 3, name: "Bake the mod set", status: "in_progress", conclusion: null },
+        { number: 4, name: "Pack the client", status: "queued", conclusion: null },
+      ] }] }), { status: 200 });
+    }
+    return new Response("{}", { status: 200 });
+  };
   response = await worker.default.fetch(new Request("https://build/api/build?id=0123456789abcdef0123456789abcdef"), { GITHUB_TOKEN: "test" });
   body = await response.json();
   check("a running build says it is compiling", body.state === "building" && body.stage === "compiling", JSON.stringify(body));
+  check("and reports the step it is on", body.step === "Bake the mod set", JSON.stringify(body));
+  check("with a percentage that can move", body.percent === 50, JSON.stringify(body.percent));
+  check("and the steps themselves, so a page can draw them", (body.steps || []).length === 4, JSON.stringify(body.steps));
+  check("a failure carries the workflow's own error lines",
+    Array.isArray(body.problems), JSON.stringify(body.problems));
 
-  globalThis.fetch = async (url) => String(url).includes("/actions/runs?")
-    ? new Response(JSON.stringify({ workflow_runs: [
-        { status: "completed", conclusion: "failure", html_url: "https://github.com/run/3" }] }), { status: 200 })
-    : new Response("{}", { status: 200 });
+  globalThis.fetch = async (url) => {
+    const target = String(url);
+    if (target.includes("/actions/runs?")) {
+      return new Response(JSON.stringify({ workflow_runs: [
+        { id: 88, status: "completed", conclusion: "failure", html_url: "https://github.com/run/3" }] }), { status: 200 });
+    }
+    if (target.includes("/jobs")) {
+      return new Response(JSON.stringify({ jobs: [{ conclusion: "failure", check_run_id: 5, steps: [
+        { number: 1, name: "Compile", status: "completed", conclusion: "failure" }] }] }), { status: 200 });
+    }
+    if (target.includes("/check-runs/5/annotations")) {
+      return new Response(JSON.stringify([
+        { level: "failure", message: "error CS0103: the name 'BakedMods' does not exist" }]), { status: 200 });
+    }
+    return new Response("{}", { status: 200 });
+  };
   response = await worker.default.fetch(new Request("https://build/api/build?id=0123456789abcdef0123456789abcdef"), { GITHUB_TOKEN: "test" });
   body = await response.json();
   check("a failed build is reported as failed, with its run", body.state === "failed" && body.run.includes("run/3"), JSON.stringify(body));
+  check("and carries the errors the workflow printed",
+    (body.problems || []).some((line) => /CS0103/.test(line)), JSON.stringify(body.problems));
 
   response = await worker.default.fetch(new Request("https://build/anything", { method: "OPTIONS" }), {});
   check("a browser preflight is answered", response.status === 204

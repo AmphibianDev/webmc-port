@@ -74,6 +74,21 @@ def unpack(archive: pathlib.Path, version: str, site: pathlib.Path) -> dict | No
     manifest_path = target / "manifest.json"
     if not manifest_path.is_file():
         return None
+    # The engine's chrome is taken off here as well as in the build, and for a reason that cost a published
+    # client its fixup once: an asset made before debrand ran in the build still carries the boot overlay, the
+    # status console and the performance readout, and this tool is what puts that asset on the site. Editing
+    # the site by hand is not enough either - the next catalog run copies the asset over it. So the pass runs
+    # where the asset is unpacked, and the manifest is rehashed, because a chunk that does not match its hash
+    # is a client that will not start.
+    page = target / "data" / "client.0000"
+    if page.is_file():
+        import subprocess
+        result = subprocess.run([str(pathlib.Path(__file__).with_name("debrand.py")), "--client", str(page),
+                                 "--in-place"], capture_output=True, text=True)
+        if result.returncode == 0 and "clean already" not in result.stdout:
+            subprocess.run([str(pathlib.Path(__file__).with_name("rehash_client.py")), "--dir", str(target),
+                            "--quiet"], check=False)
+            print(f"{version}: the engine's chrome was taken off the unpacked client")
     return json.loads(manifest_path.read_text())
 
 
