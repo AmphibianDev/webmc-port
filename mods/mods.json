@@ -143,6 +143,22 @@
       "side": "client",
       "licence": "MIT",
       "note": "A list of what is loaded. A good first mod to bake: it shows the other mods, so 'did it work' is visible in the client."
+    },
+    {
+      "id": "placeholder-api",
+      "name": "Text Placeholder API",
+      "version": "3.1.0-beta.1+26.2",
+      "file": "vendor/placeholder-api-3.1.0-beta.1+26.2.jar",
+      "game": [
+        "26.2"
+      ],
+      "loaders": [
+        "fabric",
+        "aot"
+      ],
+      "side": "client",
+      "licence": "MPL-2.0",
+      "note": "A dependency of Mod Menu (and of anything that formats text with placeholders), downloaded from Modrinth."
     }
   ]
 }

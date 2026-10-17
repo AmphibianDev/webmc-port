@@ -380,6 +380,11 @@ jobs:
               cp /tmp/mods-pruned/*.jar /tmp/mods/
             fi
           done
+          # Sodium generates part of its own mixin config with ASM at runtime. ASM is plain Java - no JVM
+          # internals - so a compiled client can carry it, and the engine already fetches these jars.
+          for asm in ${ASM%:}; do
+            [ -f "$asm" ] && cp "$asm" /tmp/mods/ || true
+          done
           ls -la /tmp/mods | tee -a /tmp/build.log
           # The bake is the mod loader on the compiled row: it reads each jar's fabric.mod.json, prunes
           # the mixins whose targets are not in this client, copies the classes and the Fabric API shims
