@@ -81,6 +81,8 @@ RUNTIME_MARKER = "data-gaius-shell"
 
 STYLE_ID = "webmc-debrand"
 STYLE_MARK = f'<style id="{STYLE_ID}">'
+SCRIPT_ID = "webmc-log-toggle"
+SCRIPT_MARK = f'<script id="{SCRIPT_ID}">'
 BRANDS_RE = re.compile("|".join(re.escape(brand) for brand in BRANDS), re.I)
 SCRIPT_BODY_RE = re.compile(r"<script\b[^>]*>([\s\S]*?)</script>", re.I)
 
@@ -150,6 +152,21 @@ def clear_brand_text(html: str, report: dict) -> str:
     for tag in ("title", "h1", "h2", "h3"):
         html = clear_tag(html, tag)
     return html
+
+
+def toggle_script() -> str:
+    """The switch that brings the console back, added by this tool rather than by hand.
+
+    Hiding the engine's console takes away the only place a player can read the client's own log, so the
+    hiding is reversible with `?log=1`. That listener has to travel with the page, which means it belongs in
+    the tool that edits the page - an edit made by hand is an edit the next published asset throws away,
+    which is exactly what happened to it once.
+    """
+    return (f'{SCRIPT_MARK}'
+            '/* WebMC: ?log=1 brings the client console back, so a bug can be reported with its own stack '
+            'trace instead of a description of a frozen screen. */'
+            'try{if(/[?&]log=1/.test(location.search))document.documentElement.classList.add("webmc-log")}'
+            'catch(e){}</script>')
 
 
 def style_block(selectors: list[str]) -> str:
@@ -340,7 +357,10 @@ def debrand(html: str, log=print, *, assume_engine: bool = False, clear_brands: 
         hide.append(f"[{RUNTIME_MARKER}]")
     css = style_block(sorted(set(hide)))
     if css:
-        html = html.replace("</head>", css + "</head>", 1) if "</head>" in html else css + html
+        html = html.replace("</head>", css + toggle_script() + "</head>", 1) if "</head>" in html \
+            else css + toggle_script() + html
+    else:
+        html = re.sub(re.escape(SCRIPT_MARK) + r"[\s\S]*?</script>\s*", "", html, count=1)
 
     report["css_hidden"] = sorted(set(hide))
     report["bytes_after"] = len(html)

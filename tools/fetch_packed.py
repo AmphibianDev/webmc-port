@@ -83,12 +83,23 @@ def unpack(archive: pathlib.Path, version: str, site: pathlib.Path) -> dict | No
     page = target / "data" / "client.0000"
     if page.is_file():
         import subprocess
-        result = subprocess.run([str(pathlib.Path(__file__).with_name("debrand.py")), "--client", str(page),
-                                 "--in-place"], capture_output=True, text=True)
-        if result.returncode == 0 and "clean already" not in result.stdout:
-            subprocess.run([str(pathlib.Path(__file__).with_name("rehash_client.py")), "--dir", str(target),
-                            "--quiet"], check=False)
+        import sys
+        tools = pathlib.Path(__file__).parent
+        # Through the interpreter, not the file: these tools are not executable, and calling one directly
+        # raises PermissionError - which is how the first version of this quietly did nothing at all on a
+        # published client, twice.
+        result = subprocess.run([sys.executable, str(tools / "debrand.py"), "--client", str(page), "--in-place"],
+                                capture_output=True, text=True)
+        if result.returncode != 0:
+            raise SystemExit(f"debrand failed on {page}: {result.stderr.strip()[-400:]}")
+        if "clean already" not in result.stdout:
+            rehashed = subprocess.run([sys.executable, str(tools / "rehash_client.py"), "--dir", str(target)],
+                                      capture_output=True, text=True)
+            if rehashed.returncode != 0:
+                raise SystemExit(f"rehash failed on {target}: {rehashed.stderr.strip()[-400:]}")
             print(f"{version}: the engine's chrome was taken off the unpacked client")
+        else:
+            print(f"{version}: the asset was already clean")
     return json.loads(manifest_path.read_text())
 
 
