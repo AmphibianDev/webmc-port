@@ -384,8 +384,8 @@
   },
   {
    "path": "assets/indexes/29.json",
-   "bytes": 529966,
-   "sha256": "f92b2a637abd71661ae5846717a187606be13a13d6162fcf6ebd45df465114e5",
+   "bytes": 2606,
+   "sha256": "27b2b68dba32e5ab87ea54ff86dd1d25a00cb025ba37406f1b1123b24585e76c",
    "what": "asset index 29"
   },
   {
@@ -533,7 +533,7 @@
    "what": "minecraft/textures/gui/title/background/panorama_overlay.png"
   }
  ],
- "total_bytes": 108610791,
+ "total_bytes": 108083431,
  "asset_index": "29",
  "counts": {
   "files": 88,

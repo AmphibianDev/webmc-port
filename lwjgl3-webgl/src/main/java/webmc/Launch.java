@@ -53,31 +53,22 @@ public final class Launch {
         // The watchdogs belong to this run, not to runs of their own: a cheerpjRunMain before the client's
         // keeps the client from starting (measured - the client stopped logging entirely once they were
         // separate). They are here to witness a stall, so they have to share its run.
-        try {
-            Diag.start(240);
-            Tail.start(45, 40);
-        } catch (Throwable problem) {
-            say("watchdogs failed: " + problem);
+        // Only when asked for: the watchdogs write to the client's log every 30s and the class tracer adds
+        // a ClassLoader in front of every load. Measured cost: the renderer stayed at 100% CPU for twenty
+        // minutes without reaching its resource reload, and a browser JVM cannot afford the overhead.
+        if (Boolean.getBoolean("webmc.watchdogs")) {
+            try {
+                Diag.start(240);
+                Tail.start(45, 40);
+            } catch (Throwable problem) {
+                say("watchdogs failed: " + problem);
+            }
         }
 
         say("LAUNCH: " + target);
         try {
             Class<?> type = Class.forName(target, true, Launch.class.getClassLoader());
             Method entry = type.getMethod("main", String[].class);
-            // and a reporter, so the last classes loaded before a stall are readable afterwards
-            Thread reporter = new Thread(() -> {
-                for (int round = 0; round < 60; round++) {
-                    try {
-                        Thread.sleep(30_000L);
-                        say("TRACE round " + (round + 1) + ", " + Trace.loaded() + " class(es), last: "
-                            + Trace.recent());
-                    } catch (Throwable ignored) {
-                        return;
-                    }
-                }
-            }, "webmc-trace");
-            reporter.setDaemon(true);
-            reporter.start();
             entry.invoke(null, (Object) rest);
             System.out.println("LAUNCH: " + target + " returned");
         } catch (InvocationTargetException wrapped) {

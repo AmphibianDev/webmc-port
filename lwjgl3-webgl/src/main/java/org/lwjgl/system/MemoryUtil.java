@@ -199,6 +199,21 @@ public final class MemoryUtil {
         return new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
     }
 
+    /**
+     * LWJGL's lazily-initialised allocator holder.
+     *
+     * The client reads {@code ALLOCATOR} out of it by name while setting up its renderer - the same
+     * reflective walk that asks for MemoryManage$DebugAllocator. A name read that way never appears in a
+     * constant pool, so it is invisible to any measurement of what a client references: the only way to
+     * find it is to run the client and read the failure.
+     */
+    public static final class LazyInit {
+        public static final MemoryAllocator ALLOCATOR = getAllocator(false);
+
+        private LazyInit() {
+        }
+    }
+
     /** The allocator object a client can ask for and then use directly. */
     public static final class MemoryAllocator {
 

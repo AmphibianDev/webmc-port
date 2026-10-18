@@ -121,8 +121,11 @@ function webmcNative(implementation) {
     // the last one printed is the native a stalled client is sitting in.
     if (webmcBoundNative.count === undefined) {
       webmcBoundNative.count = 0;
+      // Opt-in through the shim's own global, set by a page that wants the trace: the page's URL query is
+      // not visible inside the worker this runs in.
+      webmcBoundNative.trace = true;   // DIAGNOSTIC RUN: counts every native call to find a hot loop
     }
-    if (webmcBoundNative.count < 20000) {
+    if (webmcBoundNative.trace === true && webmcBoundNative.count < 3000) {
       webmcBoundNative.count += 1;
       console.log("[trace " + webmcBoundNative.count + "] " + implementation.name);
     }
@@ -1369,6 +1372,13 @@ function webmcDecodePng(bytes) {
 // readback - therefore cannot be handed a pointer. It is handed the bytes instead: a Java byte[] arrives
 // here as a typed array, and a typed array here goes back as a Java byte[]. That is one copy at the
 // boundary, and it is the price of having the memory where the JVM can reach it.
+// The name the generated block uses for looking up a WebGL object by its integer name; the file's own
+// helper is objectOf. One of them was missing, and a ReferenceError inside a native stops the JVM's
+// thread - which is a stalled client with no exception and an idle-looking page.
+function handleOf(kind, name) {
+  return objectOf(kind, name);
+}
+
 function webmcUint8(bytes) {
   if (!bytes) return null;
   if (bytes instanceof Uint8Array) return bytes;

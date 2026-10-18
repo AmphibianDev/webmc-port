@@ -33,7 +33,8 @@ public final class WebMCArena {
     private static final long SLAB_BYTES = 1L << 24;       // 16 MiB of direct memory per slab
     private static final List<ByteBuffer> SLABS = new ArrayList<>();
     private static final List<List<long[]>> FREE = new ArrayList<>();   // per slab: {offset, length}
-    private static final long[] BUMP = new long[64];                    // per slab: next free offset
+    private static final long[] BUMP = new long[256];                   // per slab: next free offset
+    private static final long[] USED = new long[256];                   // per slab: how much of it is handed out
     private static final Map<java.nio.Buffer, Long> ADDRESSES = new IdentityHashMap<>();
     private static final Map<Long, Long> SIZES = new HashMap<>();
 
@@ -44,11 +45,26 @@ public final class WebMCArena {
         if (bytes <= 0) {
             bytes = 1;
         }
+        // A freed region of the right size first: that is what a game's reuse pattern mostly needs.
         for (int index = 0; index < SLABS.size(); index++) {
             Long found = firstFit(index, bytes);
             if (found != null) {
                 SIZES.put(found, bytes);
                 return found;
+            }
+        }
+        // Then the tail of the newest slab, which is where an allocation that is not a reuse belongs.
+        // Without this the arena allocated a *whole new slab* for every such request: sixty-four of them
+        // (a gigabyte of direct buffers) and then OutOfMemoryError - measured, and it is what a game's
+        // allocation pattern hits in the first seconds of play.
+        int newest = SLABS.size() - 1;
+        if (newest >= 0) {
+            long capacity = SLABS.get(newest).capacity();
+            if (USED[newest] + bytes <= capacity) {
+                long address = encode(newest, USED[newest]);
+                USED[newest] += bytes;
+                SIZES.put(address, bytes);
+                return address;
             }
         }
         long address = bumpInNewSlab(bytes);
@@ -83,6 +99,7 @@ public final class WebMCArena {
             throw new OutOfMemoryError("the shim's arena ran out of slab slots; raise the slab count");
         }
         BUMP[index] = bytes;
+        USED[index] = bytes;
         return encode(index, 0);
     }
 

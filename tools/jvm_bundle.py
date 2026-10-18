@@ -279,6 +279,12 @@ def main(argv=None) -> int:
         asset_index = index_id
         index_target = out / "assets" / "indexes" / f"{index_id}.json"
         index_target.parent.mkdir(parents=True, exist_ok=True)
+        # Prune the index to what the bundle actually carries. A full index lists 4591 objects, and every
+        # one the client asks for and cannot open is an exception it logs and carries on from - hundreds
+        # of them during startup, on a JVM that is already a thousand times slower than a desktop.
+        index["objects"] = {name: entry for name, entry in index["objects"].items()
+                            if name.startswith(TITLE_SCREEN_PREFIXES)}
+        print(f"  asset index pruned to {len(index['objects'])} object(s)")
         index_target.write_bytes(json.dumps(index).encode())
         files.append({"path": f"assets/indexes/{index_id}.json", "bytes": index_target.stat().st_size,
                       "sha256": sha256(index_target), "what": f"asset index {index_id}"})
