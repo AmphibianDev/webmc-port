@@ -323,6 +323,12 @@
    "what": "fabric-api-0.141.6+1.21.11.jar (backported)"
   },
   {
+   "path": "mods/meteor-client-1.21.11-86.jar",
+   "bytes": 5319572,
+   "sha256": "c72cbafc098cc5eeb2d1bfad74d6005257ad37e9e5835acbd82bffe1d2d81f32",
+   "what": "meteor-client-1.21.11-86.jar (backported)"
+  },
+  {
    "path": "mods/sodium-fabric-0.8.14+mc1.21.11.jar",
    "bytes": 1834166,
    "sha256": "20bf7bd1b5b00e24abe83ae910c0d272874c2cda0c2478a6abf46648c48e4847",
@@ -527,13 +533,13 @@
    "what": "minecraft/textures/gui/title/background/panorama_overlay.png"
   }
  ],
- "total_bytes": 103291177,
+ "total_bytes": 108610749,
  "asset_index": "29",
  "counts": {
-  "files": 87,
+  "files": 88,
   "libraries": 52,
   "loader": 8,
   "assets": 24,
-  "mods": 2
+  "mods": 3
  }
 }

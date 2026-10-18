@@ -90,8 +90,10 @@ def fetch(url: str, target: pathlib.Path, proxy: str | None) -> pathlib.Path:
 
 def inject_launcher(backported_client: pathlib.Path, target: pathlib.Path, log=print) -> bool:
     """Compile webmc/Launch and put it in the client jar, so a failed start explains itself."""
-    source = ROOT / "lwjgl3-webgl" / "src" / "main" / "java" / "webmc" / "Launch.java"
-    if not source.is_file():
+    sources = [ROOT / "lwjgl3-webgl" / "src" / "main" / "java" / "webmc" / name
+               for name in ("Launch.java", "Prepare.java")]
+    sources = [path for path in sources if path.is_file()]
+    if not sources:
         return False
     javac = None
     for candidate in (os.environ.get("JAVA_HOME", ""), *[os.environ.get(f"JAVA_HOME_{v}", "")
@@ -110,17 +112,17 @@ def inject_launcher(backported_client: pathlib.Path, target: pathlib.Path, log=p
     import zipfile
     with tempfile.TemporaryDirectory() as work:
         classes = pathlib.Path(work)
-        result = subprocess.run([str(javac), "--release", "17", "-nowarn", "-d", str(classes), str(source)],
-                                capture_output=True, text=True)
+        result = subprocess.run([str(javac), "--release", "17", "-nowarn", "-d", str(classes)]
+                                + [str(path) for path in sources], capture_output=True, text=True)
         if result.returncode != 0:
             log(f"  ! the launcher did not compile: {result.stderr.strip()[:200]}")
             return False
-        compiled = classes / "webmc" / "Launch.class"
-        if not compiled.is_file():
-            return False
         shutil.copyfile(backported_client, target)
         with zipfile.ZipFile(target, "a", zipfile.ZIP_DEFLATED) as archive:
-            archive.write(compiled, "webmc/Launch.class")
+            for name in ("Launch", "Prepare"):
+                compiled = classes / "webmc" / f"{name}.class"
+                if compiled.is_file():
+                    archive.write(compiled, f"webmc/{name}.class")
     log(f"  the launcher is in the client jar ({target.stat().st_size // 1024} KB)")
     return True
 
@@ -220,6 +222,12 @@ def main(argv=None) -> int:
 
     asset_index = None
     loader_count = 0
+    if args.assets and (out / "assets").is_dir():
+        listing = sorted(str(path.relative_to(out / "assets"))
+                         for path in (out / "assets").rglob("*") if path.is_file())
+        (out / "assets" / "list.txt").write_text("\n".join(listing) + "\n")
+        print(f"  assets/list.txt: {len(listing)} path(s)")
+
     # Fabric Loader, Mixin, intermediary and ASM: the loader's own dependencies, vendored here because the
     # page otherwise has to fetch them from maven.fabricmc.net at play time - and a visitor whose resolver
     # filters that host gets "without Fabric this route has nothing to run" instead of a game.

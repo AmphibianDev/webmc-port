@@ -113,6 +113,24 @@ function webmcNamed(name, fn) {
 // found the hard way, one at a time, in a real browser.)
 function webmcNative(implementation) {
   return function webmcBoundNative(...args) {
+    // ?trace=1 logs every native call, in order. A client that stops without an exception stops *inside*
+    // one of these, and the last name printed is the call it stopped in - the only view of it from
+    // outside, because a browser JVM shows nothing at all while Java is inside a native.
+    if (webmcBoundNative.trace === undefined) {
+      webmcBoundNative.trace = typeof location !== "undefined" && location.search.includes("trace=1");
+      webmcBoundNative.count = 0;
+    }
+    if (webmcBoundNative.trace && webmcBoundNative.count < 4000) {
+      webmcBoundNative.count += 1;
+      console.log("[trace " + webmcBoundNative.count + "] " + implementation.name);
+    }
+    // Every native, counted, so a client that stops responding can be asked where it stopped: the
+    // function's own name is its JNI name, which is the same name Java called it by.
+    state.trace.push(implementation.name);
+    if (state.trace.length > 60) {
+      state.trace.shift();
+    }
+    state.traceCount = (state.traceCount || 0) + 1;
     for (let index = 0; index < args.length; index++) {
       if (typeof args[index] === "bigint") {
         args[index] = Number(args[index]);
@@ -127,8 +145,23 @@ function webmcNative(implementation) {
 }
 
 function traced(name) {
-  if (state.trace.length < 60) state.trace.push(name);
+  // ?trace=1 prints every glfw/GL call the shim is asked for. A client that stops without an exception
+  // stops *in* one of these, and the last line printed is the call it stopped in - which is the only way
+  // to find it from outside, because a browser JVM shows nothing while Java is inside a native.
+  if (!traced.enabled) {
+    traced.enabled = typeof location !== "undefined" && location.search.includes("trace=1");
+    traced.count = 0;
+  }
+  if (traced.enabled && traced.count < 6000) {
+    traced.count += 1;
+    console.log("[trace " + traced.count + "] " + name);
+  }
+  state.trace = state.trace || [];
   state.traceCount = (state.traceCount || 0) + 1;
+  if (state.trace.length < 40) {
+    state.trace.push(name);
+  }
+  state.lastCall = name;
 }
 
 /**
@@ -948,24 +981,98 @@ function Java_org_lwjgl_system_WebMC_bindBuffer(lib, target, buffer) {
 
 // STB image, over the PNG decoder above. The pixels land in this side's heap because their size is not
 // known until the image is decoded; the Java side copies them into the arena.
-function Java_org_lwjgl_system_WebMC_stbLoadFromMemory(lib, input, info) {
-  const bytes = webmcUint8(input);
+// The last decoded image, so the size can be asked for one scalar at a time: a native that takes two
+// arrays never reaches JavaScript, and the address has to travel as a single value.
+const webmcStb = { width: 0, height: 0, components: 0, scratch: 0 };
+
+function Java_org_lwjgl_system_WebMC_stbLoad(lib, address, length) {
+  webmcStb.width = 0;
+  webmcStb.height = 0;
+  webmcStb.components = 0;
+  webmcStb.scratch = 0;
+  const bytes = length > 0 ? U8.subarray(address, address + length) : null;
   const image = bytes ? webmcDecodePng(bytes) : null;
   if (!image) {
-    info[0] = 0;
-    info[1] = 0;
-    info[2] = 0;
-    info[3] = 0;
     return;
   }
   const size = image.width * image.height * 4;
   const scratch = webmcAlloc(size);
   U8.set(image.rgba, scratch);
-  info[0] = image.width;
-  info[1] = image.height;
-  info[2] = 4;
-  info[3] = scratch;
+  webmcStb.width = image.width;
+  webmcStb.height = image.height;
+  webmcStb.components = 4;
+  webmcStb.scratch = scratch;
 }
+
+function Java_org_lwjgl_system_WebMC_stbScratch() { return webmcStb.scratch; }
+
+// ------------------------------------------------------------------- glyphs, because FreeType is Java
+//
+// FreeType reads font files; a browser cannot rasterise an arbitrary font file synchronously (FontFace is
+// asynchronous), so the glyphs come from the canvas with a generic family instead. The shapes are not
+// Minecraft's font, the metrics are the canvas's - and text renders, is measurable, and is the right
+// height, which is what the client needs to draw a menu.
+const webmcGlyph = { width: 0, rows: 0, pitch: 0, left: 0, top: 0, advance: 0 };
+
+function webmcGlyphCanvas(pixelSize) {
+  if (!webmcGlyph.canvas || webmcGlyph.canvasSize < pixelSize) {
+    const size = Math.max(8, Math.ceil(pixelSize * 2));
+    webmcGlyph.canvas = document.createElement("canvas");
+    webmcGlyph.canvas.width = size;
+    webmcGlyph.canvas.height = size;
+    webmcGlyph.canvasSize = size;
+  }
+  const canvas = webmcGlyph.canvas;
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  context.font = pixelSize + "px monospace";
+  context.textBaseline = "alphabetic";
+  context.fillStyle = "#fff";
+  return context;
+}
+
+function Java_org_lwjgl_system_WebMC_freetypeGlyph(lib, glyphPoint, pixelSize, bitmap) {
+  const context = webmcGlyphCanvas(pixelSize);
+  const text = String.fromCodePoint(glyphPoint);
+  const metrics = context.measureText(text);
+  const width = Math.max(1, Math.ceil(metrics.actualBoundingBoxRight + metrics.actualBoundingBoxLeft) + 1);
+  const rows = Math.max(1, Math.ceil(metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent) + 1);
+  const baseline = Math.ceil(metrics.actualBoundingBoxAscent) + 1;
+  context.fillText(text, 1, baseline);
+  const image = context.getImageData(0, 0, width, rows).data;
+  const pitch = width;
+  let ink = 0;
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < width; x++) {
+      const alpha = image[(y * width + x) * 4 + 3];
+      bitmap[y * pitch + x] = alpha;
+      if (alpha > 32) ink += 1;
+    }
+  }
+  webmcGlyph.width = width;
+  webmcGlyph.rows = rows;
+  webmcGlyph.pitch = pitch;
+  webmcGlyph.left = 0;
+  webmcGlyph.top = Math.ceil(metrics.actualBoundingBoxAscent);
+  webmcGlyph.advance = Math.max(1, Math.round(metrics.width));
+  webmcGlyph.ink = ink;
+  if (typeof console !== "undefined") {
+    console.log("[shim] glyph " + glyphPoint + " size=" + pixelSize + " -> " + width + "x" + rows
+                + " advance=" + webmcGlyph.advance + " ascent=" + metrics.actualBoundingBoxAscent
+                + " ink=" + webmcGlyph.ink);
+  }
+}
+
+function Java_org_lwjgl_system_WebMC_freetypeWidth() { return webmcGlyph.width; }
+function Java_org_lwjgl_system_WebMC_freetypeRows() { return webmcGlyph.rows; }
+function Java_org_lwjgl_system_WebMC_freetypePitch() { return webmcGlyph.pitch; }
+function Java_org_lwjgl_system_WebMC_freetypeLeft() { return webmcGlyph.left; }
+function Java_org_lwjgl_system_WebMC_freetypeTop() { return webmcGlyph.top; }
+function Java_org_lwjgl_system_WebMC_freetypeAdvance() { return webmcGlyph.advance; }
+
+function Java_org_lwjgl_system_WebMC_stbWidth() { return webmcStb.width; }
+function Java_org_lwjgl_system_WebMC_stbHeight() { return webmcStb.height; }
+function Java_org_lwjgl_system_WebMC_stbComponents() { return webmcStb.components; }
 
 function Java_org_lwjgl_system_WebMC_stbFreeScratch(lib, scratch) {
   webmcFree(scratch);
@@ -985,11 +1092,19 @@ function Java_org_lwjgl_system_WebMC_genVertexArrays(lib, count, pointers) {
 // decode an image (an <img>, createImageBitmap and DecompressionStream are all asynchronous, and a
 // native cannot await). So this is an inflate and a PNG decoder, written out: it is the smallest correct
 // thing that can turn 16x16 of blocks into pixels, and it runs once per texture at load.
-function webmcInflate(input, start, length) {
+function webmcInflate(input, start, length, limit) {
   let bitPosition = 0;
+  // A decoder handed something that is not deflate data can run for ever: the bit reader walks off the
+  // end, the Huffman tables return nonsense symbols, and a plausible-looking length/distance pair copies
+  // in a loop. Both a read past the input and an output past what the caller expects end it here, which
+  // is the difference between "this file is not an image" and a browser tab that stops responding.
+  const budget = (limit || 0) > 0 ? limit : 1 << 26;
   const end = start + length;
   const readBit = () => {
     const byte = input[start + (bitPosition >> 3)];
+    if (byte === undefined) {
+      throw new RangeError("deflate stream ended");
+    }
     const bit = (byte >> (bitPosition & 7)) & 1;
     bitPosition += 1;
     return bit;
@@ -1049,6 +1164,7 @@ function webmcInflate(input, start, length) {
                      1537, 2049, 3073, 4097, 6145, 8193, 12289, 16385, 24577];
   const DIST_EXTRA = [0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13];
   let finalBlock = false;
+  try {
   while (!finalBlock) {
     finalBlock = readBit() === 1;
     const type = readBits(2);
@@ -1115,6 +1231,9 @@ function webmcInflate(input, start, length) {
         break;
       } else {
         const lengthIndex = symbol - 257;
+        if (out.length > budget) {
+          throw new RangeError("the decoded data is larger than expected");
+        }
         const copyLength = LENGTH_BASE[lengthIndex] + readBits(LENGTH_EXTRA[lengthIndex]);
         const distanceSymbol = distance();
         if (distanceSymbol < 0) return null;
@@ -1125,6 +1244,9 @@ function webmcInflate(input, start, length) {
         }
       }
     }
+  }
+  } catch (error) {
+    return null;
   }
   return Uint8Array.from(out);
 }
@@ -1164,7 +1286,9 @@ function webmcDecodePng(bytes) {
   // from byte zero makes the header look like a block header and the decode spirals.
   const all = Uint8Array.from(data);
   const zlibWrapped = all.length > 6 && (all[0] & 0x0f) === 8 && ((all[0] << 8 | all[1]) % 31) === 0;
-  const raw = webmcInflate(all, zlibWrapped ? 2 : 0, all.length - (zlibWrapped ? 6 : 0));
+  const channelsGuess = { 0: 1, 2: 3, 3: 1, 4: 2, 6: 4 }[colourType] || 4;
+  const expected = (Math.ceil(width * channelsGuess * depth / 8) + 1) * height;
+  const raw = webmcInflate(all, zlibWrapped ? 2 : 0, all.length - (zlibWrapped ? 6 : 0), expected);
   if (!raw) return null;
   const channels = { 0: 1, 2: 3, 3: 1, 4: 2, 6: 4 }[colourType];
   if (!channels) return null;
@@ -1587,6 +1711,13 @@ export const natives = {
   Java_org_lwjgl_system_WebMC_bindBuffer: webmcNamed("Java_org_lwjgl_system_WebMC_bindBuffer", webmcNative(Java_org_lwjgl_system_WebMC_bindBuffer)),
   Java_org_lwjgl_system_WebMC_bufferDataFromJava: webmcNamed("Java_org_lwjgl_system_WebMC_bufferDataFromJava", webmcNative(Java_org_lwjgl_system_WebMC_bufferDataFromJava)),
   Java_org_lwjgl_system_WebMC_bufferSubDataFromJava: webmcNamed("Java_org_lwjgl_system_WebMC_bufferSubDataFromJava", webmcNative(Java_org_lwjgl_system_WebMC_bufferSubDataFromJava)),
+  Java_org_lwjgl_system_WebMC_freetypeAdvance: webmcNamed("Java_org_lwjgl_system_WebMC_freetypeAdvance", webmcNative(Java_org_lwjgl_system_WebMC_freetypeAdvance)),
+  Java_org_lwjgl_system_WebMC_freetypeGlyph: webmcNamed("Java_org_lwjgl_system_WebMC_freetypeGlyph", webmcNative(Java_org_lwjgl_system_WebMC_freetypeGlyph)),
+  Java_org_lwjgl_system_WebMC_freetypeLeft: webmcNamed("Java_org_lwjgl_system_WebMC_freetypeLeft", webmcNative(Java_org_lwjgl_system_WebMC_freetypeLeft)),
+  Java_org_lwjgl_system_WebMC_freetypePitch: webmcNamed("Java_org_lwjgl_system_WebMC_freetypePitch", webmcNative(Java_org_lwjgl_system_WebMC_freetypePitch)),
+  Java_org_lwjgl_system_WebMC_freetypeRows: webmcNamed("Java_org_lwjgl_system_WebMC_freetypeRows", webmcNative(Java_org_lwjgl_system_WebMC_freetypeRows)),
+  Java_org_lwjgl_system_WebMC_freetypeTop: webmcNamed("Java_org_lwjgl_system_WebMC_freetypeTop", webmcNative(Java_org_lwjgl_system_WebMC_freetypeTop)),
+  Java_org_lwjgl_system_WebMC_freetypeWidth: webmcNamed("Java_org_lwjgl_system_WebMC_freetypeWidth", webmcNative(Java_org_lwjgl_system_WebMC_freetypeWidth)),
   Java_org_lwjgl_system_WebMC_genBuffers: webmcNamed("Java_org_lwjgl_system_WebMC_genBuffers", webmcNative(Java_org_lwjgl_system_WebMC_genBuffers)),
   Java_org_lwjgl_system_WebMC_genVertexArrays: webmcNamed("Java_org_lwjgl_system_WebMC_genVertexArrays", webmcNative(Java_org_lwjgl_system_WebMC_genVertexArrays)),
   Java_org_lwjgl_system_WebMC_log: webmcNamed("Java_org_lwjgl_system_WebMC_log", webmcNative(Java_org_lwjgl_system_WebMC_log)),
@@ -1613,10 +1744,14 @@ export const natives = {
   Java_org_lwjgl_system_WebMC_nmemUTF8: webmcNamed("Java_org_lwjgl_system_WebMC_nmemUTF8", webmcNative(Java_org_lwjgl_system_WebMC_nmemUTF8)),
   Java_org_lwjgl_system_WebMC_nmemWriteBytes: webmcNamed("Java_org_lwjgl_system_WebMC_nmemWriteBytes", webmcNative(Java_org_lwjgl_system_WebMC_nmemWriteBytes)),
   Java_org_lwjgl_system_WebMC_readPixelsInto: webmcNamed("Java_org_lwjgl_system_WebMC_readPixelsInto", webmcNative(Java_org_lwjgl_system_WebMC_readPixelsInto)),
+  Java_org_lwjgl_system_WebMC_stbComponents: webmcNamed("Java_org_lwjgl_system_WebMC_stbComponents", webmcNative(Java_org_lwjgl_system_WebMC_stbComponents)),
   Java_org_lwjgl_system_WebMC_stbFreeScratch: webmcNamed("Java_org_lwjgl_system_WebMC_stbFreeScratch", webmcNative(Java_org_lwjgl_system_WebMC_stbFreeScratch)),
-  Java_org_lwjgl_system_WebMC_stbLoadFromMemory: webmcNamed("Java_org_lwjgl_system_WebMC_stbLoadFromMemory", webmcNative(Java_org_lwjgl_system_WebMC_stbLoadFromMemory)),
+  Java_org_lwjgl_system_WebMC_stbHeight: webmcNamed("Java_org_lwjgl_system_WebMC_stbHeight", webmcNative(Java_org_lwjgl_system_WebMC_stbHeight)),
+  Java_org_lwjgl_system_WebMC_stbLoad: webmcNamed("Java_org_lwjgl_system_WebMC_stbLoad", webmcNative(Java_org_lwjgl_system_WebMC_stbLoad)),
+  Java_org_lwjgl_system_WebMC_stbScratch: webmcNamed("Java_org_lwjgl_system_WebMC_stbScratch", webmcNative(Java_org_lwjgl_system_WebMC_stbScratch)),
+  Java_org_lwjgl_system_WebMC_stbWidth: webmcNamed("Java_org_lwjgl_system_WebMC_stbWidth", webmcNative(Java_org_lwjgl_system_WebMC_stbWidth)),
   Java_org_lwjgl_system_WebMC_texImageFromJava: webmcNamed("Java_org_lwjgl_system_WebMC_texImageFromJava", webmcNative(Java_org_lwjgl_system_WebMC_texImageFromJava)),
   Java_org_lwjgl_system_WebMC_texSubImageFromJava: webmcNamed("Java_org_lwjgl_system_WebMC_texSubImageFromJava", webmcNative(Java_org_lwjgl_system_WebMC_texSubImageFromJava)),
 };
 
-export const count = 226;
+export const count = 237;

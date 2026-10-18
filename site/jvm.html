@@ -263,6 +263,10 @@ async function start() {
   const ownMods = (params.get("mods") || "").split(",").map((part) => part.trim()).filter(Boolean);
 
   status("starting the JVM (Java 17)…");
+  /* Two things the page cannot do and Java can: write a directory tree (CheerpJ's /str mount is flat),
+     and read assets out of it. webmc.assets is where the bundle's assets are served from; the launcher
+     class in the client jar fetches them into /files/assets before Minecraft starts, and the client is
+     then given /files/assets and /files/game - a real directory it can also write its options and logs to. */
   await cheerpjInit({
     version: 17,
     natives,
@@ -309,6 +313,27 @@ async function start() {
   }
   progress(1);
 
+  /* The assets go through the page's flat mount, one file per asset, with a listing beside them: Java
+     cannot fetch them (a browser JVM's network is the page's, and the page must be the one to ask), and the
+     page cannot write a directory tree (CheerpJ's /str mount refuses directories). Java can do both halves:
+     it reads the flat files and writes them into /files/assets, where Minecraft wants them. */
+  const assetFiles = manifest.files.filter((entry) => entry.path.startsWith("assets/"));
+  const listing = [];
+  let assetIndex = 0;
+  for (const entry of assetFiles) {
+    const flat = `/str/asset-${assetIndex++}`;
+    await mount(new URL(`jvm/${version}/${entry.path}`, BASE).href, flat, `asset ${entry.path}`);
+    listing.push(flat.slice("/str/".length) + " " + entry.path.slice("assets/".length));
+    tick(entry.path);
+  }
+  // written directly, not fetched: a listing that goes through fetch() and a data: URL was the one file
+  // whose absence broke the whole prepare step, and there is no reason for it to travel that way
+  // written through fileWriter() rather than putFile: putFile is a const defined further down, so calling
+  // it here threw "putFile is not defined" and took the whole launch with it.
+  fileWriter()("/str/assets-map.txt", listing.join("\n") + "\n");
+  log(`asset listing: ${listing.length} line(s), written flat`);
+  log(`assets: ${assetFiles.length} file(s), listed for the JVM to place`);
+
   // The shim's own classes go first: this repository *is* LWJGL 3 for the browser, and the bundle
   // deliberately carries no org.lwjgl jars for that reason. Without this jar the client stops at
   // "Unable to initialize main class", which names the symptom and not the cause.
@@ -332,9 +357,18 @@ async function start() {
   el("go").hidden = false;
 
   cheerpjCreateDisplay(-1, -1, el("stage"));
+  /* Preparation is its own JVM run before the client, so that a failure to place the assets says so
+     instead of arriving as Minecraft not finding a texture. CheerpJ keeps the JVM alive between runs, so
+     this costs the mount and the copy, not another JVM startup. */
+  status("placing the assets where the client can read them…");
+  const prepared = await cheerpjRunMain("webmc.Prepare", classpath.join(":"), "-", "/files/assets",
+                                        "/str/assets-map.txt");
+  log(`asset preparation returned ${prepared}`, prepared === 0 ? "ok" : "warn");
+
   const code = await cheerpjRunMain("webmc.Launch", classpath.join(":"), main,
-    "--username", username, "--version", version, "--gameDir", ".",
-    "--assetsDir", "/str/assets", "--assetIndex", manifest.asset_index || version,
+    new URL(`jvm/${version}/assets/`, BASE).href,
+    "--username", username, "--version", version, "--gameDir", "/files/game",
+    "--assetsDir", "/files/assets", "--assetIndex", manifest.asset_index || version,
     "--uuid", "0", "--accessToken", "0", "--userType", "legacy");
   log(`the client exited with code ${code}`, code === 0 ? "ok" : "warn");
   el("overlay").classList.remove("gone");

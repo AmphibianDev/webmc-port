@@ -113,6 +113,17 @@ function webmcNamed(name, fn) {
 // found the hard way, one at a time, in a real browser.)
 function webmcNative(implementation) {
   return function webmcBoundNative(...args) {
+    // ?trace=1 logs every native call, in order. A client that stops without an exception stops *inside*
+    // one of these, and the last name printed is the call it stopped in - the only view of it from
+    // outside, because a browser JVM shows nothing at all while Java is inside a native.
+    if (webmcBoundNative.trace === undefined) {
+      webmcBoundNative.trace = typeof location !== "undefined" && location.search.includes("trace=1");
+      webmcBoundNative.count = 0;
+    }
+    if (webmcBoundNative.trace && webmcBoundNative.count < 4000) {
+      webmcBoundNative.count += 1;
+      console.log("[trace " + webmcBoundNative.count + "] " + implementation.name);
+    }
     // Every native, counted, so a client that stops responding can be asked where it stopped: the
     // function's own name is its JNI name, which is the same name Java called it by.
     state.trace.push(implementation.name);
@@ -134,13 +145,23 @@ function webmcNative(implementation) {
 }
 
 function traced(name) {
-  // The *last* sixty calls, not the first: when a client stops responding, the call it stopped in is the
-  // one worth having, and the first sixty are always the same setup.
-  state.trace.push(name);
-  if (state.trace.length > 60) {
-    state.trace.shift();
+  // ?trace=1 prints every glfw/GL call the shim is asked for. A client that stops without an exception
+  // stops *in* one of these, and the last line printed is the call it stopped in - which is the only way
+  // to find it from outside, because a browser JVM shows nothing while Java is inside a native.
+  if (!traced.enabled) {
+    traced.enabled = typeof location !== "undefined" && location.search.includes("trace=1");
+    traced.count = 0;
   }
+  if (traced.enabled && traced.count < 6000) {
+    traced.count += 1;
+    console.log("[trace " + traced.count + "] " + name);
+  }
+  state.trace = state.trace || [];
   state.traceCount = (state.traceCount || 0) + 1;
+  if (state.trace.length < 40) {
+    state.trace.push(name);
+  }
+  state.lastCall = name;
 }
 
 /**
