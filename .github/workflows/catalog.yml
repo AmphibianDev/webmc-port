@@ -134,8 +134,11 @@ jobs:
           FABRIC_API="https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/0.141.6+1.21.11/fabric-api-0.141.6+1.21.11.jar"
           curl -fsSL --retry 3 --max-time 300 -o "/tmp/jvm-mods/fabric-api-0.141.6+1.21.11.jar" "$FABRIC_API" \
             || echo "::warning::fabric-api could not be fetched; the bundle will carry no mods"
+          # The mods this route carries: Fabric API from Fabric's maven, and whatever is in mods/jvm
+          # (Meteor Client, backported) - both are lowered again by jvm_prepare, because what goes into
+          # the bundle must be Java 17 bytecode whatever the download was.
           python3 tools/jvm_prepare.py --version 1.21.11 \
-            $(ls /tmp/jvm-mods/*.jar 2>/dev/null | sed 's/^/--mods /' | tr '\n' ' ')
+            $(ls /tmp/jvm-mods/*.jar mods/jvm/*.jar 2>/dev/null | sed 's/^/--mods /' | tr '\n' ' ')
           du -sh site/jvm/1.21.11 2>/dev/null || true
 
       - name: Build our own loader, and the example mod
