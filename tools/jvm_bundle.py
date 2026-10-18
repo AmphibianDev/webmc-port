@@ -64,6 +64,13 @@ TITLE_SCREEN_PREFIXES = (
 # Replaced by this repository's shim: shipping them would be both wrong and heavy.
 SKIP_GROUPS = ("org.lwjgl",)
 
+# Libraries that cannot work in a browser and take the client down with them. OSHI reads hardware info
+# through JNA, which has no native library here: it logs "Did not JNA classes", gets partway through its
+# groups and then stops answering, and Minecraft waits on it during startup - measured, with the client's
+# last line being OSHI's "Failed retrieving info for group processor". Minecraft already handles OSHI
+# being unavailable (it catches the failure and carries on), so the honest fix is not to ship it.
+SKIP_LIBRARIES = ("com.github.oshi", "net.java.dev.jna")
+
 
 def sha256(path: pathlib.Path) -> str:
     digest = hashlib.sha256()
@@ -91,7 +98,7 @@ def fetch(url: str, target: pathlib.Path, proxy: str | None) -> pathlib.Path:
 def inject_launcher(backported_client: pathlib.Path, target: pathlib.Path, log=print) -> bool:
     """Compile webmc/Launch and put it in the client jar, so a failed start explains itself."""
     sources = [ROOT / "lwjgl3-webgl" / "src" / "main" / "java" / "webmc" / name
-               for name in ("Launch.java", "Prepare.java")]
+               for name in ("Launch.java", "Prepare.java", "Diag.java", "Tail.java")]
     sources = [path for path in sources if path.is_file()]
     if not sources:
         return False
@@ -119,7 +126,7 @@ def inject_launcher(backported_client: pathlib.Path, target: pathlib.Path, log=p
             return False
         shutil.copyfile(backported_client, target)
         with zipfile.ZipFile(target, "a", zipfile.ZIP_DEFLATED) as archive:
-            for name in ("Launch", "Prepare"):
+            for name in ("Launch", "Prepare", "Diag", "Tail"):
                 compiled = classes / "webmc" / f"{name}.class"
                 if compiled.is_file():
                     archive.write(compiled, f"webmc/{name}.class")
@@ -194,6 +201,9 @@ def main(argv=None) -> int:
         # tools/backport17.py (jtracy is the one for 1.21.11); prefer that copy, because the official jar
         # cannot be loaded by the Java 17 runtime the page has.
         backported = libs.parent / f"{libs.name}-j17" / name
+        if any(library.get("name", "").startswith(prefix) for prefix in SKIP_LIBRARIES):
+            print(f"  skipping {name} (cannot work in a browser; the client handles its absence)")
+            continue
         source = backported if backported.is_file() else libs / name
         if not source.is_file():
             missing += 1

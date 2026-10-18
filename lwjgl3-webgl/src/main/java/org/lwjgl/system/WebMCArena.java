@@ -40,7 +40,7 @@ public final class WebMCArena {
     private WebMCArena() {
     }
 
-    public static synchronized long malloc(long bytes) {
+    public static long malloc(long bytes) {
         if (bytes <= 0) {
             bytes = 1;
         }
@@ -86,7 +86,7 @@ public final class WebMCArena {
         return encode(index, 0);
     }
 
-    public static synchronized void free(long address) {
+    public static void free(long address) {
         if (address == 0) {
             return;
         }
@@ -112,7 +112,7 @@ public final class WebMCArena {
         }
     }
 
-    public static synchronized long realloc(long address, long bytes) {
+    public static long realloc(long address, long bytes) {
         long fresh = malloc(bytes);
         if (address != 0) {
             Long old = SIZES.get(address);
@@ -151,19 +151,19 @@ public final class WebMCArena {
      * One copy at that boundary, and the alternative - two arenas, one of which JavaScript can read - is
      * what this project spent a day discovering is worse.
      */
-    public static synchronized byte[] read(long address, int length) {
+    public static byte[] read(long address, int length) {
         byte[] bytes = new byte[length];
         window(address, length).get(0, bytes, 0, length);
         return bytes;
     }
 
     /** Copy a region in, for the other direction: pixels read back from a GL call. */
-    public static synchronized void write(long address, byte[] bytes) {
+    public static void write(long address, byte[] bytes) {
         window(address, bytes.length).put(0, bytes, 0, bytes.length);
     }
 
     /** A view of the arena at this address: the same memory, a different window. */
-    public static synchronized ByteBuffer window(long address, int capacity) {
+    public static ByteBuffer window(long address, int capacity) {
         ByteBuffer view = slab(address).duplicate().order(ByteOrder.nativeOrder());
         view.position(offset(address));
         view.limit(offset(address) + capacity);
@@ -173,17 +173,17 @@ public final class WebMCArena {
     }
 
     /** Register a derived view (an IntBuffer over a ByteBuffer, say) with the address it starts at. */
-    public static synchronized void remember(java.nio.Buffer buffer, long address) {
+    public static void remember(java.nio.Buffer buffer, long address) {
         ADDRESSES.put(buffer, address);
     }
 
     /** The address of a buffer this shim handed out, or -1 when it did not. */
-    public static synchronized long addressOf(java.nio.Buffer buffer) {
+    public static long addressOf(java.nio.Buffer buffer) {
         Long known = ADDRESSES.get(buffer);
         return known == null ? -1L : known;
     }
 
-    public static synchronized int slabCount() {
+    public static int slabCount() {
         return SLABS.size();
     }
 }

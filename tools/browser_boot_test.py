@@ -294,8 +294,9 @@ def main(argv=None) -> int:
                 # turns a two-minute diagnosis into a twenty-minute one.
                 if log.exists():
                     lines = log.read_text(errors="replace").splitlines()
-                    fresh = [line for line in lines[streamed:]
-                             if any(word in line for word in ("[jvm]", "LAUNCH", "ERROR", "Uncaught", "Exception"))]
+                    # every console line, not a keyword filter: the filter once hid the very lines being
+                    # debugged (a class's own output, and the client's log tail)
+                    fresh = list(lines[streamed:])
                     streamed = len(lines)
                     for line in fresh:
                         text = line.split("CONSOLE:", 1)[1] if "CONSOLE:" in line else line

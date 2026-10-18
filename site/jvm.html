@@ -365,6 +365,33 @@ async function start() {
                                         "/str/assets-map.txt");
   log(`asset preparation returned ${prepared}`, prepared === 0 ? "ok" : "warn");
 
+  /* A browser JVM cannot print a stack trace for a client that stalls, and this one stalls with no output
+     at all. webmc.Diag starts a daemon that writes every thread's stack to /files/diag.txt; the page reads
+     it back with cheerpjRunLibrary - JavaScript calling Java - and logs it. */
+  const diagLibrary = await cheerpjRunLibrary(classpath.join(":")).catch((problem) => {
+    log("could not open the JVM library for diagnostics: " + problem.message, "warn");
+    return null;
+  });
+  if (diagLibrary) {
+    let ticks = 0;
+    const timer = setInterval(async () => {
+      ticks += 1;
+      try {
+        const report = await diagLibrary.webmc.Diag.report();
+        if (report && !report.startsWith("DIAG: nothing yet")) {
+          log("--- thread stacks ---");
+          for (const line of String(report).split("\n").slice(0, 120)) {
+            log(line);
+          }
+          clearInterval(timer);
+        }
+      } catch (problem) {
+        if (ticks > 3) clearInterval(timer);
+      }
+      if (ticks > 60) clearInterval(timer);
+    }, 30000);
+  }
+
   const code = await cheerpjRunMain("webmc.Launch", classpath.join(":"), main,
     new URL(`jvm/${version}/assets/`, BASE).href,
     "--username", username, "--version", version, "--gameDir", "/files/game",

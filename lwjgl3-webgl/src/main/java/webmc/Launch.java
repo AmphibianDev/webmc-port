@@ -50,6 +50,16 @@ public final class Launch {
             say("PREPARE FAILED: " + problem);
         }
 
+        // The watchdogs belong to this run, not to runs of their own: a cheerpjRunMain before the client's
+        // keeps the client from starting (measured - the client stopped logging entirely once they were
+        // separate). They are here to witness a stall, so they have to share its run.
+        try {
+            Diag.start(240);
+            Tail.start(45, 40);
+        } catch (Throwable problem) {
+            say("watchdogs failed: " + problem);
+        }
+
         say("LAUNCH: " + target);
         try {
             Class<?> type = Class.forName(target, true, Launch.class.getClassLoader());

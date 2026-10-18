@@ -29,12 +29,6 @@
    "what": "azure-json-1.4.0.jar"
   },
   {
-   "path": "libs/oshi-core-6.9.0.jar",
-   "bytes": 1032551,
-   "sha256": "3574e96fd3f3b1cdd5bf9061f40e80f6c5ab48ed8e9272c4ab72958aea8f31a1",
-   "what": "oshi-core-6.9.0.jar"
-  },
-  {
    "path": "libs/gson-2.13.2.jar",
    "bytes": 290897,
    "sha256": "0b7c2867f55377e1e5965daf555119632b2d0f2a79b5ea9963f9ff8e69c932c3",
@@ -243,18 +237,6 @@
    "bytes": 24088491,
    "sha256": "5718515afcd482cf784116a57be44966b5d857338fae5d7bfe1431af1d71834e",
    "what": "fastutil-8.5.18.jar"
-  },
-  {
-   "path": "libs/jna-platform-5.17.0.jar",
-   "bytes": 1400832,
-   "sha256": "0b0311c690d5cedac822b1a2041097778ab463ee06bdbb4865b23e3b5f6151e8",
-   "what": "jna-platform-5.17.0.jar"
-  },
-  {
-   "path": "libs/jna-5.17.0.jar",
-   "bytes": 2005422,
-   "sha256": "6d3369a5178afb4e0197ab86aea9b4833546521f51d60a8f1a425d01b15b1f0f",
-   "what": "jna-5.17.0.jar"
   },
   {
    "path": "libs/jopt-simple-5.0.4.jar",
@@ -533,11 +515,11 @@
    "what": "minecraft/textures/gui/title/background/panorama_overlay.png"
   }
  ],
- "total_bytes": 108610749,
+ "total_bytes": 104171944,
  "asset_index": "29",
  "counts": {
-  "files": 88,
-  "libraries": 52,
+  "files": 85,
+  "libraries": 49,
   "loader": 8,
   "assets": 24,
   "mods": 3

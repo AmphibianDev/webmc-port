@@ -116,13 +116,25 @@ function webmcNative(implementation) {
     // ?trace=1 logs every native call, in order. A client that stops without an exception stops *inside*
     // one of these, and the last name printed is the call it stopped in - the only view of it from
     // outside, because a browser JVM shows nothing at all while Java is inside a native.
-    if (webmcBoundNative.trace === undefined) {
-      webmcBoundNative.trace = typeof location !== "undefined" && location.search.includes("trace=1");
+    // Always, and bounded: the shim runs inside a CheerpJ worker, where a ?trace=1 on the page's URL is
+    // not visible at all - which is why the flag never worked. The browser's own log keeps these lines, and
+    // the last one printed is the native a stalled client is sitting in.
+    if (webmcBoundNative.count === undefined) {
       webmcBoundNative.count = 0;
     }
-    if (webmcBoundNative.trace && webmcBoundNative.count < 4000) {
+    if (webmcBoundNative.count < 20000) {
       webmcBoundNative.count += 1;
       console.log("[trace " + webmcBoundNative.count + "] " + implementation.name);
+    }
+    // Push the name into Java as well: the console is not always visible (this runs in a CheerpJ worker),
+    // and Java can print it back out through a channel that is - so the last call before a stall survives.
+    // CheerpJ hands every native its JVM handle as the first argument, which is the way back into Java.
+    try {
+      if (args.length > 0 && args[0] && typeof args[0] === "object" && args[0].webmc) {
+        args[0].webmc.Diag.note(implementation.name);
+      }
+    } catch (ignored) {
+      // no handle, no shim-side diagnostics: the rest of the shim is unaffected
     }
     // Every native, counted, so a client that stops responding can be asked where it stopped: the
     // function's own name is its JNI name, which is the same name Java called it by.
