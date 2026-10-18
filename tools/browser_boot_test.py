@@ -285,15 +285,27 @@ def main(argv=None) -> int:
         log = work / "chrome.log"
         with log.open("w") as handle:
             process = subprocess.Popen(flags, stdout=handle, stderr=subprocess.STDOUT)
+        streamed = 0
         try:
             deadline = time.time() + args.timeout
             while time.time() < deadline:
+                # The browser's log is the only sign of life for a run that takes minutes - a cold JVM
+                # loading a client under Fabric prints as it goes, and waiting for the summary to see it
+                # turns a two-minute diagnosis into a twenty-minute one.
+                if log.exists():
+                    lines = log.read_text(errors="replace").splitlines()
+                    fresh = [line for line in lines[streamed:]
+                             if any(word in line for word in ("[jvm]", "LAUNCH", "ERROR", "Uncaught", "Exception"))]
+                    streamed = len(lines)
+                    for line in fresh:
+                        text = line.split("CONSOLE:", 1)[1] if "CONSOLE:" in line else line
+                        print("  " + text.strip()[:240], flush=True)
                 report = reports.get("last")
                 if report and report.get("code") in (0, 1, 99):
                     break
                 if report and "code" not in report:
                     break
-                time.sleep(2)
+                time.sleep(3)
         finally:
             process.terminate()
             try:

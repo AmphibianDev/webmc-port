@@ -253,7 +253,7 @@ async function start() {
     const dest = entry.path === "client.jar" ? `/str/${version}-client.jar`
       : entry.path.startsWith("assets/") ? `/str/assets/${entry.path.slice("assets/".length)}`
       : entry.path.startsWith("mods/") ? `/str/mods/${entry.path.slice("mods/".length)}`
-      : `/str/webmc/${entry.path}`;
+      : `/str/${entry.path.split("/").pop()}`;
     await mount(new URL(`jvm/${version}/${entry.path}`, BASE).href, dest, entry.what || entry.path);
     tick(entry.path);
   }
@@ -261,7 +261,7 @@ async function start() {
     const name = path.split("/").pop();
     const bundled = bundledFabric.find((entry) => entry.path.endsWith("/" + name));
     await mount(bundled ? new URL(`jvm/${version}/${bundled.path}`, BASE).href : `${FABRIC_MAVEN}/${path}`,
-                `/str/webmc/${name}`, name);
+                `/str/${name}`, name);
     tick(name);
   }
   for (const url of ownMods) {
@@ -280,13 +280,13 @@ async function start() {
   // deliberately carries no org.lwjgl jars for that reason. Without this jar the client stops at
   // "Unable to initialize main class", which names the symptom and not the cause.
   const SHIM = "loader/webmc-lwjgl3.jar";
-  await mount(new URL(SHIM, BASE).href, `/str/webmc/webmc-lwjgl3.jar`, "the LWJGL 3 shim");
+  await mount(new URL(SHIM, BASE).href, `/str/webmc-lwjgl3.jar`, "the LWJGL 3 shim");
   const classpath = [
-    "/str/webmc/webmc-lwjgl3.jar",
+    "/str/webmc-lwjgl3.jar",
     `/str/${version}-client.jar`,
     ...manifest.files.filter((entry) => entry.path.startsWith("libs/"))
-      .map((entry) => `/str/webmc/libs/${entry.path.slice(5)}`),
-    ...FABRIC.map((path) => `/str/webmc/${path.split("/").pop()}`),
+      .map((entry) => `/str/${entry.path.split("/").pop()}`),
+    ...FABRIC.map((path) => `/str/${path.split("/").pop()}`),
   ];
   status("starting Minecraft under Fabric…");
   el("lead").textContent = "The game is starting. Fabric reads mods/ at play time, so the bundle's mods and "

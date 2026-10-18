@@ -377,6 +377,12 @@
    "what": "asm-util-9.10.1.jar (Fabric)"
   },
   {
+   "path": "assets/indexes/29.json",
+   "bytes": 529966,
+   "sha256": "f92b2a637abd71661ae5846717a187606be13a13d6162fcf6ebd45df465114e5",
+   "what": "asset index 29"
+  },
+  {
    "path": "assets/objects/b6/b62ca8ec10d07e6bf5ac8dae0c8c1d2e6a1e3356",
    "bytes": 9101,
    "sha256": "be785e1c671c5f8a8ef39aa8b8bcdd116804626ba03f5b1bc3700d399fb45bc3",
@@ -521,10 +527,10 @@
    "what": "minecraft/textures/gui/title/background/panorama_overlay.png"
   }
  ],
- "total_bytes": 102761211,
+ "total_bytes": 103291177,
  "counts": {
-  "files": 86,
-  "libraries": 51,
+  "files": 87,
+  "libraries": 52,
   "loader": 8,
   "assets": 24,
   "mods": 2

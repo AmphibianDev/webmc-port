@@ -32,6 +32,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import pathlib
 import shutil
 import sys
@@ -87,6 +88,43 @@ def fetch(url: str, target: pathlib.Path, proxy: str | None) -> pathlib.Path:
     return target
 
 
+def inject_launcher(backported_client: pathlib.Path, target: pathlib.Path, log=print) -> bool:
+    """Compile webmc/Launch and put it in the client jar, so a failed start explains itself."""
+    source = ROOT / "lwjgl3-webgl" / "src" / "main" / "java" / "webmc" / "Launch.java"
+    if not source.is_file():
+        return False
+    javac = None
+    for candidate in (os.environ.get("JAVA_HOME", ""), *[os.environ.get(f"JAVA_HOME_{v}", "")
+                                                         for v in (17, 21, 25)]):
+        if candidate and (pathlib.Path(candidate) / "bin" / "javac").is_file():
+            javac = pathlib.Path(candidate) / "bin" / "javac"
+            break
+    if javac is None:
+        found = shutil.which("javac")
+        javac = pathlib.Path(found) if found else None
+    if javac is None:
+        log("  ! no javac: the client jar will not carry the launcher, and a failure will not explain itself")
+        return False
+    import subprocess
+    import tempfile
+    import zipfile
+    with tempfile.TemporaryDirectory() as work:
+        classes = pathlib.Path(work)
+        result = subprocess.run([str(javac), "--release", "17", "-nowarn", "-d", str(classes), str(source)],
+                                capture_output=True, text=True)
+        if result.returncode != 0:
+            log(f"  ! the launcher did not compile: {result.stderr.strip()[:200]}")
+            return False
+        compiled = classes / "webmc" / "Launch.class"
+        if not compiled.is_file():
+            return False
+        shutil.copyfile(backported_client, target)
+        with zipfile.ZipFile(target, "a", zipfile.ZIP_DEFLATED) as archive:
+            archive.write(compiled, "webmc/Launch.class")
+    log(f"  the launcher is in the client jar ({target.stat().st_size // 1024} KB)")
+    return True
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--version", default="1.21.11")
@@ -129,6 +167,13 @@ def main(argv=None) -> int:
                       "what": f"the official {args.version} client, backported to Java 17"})
     else:
         print(f"  ! no backported client at {client}: run tools/backport17.py first")
+
+    # The launcher class goes *into the client jar*: it turns "Unable to initialize main class" - the
+    # whole explanation a browser JVM offers - into a stack trace. CheerpJ would not find it in our own
+    # jar on the classpath (verified from the deployed site: the class is in the jar, the jar is first,
+    # and it still says "Could not find or load main class"), and the client's jar it reads happily.
+    if client.is_file():
+        inject_launcher(client, out / "client.jar", log=print)
 
     # the libraries, minus the ones this repository replaces
     missing = 0
@@ -208,6 +253,16 @@ def main(argv=None) -> int:
         else:
             index_url = document["assetIndex"]["url"]
             index = json.loads(fetch(index_url, out / "assets-index.json", args.proxy).read_text())
+        # The index itself goes into the bundle: the client opens /str/assets/indexes/<id>.json during
+        # startup and logs "Can't open the resource index file" and then cannot find a single texture if
+        # it is missing. It is 15 KB.
+        index_id = document["assetIndex"].get("id", args.version)
+        index_target = out / "assets" / "indexes" / f"{index_id}.json"
+        index_target.parent.mkdir(parents=True, exist_ok=True)
+        index_target.write_bytes(json.dumps(index).encode())
+        files.append({"path": f"assets/indexes/{index_id}.json", "bytes": index_target.stat().st_size,
+                      "sha256": sha256(index_target), "what": f"asset index {index_id}"})
+
         wanted = {name: entry for name, entry in index["objects"].items()
                   if name.startswith(TITLE_SCREEN_PREFIXES)}
         for name, entry in sorted(wanted.items()):
