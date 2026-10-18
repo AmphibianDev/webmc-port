@@ -734,6 +734,21 @@ public final class GL11 {
     // implemented in natives/webmc-lwjgl3.js
     public static native void glTexImage2D(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, java.nio.IntBuffer arg8);
 
+    /**
+     * The ByteBuffer form: the pixels live in the arena, and JavaScript cannot read the arena, so they
+     * travel as a Java array - the same bridge a buffer upload takes.
+     */
+    public static void glTexImage2D(int target, int level, int internalFormat, int width, int height, int border,
+                                    int format, int type, java.nio.ByteBuffer pixels) {
+        byte[] bytes = null;
+        if (pixels != null && pixels.hasRemaining()) {
+            bytes = org.lwjgl.system.WebMCArena.read(org.lwjgl.system.MemoryUtil.memAddress0(pixels),
+                                                      pixels.remaining());
+        }
+        org.lwjgl.system.WebMC.texImageFromJava(target, level, internalFormat, width, height, border, format,
+                                                type, bytes);
+    }
+
     // implemented in natives/webmc-lwjgl3.js
     public static native void glTexParameterf(int arg0, int arg1, float arg2);
 
@@ -745,6 +760,17 @@ public final class GL11 {
 
     // implemented in natives/webmc-lwjgl3.js
     public static native void glTexSubImage2D(int arg0, int arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, java.nio.IntBuffer arg8);
+
+    public static void glTexSubImage2D(int target, int level, int xOffset, int yOffset, int width, int height,
+                                       int format, int type, java.nio.ByteBuffer pixels) {
+        byte[] bytes = null;
+        if (pixels != null && pixels.hasRemaining()) {
+            bytes = org.lwjgl.system.WebMCArena.read(org.lwjgl.system.MemoryUtil.memAddress0(pixels),
+                                                      pixels.remaining());
+        }
+        org.lwjgl.system.WebMC.texSubImageFromJava(target, level, xOffset, yOffset, width, height, format, type,
+                                                   bytes);
+    }
 
     public static void glTranslated(double arg0, double arg1, double arg2) { throw new UnsupportedOperationException("org.lwjgl.opengl.GL11.glTranslated"); }
 

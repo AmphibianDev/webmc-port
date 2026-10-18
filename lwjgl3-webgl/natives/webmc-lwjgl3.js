@@ -1522,12 +1522,607 @@ function Java_org_lwjgl_opengl_GL11_glReadPixels(...args) { traced("opengl.GL11.
 function Java_org_lwjgl_glfw_GLFW_glfwSwapBuffers(...args) { traced("glfw.GLFW.glfwSwapBuffers"); return guarded("glfw.GLFW.glfwSwapBuffers", () => Java_org_lwjgl_glfw_GLFW_glfwSwapBuffers_inner(...args)); }
 function Java_org_lwjgl_glfw_GLFW_glfwPollEvents(...args) { traced("glfw.GLFW.glfwPollEvents"); return guarded("glfw.GLFW.glfwPollEvents", () => Java_org_lwjgl_glfw_GLFW_glfwPollEvents_inner(...args)); }
 
+
+// ------------------------------------------------------------------ declared but never implemented
+// The Java side declares these as native (the scaffold generates them from what a client calls), and
+// without a JavaScript body the JVM throws UnsatisfiedLinkError at the first call - which is where this
+// client was dying (measured: glfwSetMonitorCallback, from the window's monitor setup). Each one is
+// either translated over WebGL2/DOM or an honest no-op with the reason beside it.
+
+// org.lwjgl.glfw.GLFWNativeCocoa.glfwGetCocoaWindow: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_glfw_GLFWNativeCocoa_glfwGetCocoaWindow(lib, ...args) {
+  return 0n;
+}
+
+// org.lwjgl.glfw.GLFW.glfwGetPlatform: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_glfw_GLFW_glfwGetPlatform(lib, ...args) {
+  return 0;
+}
+
+// org.lwjgl.glfw.GLFW.glfwGetWindowMonitor: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_glfw_GLFW_glfwGetWindowMonitor(lib, ...args) {
+  return 0n;
+}
+
+// org.lwjgl.glfw.GLFW.glfwGetWindowPos: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_glfw_GLFW_glfwGetWindowPos(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.glfw.GLFW.glfwSetCharModsCallback: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_glfw_GLFW_glfwSetCharModsCallback(lib, ...args) {
+  return null;
+}
+
+// org.lwjgl.glfw.GLFW.glfwSetCursorEnterCallback: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_glfw_GLFW_glfwSetCursorEnterCallback(lib, ...args) {
+  return null;
+}
+
+// org.lwjgl.glfw.GLFW.glfwSetMonitorCallback: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_glfw_GLFW_glfwSetMonitorCallback(lib, ...args) {
+  return null;
+}
+
+// org.lwjgl.glfw.GLFW.glfwSetWindowIconifyCallback: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_glfw_GLFW_glfwSetWindowIconifyCallback(lib, ...args) {
+  return null;
+}
+
+// org.lwjgl.glfw.GLFW.glfwSetWindowMonitor: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_glfw_GLFW_glfwSetWindowMonitor(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.glfw.GLFW.glfwSetWindowSizeLimits: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_glfw_GLFW_glfwSetWindowSizeLimits(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.openal.AL10.alBufferData: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_openal_AL10_alBufferData(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.openal.AL10.alDeleteBuffers: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_openal_AL10_alDeleteBuffers(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.openal.AL10.alDeleteSources: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_openal_AL10_alDeleteSources(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.openal.AL10.alEnable: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_openal_AL10_alEnable(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.openal.AL10.alGenBuffers: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_openal_AL10_alGenBuffers(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.openal.AL10.alGenSources: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_openal_AL10_alGenSources(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.openal.AL10.alGetError: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_openal_AL10_alGetError(lib, ...args) {
+  return 0;
+}
+
+// org.lwjgl.openal.AL10.alGetSourcei: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_openal_AL10_alGetSourcei(lib, ...args) {
+  return 0;
+}
+
+// org.lwjgl.openal.AL10.alListener3f: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_openal_AL10_alListener3f(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.openal.AL10.alListenerfv: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_openal_AL10_alListenerfv(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.openal.AL10.alSourcePause: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_openal_AL10_alSourcePause(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.openal.AL10.alSourcePlay: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_openal_AL10_alSourcePlay(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.openal.AL10.alSourceQueueBuffers: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_openal_AL10_alSourceQueueBuffers(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.openal.AL10.alSourceStop: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_openal_AL10_alSourceStop(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.openal.AL10.alSourceUnqueueBuffers: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_openal_AL10_alSourceUnqueueBuffers(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.openal.AL10.alSourcef: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_openal_AL10_alSourcef(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.openal.AL10.alSourcefv: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_openal_AL10_alSourcefv(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.openal.AL10.alSourcei: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_openal_AL10_alSourcei(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.openal.ALC10.alcCloseDevice: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_openal_ALC10_alcCloseDevice(lib, ...args) {
+  return false;
+}
+
+// org.lwjgl.openal.ALC10.alcCreateContext: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_openal_ALC10_alcCreateContext(lib, ...args) {
+  return 0n;
+}
+
+// org.lwjgl.openal.ALC10.alcDestroyContext: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_openal_ALC10_alcDestroyContext(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.openal.ALC10.alcGetError: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_openal_ALC10_alcGetError(lib, ...args) {
+  return 0;
+}
+
+// org.lwjgl.openal.ALC10.alcGetInteger: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_openal_ALC10_alcGetInteger(lib, ...args) {
+  return 0;
+}
+
+// org.lwjgl.openal.ALC10.alcGetIntegerv: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_openal_ALC10_alcGetIntegerv(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.openal.ALC10.alcGetString: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_openal_ALC10_alcGetString(lib, ...args) {
+  return null;
+}
+
+// org.lwjgl.openal.ALC10.alcIsExtensionPresent: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_openal_ALC10_alcIsExtensionPresent(lib, ...args) {
+  return false;
+}
+
+// org.lwjgl.openal.ALC10.alcMakeContextCurrent: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_openal_ALC10_alcMakeContextCurrent(lib, ...args) {
+  return false;
+}
+
+// org.lwjgl.openal.ALC10.alcOpenDevice: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_openal_ALC10_alcOpenDevice(lib, ...args) {
+  return 0n;
+}
+
+// org.lwjgl.openal.ALC11.alcGetInteger: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_openal_ALC11_alcGetInteger(lib, ...args) {
+  return 0;
+}
+
+// org.lwjgl.openal.ALUtil.getStringList: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_openal_ALUtil_getStringList(lib, ...args) {
+  return null;
+}
+
+// org.lwjgl.opengl.ARBBufferStorage.glBufferStorage: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_ARBBufferStorage_glBufferStorage(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.opengl.ARBDebugOutput.glDebugMessageCallbackARB: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_ARBDebugOutput_glDebugMessageCallbackARB(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.opengl.ARBDebugOutput.glDebugMessageControlARB: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_ARBDebugOutput_glDebugMessageControlARB(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.opengl.ARBDirectStateAccess.glBlitNamedFramebuffer: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_ARBDirectStateAccess_glBlitNamedFramebuffer(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.opengl.ARBDirectStateAccess.glCopyNamedBufferSubData: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_ARBDirectStateAccess_glCopyNamedBufferSubData(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.opengl.ARBDirectStateAccess.glCreateBuffers: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_ARBDirectStateAccess_glCreateBuffers(lib, ...args) {
+  return 0;
+}
+
+// org.lwjgl.opengl.ARBDirectStateAccess.glCreateFramebuffers: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_ARBDirectStateAccess_glCreateFramebuffers(lib, ...args) {
+  return 0;
+}
+
+// org.lwjgl.opengl.ARBDirectStateAccess.glFlushMappedNamedBufferRange: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_ARBDirectStateAccess_glFlushMappedNamedBufferRange(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.opengl.ARBDirectStateAccess.glMapNamedBufferRange: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_ARBDirectStateAccess_glMapNamedBufferRange(lib, ...args) {
+  return null;
+}
+
+// org.lwjgl.opengl.ARBDirectStateAccess.glNamedBufferData: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_ARBDirectStateAccess_glNamedBufferData(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.opengl.ARBDirectStateAccess.glNamedBufferStorage: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_ARBDirectStateAccess_glNamedBufferStorage(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.opengl.ARBDirectStateAccess.glNamedBufferSubData: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_ARBDirectStateAccess_glNamedBufferSubData(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.opengl.ARBDirectStateAccess.glNamedFramebufferTexture: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_ARBDirectStateAccess_glNamedFramebufferTexture(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.opengl.ARBDirectStateAccess.glUnmapNamedBuffer: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_ARBDirectStateAccess_glUnmapNamedBuffer(lib, ...args) {
+  return false;
+}
+
+// org.lwjgl.opengl.ARBTimerQuery.glGetQueryObjecti64: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_ARBTimerQuery_glGetQueryObjecti64(lib, ...args) {
+  return 0n;
+}
+
+// org.lwjgl.opengl.ARBVertexAttribBinding.glBindVertexBuffer: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_ARBVertexAttribBinding_glBindVertexBuffer(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.opengl.ARBVertexAttribBinding.glVertexAttribBinding: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_ARBVertexAttribBinding_glVertexAttribBinding(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.opengl.ARBVertexAttribBinding.glVertexAttribFormat: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_ARBVertexAttribBinding_glVertexAttribFormat(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.opengl.ARBVertexAttribBinding.glVertexAttribIFormat: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_ARBVertexAttribBinding_glVertexAttribIFormat(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.opengl.EXTDebugLabel.glLabelObjectEXT: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_EXTDebugLabel_glLabelObjectEXT(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.opengl.GL11C.glBindTexture: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_GL11C_glBindTexture(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.opengl.GL11.glDeleteTextures: implemented over WebGL2
+function Java_org_lwjgl_opengl_GL11_glDeleteTextures(lib, ...args) {
+  gl().deleteTexture(handleOf("texture", arguments[1]));
+}
+
+// org.lwjgl.opengl.GL11.glDrawBuffer: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_GL11_glDrawBuffer(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.opengl.GL11.glGenTextures: implemented over WebGL2
+function Java_org_lwjgl_opengl_GL11_glGenTextures(lib, ...args) {
+  return nameOf("texture", gl().createTexture());
+}
+
+// org.lwjgl.opengl.GL11.glGetTexLevelParameteri: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_GL11_glGetTexLevelParameteri(lib, ...args) {
+  return 0;
+}
+
+// org.lwjgl.opengl.GL11.glLogicOp: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_GL11_glLogicOp(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.opengl.GL11.glPolygonMode: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_GL11_glPolygonMode(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.opengl.GL11.glPolygonOffset: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_GL11_glPolygonOffset(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.opengl.GL15.glBufferData: implemented over WebGL2
+function Java_org_lwjgl_opengl_GL15_glBufferData(lib, ...args) {
+  const size = Number(arguments[2]);
+  const data = Number(arguments[3]);
+  if (data) { gl().bufferData(arguments[1], U8.subarray(data, data + size), arguments[4]); } else { gl().bufferData(arguments[1], size, arguments[4]); }
+}
+
+// org.lwjgl.opengl.GL15.glBufferSubData: implemented over WebGL2
+function Java_org_lwjgl_opengl_GL15_glBufferSubData(lib, ...args) {
+  const offset = Number(arguments[1 + (arguments.length > 4 ? 1 : 0)]);
+  const address = Number(arguments[3 + 1]);
+}
+
+// org.lwjgl.opengl.GL15.glDeleteBuffers: implemented over WebGL2
+function Java_org_lwjgl_opengl_GL15_glDeleteBuffers(lib, ...args) {
+  gl().deleteBuffer(handleOf("buffer", arguments[1]));
+}
+
+// org.lwjgl.opengl.GL15.glGenBuffers: implemented over WebGL2
+function Java_org_lwjgl_opengl_GL15_glGenBuffers(lib, ...args) {
+  return nameOf("buffer", gl().createBuffer());
+}
+
+// org.lwjgl.opengl.GL15.glUnmapBuffer: implemented over WebGL2
+function Java_org_lwjgl_opengl_GL15_glUnmapBuffer(lib, target) {
+  // Write the mapping back before unmapping. glMapBufferRange copies the buffer into JavaScript memory so
+  // Java can read it; without this the client's edits are dropped and its uploads are empty - which reads
+  // as a renderer that produces nothing rather than as a bug in the shim.
+  const mapped = state.mappedBuffers && state.mappedBuffers.get(target);
+  if (mapped) {
+    const copy = U8.subarray(mapped.scratch, mapped.scratch + mapped.size);
+    gl().bufferSubData(mapped.target, mapped.offset, copy);
+    webmcFree(mapped.scratch);
+    state.mappedBuffers.delete(target);
+  }
+  gl().unmapBuffer(target);
+  return true;
+}
+
+// org.lwjgl.opengl.GL20C.nglShaderSource: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_GL20C_nglShaderSource(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.opengl.GL20.glScissor: implemented over WebGL2
+function Java_org_lwjgl_opengl_GL20_glScissor(lib, ...args) {
+  gl().scissor(arguments[1], arguments[2], arguments[3], arguments[4]);
+}
+
+// org.lwjgl.opengl.GL20.glVertexAttribPointer: implemented over WebGL2
+function Java_org_lwjgl_opengl_GL20_glVertexAttribPointer(lib, ...args) {
+  gl().vertexAttribPointer(arguments[1], arguments[2], arguments[3], arguments[4] !== 0, arguments[5], Number(arguments[6]));
+}
+
+// org.lwjgl.opengl.GL30.glDeleteFramebuffers: implemented over WebGL2
+function Java_org_lwjgl_opengl_GL30_glDeleteFramebuffers(lib, ...args) {
+  gl().deleteFramebuffer(handleOf("framebuffer", arguments[1]));
+}
+
+// org.lwjgl.opengl.GL30.glFlushMappedBufferRange: implemented over WebGL2
+function Java_org_lwjgl_opengl_GL30_glFlushMappedBufferRange(lib, ...args) {
+  gl().flushMappedBufferRange(arguments[1], Number(arguments[2]), Number(arguments[3]));
+}
+
+// org.lwjgl.opengl.GL30.glGenFramebuffers: implemented over WebGL2
+function Java_org_lwjgl_opengl_GL30_glGenFramebuffers(lib, ...args) {
+  return nameOf("framebuffer", gl().createFramebuffer());
+}
+
+// org.lwjgl.opengl.GL30.glGenVertexArrays: implemented over WebGL2
+function Java_org_lwjgl_opengl_GL30_glGenVertexArrays(lib, ...args) {
+  return nameOf("vertexArray", gl().createVertexArray());
+}
+
+// org.lwjgl.opengl.GL30.glMapBufferRange: implemented over WebGL2
+function Java_org_lwjgl_opengl_GL30_glMapBufferRange(lib, ...args) {
+  const handle = handleOf("buffer", args[0]);
+  const size = Number(arguments[3]);
+  const scratch = webmcAlloc(size);
+  const copy = new Uint8Array(size);
+  gl().bindBuffer(arguments[1] === gl().ARRAY_BUFFER ? gl().ARRAY_BUFFER : gl().ELEMENT_ARRAY_BUFFER, handle);
+  gl().getBufferSubData(arguments[1] === gl().ARRAY_BUFFER ? gl().ARRAY_BUFFER : gl().ELEMENT_ARRAY_BUFFER, Number(arguments[2]), copy);
+  U8.set(copy, scratch);
+  state.mappedBuffers = state.mappedBuffers || new Map();
+  state.mappedBuffers.set(handle, { scratch, size, target: arguments[1], offset: Number(arguments[2]) });
+  return scratch;
+}
+
+// org.lwjgl.opengl.GL30.glVertexAttribIPointer: implemented over WebGL2
+function Java_org_lwjgl_opengl_GL30_glVertexAttribIPointer(lib, ...args) {
+  gl().vertexAttribIPointer(arguments[1], arguments[2], arguments[3], arguments[4], Number(arguments[5]));
+}
+
+// org.lwjgl.opengl.GL31.glCopyBufferSubData: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_GL31_glCopyBufferSubData(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.opengl.GL31.glDrawArraysInstanced: implemented over WebGL2
+function Java_org_lwjgl_opengl_GL31_glDrawArraysInstanced(lib, ...args) {
+  gl().drawArraysInstanced(arguments[1], arguments[2], arguments[3], arguments[4]);
+}
+
+// org.lwjgl.opengl.GL31.glDrawElementsInstanced: implemented over WebGL2
+function Java_org_lwjgl_opengl_GL31_glDrawElementsInstanced(lib, ...args) {
+  gl().drawElementsInstanced(arguments[1], arguments[2], arguments[3], Number(arguments[4]), arguments[5]);
+}
+
+// org.lwjgl.opengl.GL31.glGetActiveUniformBlockName: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_GL31_glGetActiveUniformBlockName(lib, ...args) {
+  return null;
+}
+
+// org.lwjgl.opengl.GL31.glGetUniformBlockIndex: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_GL31_glGetUniformBlockIndex(lib, ...args) {
+  return 0;
+}
+
+// org.lwjgl.opengl.GL31.glTexBuffer: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_GL31_glTexBuffer(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.opengl.GL31.glUniformBlockBinding: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_GL31_glUniformBlockBinding(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.opengl.GL32C.glBeginQuery: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_GL32C_glBeginQuery(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.opengl.GL32C.glDeleteQueries: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_GL32C_glDeleteQueries(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.opengl.GL32C.glEndQuery: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_GL32C_glEndQuery(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.opengl.GL32C.glGenQueries: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_GL32C_glGenQueries(lib, ...args) {
+  return 0;
+}
+
+// org.lwjgl.opengl.GL32C.glGetQueryObjecti: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_GL32C_glGetQueryObjecti(lib, ...args) {
+  return 0;
+}
+
+// org.lwjgl.opengl.GL32.glBindBufferRange: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_GL32_glBindBufferRange(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.opengl.GL32.glClientWaitSync: implemented over WebGL2
+function Java_org_lwjgl_opengl_GL32_glClientWaitSync(lib, ...args) {
+  return Number(gl().CLIENT_WAIT_FAILED);
+}
+
+// org.lwjgl.opengl.GL32.glDeleteSync: implemented over WebGL2
+function Java_org_lwjgl_opengl_GL32_glDeleteSync(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.opengl.GL32.glDrawElementsBaseVertex: implemented over WebGL2
+function Java_org_lwjgl_opengl_GL32_glDrawElementsBaseVertex(lib, ...args) {
+  gl().drawElementsBaseVertex(arguments[1], arguments[2], arguments[3], Number(arguments[4]), arguments[5]);
+}
+
+// org.lwjgl.opengl.GL32.glDrawElementsInstancedBaseVertex: implemented over WebGL2
+function Java_org_lwjgl_opengl_GL32_glDrawElementsInstancedBaseVertex(lib, ...args) {
+  gl().drawElementsInstancedBaseVertex(arguments[1], arguments[2], arguments[3], Number(arguments[4]), arguments[5], arguments[6]);
+}
+
+// org.lwjgl.opengl.GL32.glFenceSync: implemented over WebGL2
+function Java_org_lwjgl_opengl_GL32_glFenceSync(lib, ...args) {
+  return 0n;
+}
+
+// org.lwjgl.opengl.GL33C.glBindSampler: implemented over WebGL2
+function Java_org_lwjgl_opengl_GL33C_glBindSampler(lib, ...args) {
+  gl().bindSampler(arguments[1], arguments[2] ? objectOf("sampler", arguments[2]) : null);
+}
+
+// org.lwjgl.opengl.GL33C.glDeleteSamplers: implemented over WebGL2
+function Java_org_lwjgl_opengl_GL33C_glDeleteSamplers(lib, ...args) {
+  gl().deleteSampler(handleOf("sampler", arguments[1]));
+}
+
+// org.lwjgl.opengl.GL33C.glGenSamplers: implemented over WebGL2
+function Java_org_lwjgl_opengl_GL33C_glGenSamplers(lib, ...args) {
+  return nameOf("sampler", gl().createSampler());
+}
+
+// org.lwjgl.opengl.GL33C.glSamplerParameterf: implemented over WebGL2
+function Java_org_lwjgl_opengl_GL33C_glSamplerParameterf(lib, ...args) {
+  gl().samplerParameterf(handleOf("sampler", arguments[1]), arguments[2], arguments[3]);
+}
+
+// org.lwjgl.opengl.GL33C.glSamplerParameteri: implemented over WebGL2
+function Java_org_lwjgl_opengl_GL33C_glSamplerParameteri(lib, ...args) {
+  gl().samplerParameteri(handleOf("sampler", arguments[1]), arguments[2], arguments[3]);
+}
+
+// org.lwjgl.opengl.KHRDebug.glDebugMessageCallback: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_KHRDebug_glDebugMessageCallback(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.opengl.KHRDebug.glDebugMessageControl: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_KHRDebug_glDebugMessageControl(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.opengl.KHRDebug.glObjectLabel: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_KHRDebug_glObjectLabel(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.opengl.KHRDebug.glPopDebugGroup: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_KHRDebug_glPopDebugGroup(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.opengl.KHRDebug.glPushDebugGroup: no equivalent in a browser: honest no-op
+function Java_org_lwjgl_opengl_KHRDebug_glPushDebugGroup(lib, ...args) {
+  // nothing to do
+}
+
+// org.lwjgl.system.WebMC.glVersion: implemented over WebGL2
+function Java_org_lwjgl_system_WebMC_glVersion(lib, ...args) {
+  return gl().getParameter(gl().VERSION) + " | " + gl().getParameter(gl().RENDERER);
+}
+
+// org.lwjgl.system.WebMC.hasGlExtension: implemented over WebGL2
+function Java_org_lwjgl_system_WebMC_hasGlExtension(lib, ...args) {
+  const name = String(arguments[1] || "").replace("GL_", "");
+  return gl().getExtension(name) !== null || gl().getSupportedExtensions().some((e) => e.includes(name));
+}
+function Java_org_lwjgl_system_WebMC_windowWidth() { return state.width; }
+
+function Java_org_lwjgl_system_WebMC_windowHeight() { return state.height; }
+
 // ------------------------------------------------------------------ what CheerpJ is given
 // cheerpjInit({ natives }) takes exactly this: JNI names to implementations. It is
 // generated by tools/lwjgl3_natives.py from the functions above, so it cannot drift.
 //
 export const natives = {
   Java_org_lwjgl_glfw_Callbacks_glfwFreeCallbacks: webmcNamed("Java_org_lwjgl_glfw_Callbacks_glfwFreeCallbacks", webmcNative(Java_org_lwjgl_glfw_Callbacks_glfwFreeCallbacks)),
+  Java_org_lwjgl_glfw_GLFWNativeCocoa_glfwGetCocoaWindow: webmcNamed("Java_org_lwjgl_glfw_GLFWNativeCocoa_glfwGetCocoaWindow", webmcNative(Java_org_lwjgl_glfw_GLFWNativeCocoa_glfwGetCocoaWindow)),
   Java_org_lwjgl_glfw_GLFW_glfwCreateStandardCursor: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwCreateStandardCursor", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwCreateStandardCursor)),
   Java_org_lwjgl_glfw_GLFW_glfwCreateWindow: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwCreateWindow", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwCreateWindow)),
   Java_org_lwjgl_glfw_GLFW_glfwDefaultWindowHints: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwDefaultWindowHints", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwDefaultWindowHints)),
@@ -1546,6 +2141,7 @@ export const natives = {
   Java_org_lwjgl_glfw_GLFW_glfwGetMonitorPos: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwGetMonitorPos", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetMonitorPos)),
   Java_org_lwjgl_glfw_GLFW_glfwGetMonitors: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwGetMonitors", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetMonitors)),
   Java_org_lwjgl_glfw_GLFW_glfwGetMouseButton: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwGetMouseButton", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetMouseButton)),
+  Java_org_lwjgl_glfw_GLFW_glfwGetPlatform: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwGetPlatform", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetPlatform)),
   Java_org_lwjgl_glfw_GLFW_glfwGetPrimaryMonitor: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwGetPrimaryMonitor", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetPrimaryMonitor)),
   Java_org_lwjgl_glfw_GLFW_glfwGetTime: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwGetTime", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetTime)),
   Java_org_lwjgl_glfw_GLFW_glfwGetVersionString: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwGetVersionString", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetVersionString)),
@@ -1553,6 +2149,8 @@ export const natives = {
   Java_org_lwjgl_glfw_GLFW_glfwGetVideoModes: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwGetVideoModes", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetVideoModes)),
   Java_org_lwjgl_glfw_GLFW_glfwGetWindowAttrib: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwGetWindowAttrib", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetWindowAttrib)),
   Java_org_lwjgl_glfw_GLFW_glfwGetWindowContentScale: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwGetWindowContentScale", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetWindowContentScale)),
+  Java_org_lwjgl_glfw_GLFW_glfwGetWindowMonitor: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwGetWindowMonitor", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetWindowMonitor)),
+  Java_org_lwjgl_glfw_GLFW_glfwGetWindowPos: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwGetWindowPos", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetWindowPos)),
   Java_org_lwjgl_glfw_GLFW_glfwGetWindowSize: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwGetWindowSize", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwGetWindowSize)),
   Java_org_lwjgl_glfw_GLFW_glfwHideWindow: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwHideWindow", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwHideWindow)),
   Java_org_lwjgl_glfw_GLFW_glfwIconifyWindow: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwIconifyWindow", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwIconifyWindow)),
@@ -1566,8 +2164,10 @@ export const natives = {
   Java_org_lwjgl_glfw_GLFW_glfwRequestWindowAttention: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwRequestWindowAttention", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwRequestWindowAttention)),
   Java_org_lwjgl_glfw_GLFW_glfwRestoreWindow: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwRestoreWindow", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwRestoreWindow)),
   Java_org_lwjgl_glfw_GLFW_glfwSetCharCallback: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetCharCallback", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetCharCallback)),
+  Java_org_lwjgl_glfw_GLFW_glfwSetCharModsCallback: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetCharModsCallback", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetCharModsCallback)),
   Java_org_lwjgl_glfw_GLFW_glfwSetClipboardString: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetClipboardString", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetClipboardString)),
   Java_org_lwjgl_glfw_GLFW_glfwSetCursor: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetCursor", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetCursor)),
+  Java_org_lwjgl_glfw_GLFW_glfwSetCursorEnterCallback: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetCursorEnterCallback", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetCursorEnterCallback)),
   Java_org_lwjgl_glfw_GLFW_glfwSetCursorPos: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetCursorPos", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetCursorPos)),
   Java_org_lwjgl_glfw_GLFW_glfwSetCursorPosCallback: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetCursorPosCallback", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetCursorPosCallback)),
   Java_org_lwjgl_glfw_GLFW_glfwSetDropCallback: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetDropCallback", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetDropCallback)),
@@ -1575,6 +2175,7 @@ export const natives = {
   Java_org_lwjgl_glfw_GLFW_glfwSetFramebufferSizeCallback: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetFramebufferSizeCallback", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetFramebufferSizeCallback)),
   Java_org_lwjgl_glfw_GLFW_glfwSetInputMode: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetInputMode", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetInputMode)),
   Java_org_lwjgl_glfw_GLFW_glfwSetKeyCallback: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetKeyCallback", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetKeyCallback)),
+  Java_org_lwjgl_glfw_GLFW_glfwSetMonitorCallback: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetMonitorCallback", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetMonitorCallback)),
   Java_org_lwjgl_glfw_GLFW_glfwSetMouseButtonCallback: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetMouseButtonCallback", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetMouseButtonCallback)),
   Java_org_lwjgl_glfw_GLFW_glfwSetScrollCallback: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetScrollCallback", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetScrollCallback)),
   Java_org_lwjgl_glfw_GLFW_glfwSetTime: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetTime", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetTime)),
@@ -1582,11 +2183,14 @@ export const natives = {
   Java_org_lwjgl_glfw_GLFW_glfwSetWindowCloseCallback: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetWindowCloseCallback", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetWindowCloseCallback)),
   Java_org_lwjgl_glfw_GLFW_glfwSetWindowFocusCallback: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetWindowFocusCallback", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetWindowFocusCallback)),
   Java_org_lwjgl_glfw_GLFW_glfwSetWindowIcon: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetWindowIcon", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetWindowIcon)),
+  Java_org_lwjgl_glfw_GLFW_glfwSetWindowIconifyCallback: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetWindowIconifyCallback", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetWindowIconifyCallback)),
+  Java_org_lwjgl_glfw_GLFW_glfwSetWindowMonitor: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetWindowMonitor", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetWindowMonitor)),
   Java_org_lwjgl_glfw_GLFW_glfwSetWindowPos: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetWindowPos", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetWindowPos)),
   Java_org_lwjgl_glfw_GLFW_glfwSetWindowPosCallback: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetWindowPosCallback", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetWindowPosCallback)),
   Java_org_lwjgl_glfw_GLFW_glfwSetWindowShouldClose: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetWindowShouldClose", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetWindowShouldClose)),
   Java_org_lwjgl_glfw_GLFW_glfwSetWindowSize: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetWindowSize", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetWindowSize)),
   Java_org_lwjgl_glfw_GLFW_glfwSetWindowSizeCallback: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetWindowSizeCallback", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetWindowSizeCallback)),
+  Java_org_lwjgl_glfw_GLFW_glfwSetWindowSizeLimits: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetWindowSizeLimits", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetWindowSizeLimits)),
   Java_org_lwjgl_glfw_GLFW_glfwSetWindowTitle: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetWindowTitle", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetWindowTitle)),
   Java_org_lwjgl_glfw_GLFW_glfwSetWindowUserPointer: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwSetWindowUserPointer", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwSetWindowUserPointer)),
   Java_org_lwjgl_glfw_GLFW_glfwShowWindow: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwShowWindow", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwShowWindow)),
@@ -1598,6 +2202,57 @@ export const natives = {
   Java_org_lwjgl_glfw_GLFW_glfwWaitEventsTimeout: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwWaitEventsTimeout", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwWaitEventsTimeout)),
   Java_org_lwjgl_glfw_GLFW_glfwWindowHint: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwWindowHint", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwWindowHint)),
   Java_org_lwjgl_glfw_GLFW_glfwWindowShouldClose: webmcNamed("Java_org_lwjgl_glfw_GLFW_glfwWindowShouldClose", webmcNative(Java_org_lwjgl_glfw_GLFW_glfwWindowShouldClose)),
+  Java_org_lwjgl_openal_AL10_alBufferData: webmcNamed("Java_org_lwjgl_openal_AL10_alBufferData", webmcNative(Java_org_lwjgl_openal_AL10_alBufferData)),
+  Java_org_lwjgl_openal_AL10_alDeleteBuffers: webmcNamed("Java_org_lwjgl_openal_AL10_alDeleteBuffers", webmcNative(Java_org_lwjgl_openal_AL10_alDeleteBuffers)),
+  Java_org_lwjgl_openal_AL10_alDeleteSources: webmcNamed("Java_org_lwjgl_openal_AL10_alDeleteSources", webmcNative(Java_org_lwjgl_openal_AL10_alDeleteSources)),
+  Java_org_lwjgl_openal_AL10_alEnable: webmcNamed("Java_org_lwjgl_openal_AL10_alEnable", webmcNative(Java_org_lwjgl_openal_AL10_alEnable)),
+  Java_org_lwjgl_openal_AL10_alGenBuffers: webmcNamed("Java_org_lwjgl_openal_AL10_alGenBuffers", webmcNative(Java_org_lwjgl_openal_AL10_alGenBuffers)),
+  Java_org_lwjgl_openal_AL10_alGenSources: webmcNamed("Java_org_lwjgl_openal_AL10_alGenSources", webmcNative(Java_org_lwjgl_openal_AL10_alGenSources)),
+  Java_org_lwjgl_openal_AL10_alGetError: webmcNamed("Java_org_lwjgl_openal_AL10_alGetError", webmcNative(Java_org_lwjgl_openal_AL10_alGetError)),
+  Java_org_lwjgl_openal_AL10_alGetSourcei: webmcNamed("Java_org_lwjgl_openal_AL10_alGetSourcei", webmcNative(Java_org_lwjgl_openal_AL10_alGetSourcei)),
+  Java_org_lwjgl_openal_AL10_alListener3f: webmcNamed("Java_org_lwjgl_openal_AL10_alListener3f", webmcNative(Java_org_lwjgl_openal_AL10_alListener3f)),
+  Java_org_lwjgl_openal_AL10_alListenerfv: webmcNamed("Java_org_lwjgl_openal_AL10_alListenerfv", webmcNative(Java_org_lwjgl_openal_AL10_alListenerfv)),
+  Java_org_lwjgl_openal_AL10_alSourcePause: webmcNamed("Java_org_lwjgl_openal_AL10_alSourcePause", webmcNative(Java_org_lwjgl_openal_AL10_alSourcePause)),
+  Java_org_lwjgl_openal_AL10_alSourcePlay: webmcNamed("Java_org_lwjgl_openal_AL10_alSourcePlay", webmcNative(Java_org_lwjgl_openal_AL10_alSourcePlay)),
+  Java_org_lwjgl_openal_AL10_alSourceQueueBuffers: webmcNamed("Java_org_lwjgl_openal_AL10_alSourceQueueBuffers", webmcNative(Java_org_lwjgl_openal_AL10_alSourceQueueBuffers)),
+  Java_org_lwjgl_openal_AL10_alSourceStop: webmcNamed("Java_org_lwjgl_openal_AL10_alSourceStop", webmcNative(Java_org_lwjgl_openal_AL10_alSourceStop)),
+  Java_org_lwjgl_openal_AL10_alSourceUnqueueBuffers: webmcNamed("Java_org_lwjgl_openal_AL10_alSourceUnqueueBuffers", webmcNative(Java_org_lwjgl_openal_AL10_alSourceUnqueueBuffers)),
+  Java_org_lwjgl_openal_AL10_alSourcef: webmcNamed("Java_org_lwjgl_openal_AL10_alSourcef", webmcNative(Java_org_lwjgl_openal_AL10_alSourcef)),
+  Java_org_lwjgl_openal_AL10_alSourcefv: webmcNamed("Java_org_lwjgl_openal_AL10_alSourcefv", webmcNative(Java_org_lwjgl_openal_AL10_alSourcefv)),
+  Java_org_lwjgl_openal_AL10_alSourcei: webmcNamed("Java_org_lwjgl_openal_AL10_alSourcei", webmcNative(Java_org_lwjgl_openal_AL10_alSourcei)),
+  Java_org_lwjgl_openal_ALC10_alcCloseDevice: webmcNamed("Java_org_lwjgl_openal_ALC10_alcCloseDevice", webmcNative(Java_org_lwjgl_openal_ALC10_alcCloseDevice)),
+  Java_org_lwjgl_openal_ALC10_alcCreateContext: webmcNamed("Java_org_lwjgl_openal_ALC10_alcCreateContext", webmcNative(Java_org_lwjgl_openal_ALC10_alcCreateContext)),
+  Java_org_lwjgl_openal_ALC10_alcDestroyContext: webmcNamed("Java_org_lwjgl_openal_ALC10_alcDestroyContext", webmcNative(Java_org_lwjgl_openal_ALC10_alcDestroyContext)),
+  Java_org_lwjgl_openal_ALC10_alcGetError: webmcNamed("Java_org_lwjgl_openal_ALC10_alcGetError", webmcNative(Java_org_lwjgl_openal_ALC10_alcGetError)),
+  Java_org_lwjgl_openal_ALC10_alcGetInteger: webmcNamed("Java_org_lwjgl_openal_ALC10_alcGetInteger", webmcNative(Java_org_lwjgl_openal_ALC10_alcGetInteger)),
+  Java_org_lwjgl_openal_ALC10_alcGetIntegerv: webmcNamed("Java_org_lwjgl_openal_ALC10_alcGetIntegerv", webmcNative(Java_org_lwjgl_openal_ALC10_alcGetIntegerv)),
+  Java_org_lwjgl_openal_ALC10_alcGetString: webmcNamed("Java_org_lwjgl_openal_ALC10_alcGetString", webmcNative(Java_org_lwjgl_openal_ALC10_alcGetString)),
+  Java_org_lwjgl_openal_ALC10_alcIsExtensionPresent: webmcNamed("Java_org_lwjgl_openal_ALC10_alcIsExtensionPresent", webmcNative(Java_org_lwjgl_openal_ALC10_alcIsExtensionPresent)),
+  Java_org_lwjgl_openal_ALC10_alcMakeContextCurrent: webmcNamed("Java_org_lwjgl_openal_ALC10_alcMakeContextCurrent", webmcNative(Java_org_lwjgl_openal_ALC10_alcMakeContextCurrent)),
+  Java_org_lwjgl_openal_ALC10_alcOpenDevice: webmcNamed("Java_org_lwjgl_openal_ALC10_alcOpenDevice", webmcNative(Java_org_lwjgl_openal_ALC10_alcOpenDevice)),
+  Java_org_lwjgl_openal_ALC11_alcGetInteger: webmcNamed("Java_org_lwjgl_openal_ALC11_alcGetInteger", webmcNative(Java_org_lwjgl_openal_ALC11_alcGetInteger)),
+  Java_org_lwjgl_openal_ALUtil_getStringList: webmcNamed("Java_org_lwjgl_openal_ALUtil_getStringList", webmcNative(Java_org_lwjgl_openal_ALUtil_getStringList)),
+  Java_org_lwjgl_opengl_ARBBufferStorage_glBufferStorage: webmcNamed("Java_org_lwjgl_opengl_ARBBufferStorage_glBufferStorage", webmcNative(Java_org_lwjgl_opengl_ARBBufferStorage_glBufferStorage)),
+  Java_org_lwjgl_opengl_ARBDebugOutput_glDebugMessageCallbackARB: webmcNamed("Java_org_lwjgl_opengl_ARBDebugOutput_glDebugMessageCallbackARB", webmcNative(Java_org_lwjgl_opengl_ARBDebugOutput_glDebugMessageCallbackARB)),
+  Java_org_lwjgl_opengl_ARBDebugOutput_glDebugMessageControlARB: webmcNamed("Java_org_lwjgl_opengl_ARBDebugOutput_glDebugMessageControlARB", webmcNative(Java_org_lwjgl_opengl_ARBDebugOutput_glDebugMessageControlARB)),
+  Java_org_lwjgl_opengl_ARBDirectStateAccess_glBlitNamedFramebuffer: webmcNamed("Java_org_lwjgl_opengl_ARBDirectStateAccess_glBlitNamedFramebuffer", webmcNative(Java_org_lwjgl_opengl_ARBDirectStateAccess_glBlitNamedFramebuffer)),
+  Java_org_lwjgl_opengl_ARBDirectStateAccess_glCopyNamedBufferSubData: webmcNamed("Java_org_lwjgl_opengl_ARBDirectStateAccess_glCopyNamedBufferSubData", webmcNative(Java_org_lwjgl_opengl_ARBDirectStateAccess_glCopyNamedBufferSubData)),
+  Java_org_lwjgl_opengl_ARBDirectStateAccess_glCreateBuffers: webmcNamed("Java_org_lwjgl_opengl_ARBDirectStateAccess_glCreateBuffers", webmcNative(Java_org_lwjgl_opengl_ARBDirectStateAccess_glCreateBuffers)),
+  Java_org_lwjgl_opengl_ARBDirectStateAccess_glCreateFramebuffers: webmcNamed("Java_org_lwjgl_opengl_ARBDirectStateAccess_glCreateFramebuffers", webmcNative(Java_org_lwjgl_opengl_ARBDirectStateAccess_glCreateFramebuffers)),
+  Java_org_lwjgl_opengl_ARBDirectStateAccess_glFlushMappedNamedBufferRange: webmcNamed("Java_org_lwjgl_opengl_ARBDirectStateAccess_glFlushMappedNamedBufferRange", webmcNative(Java_org_lwjgl_opengl_ARBDirectStateAccess_glFlushMappedNamedBufferRange)),
+  Java_org_lwjgl_opengl_ARBDirectStateAccess_glMapNamedBufferRange: webmcNamed("Java_org_lwjgl_opengl_ARBDirectStateAccess_glMapNamedBufferRange", webmcNative(Java_org_lwjgl_opengl_ARBDirectStateAccess_glMapNamedBufferRange)),
+  Java_org_lwjgl_opengl_ARBDirectStateAccess_glNamedBufferData: webmcNamed("Java_org_lwjgl_opengl_ARBDirectStateAccess_glNamedBufferData", webmcNative(Java_org_lwjgl_opengl_ARBDirectStateAccess_glNamedBufferData)),
+  Java_org_lwjgl_opengl_ARBDirectStateAccess_glNamedBufferStorage: webmcNamed("Java_org_lwjgl_opengl_ARBDirectStateAccess_glNamedBufferStorage", webmcNative(Java_org_lwjgl_opengl_ARBDirectStateAccess_glNamedBufferStorage)),
+  Java_org_lwjgl_opengl_ARBDirectStateAccess_glNamedBufferSubData: webmcNamed("Java_org_lwjgl_opengl_ARBDirectStateAccess_glNamedBufferSubData", webmcNative(Java_org_lwjgl_opengl_ARBDirectStateAccess_glNamedBufferSubData)),
+  Java_org_lwjgl_opengl_ARBDirectStateAccess_glNamedFramebufferTexture: webmcNamed("Java_org_lwjgl_opengl_ARBDirectStateAccess_glNamedFramebufferTexture", webmcNative(Java_org_lwjgl_opengl_ARBDirectStateAccess_glNamedFramebufferTexture)),
+  Java_org_lwjgl_opengl_ARBDirectStateAccess_glUnmapNamedBuffer: webmcNamed("Java_org_lwjgl_opengl_ARBDirectStateAccess_glUnmapNamedBuffer", webmcNative(Java_org_lwjgl_opengl_ARBDirectStateAccess_glUnmapNamedBuffer)),
+  Java_org_lwjgl_opengl_ARBTimerQuery_glGetQueryObjecti64: webmcNamed("Java_org_lwjgl_opengl_ARBTimerQuery_glGetQueryObjecti64", webmcNative(Java_org_lwjgl_opengl_ARBTimerQuery_glGetQueryObjecti64)),
+  Java_org_lwjgl_opengl_ARBVertexAttribBinding_glBindVertexBuffer: webmcNamed("Java_org_lwjgl_opengl_ARBVertexAttribBinding_glBindVertexBuffer", webmcNative(Java_org_lwjgl_opengl_ARBVertexAttribBinding_glBindVertexBuffer)),
+  Java_org_lwjgl_opengl_ARBVertexAttribBinding_glVertexAttribBinding: webmcNamed("Java_org_lwjgl_opengl_ARBVertexAttribBinding_glVertexAttribBinding", webmcNative(Java_org_lwjgl_opengl_ARBVertexAttribBinding_glVertexAttribBinding)),
+  Java_org_lwjgl_opengl_ARBVertexAttribBinding_glVertexAttribFormat: webmcNamed("Java_org_lwjgl_opengl_ARBVertexAttribBinding_glVertexAttribFormat", webmcNative(Java_org_lwjgl_opengl_ARBVertexAttribBinding_glVertexAttribFormat)),
+  Java_org_lwjgl_opengl_ARBVertexAttribBinding_glVertexAttribIFormat: webmcNamed("Java_org_lwjgl_opengl_ARBVertexAttribBinding_glVertexAttribIFormat", webmcNative(Java_org_lwjgl_opengl_ARBVertexAttribBinding_glVertexAttribIFormat)),
+  Java_org_lwjgl_opengl_EXTDebugLabel_glLabelObjectEXT: webmcNamed("Java_org_lwjgl_opengl_EXTDebugLabel_glLabelObjectEXT", webmcNative(Java_org_lwjgl_opengl_EXTDebugLabel_glLabelObjectEXT)),
+  Java_org_lwjgl_opengl_GL11C_glBindTexture: webmcNamed("Java_org_lwjgl_opengl_GL11C_glBindTexture", webmcNative(Java_org_lwjgl_opengl_GL11C_glBindTexture)),
   Java_org_lwjgl_opengl_GL11_glBindBuffer: webmcNamed("Java_org_lwjgl_opengl_GL11_glBindBuffer", webmcNative(Java_org_lwjgl_opengl_GL11_glBindBuffer)),
   Java_org_lwjgl_opengl_GL11_glBindTexture: webmcNamed("Java_org_lwjgl_opengl_GL11_glBindTexture", webmcNative(Java_org_lwjgl_opengl_GL11_glBindTexture)),
   Java_org_lwjgl_opengl_GL11_glBlendEquation: webmcNamed("Java_org_lwjgl_opengl_GL11_glBlendEquation", webmcNative(Java_org_lwjgl_opengl_GL11_glBlendEquation)),
@@ -1609,17 +2264,20 @@ export const natives = {
   Java_org_lwjgl_opengl_GL11_glClearStencil: webmcNamed("Java_org_lwjgl_opengl_GL11_glClearStencil", webmcNative(Java_org_lwjgl_opengl_GL11_glClearStencil)),
   Java_org_lwjgl_opengl_GL11_glColorMask: webmcNamed("Java_org_lwjgl_opengl_GL11_glColorMask", webmcNative(Java_org_lwjgl_opengl_GL11_glColorMask)),
   Java_org_lwjgl_opengl_GL11_glCullFace: webmcNamed("Java_org_lwjgl_opengl_GL11_glCullFace", webmcNative(Java_org_lwjgl_opengl_GL11_glCullFace)),
+  Java_org_lwjgl_opengl_GL11_glDeleteTextures: webmcNamed("Java_org_lwjgl_opengl_GL11_glDeleteTextures", webmcNative(Java_org_lwjgl_opengl_GL11_glDeleteTextures)),
   Java_org_lwjgl_opengl_GL11_glDepthFunc: webmcNamed("Java_org_lwjgl_opengl_GL11_glDepthFunc", webmcNative(Java_org_lwjgl_opengl_GL11_glDepthFunc)),
   Java_org_lwjgl_opengl_GL11_glDepthMask: webmcNamed("Java_org_lwjgl_opengl_GL11_glDepthMask", webmcNative(Java_org_lwjgl_opengl_GL11_glDepthMask)),
   Java_org_lwjgl_opengl_GL11_glDepthRange: webmcNamed("Java_org_lwjgl_opengl_GL11_glDepthRange", webmcNative(Java_org_lwjgl_opengl_GL11_glDepthRange)),
   Java_org_lwjgl_opengl_GL11_glDisable: webmcNamed("Java_org_lwjgl_opengl_GL11_glDisable", webmcNative(Java_org_lwjgl_opengl_GL11_glDisable)),
   Java_org_lwjgl_opengl_GL11_glDrawArrays: webmcNamed("Java_org_lwjgl_opengl_GL11_glDrawArrays", webmcNative(Java_org_lwjgl_opengl_GL11_glDrawArrays)),
+  Java_org_lwjgl_opengl_GL11_glDrawBuffer: webmcNamed("Java_org_lwjgl_opengl_GL11_glDrawBuffer", webmcNative(Java_org_lwjgl_opengl_GL11_glDrawBuffer)),
   Java_org_lwjgl_opengl_GL11_glDrawElements: webmcNamed("Java_org_lwjgl_opengl_GL11_glDrawElements", webmcNative(Java_org_lwjgl_opengl_GL11_glDrawElements)),
   Java_org_lwjgl_opengl_GL11_glEnable: webmcNamed("Java_org_lwjgl_opengl_GL11_glEnable", webmcNative(Java_org_lwjgl_opengl_GL11_glEnable)),
   Java_org_lwjgl_opengl_GL11_glFinish: webmcNamed("Java_org_lwjgl_opengl_GL11_glFinish", webmcNative(Java_org_lwjgl_opengl_GL11_glFinish)),
   Java_org_lwjgl_opengl_GL11_glFlush: webmcNamed("Java_org_lwjgl_opengl_GL11_glFlush", webmcNative(Java_org_lwjgl_opengl_GL11_glFlush)),
   Java_org_lwjgl_opengl_GL11_glFrontFace: webmcNamed("Java_org_lwjgl_opengl_GL11_glFrontFace", webmcNative(Java_org_lwjgl_opengl_GL11_glFrontFace)),
   Java_org_lwjgl_opengl_GL11_glGenBuffers: webmcNamed("Java_org_lwjgl_opengl_GL11_glGenBuffers", webmcNative(Java_org_lwjgl_opengl_GL11_glGenBuffers)),
+  Java_org_lwjgl_opengl_GL11_glGenTextures: webmcNamed("Java_org_lwjgl_opengl_GL11_glGenTextures", webmcNative(Java_org_lwjgl_opengl_GL11_glGenTextures)),
   Java_org_lwjgl_opengl_GL11_glGenerateMipmap: webmcNamed("Java_org_lwjgl_opengl_GL11_glGenerateMipmap", webmcNative(Java_org_lwjgl_opengl_GL11_glGenerateMipmap)),
   Java_org_lwjgl_opengl_GL11_glGetBoolean: webmcNamed("Java_org_lwjgl_opengl_GL11_glGetBoolean", webmcNative(Java_org_lwjgl_opengl_GL11_glGetBoolean)),
   Java_org_lwjgl_opengl_GL11_glGetError: webmcNamed("Java_org_lwjgl_opengl_GL11_glGetError", webmcNative(Java_org_lwjgl_opengl_GL11_glGetError)),
@@ -1627,10 +2285,14 @@ export const natives = {
   Java_org_lwjgl_opengl_GL11_glGetInteger: webmcNamed("Java_org_lwjgl_opengl_GL11_glGetInteger", webmcNative(Java_org_lwjgl_opengl_GL11_glGetInteger)),
   Java_org_lwjgl_opengl_GL11_glGetIntegeri: webmcNamed("Java_org_lwjgl_opengl_GL11_glGetIntegeri", webmcNative(Java_org_lwjgl_opengl_GL11_glGetIntegeri)),
   Java_org_lwjgl_opengl_GL11_glGetString: webmcNamed("Java_org_lwjgl_opengl_GL11_glGetString", webmcNative(Java_org_lwjgl_opengl_GL11_glGetString)),
+  Java_org_lwjgl_opengl_GL11_glGetTexLevelParameteri: webmcNamed("Java_org_lwjgl_opengl_GL11_glGetTexLevelParameteri", webmcNative(Java_org_lwjgl_opengl_GL11_glGetTexLevelParameteri)),
   Java_org_lwjgl_opengl_GL11_glHint: webmcNamed("Java_org_lwjgl_opengl_GL11_glHint", webmcNative(Java_org_lwjgl_opengl_GL11_glHint)),
   Java_org_lwjgl_opengl_GL11_glIsEnabled: webmcNamed("Java_org_lwjgl_opengl_GL11_glIsEnabled", webmcNative(Java_org_lwjgl_opengl_GL11_glIsEnabled)),
   Java_org_lwjgl_opengl_GL11_glLineWidth: webmcNamed("Java_org_lwjgl_opengl_GL11_glLineWidth", webmcNative(Java_org_lwjgl_opengl_GL11_glLineWidth)),
+  Java_org_lwjgl_opengl_GL11_glLogicOp: webmcNamed("Java_org_lwjgl_opengl_GL11_glLogicOp", webmcNative(Java_org_lwjgl_opengl_GL11_glLogicOp)),
   Java_org_lwjgl_opengl_GL11_glPixelStorei: webmcNamed("Java_org_lwjgl_opengl_GL11_glPixelStorei", webmcNative(Java_org_lwjgl_opengl_GL11_glPixelStorei)),
+  Java_org_lwjgl_opengl_GL11_glPolygonMode: webmcNamed("Java_org_lwjgl_opengl_GL11_glPolygonMode", webmcNative(Java_org_lwjgl_opengl_GL11_glPolygonMode)),
+  Java_org_lwjgl_opengl_GL11_glPolygonOffset: webmcNamed("Java_org_lwjgl_opengl_GL11_glPolygonOffset", webmcNative(Java_org_lwjgl_opengl_GL11_glPolygonOffset)),
   Java_org_lwjgl_opengl_GL11_glReadPixels: webmcNamed("Java_org_lwjgl_opengl_GL11_glReadPixels", webmcNative(Java_org_lwjgl_opengl_GL11_glReadPixels)),
   Java_org_lwjgl_opengl_GL11_glScissor: webmcNamed("Java_org_lwjgl_opengl_GL11_glScissor", webmcNative(Java_org_lwjgl_opengl_GL11_glScissor)),
   Java_org_lwjgl_opengl_GL11_glTexImage2D: webmcNamed("Java_org_lwjgl_opengl_GL11_glTexImage2D", webmcNative(Java_org_lwjgl_opengl_GL11_glTexImage2D)),
@@ -1658,10 +2320,16 @@ export const natives = {
   Java_org_lwjgl_opengl_GL14_glBlendEquation: webmcNamed("Java_org_lwjgl_opengl_GL14_glBlendEquation", webmcNative(Java_org_lwjgl_opengl_GL14_glBlendEquation)),
   Java_org_lwjgl_opengl_GL14_glBlendFuncSeparate: webmcNamed("Java_org_lwjgl_opengl_GL14_glBlendFuncSeparate", webmcNative(Java_org_lwjgl_opengl_GL14_glBlendFuncSeparate)),
   Java_org_lwjgl_opengl_GL15_glBindBuffer: webmcNamed("Java_org_lwjgl_opengl_GL15_glBindBuffer", webmcNative(Java_org_lwjgl_opengl_GL15_glBindBuffer)),
+  Java_org_lwjgl_opengl_GL15_glBufferData: webmcNamed("Java_org_lwjgl_opengl_GL15_glBufferData", webmcNative(Java_org_lwjgl_opengl_GL15_glBufferData)),
+  Java_org_lwjgl_opengl_GL15_glBufferSubData: webmcNamed("Java_org_lwjgl_opengl_GL15_glBufferSubData", webmcNative(Java_org_lwjgl_opengl_GL15_glBufferSubData)),
+  Java_org_lwjgl_opengl_GL15_glDeleteBuffers: webmcNamed("Java_org_lwjgl_opengl_GL15_glDeleteBuffers", webmcNative(Java_org_lwjgl_opengl_GL15_glDeleteBuffers)),
+  Java_org_lwjgl_opengl_GL15_glGenBuffers: webmcNamed("Java_org_lwjgl_opengl_GL15_glGenBuffers", webmcNative(Java_org_lwjgl_opengl_GL15_glGenBuffers)),
+  Java_org_lwjgl_opengl_GL15_glUnmapBuffer: webmcNamed("Java_org_lwjgl_opengl_GL15_glUnmapBuffer", webmcNative(Java_org_lwjgl_opengl_GL15_glUnmapBuffer)),
   Java_org_lwjgl_opengl_GL15_nglBufferData: webmcNamed("Java_org_lwjgl_opengl_GL15_nglBufferData", webmcNative(Java_org_lwjgl_opengl_GL15_nglBufferData)),
   Java_org_lwjgl_opengl_GL15_nglBufferSubData: webmcNamed("Java_org_lwjgl_opengl_GL15_nglBufferSubData", webmcNative(Java_org_lwjgl_opengl_GL15_nglBufferSubData)),
   Java_org_lwjgl_opengl_GL15_nglDeleteBuffers: webmcNamed("Java_org_lwjgl_opengl_GL15_nglDeleteBuffers", webmcNative(Java_org_lwjgl_opengl_GL15_nglDeleteBuffers)),
   Java_org_lwjgl_opengl_GL15_nglGenBuffers: webmcNamed("Java_org_lwjgl_opengl_GL15_nglGenBuffers", webmcNative(Java_org_lwjgl_opengl_GL15_nglGenBuffers)),
+  Java_org_lwjgl_opengl_GL20C_nglShaderSource: webmcNamed("Java_org_lwjgl_opengl_GL20C_nglShaderSource", webmcNative(Java_org_lwjgl_opengl_GL20C_nglShaderSource)),
   Java_org_lwjgl_opengl_GL20_glAttachShader: webmcNamed("Java_org_lwjgl_opengl_GL20_glAttachShader", webmcNative(Java_org_lwjgl_opengl_GL20_glAttachShader)),
   Java_org_lwjgl_opengl_GL20_glBindAttribLocation: webmcNamed("Java_org_lwjgl_opengl_GL20_glBindAttribLocation", webmcNative(Java_org_lwjgl_opengl_GL20_glBindAttribLocation)),
   Java_org_lwjgl_opengl_GL20_glCompileShader: webmcNamed("Java_org_lwjgl_opengl_GL20_glCompileShader", webmcNative(Java_org_lwjgl_opengl_GL20_glCompileShader)),
@@ -1679,6 +2347,7 @@ export const natives = {
   Java_org_lwjgl_opengl_GL20_glGetShaderi: webmcNamed("Java_org_lwjgl_opengl_GL20_glGetShaderi", webmcNative(Java_org_lwjgl_opengl_GL20_glGetShaderi)),
   Java_org_lwjgl_opengl_GL20_glGetUniformLocation: webmcNamed("Java_org_lwjgl_opengl_GL20_glGetUniformLocation", webmcNative(Java_org_lwjgl_opengl_GL20_glGetUniformLocation)),
   Java_org_lwjgl_opengl_GL20_glLinkProgram: webmcNamed("Java_org_lwjgl_opengl_GL20_glLinkProgram", webmcNative(Java_org_lwjgl_opengl_GL20_glLinkProgram)),
+  Java_org_lwjgl_opengl_GL20_glScissor: webmcNamed("Java_org_lwjgl_opengl_GL20_glScissor", webmcNative(Java_org_lwjgl_opengl_GL20_glScissor)),
   Java_org_lwjgl_opengl_GL20_glShaderSource: webmcNamed("Java_org_lwjgl_opengl_GL20_glShaderSource", webmcNative(Java_org_lwjgl_opengl_GL20_glShaderSource)),
   Java_org_lwjgl_opengl_GL20_glUniform1f: webmcNamed("Java_org_lwjgl_opengl_GL20_glUniform1f", webmcNative(Java_org_lwjgl_opengl_GL20_glUniform1f)),
   Java_org_lwjgl_opengl_GL20_glUniform1i: webmcNamed("Java_org_lwjgl_opengl_GL20_glUniform1i", webmcNative(Java_org_lwjgl_opengl_GL20_glUniform1i)),
@@ -1693,6 +2362,7 @@ export const natives = {
   Java_org_lwjgl_opengl_GL20_glUniformMatrix3fv: webmcNamed("Java_org_lwjgl_opengl_GL20_glUniformMatrix3fv", webmcNative(Java_org_lwjgl_opengl_GL20_glUniformMatrix3fv)),
   Java_org_lwjgl_opengl_GL20_glUniformMatrix4fv: webmcNamed("Java_org_lwjgl_opengl_GL20_glUniformMatrix4fv", webmcNative(Java_org_lwjgl_opengl_GL20_glUniformMatrix4fv)),
   Java_org_lwjgl_opengl_GL20_glUseProgram: webmcNamed("Java_org_lwjgl_opengl_GL20_glUseProgram", webmcNative(Java_org_lwjgl_opengl_GL20_glUseProgram)),
+  Java_org_lwjgl_opengl_GL20_glVertexAttribPointer: webmcNamed("Java_org_lwjgl_opengl_GL20_glVertexAttribPointer", webmcNative(Java_org_lwjgl_opengl_GL20_glVertexAttribPointer)),
   Java_org_lwjgl_opengl_GL20_nglGenBuffers: webmcNamed("Java_org_lwjgl_opengl_GL20_nglGenBuffers", webmcNative(Java_org_lwjgl_opengl_GL20_nglGenBuffers)),
   Java_org_lwjgl_opengl_GL20_nglGetProgramiv: webmcNamed("Java_org_lwjgl_opengl_GL20_nglGetProgramiv", webmcNative(Java_org_lwjgl_opengl_GL20_nglGetProgramiv)),
   Java_org_lwjgl_opengl_GL20_nglGetShaderiv: webmcNamed("Java_org_lwjgl_opengl_GL20_nglGetShaderiv", webmcNative(Java_org_lwjgl_opengl_GL20_nglGetShaderiv)),
@@ -1706,18 +2376,52 @@ export const natives = {
   Java_org_lwjgl_opengl_GL30_glBindVertexArray: webmcNamed("Java_org_lwjgl_opengl_GL30_glBindVertexArray", webmcNative(Java_org_lwjgl_opengl_GL30_glBindVertexArray)),
   Java_org_lwjgl_opengl_GL30_glBlitFramebuffer: webmcNamed("Java_org_lwjgl_opengl_GL30_glBlitFramebuffer", webmcNative(Java_org_lwjgl_opengl_GL30_glBlitFramebuffer)),
   Java_org_lwjgl_opengl_GL30_glCheckFramebufferStatus: webmcNamed("Java_org_lwjgl_opengl_GL30_glCheckFramebufferStatus", webmcNative(Java_org_lwjgl_opengl_GL30_glCheckFramebufferStatus)),
+  Java_org_lwjgl_opengl_GL30_glDeleteFramebuffers: webmcNamed("Java_org_lwjgl_opengl_GL30_glDeleteFramebuffers", webmcNative(Java_org_lwjgl_opengl_GL30_glDeleteFramebuffers)),
+  Java_org_lwjgl_opengl_GL30_glFlushMappedBufferRange: webmcNamed("Java_org_lwjgl_opengl_GL30_glFlushMappedBufferRange", webmcNative(Java_org_lwjgl_opengl_GL30_glFlushMappedBufferRange)),
   Java_org_lwjgl_opengl_GL30_glFramebufferRenderbuffer: webmcNamed("Java_org_lwjgl_opengl_GL30_glFramebufferRenderbuffer", webmcNative(Java_org_lwjgl_opengl_GL30_glFramebufferRenderbuffer)),
   Java_org_lwjgl_opengl_GL30_glFramebufferTexture2D: webmcNamed("Java_org_lwjgl_opengl_GL30_glFramebufferTexture2D", webmcNative(Java_org_lwjgl_opengl_GL30_glFramebufferTexture2D)),
+  Java_org_lwjgl_opengl_GL30_glGenFramebuffers: webmcNamed("Java_org_lwjgl_opengl_GL30_glGenFramebuffers", webmcNative(Java_org_lwjgl_opengl_GL30_glGenFramebuffers)),
+  Java_org_lwjgl_opengl_GL30_glGenVertexArrays: webmcNamed("Java_org_lwjgl_opengl_GL30_glGenVertexArrays", webmcNative(Java_org_lwjgl_opengl_GL30_glGenVertexArrays)),
   Java_org_lwjgl_opengl_GL30_glGetStringi: webmcNamed("Java_org_lwjgl_opengl_GL30_glGetStringi", webmcNative(Java_org_lwjgl_opengl_GL30_glGetStringi)),
+  Java_org_lwjgl_opengl_GL30_glMapBufferRange: webmcNamed("Java_org_lwjgl_opengl_GL30_glMapBufferRange", webmcNative(Java_org_lwjgl_opengl_GL30_glMapBufferRange)),
   Java_org_lwjgl_opengl_GL30_glRenderbufferStorage: webmcNamed("Java_org_lwjgl_opengl_GL30_glRenderbufferStorage", webmcNative(Java_org_lwjgl_opengl_GL30_glRenderbufferStorage)),
+  Java_org_lwjgl_opengl_GL30_glVertexAttribIPointer: webmcNamed("Java_org_lwjgl_opengl_GL30_glVertexAttribIPointer", webmcNative(Java_org_lwjgl_opengl_GL30_glVertexAttribIPointer)),
   Java_org_lwjgl_opengl_GL30_nglDeleteFramebuffers: webmcNamed("Java_org_lwjgl_opengl_GL30_nglDeleteFramebuffers", webmcNative(Java_org_lwjgl_opengl_GL30_nglDeleteFramebuffers)),
   Java_org_lwjgl_opengl_GL30_nglDeleteVertexArrays: webmcNamed("Java_org_lwjgl_opengl_GL30_nglDeleteVertexArrays", webmcNative(Java_org_lwjgl_opengl_GL30_nglDeleteVertexArrays)),
   Java_org_lwjgl_opengl_GL30_nglGenFramebuffers: webmcNamed("Java_org_lwjgl_opengl_GL30_nglGenFramebuffers", webmcNative(Java_org_lwjgl_opengl_GL30_nglGenFramebuffers)),
   Java_org_lwjgl_opengl_GL30_nglGenRenderbuffers: webmcNamed("Java_org_lwjgl_opengl_GL30_nglGenRenderbuffers", webmcNative(Java_org_lwjgl_opengl_GL30_nglGenRenderbuffers)),
   Java_org_lwjgl_opengl_GL30_nglGenVertexArrays: webmcNamed("Java_org_lwjgl_opengl_GL30_nglGenVertexArrays", webmcNative(Java_org_lwjgl_opengl_GL30_nglGenVertexArrays)),
   Java_org_lwjgl_opengl_GL30_nglGetStringi: webmcNamed("Java_org_lwjgl_opengl_GL30_nglGetStringi", webmcNative(Java_org_lwjgl_opengl_GL30_nglGetStringi)),
+  Java_org_lwjgl_opengl_GL31_glCopyBufferSubData: webmcNamed("Java_org_lwjgl_opengl_GL31_glCopyBufferSubData", webmcNative(Java_org_lwjgl_opengl_GL31_glCopyBufferSubData)),
+  Java_org_lwjgl_opengl_GL31_glDrawArraysInstanced: webmcNamed("Java_org_lwjgl_opengl_GL31_glDrawArraysInstanced", webmcNative(Java_org_lwjgl_opengl_GL31_glDrawArraysInstanced)),
+  Java_org_lwjgl_opengl_GL31_glDrawElementsInstanced: webmcNamed("Java_org_lwjgl_opengl_GL31_glDrawElementsInstanced", webmcNative(Java_org_lwjgl_opengl_GL31_glDrawElementsInstanced)),
+  Java_org_lwjgl_opengl_GL31_glGetActiveUniformBlockName: webmcNamed("Java_org_lwjgl_opengl_GL31_glGetActiveUniformBlockName", webmcNative(Java_org_lwjgl_opengl_GL31_glGetActiveUniformBlockName)),
+  Java_org_lwjgl_opengl_GL31_glGetUniformBlockIndex: webmcNamed("Java_org_lwjgl_opengl_GL31_glGetUniformBlockIndex", webmcNative(Java_org_lwjgl_opengl_GL31_glGetUniformBlockIndex)),
+  Java_org_lwjgl_opengl_GL31_glTexBuffer: webmcNamed("Java_org_lwjgl_opengl_GL31_glTexBuffer", webmcNative(Java_org_lwjgl_opengl_GL31_glTexBuffer)),
+  Java_org_lwjgl_opengl_GL31_glUniformBlockBinding: webmcNamed("Java_org_lwjgl_opengl_GL31_glUniformBlockBinding", webmcNative(Java_org_lwjgl_opengl_GL31_glUniformBlockBinding)),
+  Java_org_lwjgl_opengl_GL32C_glBeginQuery: webmcNamed("Java_org_lwjgl_opengl_GL32C_glBeginQuery", webmcNative(Java_org_lwjgl_opengl_GL32C_glBeginQuery)),
+  Java_org_lwjgl_opengl_GL32C_glDeleteQueries: webmcNamed("Java_org_lwjgl_opengl_GL32C_glDeleteQueries", webmcNative(Java_org_lwjgl_opengl_GL32C_glDeleteQueries)),
+  Java_org_lwjgl_opengl_GL32C_glEndQuery: webmcNamed("Java_org_lwjgl_opengl_GL32C_glEndQuery", webmcNative(Java_org_lwjgl_opengl_GL32C_glEndQuery)),
+  Java_org_lwjgl_opengl_GL32C_glGenQueries: webmcNamed("Java_org_lwjgl_opengl_GL32C_glGenQueries", webmcNative(Java_org_lwjgl_opengl_GL32C_glGenQueries)),
+  Java_org_lwjgl_opengl_GL32C_glGetQueryObjecti: webmcNamed("Java_org_lwjgl_opengl_GL32C_glGetQueryObjecti", webmcNative(Java_org_lwjgl_opengl_GL32C_glGetQueryObjecti)),
+  Java_org_lwjgl_opengl_GL32_glBindBufferRange: webmcNamed("Java_org_lwjgl_opengl_GL32_glBindBufferRange", webmcNative(Java_org_lwjgl_opengl_GL32_glBindBufferRange)),
   Java_org_lwjgl_opengl_GL32_glBlendEquationSeparate: webmcNamed("Java_org_lwjgl_opengl_GL32_glBlendEquationSeparate", webmcNative(Java_org_lwjgl_opengl_GL32_glBlendEquationSeparate)),
   Java_org_lwjgl_opengl_GL32_glBlendFuncSeparate: webmcNamed("Java_org_lwjgl_opengl_GL32_glBlendFuncSeparate", webmcNative(Java_org_lwjgl_opengl_GL32_glBlendFuncSeparate)),
+  Java_org_lwjgl_opengl_GL32_glClientWaitSync: webmcNamed("Java_org_lwjgl_opengl_GL32_glClientWaitSync", webmcNative(Java_org_lwjgl_opengl_GL32_glClientWaitSync)),
+  Java_org_lwjgl_opengl_GL32_glDeleteSync: webmcNamed("Java_org_lwjgl_opengl_GL32_glDeleteSync", webmcNative(Java_org_lwjgl_opengl_GL32_glDeleteSync)),
+  Java_org_lwjgl_opengl_GL32_glDrawElementsBaseVertex: webmcNamed("Java_org_lwjgl_opengl_GL32_glDrawElementsBaseVertex", webmcNative(Java_org_lwjgl_opengl_GL32_glDrawElementsBaseVertex)),
+  Java_org_lwjgl_opengl_GL32_glDrawElementsInstancedBaseVertex: webmcNamed("Java_org_lwjgl_opengl_GL32_glDrawElementsInstancedBaseVertex", webmcNative(Java_org_lwjgl_opengl_GL32_glDrawElementsInstancedBaseVertex)),
+  Java_org_lwjgl_opengl_GL32_glFenceSync: webmcNamed("Java_org_lwjgl_opengl_GL32_glFenceSync", webmcNative(Java_org_lwjgl_opengl_GL32_glFenceSync)),
+  Java_org_lwjgl_opengl_GL33C_glBindSampler: webmcNamed("Java_org_lwjgl_opengl_GL33C_glBindSampler", webmcNative(Java_org_lwjgl_opengl_GL33C_glBindSampler)),
+  Java_org_lwjgl_opengl_GL33C_glDeleteSamplers: webmcNamed("Java_org_lwjgl_opengl_GL33C_glDeleteSamplers", webmcNative(Java_org_lwjgl_opengl_GL33C_glDeleteSamplers)),
+  Java_org_lwjgl_opengl_GL33C_glGenSamplers: webmcNamed("Java_org_lwjgl_opengl_GL33C_glGenSamplers", webmcNative(Java_org_lwjgl_opengl_GL33C_glGenSamplers)),
+  Java_org_lwjgl_opengl_GL33C_glSamplerParameterf: webmcNamed("Java_org_lwjgl_opengl_GL33C_glSamplerParameterf", webmcNative(Java_org_lwjgl_opengl_GL33C_glSamplerParameterf)),
+  Java_org_lwjgl_opengl_GL33C_glSamplerParameteri: webmcNamed("Java_org_lwjgl_opengl_GL33C_glSamplerParameteri", webmcNative(Java_org_lwjgl_opengl_GL33C_glSamplerParameteri)),
+  Java_org_lwjgl_opengl_KHRDebug_glDebugMessageCallback: webmcNamed("Java_org_lwjgl_opengl_KHRDebug_glDebugMessageCallback", webmcNative(Java_org_lwjgl_opengl_KHRDebug_glDebugMessageCallback)),
+  Java_org_lwjgl_opengl_KHRDebug_glDebugMessageControl: webmcNamed("Java_org_lwjgl_opengl_KHRDebug_glDebugMessageControl", webmcNative(Java_org_lwjgl_opengl_KHRDebug_glDebugMessageControl)),
+  Java_org_lwjgl_opengl_KHRDebug_glObjectLabel: webmcNamed("Java_org_lwjgl_opengl_KHRDebug_glObjectLabel", webmcNative(Java_org_lwjgl_opengl_KHRDebug_glObjectLabel)),
+  Java_org_lwjgl_opengl_KHRDebug_glPopDebugGroup: webmcNamed("Java_org_lwjgl_opengl_KHRDebug_glPopDebugGroup", webmcNative(Java_org_lwjgl_opengl_KHRDebug_glPopDebugGroup)),
+  Java_org_lwjgl_opengl_KHRDebug_glPushDebugGroup: webmcNamed("Java_org_lwjgl_opengl_KHRDebug_glPushDebugGroup", webmcNative(Java_org_lwjgl_opengl_KHRDebug_glPushDebugGroup)),
   Java_org_lwjgl_system_WebMC_arenaCapacity: webmcNamed("Java_org_lwjgl_system_WebMC_arenaCapacity", webmcNative(Java_org_lwjgl_system_WebMC_arenaCapacity)),
   Java_org_lwjgl_system_WebMC_arenaUsed: webmcNamed("Java_org_lwjgl_system_WebMC_arenaUsed", webmcNative(Java_org_lwjgl_system_WebMC_arenaUsed)),
   Java_org_lwjgl_system_WebMC_bindBuffer: webmcNamed("Java_org_lwjgl_system_WebMC_bindBuffer", webmcNative(Java_org_lwjgl_system_WebMC_bindBuffer)),
@@ -1732,6 +2436,8 @@ export const natives = {
   Java_org_lwjgl_system_WebMC_freetypeWidth: webmcNamed("Java_org_lwjgl_system_WebMC_freetypeWidth", webmcNative(Java_org_lwjgl_system_WebMC_freetypeWidth)),
   Java_org_lwjgl_system_WebMC_genBuffers: webmcNamed("Java_org_lwjgl_system_WebMC_genBuffers", webmcNative(Java_org_lwjgl_system_WebMC_genBuffers)),
   Java_org_lwjgl_system_WebMC_genVertexArrays: webmcNamed("Java_org_lwjgl_system_WebMC_genVertexArrays", webmcNative(Java_org_lwjgl_system_WebMC_genVertexArrays)),
+  Java_org_lwjgl_system_WebMC_glVersion: webmcNamed("Java_org_lwjgl_system_WebMC_glVersion", webmcNative(Java_org_lwjgl_system_WebMC_glVersion)),
+  Java_org_lwjgl_system_WebMC_hasGlExtension: webmcNamed("Java_org_lwjgl_system_WebMC_hasGlExtension", webmcNative(Java_org_lwjgl_system_WebMC_hasGlExtension)),
   Java_org_lwjgl_system_WebMC_log: webmcNamed("Java_org_lwjgl_system_WebMC_log", webmcNative(Java_org_lwjgl_system_WebMC_log)),
   Java_org_lwjgl_system_WebMC_logText: webmcNamed("Java_org_lwjgl_system_WebMC_logText", webmcNative(Java_org_lwjgl_system_WebMC_logText)),
   Java_org_lwjgl_system_WebMC_nmemASCII: webmcNamed("Java_org_lwjgl_system_WebMC_nmemASCII", webmcNative(Java_org_lwjgl_system_WebMC_nmemASCII)),
@@ -1764,6 +2470,8 @@ export const natives = {
   Java_org_lwjgl_system_WebMC_stbWidth: webmcNamed("Java_org_lwjgl_system_WebMC_stbWidth", webmcNative(Java_org_lwjgl_system_WebMC_stbWidth)),
   Java_org_lwjgl_system_WebMC_texImageFromJava: webmcNamed("Java_org_lwjgl_system_WebMC_texImageFromJava", webmcNative(Java_org_lwjgl_system_WebMC_texImageFromJava)),
   Java_org_lwjgl_system_WebMC_texSubImageFromJava: webmcNamed("Java_org_lwjgl_system_WebMC_texSubImageFromJava", webmcNative(Java_org_lwjgl_system_WebMC_texSubImageFromJava)),
+  Java_org_lwjgl_system_WebMC_windowHeight: webmcNamed("Java_org_lwjgl_system_WebMC_windowHeight", webmcNative(Java_org_lwjgl_system_WebMC_windowHeight)),
+  Java_org_lwjgl_system_WebMC_windowWidth: webmcNamed("Java_org_lwjgl_system_WebMC_windowWidth", webmcNative(Java_org_lwjgl_system_WebMC_windowWidth)),
 };
 
-export const count = 237;
+export const count = 351;

@@ -80,6 +80,28 @@ public final class Diag {
         watchdog.start();
     }
 
+    /**
+     * Print the exception a client died of, and the phase it named, then throw.
+     *
+     * The client normally hands this to its crash-report builder, which under this JVM throws its own
+     * NullPointerException before writing anything - so the cause and the phase are both lost. This is what
+     * Main's handler is redirected to (tools/backport/TraceMain.java), and it is the difference between
+     * "the client did not start" and a stack trace that names it.
+     */
+    public static RuntimeException die(Throwable problem, String description) {
+        say("CLIENT FAILED: " + description);
+        for (Throwable cause = problem; cause != null; cause = cause.getCause()) {
+            say("  cause: " + cause.getClass().getName() + ": " + cause.getMessage());
+            for (StackTraceElement frame : cause.getStackTrace()) {
+                say("    at " + frame);
+            }
+            if (cause.getCause() == cause) {
+                break;
+            }
+        }
+        return new RuntimeException(description, problem);
+    }
+
     /** The report so far, for the page to display. */
     public static String report() {
         try {

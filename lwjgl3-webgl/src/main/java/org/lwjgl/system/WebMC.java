@@ -19,6 +19,11 @@ public final class WebMC {
     /** Whether the WebGL context supports an extension; the browser is the only authority on that. */
     public static native boolean hasGlExtension(String name);
 
+    /** The canvas size, for the GLFW calls that hand Java a pair of ints to fill. */
+    public static native int windowWidth();
+
+    public static native int windowHeight();
+
     /** What the GL context says it is, for the client's log. */
     public static native String glVersion();
 

@@ -21,6 +21,7 @@
   "glfwGetMonitorPos",
   "glfwGetMonitors",
   "glfwGetMouseButton",
+  "glfwGetPlatform",
   "glfwGetPrimaryMonitor",
   "glfwGetTime",
   "glfwGetVersionString",
@@ -28,6 +29,8 @@
   "glfwGetVideoModes",
   "glfwGetWindowAttrib",
   "glfwGetWindowContentScale",
+  "glfwGetWindowMonitor",
+  "glfwGetWindowPos",
   "glfwGetWindowSize",
   "glfwHideWindow",
   "glfwIconifyWindow",
@@ -41,8 +44,10 @@
   "glfwRequestWindowAttention",
   "glfwRestoreWindow",
   "glfwSetCharCallback",
+  "glfwSetCharModsCallback",
   "glfwSetClipboardString",
   "glfwSetCursor",
+  "glfwSetCursorEnterCallback",
   "glfwSetCursorPos",
   "glfwSetCursorPosCallback",
   "glfwSetDropCallback",
@@ -50,6 +55,7 @@
   "glfwSetFramebufferSizeCallback",
   "glfwSetInputMode",
   "glfwSetKeyCallback",
+  "glfwSetMonitorCallback",
   "glfwSetMouseButtonCallback",
   "glfwSetScrollCallback",
   "glfwSetTime",
@@ -57,11 +63,14 @@
   "glfwSetWindowCloseCallback",
   "glfwSetWindowFocusCallback",
   "glfwSetWindowIcon",
+  "glfwSetWindowIconifyCallback",
+  "glfwSetWindowMonitor",
   "glfwSetWindowPos",
   "glfwSetWindowPosCallback",
   "glfwSetWindowShouldClose",
   "glfwSetWindowSize",
   "glfwSetWindowSizeCallback",
+  "glfwSetWindowSizeLimits",
   "glfwSetWindowTitle",
   "glfwSetWindowUserPointer",
   "glfwShowWindow",
@@ -80,6 +89,79 @@
  "org.lwjgl.glfw.GLFW.glfwSwapBuffers": [
   "inner"
  ],
+ "org.lwjgl.glfw.GLFWNativeCocoa": [
+  "glfwGetCocoaWindow"
+ ],
+ "org.lwjgl.openal.AL10": [
+  "alBufferData",
+  "alDeleteBuffers",
+  "alDeleteSources",
+  "alEnable",
+  "alGenBuffers",
+  "alGenSources",
+  "alGetError",
+  "alGetSourcei",
+  "alListener3f",
+  "alListenerfv",
+  "alSourcePause",
+  "alSourcePlay",
+  "alSourceQueueBuffers",
+  "alSourceStop",
+  "alSourceUnqueueBuffers",
+  "alSourcef",
+  "alSourcefv",
+  "alSourcei"
+ ],
+ "org.lwjgl.openal.ALC10": [
+  "alcCloseDevice",
+  "alcCreateContext",
+  "alcDestroyContext",
+  "alcGetError",
+  "alcGetInteger",
+  "alcGetIntegerv",
+  "alcGetString",
+  "alcIsExtensionPresent",
+  "alcMakeContextCurrent",
+  "alcOpenDevice"
+ ],
+ "org.lwjgl.openal.ALC11": [
+  "alcGetInteger"
+ ],
+ "org.lwjgl.openal.ALUtil": [
+  "getStringList"
+ ],
+ "org.lwjgl.opengl.ARBBufferStorage": [
+  "glBufferStorage"
+ ],
+ "org.lwjgl.opengl.ARBDebugOutput": [
+  "glDebugMessageCallbackARB",
+  "glDebugMessageControlARB"
+ ],
+ "org.lwjgl.opengl.ARBDirectStateAccess": [
+  "glBlitNamedFramebuffer",
+  "glCopyNamedBufferSubData",
+  "glCreateBuffers",
+  "glCreateFramebuffers",
+  "glFlushMappedNamedBufferRange",
+  "glMapNamedBufferRange",
+  "glNamedBufferData",
+  "glNamedBufferStorage",
+  "glNamedBufferSubData",
+  "glNamedFramebufferTexture",
+  "glUnmapNamedBuffer"
+ ],
+ "org.lwjgl.opengl.ARBTimerQuery": [
+  "glGetQueryObjecti64"
+ ],
+ "org.lwjgl.opengl.ARBVertexAttribBinding": [
+  "glBindVertexBuffer",
+  "glVertexAttribBinding",
+  "glVertexAttribFormat",
+  "glVertexAttribIFormat"
+ ],
+ "org.lwjgl.opengl.EXTDebugLabel": [
+  "glLabelObjectEXT"
+ ],
  "org.lwjgl.opengl.GL11": [
   "glBindBuffer",
   "glBindTexture",
@@ -92,17 +174,20 @@
   "glClearStencil",
   "glColorMask",
   "glCullFace",
+  "glDeleteTextures",
   "glDepthFunc",
   "glDepthMask",
   "glDepthRange",
   "glDisable",
   "glDrawArrays",
+  "glDrawBuffer",
   "glDrawElements",
   "glEnable",
   "glFinish",
   "glFlush",
   "glFrontFace",
   "glGenBuffers",
+  "glGenTextures",
   "glGenerateMipmap",
   "glGetBoolean",
   "glGetError",
@@ -110,10 +195,14 @@
   "glGetInteger",
   "glGetIntegeri",
   "glGetString",
+  "glGetTexLevelParameteri",
   "glHint",
   "glIsEnabled",
   "glLineWidth",
+  "glLogicOp",
   "glPixelStorei",
+  "glPolygonMode",
+  "glPolygonOffset",
   "glReadPixels",
   "glScissor",
   "glTexImage2D",
@@ -144,6 +233,9 @@
  "org.lwjgl.opengl.GL11.nglDrawArrays": [
   "inner"
  ],
+ "org.lwjgl.opengl.GL11C": [
+  "glBindTexture"
+ ],
  "org.lwjgl.opengl.GL13": [
   "glActiveTexture",
   "glTexParameteri",
@@ -156,6 +248,11 @@
  ],
  "org.lwjgl.opengl.GL15": [
   "glBindBuffer",
+  "glBufferData",
+  "glBufferSubData",
+  "glDeleteBuffers",
+  "glGenBuffers",
+  "glUnmapBuffer",
   "nglBufferData",
   "nglBufferSubData",
   "nglDeleteBuffers",
@@ -179,6 +276,7 @@
   "glGetShaderi",
   "glGetUniformLocation",
   "glLinkProgram",
+  "glScissor",
   "glShaderSource",
   "glUniform1f",
   "glUniform1i",
@@ -193,6 +291,7 @@
   "glUniformMatrix3fv",
   "glUniformMatrix4fv",
   "glUseProgram",
+  "glVertexAttribPointer",
   "nglGenBuffers",
   "nglGetProgramiv",
   "nglGetShaderiv",
@@ -226,16 +325,25 @@
  "org.lwjgl.opengl.GL20.glUseProgram": [
   "inner"
  ],
+ "org.lwjgl.opengl.GL20C": [
+  "nglShaderSource"
+ ],
  "org.lwjgl.opengl.GL30": [
   "glBindFramebuffer",
   "glBindRenderbuffer",
   "glBindVertexArray",
   "glBlitFramebuffer",
   "glCheckFramebufferStatus",
+  "glDeleteFramebuffers",
+  "glFlushMappedBufferRange",
   "glFramebufferRenderbuffer",
   "glFramebufferTexture2D",
+  "glGenFramebuffers",
+  "glGenVertexArrays",
   "glGetStringi",
+  "glMapBufferRange",
   "glRenderbufferStorage",
+  "glVertexAttribIPointer",
   "nglDeleteFramebuffers",
   "nglDeleteVertexArrays",
   "nglGenFramebuffers",
@@ -243,9 +351,45 @@
   "nglGenVertexArrays",
   "nglGetStringi"
  ],
+ "org.lwjgl.opengl.GL31": [
+  "glCopyBufferSubData",
+  "glDrawArraysInstanced",
+  "glDrawElementsInstanced",
+  "glGetActiveUniformBlockName",
+  "glGetUniformBlockIndex",
+  "glTexBuffer",
+  "glUniformBlockBinding"
+ ],
  "org.lwjgl.opengl.GL32": [
+  "glBindBufferRange",
   "glBlendEquationSeparate",
-  "glBlendFuncSeparate"
+  "glBlendFuncSeparate",
+  "glClientWaitSync",
+  "glDeleteSync",
+  "glDrawElementsBaseVertex",
+  "glDrawElementsInstancedBaseVertex",
+  "glFenceSync"
+ ],
+ "org.lwjgl.opengl.GL32C": [
+  "glBeginQuery",
+  "glDeleteQueries",
+  "glEndQuery",
+  "glGenQueries",
+  "glGetQueryObjecti"
+ ],
+ "org.lwjgl.opengl.GL33C": [
+  "glBindSampler",
+  "glDeleteSamplers",
+  "glGenSamplers",
+  "glSamplerParameterf",
+  "glSamplerParameteri"
+ ],
+ "org.lwjgl.opengl.KHRDebug": [
+  "glDebugMessageCallback",
+  "glDebugMessageControl",
+  "glObjectLabel",
+  "glPopDebugGroup",
+  "glPushDebugGroup"
  ],
  "org.lwjgl.system.WebMC": [
   "arenaCapacity",
@@ -262,6 +406,8 @@
   "freetypeWidth",
   "genBuffers",
   "genVertexArrays",
+  "glVersion",
+  "hasGlExtension",
   "log",
   "logText",
   "nmemASCII",
@@ -293,6 +439,8 @@
   "stbScratch",
   "stbWidth",
   "texImageFromJava",
-  "texSubImageFromJava"
+  "texSubImageFromJava",
+  "windowHeight",
+  "windowWidth"
  ]
 }

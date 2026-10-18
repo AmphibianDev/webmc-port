@@ -6,8 +6,8 @@
  "files": [
   {
    "path": "client.jar",
-   "bytes": 27557397,
-   "sha256": "d6d453582ba40f49f6cb578a00e91f168efaa674a2df6039aabef55e2addf030",
+   "bytes": 27557439,
+   "sha256": "7bc703d25095831aaac58ef00d0d4ff965864e8dbf43689aaf8e5050893afbc5",
    "what": "the official 1.21.11 client, backported to Java 17"
   },
   {
@@ -27,6 +27,12 @@
    "bytes": 307239,
    "sha256": "b1a7f7d0c623e0e1b78638ddc0f3f5779cdba586c20e0394a1029ad58c2cc171",
    "what": "azure-json-1.4.0.jar"
+  },
+  {
+   "path": "libs/oshi-core-6.9.0.jar",
+   "bytes": 1032551,
+   "sha256": "3574e96fd3f3b1cdd5bf9061f40e80f6c5ab48ed8e9272c4ab72958aea8f31a1",
+   "what": "oshi-core-6.9.0.jar"
   },
   {
    "path": "libs/gson-2.13.2.jar",
@@ -237,6 +243,18 @@
    "bytes": 24088491,
    "sha256": "5718515afcd482cf784116a57be44966b5d857338fae5d7bfe1431af1d71834e",
    "what": "fastutil-8.5.18.jar"
+  },
+  {
+   "path": "libs/jna-platform-5.17.0.jar",
+   "bytes": 1400832,
+   "sha256": "0b0311c690d5cedac822b1a2041097778ab463ee06bdbb4865b23e3b5f6151e8",
+   "what": "jna-platform-5.17.0.jar"
+  },
+  {
+   "path": "libs/jna-5.17.0.jar",
+   "bytes": 2005422,
+   "sha256": "6d3369a5178afb4e0197ab86aea9b4833546521f51d60a8f1a425d01b15b1f0f",
+   "what": "jna-5.17.0.jar"
   },
   {
    "path": "libs/jopt-simple-5.0.4.jar",
@@ -515,11 +533,11 @@
    "what": "minecraft/textures/gui/title/background/panorama_overlay.png"
   }
  ],
- "total_bytes": 104171944,
+ "total_bytes": 108610791,
  "asset_index": "29",
  "counts": {
-  "files": 85,
-  "libraries": 49,
+  "files": 88,
+  "libraries": 52,
   "loader": 8,
   "assets": 24,
   "mods": 3

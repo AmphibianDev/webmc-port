@@ -64,6 +64,20 @@ public final class Launch {
         try {
             Class<?> type = Class.forName(target, true, Launch.class.getClassLoader());
             Method entry = type.getMethod("main", String[].class);
+            // and a reporter, so the last classes loaded before a stall are readable afterwards
+            Thread reporter = new Thread(() -> {
+                for (int round = 0; round < 60; round++) {
+                    try {
+                        Thread.sleep(30_000L);
+                        say("TRACE round " + (round + 1) + ", " + Trace.loaded() + " class(es), last: "
+                            + Trace.recent());
+                    } catch (Throwable ignored) {
+                        return;
+                    }
+                }
+            }, "webmc-trace");
+            reporter.setDaemon(true);
+            reporter.start();
             entry.invoke(null, (Object) rest);
             System.out.println("LAUNCH: " + target + " returned");
         } catch (InvocationTargetException wrapped) {

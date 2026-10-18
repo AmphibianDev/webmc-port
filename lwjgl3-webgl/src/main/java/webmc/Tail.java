@@ -54,6 +54,30 @@ public final class Tail {
     private static void tail(int round) {
         StringBuilder out = new StringBuilder();
         out.append("=== client log, read ").append(round).append(" ===\n");
+        // The client's crash report is the thing that names the phase it failed in - "Description:
+        // Initializing game" - and it is written even when the report builder itself goes wrong.
+        try {
+            Path reports = Path.of("/files/game/crash-reports");
+            if (Files.isDirectory(reports)) {
+                java.util.List<Path> found = new java.util.ArrayList<>();
+                try (java.util.stream.Stream<Path> stream = Files.list(reports)) {
+                    stream.filter(Files::isRegularFile).forEach(found::add);
+                }
+                found.sort(java.util.Comparator.comparing(Path::toString));
+                if (found.isEmpty()) {
+                    out.append("  crash-reports: empty\n");
+                }
+                for (Path report : found) {
+                    out.append("  === ").append(report.getFileName()).append(" ===\n");
+                    out.append(Files.readString(report));
+                    out.append('\n');
+                }
+            } else {
+                out.append("  /files/game/crash-reports does not exist\n");
+            }
+        } catch (Throwable problem) {
+            out.append("  crash-reports failed: ").append(problem).append('\n');
+        }
         for (String candidate : new String[] { "/files/game/logs/latest.log", "/files/game/logs/debug.log" }) {
             Path log = Path.of(candidate);
             try {

@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import pathlib
 import subprocess
 import sys
@@ -31,6 +32,21 @@ import urllib.request
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 HERE = ROOT / "tools"
 sys.path.insert(0, str(HERE))
+
+
+def asm_classpath() -> str:
+    """The ASM jars, from wherever they are: work/asm on a runner, the engine toolchain on a machine."""
+    jars = []
+    libraries = ("asm", "asm-tree", "asm-commons", "asm-analysis", "asm-util")
+    from pathlib import Path as _Path
+    for directory in (ROOT / "work" / "asm",
+                      ROOT.parent / "webmc-engine" / "toolchain" / "m2" / "org" / "ow2" / "asm",
+                      _Path.home() / ".m2" / "repository" / "org" / "ow2" / "asm"):
+        if directory.is_dir():
+            for name in libraries:
+                jars.extend(str(path) for path in sorted(directory.glob(f"{name}/*/*.jar")))
+                jars.extend(str(path) for path in sorted(directory.glob(f"{name}/*.jar")))
+    return os.pathsep.join(dict.fromkeys(jars))
 
 
 def fetch(url: str, destination: pathlib.Path, log=print, proxy: str | None = None) -> pathlib.Path:
@@ -116,6 +132,23 @@ def main(argv=None) -> int:
                                         capture_output=True, text=True)
                 if result.returncode != 0:
                     print(f"  ! {name} could not be backported: {result.stdout.strip()[-200:]}")
+
+    # 2b. Main's crash-report call is redirected, so a startup failure prints itself: the report builder
+    # NPEs under this JVM and takes the cause, the phase and the report file with it.
+    traced = work / f"{version}-j17-traced.jar"
+    asm = asm_classpath()
+    java = os.environ.get("JAVA_HOME", "")
+    javac = str(pathlib.Path(java) / "bin" / "javac") if java else "javac"
+    classes = work / "trace-classes"
+    classes.mkdir(parents=True, exist_ok=True)
+    subprocess.run([javac, "--release", "17", "-nowarn", "-cp", asm, "-d", str(classes),
+                    str(HERE / "backport" / "TraceMain.java")], check=False, capture_output=True)
+    patched = subprocess.run([str(pathlib.Path(java) / "bin" / "java") if java else "java",
+                              "-cp", f"{classes}{os.pathsep}{asm}", "TraceMain",
+                              str(client), str(traced)], capture_output=True, text=True)
+    print("  " + patched.stdout.strip()[:200])
+    if traced.is_file():
+        client = traced
 
     # 3. the mods, lowered the same way (their metadata and mixin configs included)
     mods_out = work / "mods-j17"

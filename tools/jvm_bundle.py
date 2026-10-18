@@ -69,7 +69,7 @@ SKIP_GROUPS = ("org.lwjgl",)
 # groups and then stops answering, and Minecraft waits on it during startup - measured, with the client's
 # last line being OSHI's "Failed retrieving info for group processor". Minecraft already handles OSHI
 # being unavailable (it catches the failure and carries on), so the honest fix is not to ship it.
-SKIP_LIBRARIES = ("com.github.oshi", "net.java.dev.jna")
+SKIP_LIBRARIES = ()
 
 
 def sha256(path: pathlib.Path) -> str:
@@ -98,7 +98,7 @@ def fetch(url: str, target: pathlib.Path, proxy: str | None) -> pathlib.Path:
 def inject_launcher(backported_client: pathlib.Path, target: pathlib.Path, log=print) -> bool:
     """Compile webmc/Launch and put it in the client jar, so a failed start explains itself."""
     sources = [ROOT / "lwjgl3-webgl" / "src" / "main" / "java" / "webmc" / name
-               for name in ("Launch.java", "Prepare.java", "Diag.java", "Tail.java")]
+               for name in ("Launch.java", "Prepare.java", "Diag.java", "Tail.java", "Trace.java")]
     sources = [path for path in sources if path.is_file()]
     if not sources:
         return False
@@ -126,7 +126,7 @@ def inject_launcher(backported_client: pathlib.Path, target: pathlib.Path, log=p
             return False
         shutil.copyfile(backported_client, target)
         with zipfile.ZipFile(target, "a", zipfile.ZIP_DEFLATED) as archive:
-            for name in ("Launch", "Prepare", "Diag", "Tail"):
+            for name in ("Launch", "Prepare", "Diag", "Tail", "Trace"):
                 compiled = classes / "webmc" / f"{name}.class"
                 if compiled.is_file():
                     archive.write(compiled, f"webmc/{name}.class")

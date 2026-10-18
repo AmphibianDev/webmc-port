@@ -17,6 +17,16 @@ public class GLFWVidMode$Buffer extends CustomBuffer<GLFWVidMode$Buffer> {
     }
 
     /** The mode at the current position. */
+    public int limit() {
+        return capacity();
+    }
+
+    @Override
+    public GLFWVidMode$Buffer position(int newPosition) {
+        super.position(newPosition);
+        return this;
+    }
+
     public GLFWVidMode get() {
         return new GLFWVidMode(address());
     }

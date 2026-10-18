@@ -32,6 +32,11 @@ public class GLFWErrorCallback extends Callback {
         }
     }
 
+    /** The instance form a client calls when it is done with the callback. */
+    public void free() {
+        super.free();
+    }
+
     public void close() {
         free();
     }

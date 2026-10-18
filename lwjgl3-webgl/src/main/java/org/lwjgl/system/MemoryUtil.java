@@ -145,6 +145,32 @@ public final class MemoryUtil {
         WebMCArena.slab(address).putInt(WebMCArena.offset(address), value);
     }
 
+    /** The int-filled form, which is the one a client asks for. */
+    public static void memSet(long address, int value, long bytes) {
+        memSet(address, (byte) value, bytes);
+    }
+
+    /** A view over an IntBuffer's memory as bytes: the same window, a different element size. */
+    public static ByteBuffer memByteBuffer(java.nio.IntBuffer buffer) {
+        return memByteBuffer(memAddress0(buffer), buffer.remaining() * 4);
+    }
+
+    public static void memCopy(java.nio.ByteBuffer source, java.nio.ByteBuffer destination) {
+        long from = memAddress0(source);
+        long to = memAddress0(destination);
+        long bytes = Math.min(source.remaining(), destination.remaining());
+        memCopy(from, to, bytes);
+        source.position(source.position() + (int) bytes);
+        destination.position(destination.position() + (int) bytes);
+    }
+
+    public static void memFree(java.nio.Buffer buffer) {
+        long address = WebMCArena.addressOf(buffer);
+        if (address >= 0) {
+            WebMCArena.free(address);
+        }
+    }
+
     public static void memSet(long address, byte value, long bytes) {
         ByteBuffer window = WebMCArena.window(address, (int) bytes);
         for (int index = 0; index < bytes; index++) {

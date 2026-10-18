@@ -340,6 +340,26 @@ public final class GLFW {
     // implemented in natives/webmc-lwjgl3.js
     public static native long glfwCreateWindow(int arg0, int arg1, java.lang.CharSequence arg2, long arg3, long arg4);
 
+    /**
+     * The video modes of a monitor. This shim's GLFW is a canvas, so there is one mode - the current one -
+     * and it is returned in arena memory, because that is where the client reads it from.
+     */
+    public static org.lwjgl.glfw.GLFWVidMode$Buffer glfwGetVideoModes(long monitor) {
+        int size = org.lwjgl.glfw.GLFWVidMode.SIZEOF;
+        long address = org.lwjgl.system.WebMCArena.malloc(size);
+        java.nio.ByteBuffer view = org.lwjgl.system.WebMCArena.window(address, size);
+        // The six ints GLFW's GLFWvidmode holds. A canvas has one mode and no way to report it, so this is
+        // the size the page draws at and the refresh a display normally has - the client uses these to size
+        // its window and nothing depends on them being exact.
+        view.putInt(0, 1280);       // width
+        view.putInt(4, 720);        // height
+        view.putInt(8, 8);          // red bits
+        view.putInt(12, 8);         // green bits
+        view.putInt(16, 8);         // blue bits
+        view.putInt(20, 60);        // refresh rate
+        return new org.lwjgl.glfw.GLFWVidMode$Buffer(address, 1);
+    }
+
     // implemented in natives/webmc-lwjgl3.js
     public static native void glfwDefaultWindowHints();
 
@@ -356,7 +376,15 @@ public final class GLFW {
     public static native int glfwGetError(org.lwjgl.PointerBuffer arg0);
 
     // implemented in natives/webmc-lwjgl3.js
-    public static native void glfwGetFramebufferSize(long arg0, int[] arg1, int[] arg2);
+    /** The canvas size: the page reports it, and Java is the side that can hold the numbers. */
+    public static void glfwGetFramebufferSize(long window, int[] width, int[] height) {
+        if (width != null && width.length > 0) {
+            width[0] = org.lwjgl.system.WebMC.windowWidth();
+        }
+        if (height != null && height.length > 0) {
+            height[0] = org.lwjgl.system.WebMC.windowHeight();
+        }
+    }
 
     // implemented in natives/webmc-lwjgl3.js
     public static native int glfwGetKey(long arg0, int arg1);
@@ -365,13 +393,33 @@ public final class GLFW {
     public static native java.lang.String glfwGetKeyName(int arg0, int arg1);
 
     // implemented in natives/webmc-lwjgl3.js
-    public static native void glfwGetMonitorPos(long arg0, int[] arg1, int[] arg2);
+    public static void glfwGetMonitorPos(long monitor, int[] x, int[] y) {
+        if (x != null && x.length > 0) {
+            x[0] = 0;
+        }
+        if (y != null && y.length > 0) {
+            y[0] = 0;
+        }
+    }
 
     // implemented in natives/webmc-lwjgl3.js
-    public static native org.lwjgl.PointerBuffer glfwGetMonitors();
+    /**
+     * The monitors. There is one: the canvas's display, and its handle is 1.
+     *
+     * In Java rather than JavaScript because this hands Java an array of pointers to read - and the
+     * JavaScript side cannot write arena memory, only its own heap.
+     */
+    public static org.lwjgl.PointerBuffer glfwGetMonitors() {
+        org.lwjgl.PointerBuffer monitors = org.lwjgl.PointerBuffer.allocateDirect(1);
+        monitors.put(0, 1L);
+        return monitors;
+    }
 
     // implemented in natives/webmc-lwjgl3.js
-    public static native int glfwGetPlatform();
+    /** GLFW_PLATFORM_NULL: there is no platform here, only a browser. */
+    public static int glfwGetPlatform() {
+        return 0;
+    }
 
     // implemented in natives/webmc-lwjgl3.js
     public static native long glfwGetPrimaryMonitor();
@@ -385,27 +433,56 @@ public final class GLFW {
      * is what the client's code expects to call width() and height() on. The struct lives as long as GLFW's own
      * copy, which is until the monitor disappears - so it is wrapped again on every call rather than cached here.
      */
-    public static org.lwjgl.glfw.GLFWVidMode glfwGetVideoMode(long arg0) {
-        long address = nglfwGetVideoMode(arg0);
-        return address == 0 ? null : new org.lwjgl.glfw.GLFWVidMode(address);
+    /**
+     * The current video mode, written into the arena where Java reads it.
+     *
+     * The JavaScript side used to answer this one, and it writes its own heap: the client then read a
+     * struct out of memory that holds something else entirely and threw while creating its monitor
+     * (measured - the frame was org.lwjgl.glfw.GLFW.glfwGetVideoMode itself). Six ints, in GLFW's own
+     * GLFWvidmode order, is all this is.
+     */
+    public static org.lwjgl.glfw.GLFWVidMode glfwGetVideoModeJava(long monitor) {
+        int size = org.lwjgl.glfw.GLFWVidMode.SIZEOF;
+        long address = org.lwjgl.system.WebMCArena.malloc(size);
+        java.nio.ByteBuffer view = org.lwjgl.system.WebMCArena.window(address, size);
+        view.putInt(0, 1280);
+        view.putInt(4, 720);
+        view.putInt(8, 8);
+        view.putInt(12, 8);
+        view.putInt(16, 8);
+        view.putInt(20, 60);
+        return org.lwjgl.glfw.GLFWVidMode.create(address);
     }
 
-    private static native long nglfwGetVideoMode(long arg0);
-
-    // implemented in natives/webmc-lwjgl3.js
-    /** Every mode the monitor has. */
-    public static org.lwjgl.glfw.GLFWVidMode$Buffer glfwGetVideoModes(long arg0, int[] countOut) {
-        long address = nglfwGetVideoModes(arg0);
-        return address == 0 ? null : new org.lwjgl.glfw.GLFWVidMode$Buffer(address, countOut.length > 0 ? countOut[0] : 0);
+    public static org.lwjgl.glfw.GLFWVidMode glfwGetVideoMode(long monitor) {
+        return glfwGetVideoModeJava(monitor);
     }
 
-    private static native long nglfwGetVideoModes(long arg0);
+    // implemented in natives/webmc-lwjgl3.js
+    /** Every mode the monitor has: the one this shim has, in Java, for the same reason as above. */
+    public static org.lwjgl.glfw.GLFWVidMode$Buffer glfwGetVideoModes(long monitor, int[] countOut) {
+        org.lwjgl.glfw.GLFWVidMode$Buffer modes = glfwGetVideoModes(monitor);
+        if (countOut != null && countOut.length > 0) {
+            countOut[0] = 1;
+        }
+        return modes;
+    }
 
     // implemented in natives/webmc-lwjgl3.js
-    public static native long glfwGetWindowMonitor(long arg0);
+    /** No monitor: this window is never fullscreen on one (see glfwSetWindowMonitor). */
+    public static long glfwGetWindowMonitor(long window) {
+        return state.windowMonitor;
+    }
 
     // implemented in natives/webmc-lwjgl3.js
-    public static native void glfwGetWindowPos(long arg0, int[] arg1, int[] arg2);
+    public static void glfwGetWindowPos(long window, int[] x, int[] y) {
+        if (x != null && x.length > 0) {
+            x[0] = 0;
+        }
+        if (y != null && y.length > 0) {
+            y[0] = 0;
+        }
+    }
 
     // implemented in natives/webmc-lwjgl3.js
     public static native boolean glfwInit();
@@ -510,4 +587,11 @@ public final class GLFW {
     // demanded by the client; the JavaScript behind it is in natives/webmc-lwjgl3.js
     // implemented in natives/webmc-lwjgl3.js
     public static native void glfwSetWindowSizeLimits(long arg0, int arg1, int arg2, int arg3, int arg4);
+
+    /** The little that has to be remembered between calls, since there is no GLFW to remember it. */
+    private static final class State {
+        long windowMonitor;
+    }
+
+    private static final State state = new State();
 }

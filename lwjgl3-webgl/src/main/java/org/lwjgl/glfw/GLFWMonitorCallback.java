@@ -20,4 +20,10 @@ public class GLFWMonitorCallback extends Callback {
             callback.free();
         }
     }
+
+    /** The instance form a client calls when it is done with the callback. */
+    public void free() {
+        super.free();
+    }
+
 }
