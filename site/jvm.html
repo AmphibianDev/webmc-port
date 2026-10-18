@@ -177,10 +177,43 @@ async function fetchCached(url) {
   return bytes;
 }
 
+/* CheerpJ's file API writes a file but does not create the directory it goes in, and a file in a
+   directory that does not exist is written and then not readable: the class loader reported a jar at
+   /str/webmc/... as "not found" while the same jar at /str/ loaded, and the client reported "Can't open
+   the resource index file" for an index that was mounted. cheerpOSCreateDir is what was missing. */
+const makeDir = (() => {
+  const name = ["cheerpOSCreateDir", "cheerpOSCreateDirMain", "cheerpjCreateDir"]
+    .find((candidate) => typeof globalThis[candidate] === "function");
+  return name ? globalThis[name].bind(globalThis) : null;
+})();
+
+function ensureDirs(dest) {
+  // cheerpOSCreateDir(path, fileRef, mode, callback): it reports through a callback, so a call without
+  // one does nothing at all - which is how the first version of this looked like it worked and created
+  // no directories.
+  if (!makeDir) return Promise.resolve();
+  const parts = dest.split("/").filter(Boolean);
+  let at = "";
+  let chain = Promise.resolve();
+  for (let index = 0; index < parts.length - 1; index++) {
+    at += "/" + parts[index];
+    const directory = at;
+    chain = chain.then(() => new Promise((resolve) => {
+      try {
+        makeDir(directory, null, 0o755, () => resolve());
+      } catch (problem) {
+        resolve();
+      }
+    }));
+  }
+  return chain;
+}
+
 async function mount(url, dest, label) {
   const bytes = await fetchCached(url);
   const write = fileWriter();
   if (!write) throw new Error("no CheerpJ file API on this page");
+  await ensureDirs(dest);
   await write(dest, bytes);
   log(`${label || dest}: ${(bytes.length / 1048576).toFixed(1)} MB`);
   return bytes;
@@ -301,7 +334,7 @@ async function start() {
   cheerpjCreateDisplay(-1, -1, el("stage"));
   const code = await cheerpjRunMain("webmc.Launch", classpath.join(":"), main,
     "--username", username, "--version", version, "--gameDir", ".",
-    "--assetsDir", "/str/assets", "--assetIndex", version,
+    "--assetsDir", "/str/assets", "--assetIndex", manifest.asset_index || version,
     "--uuid", "0", "--accessToken", "0", "--userType", "legacy");
   log(`the client exited with code ${code}`, code === 0 ? "ok" : "warn");
   el("overlay").classList.remove("gone");

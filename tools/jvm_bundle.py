@@ -218,6 +218,7 @@ def main(argv=None) -> int:
                           "what": f"{jar.name} (backported)"})
             mod_count += 1
 
+    asset_index = None
     loader_count = 0
     # Fabric Loader, Mixin, intermediary and ASM: the loader's own dependencies, vendored here because the
     # page otherwise has to fetch them from maven.fabricmc.net at play time - and a visitor whose resolver
@@ -257,6 +258,7 @@ def main(argv=None) -> int:
         # startup and logs "Can't open the resource index file" and then cannot find a single texture if
         # it is missing. It is 15 KB.
         index_id = document["assetIndex"].get("id", args.version)
+        asset_index = index_id
         index_target = out / "assets" / "indexes" / f"{index_id}.json"
         index_target.parent.mkdir(parents=True, exist_ok=True)
         index_target.write_bytes(json.dumps(index).encode())
@@ -294,6 +296,10 @@ def main(argv=None) -> int:
         "assets_index": f"assets/indexes/{args.version}.json",
         "files": files,
         "total_bytes": sum(entry["bytes"] for entry in files),
+        # Mojang's asset index id ("29" for 1.21.11), not the version: the client opens
+        # assets/indexes/<id>.json, and a page that passes the version name gets "Can't open the
+        # resource index file" and no textures at all.
+        "asset_index": asset_index,
         "counts": {"files": len(files), "libraries": len(files) - (1 if client.is_file() else 0) - assets - mod_count
                    - loader_count, "loader": loader_count,
                    "assets": assets, "mods": mod_count},
