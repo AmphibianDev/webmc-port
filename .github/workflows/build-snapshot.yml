@@ -171,6 +171,9 @@ jobs:
           node-version: "22"
 
       - name: Emscripten
+        # Only the profile that builds a WebAssembly shader toolchain needs this (26.3); installing it for
+        # 1.21.11 costs a few minutes of a forty-minute build and is never used.
+        if: steps.want.outputs.version == '26.3' || inputs.version == '26.3' || inputs.version == 'latest-snapshot' || inputs.version == 'latest-release' 
         # The engine builds its shader toolchain (GLSL -> SPIR-V) with emcc, so a runner without
         # Emscripten stops forty minutes in with "build-wasm-shader-toolchain: emcc not found" - which
         # is what happened on run 38553252969. Installed from the emsdk repository itself rather than a
@@ -256,6 +259,24 @@ jobs:
               exit 1
             fi
           fi
+
+      - name: Cache what this version always fetches and remaps
+        # Measured: a build spends five to ten minutes downloading the client, its libraries and its assets,
+        # and remapping the client with Mojang's mappings - and every one of those is a pure function of the
+        # version, the engine commit and the mod set, which is exactly what a cache key can say. The engine's
+        # own work directory is where all of it lands.
+        uses: actions/cache@v4
+        with:
+          path: |
+            engine/port/work/${{ steps.want.outputs.version }}/client-original.jar
+            engine/port/work/${{ steps.want.outputs.version }}/version.json
+            engine/port/work/${{ steps.want.outputs.version }}/libraries
+            engine/port/work/${{ steps.want.outputs.version }}/assets
+            engine/port/work/overlays/${{ steps.want.outputs.version }}
+            ~/.m2/repository
+          key: gaius-${{ steps.want.outputs.version }}-${{ steps.engine_kind.outputs.engine }}-${{ github.sha }}-${{ hashFiles('mods/mods.json', 'mods/vendor/*.jar') }}
+          restore-keys: |
+            gaius-${{ steps.want.outputs.version }}-${{ steps.engine_kind.outputs.engine }}-
 
       - name: Prepare the version for the engine
         if: steps.engine_kind.outputs.kind != 'eaglercraft-workspace'
