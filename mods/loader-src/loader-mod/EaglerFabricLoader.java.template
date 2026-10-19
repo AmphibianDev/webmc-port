@@ -1,0 +1,53 @@
+// Superseded by the generated class: modded/loader.py writes EaglerFabricLoader.java
+// from the build plan (one entrypoint per baked mod) into build/loader/src/.
+// Kept as the hand-written reference for what that file contains.
+
+package net.fabricmc.eaglerbridge;
+
+import java.util.ArrayList;
+import java.util.List;
+import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.api.ModInitializer;
+
+/**
+ * The loader. On a browser client there is no runtime that reads a jar, so the mods are
+ * already compiled in and this class only has to run their entrypoints - exactly what the
+ * real Fabric loader does at startup, minus the jar scanning.
+ *
+ * No reflection: every ported mod is wired with a direct "new", because the client is
+ * ahead-of-time compiled and reflective class loading is not something TeaVM can promise.
+ * The list below is generated from the build plan (one block per ported mod).
+ */
+public final class EaglerFabricLoader {
+    private static boolean initialized;
+    private static final List<String> loaded = new ArrayList<>();
+
+    private EaglerFabricLoader() {
+    }
+
+    public static synchronized void ensureInitialized() {
+        if (initialized) {
+            return;
+        }
+        initialized = true;
+
+        // ---- generated: one block per ported mod ----
+        run("eaglertest", () -> {
+            ClientModInitializer mod = new net.eaglertest.HelloMod();
+            mod.onInitializeClient();
+        });
+        // ---- end generated ----
+
+        System.out.println("[EaglerFabric] mods loaded: " + loaded);
+    }
+
+    private static void run(String id, Runnable entrypoint) {
+        try {
+            entrypoint.run();
+            loaded.add(id);
+        } catch (Throwable error) {
+            System.out.println("[EaglerFabric] mod " + id + " failed to initialise: " + error);
+            error.printStackTrace();
+        }
+    }
+}

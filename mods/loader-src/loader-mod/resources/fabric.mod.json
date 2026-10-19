@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "id": "webmc-loader",
+  "version": "1.0.0",
+  "name": "WebMC build-time loader",
+  "description": "Starts the baked-in mods in an ahead-of-time client: the call site the AOT compiler needs. Bake-time only - it never runs in the browser.",
+  "authors": ["WebMC"],
+  "license": "MIT",
+  "environment": "client",
+  "mixins": ["webmc-loader.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.15.0"
+  }
+}

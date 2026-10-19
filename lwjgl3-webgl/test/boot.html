@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>loading…</title>
+<script src="https://cjrtnc.leaningtech.com/4.3/loader.js"></script>
+<style>
+  body { background: #111; color: #ddd; font: 14px monospace }
+  canvas { border: 1px solid #333 }
+  a.go { display: inline-block; margin: 10px 0; background: #2a5c3a; color: #fff; padding: 10px 18px;
+         border-radius: 4px; text-decoration: none }
+</style>
+</head>
+<body>
+<canvas id="lwjgl" width="320" height="240"></canvas>
+<div id="result">running</div>
+<p><a class="go" href="play.html" target="_blank" rel="noopener">▶ start in a new tab, fullscreen</a></p>
+<script type="module">
+  // The loader's own test page: a real Java program against the shim, in a real browser.
+  //
+  // It reports by POSTing to the server that served it, because a headless browser's console is not
+  // readable from a shell - and because the Java program's own output is the thing worth reading when
+  // it fails. The console is captured before CheerpJ starts so that "BOOT FAILED: ..." arrives here.
+  const result = document.getElementById("result");
+  const lines = [];
+  const originalLog = console.log.bind(console);
+  console.log = (...args) => { lines.push(args.map(String).join(" ")); originalLog(...args); };
+  window.addEventListener("error", (event) => lines.push("window error: " + event.message));
+
+  let stage = "module";
+  let lastPayload = {};
+  // The collector only exists in CI. Opened anywhere else - on GitHub Pages, from a file, in your own
+  // browser - the page still reports through its own DOM, which is what a person reads anyway.
+  const COLLECTOR = location.hostname === "127.0.0.1" || location.hostname === "localhost";
+  function at(nextStage) { stage = nextStage; post({ code: -1, stage }); }
+  function post(payload) {
+    lastPayload = payload;
+    document.body.dataset.stage = payload.stage || String(payload.code);
+    const line = payload.stage || ("RESULT code=" + payload.code + " frames=" + (payload.frames ?? "?"));
+    if (result.textContent === "running" || (payload.stage || "").includes("still")) {
+      result.textContent = line;
+      document.title = payload.stage ? payload.stage : "EXIT " + payload.code;
+    }
+    if (!COLLECTOR) return Promise.resolve();
+    return fetch("/result", { method: "POST", headers: { "content-type": "application/json" },
+                              body: JSON.stringify({ ...payload, log: lines.slice(-60) }) })
+      .catch(() => {});
+  }
+  if (!COLLECTOR) { document.body.dataset.served = "pages"; }
+  // the trace says which natives were entered: a JVM stuck in a call and a native that was never
+  // dispatched look identical from outside
+  setInterval(() => {
+    const trace = window.webmc && window.webmc.trace ? window.webmc.trace() : null;
+    post({ code: -1, stage: stage + " (still, after " +
+           Math.round((performance.now() - startedAt) / 1000) + "s)",
+           trace: trace ? trace.called.slice(-25) : null, nativesCalled: trace ? trace.count : null });
+  }, 15000);
+
+  function report(payload) {
+    payload = { ...payload, log: lines.slice(-80),
+                javaLog: (payload.javaLog) || (window.webmc && window.webmc.log ? window.webmc.log() : null) };
+    result.textContent = JSON.stringify(payload).slice(0, 800);
+    return fetch("/result", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    }).catch(() => {});
+  }
+
+  const startedAt = performance.now();
+  at("module started");
+
+  try {
+    // a dynamic import, inside the try: a static one fails before this code can report why
+    at("importing the shim");
+    const shim = await import(new URL("natives/webmc-lwjgl3.js", import.meta.url).href);
+    at("shim imported: " + shim.count + " natives");
+    const natives = shim.natives;
+    const count = shim.count;
+    at("calling cheerpjInit");
+    await cheerpjInit({
+      // CheerpJ starts in Java 8 mode, and this shim is compiled for 17 - the JVM's message for that
+      // mismatch is "Could not find or load main class", which cost three CI runs to decode. Which mode
+      // a *game* needs depends on the game: 1.13 to 1.16 ask for Java 8, 1.17 and newer for 17.
+      version: 17,
+      // the implementations: JNI names to JavaScript functions, handed to CheerpJ here. java.library.path
+      // was the older way and does not register them in 4.x, which is why glfwInit answered with an
+      // UnsatisfiedLinkError naming its own implementation.
+      natives,
+      status: "none",
+    });
+    lines.push("registered " + count + " natives");
+    at("cheerpjInit returned");
+    window.webmcCanvasElement = document.getElementById("lwjgl");
+    // if the class is not where the JVM is looking, say so with a status code rather than letting the
+    // JVM report it as "could not find or load main class"
+    const probe = await fetch(new URL("app.jar", import.meta.url), { method: "HEAD" })
+      .then((r) => r.status).catch((e) => String(e));
+    lines.push("app.jar over HTTP: " + probe);
+    const started = performance.now();
+    // the jar, not the directory: see the workflow's note
+    at("running webmc.BootTest");
+    // relative to the page: /app/ is the directory the page was served from, so this works both from a
+    // local server in CI and from GitHub Pages
+    const code = await cheerpjRunMain("webmc.BootTest", "/app/app.jar");
+    const seconds = (performance.now() - started) / 1000;
+    document.title = "EXIT " + code;
+    await report({
+      code,
+      javaLog: window.webmc && window.webmc.log ? window.webmc.log() : null,
+      frames: window.webmc ? window.webmc.frames() : -1,
+      seconds: Number(seconds.toFixed(1)),
+      gl: window.webmc ? window.webmc.glInfo() : null,
+      arena: window.webmc ? window.webmc.arenaUsed() : -1,
+      callbackError: window.webmc ? window.webmc.lastCallbackError() : null,
+    });
+  } catch (error) {
+    document.title = "EXIT 99";
+    lines.push("threw at stage " + stage + ": " + error);
+    await report({ code: 99, threw: String(error && error.message ? error.message : error),
+                   stack: String(error && error.stack ? error.stack.split("\n").slice(0, 6).join(" | ") : "") });
+  }
+</script>
+</body>
+</html>

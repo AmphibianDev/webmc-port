@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "id": "hello-mixin",
+  "name": "Hello Mixin",
+  "version": "1.0.0",
+  "description": "A mixin mod, merged into the client at build time. See MIXINS.md.",
+  "environment": "client",
+  "license": "MIT",
+  "mixins": ["hello-mixin.mixins.json"]
+}

@@ -1,0 +1,352 @@
+#!/usr/bin/env python3
+"""Assemble what the browser needs to run 1.21.11 on the real JVM, and put it where the page can fetch it.
+
+    python3 tools/jvm_bundle.py --version 1.21.11 --out site/jvm/1.21.11
+
+Why this exists at all: CheerpJ runs Java in the page, but the page has to *fetch* the client, its libraries
+and its assets first - and two of the three hosts involved refuse to be fetched from a page. Measured, not
+assumed (the same three-line check that saved this project before, see the CORS skill):
+
+    piston-data.mojang.com          access-control-allow-origin: *      the client jar, fetchable
+    piston-meta.mojang.com          access-control-allow-origin: *      the version and asset index, fetchable
+    maven.fabricmc.net              access-control-allow-origin: *      Fabric, fetchable at play time
+    libraries.minecraft.net         (no header)                        NOT fetchable: must be hosted
+    resources.download.minecraft.net (no header)                       NOT fetchable: must be hosted
+
+So the libraries and the assets are copied here, next to the page, and everything else is fetched live.
+
+Two deliberate omissions, both big:
+
+  * the LWJGL jars and their natives: this repository *is* LWJGL 3 for the browser (lwjgl3-webgl), and the
+    natives are irrelevant to a page. That is most of the weight.
+  * assets outside a title-screen subset: the full index is 4591 objects and several hundred megabytes, of
+    which the menu needs a few fonts, the GUI textures, a language file and the icons. The rest are only
+    needed once a world is loaded, which is the next thing to add - and it is a download, not a mystery.
+
+The manifest this writes is what the page reads: one list of files, each with its sha256, so the page can check
+what it got and say which file was wrong rather than failing somewhere inside the JVM.
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+import pathlib
+import shutil
+import sys
+import urllib.request
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+
+FABRIC_MAVEN = "https://maven.fabricmc.net"
+# The loader's own dependencies, as its installer metadata lists them: a mismatched Mixin fails inside the
+# loader rather than here, so these are pinned to one version and used both by this tool and by the page.
+FABRIC = (
+    "net/fabricmc/fabric-loader/0.19.5/fabric-loader-0.19.5.jar",
+    "net/fabricmc/sponge-mixin/0.17.4+mixin.0.8.7/sponge-mixin-0.17.4+mixin.0.8.7.jar",
+    "net/fabricmc/intermediary/1.21.11/intermediary-1.21.11-v2.jar",
+    "org/ow2/asm/asm/9.10.1/asm-9.10.1.jar",
+    "org/ow2/asm/asm-tree/9.10.1/asm-tree-9.10.1.jar",
+    "org/ow2/asm/asm-commons/9.10.1/asm-commons-9.10.1.jar",
+    "org/ow2/asm/asm-analysis/9.10.1/asm-analysis-9.10.1.jar",
+    "org/ow2/asm/asm-util/9.10.1/asm-util-9.10.1.jar",
+)
+PORT = "https://amphibiandev.github.io/webmc-port"
+
+# What the title screen needs, by asset path prefix. Everything else waits for a world to be loaded.
+TITLE_SCREEN_PREFIXES = (
+    "minecraft/font/", "minecraft/textures/font/", "minecraft/textures/gui/",
+    "minecraft/lang/en_us", "minecraft/textures/misc/", "icons/", "minecraft/nothing.json",
+)
+
+# Replaced by this repository's shim: shipping them would be both wrong and heavy.
+SKIP_GROUPS = ("org.lwjgl",)
+
+# Libraries that cannot work in a browser and take the client down with them. OSHI reads hardware info
+# through JNA, which has no native library here: it logs "Did not JNA classes", gets partway through its
+# groups and then stops answering, and Minecraft waits on it during startup - measured, with the client's
+# last line being OSHI's "Failed retrieving info for group processor". Minecraft already handles OSHI
+# being unavailable (it catches the failure and carries on), so the honest fix is not to ship it.
+SKIP_LIBRARIES = ()
+
+
+def sha256(path: pathlib.Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        while chunk := handle.read(1 << 20):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def fetch(url: str, target: pathlib.Path, proxy: str | None) -> pathlib.Path:
+    if target.is_file() and target.stat().st_size > 0:
+        return target
+    target.parent.mkdir(parents=True, exist_ok=True)
+    request = urllib.request.Request(url, headers={"User-Agent": "webmc-port/1.0 (+jvm-bundle)"})
+    if proxy:
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({"https": proxy, "http": proxy}))
+        response = opener.open(request, timeout=600)
+    else:
+        response = urllib.request.urlopen(request, timeout=600)
+    with response, target.open("wb") as handle:
+        shutil.copyfileobj(response, handle)
+    return target
+
+
+def inject_launcher(backported_client: pathlib.Path, target: pathlib.Path, log=print) -> bool:
+    """Compile webmc/Launch and put it in the client jar, so a failed start explains itself."""
+    sources = [ROOT / "lwjgl3-webgl" / "src" / "main" / "java" / "webmc" / name
+               for name in ("Launch.java", "Prepare.java", "Diag.java", "Tail.java", "Trace.java")]
+    sources = [path for path in sources if path.is_file()]
+    if not sources:
+        return False
+    javac = None
+    for candidate in (os.environ.get("JAVA_HOME", ""), *[os.environ.get(f"JAVA_HOME_{v}", "")
+                                                         for v in (17, 21, 25)]):
+        if candidate and (pathlib.Path(candidate) / "bin" / "javac").is_file():
+            javac = pathlib.Path(candidate) / "bin" / "javac"
+            break
+    if javac is None:
+        found = shutil.which("javac")
+        javac = pathlib.Path(found) if found else None
+    if javac is None:
+        log("  ! no javac: the client jar will not carry the launcher, and a failure will not explain itself")
+        return False
+    import subprocess
+    import tempfile
+    import zipfile
+    with tempfile.TemporaryDirectory() as work:
+        classes = pathlib.Path(work)
+        result = subprocess.run([str(javac), "--release", "17", "-nowarn", "-d", str(classes)]
+                                + [str(path) for path in sources], capture_output=True, text=True)
+        if result.returncode != 0:
+            log(f"  ! the launcher did not compile: {result.stderr.strip()[:200]}")
+            return False
+        shutil.copyfile(backported_client, target)
+        with zipfile.ZipFile(target, "a", zipfile.ZIP_DEFLATED) as archive:
+            for name in ("Launch", "Prepare", "Diag", "Tail", "Trace"):
+                compiled = classes / "webmc" / f"{name}.class"
+                if compiled.is_file():
+                    archive.write(compiled, f"webmc/{name}.class")
+    log(f"  the launcher is in the client jar ({target.stat().st_size // 1024} KB)")
+    return True
+
+
+def main(argv=None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--version", default="1.21.11")
+    parser.add_argument("--out", default=str(ROOT / "site" / "jvm" / "1.21.11"))
+    parser.add_argument("--client", default=str(ROOT / "work" / "client" / "1.21.11-j17.jar"),
+                        help="the backported client (tools/backport17.py wrote it)")
+    parser.add_argument("--libs", default=str(ROOT / "work" / "client" / "libs" / "1.21.11"))
+    parser.add_argument("--assets", action="store_true", help="also copy the title-screen asset subset")
+    parser.add_argument("--fabric", action="store_true", default=True,
+                        help="vendor Fabric Loader, Mixin, intermediary and ASM (default: yes)")
+    parser.add_argument("--no-fabric", dest="fabric", action="store_false")
+    parser.add_argument("--version-json", default=None,
+                        help="Mojang's document for the version (default work/client/<version>.json)")
+    parser.add_argument("--mods", default=None,
+                        help="mods to ship with the bundle, already backported to Java 17")
+    parser.add_argument("--proxy", default=None)
+    parser.add_argument("--report", action="store_true")
+    args = parser.parse_args(argv)
+
+    out = pathlib.Path(args.out).expanduser()
+    version_json = pathlib.Path(args.version_json) if args.version_json \
+        else ROOT / "work" / "client" / f"{args.version}.json"
+    client = pathlib.Path(args.client).expanduser()
+    libs = pathlib.Path(args.libs).expanduser()
+    if args.mods is None:
+        args.mods = str(ROOT / "work" / "client" / "mods-j17")
+    if not version_json.is_file():
+        print(f"{version_json} is not there: it is the version document the client's libraries come from")
+        return 2
+    document = json.loads(version_json.read_text())
+
+    files = []
+
+    # the client, backported to the Java the browser runtime has
+    if client.is_file():
+        target = out / "client.jar"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(client, target)
+        files.append({"path": "client.jar", "bytes": target.stat().st_size, "sha256": sha256(target),
+                      "what": f"the official {args.version} client, backported to Java 17"})
+    else:
+        print(f"  ! no backported client at {client}: run tools/backport17.py first")
+
+    # The launcher class goes *into the client jar*: it turns "Unable to initialize main class" - the
+    # whole explanation a browser JVM offers - into a stack trace. CheerpJ would not find it in our own
+    # jar on the classpath (verified from the deployed site: the class is in the jar, the jar is first,
+    # and it still says "Could not find or load main class"), and the client's jar it reads happily.
+    if client.is_file():
+        inject_launcher(client, out / "client.jar", log=print)
+
+    # the libraries, minus the ones this repository replaces
+    missing = 0
+    for library in document.get("libraries", []):
+        artifact = (library.get("downloads") or {}).get("artifact")
+        if not artifact or not artifact.get("path"):
+            continue
+        name = library["name"]
+        if any(name.startswith(group) for group in SKIP_GROUPS):
+            continue
+        rules = library.get("rules")
+        if rules and not applies(rules):
+            continue
+        name = pathlib.PurePosixPath(artifact["path"]).name
+        # A library that is itself Java 21 bytecode was backported into libs/<version>-j17 by
+        # tools/backport17.py (jtracy is the one for 1.21.11); prefer that copy, because the official jar
+        # cannot be loaded by the Java 17 runtime the page has.
+        backported = libs.parent / f"{libs.name}-j17" / name
+        if any(library.get("name", "").startswith(prefix) for prefix in SKIP_LIBRARIES):
+            print(f"  skipping {name} (cannot work in a browser; the client handles its absence)")
+            continue
+        source = backported if backported.is_file() else libs / name
+        if not source.is_file():
+            missing += 1
+            continue
+        target = out / "libs" / pathlib.PurePosixPath(artifact["path"]).name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(source, target)
+        files.append({"path": f"libs/{target.name}", "bytes": target.stat().st_size, "sha256": sha256(target),
+                      "what": name})
+    if missing:
+        print(f"  ! {missing} librar(y/ies) were not in {libs}: the page will say which one is missing")
+
+    # Mods that travel with the bundle. They are here rather than fetched at play time for one reason: a mod for
+    # 1.21.11 is Java 21 bytecode, so it has to go through tools/backport_mods.py first, and that cannot happen
+    # in the page. Fabric API is the one every other mod expects; a player's own mods come in the same way.
+    mods = pathlib.Path(args.mods).expanduser()
+    mod_count = 0
+    if mods.is_dir():
+        for jar in sorted(mods.glob("*.jar")):
+            target = out / "mods" / jar.name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(jar, target)
+            files.append({"path": f"mods/{jar.name}", "bytes": target.stat().st_size, "sha256": sha256(target),
+                          "what": f"{jar.name} (backported)"})
+            mod_count += 1
+
+    asset_index = None
+    loader_count = 0
+    if args.assets and (out / "assets").is_dir():
+        listing = sorted(str(path.relative_to(out / "assets"))
+                         for path in (out / "assets").rglob("*") if path.is_file())
+        (out / "assets" / "list.txt").write_text("\n".join(listing) + "\n")
+        print(f"  assets/list.txt: {len(listing)} path(s)")
+
+    # Fabric Loader, Mixin, intermediary and ASM: the loader's own dependencies, vendored here because the
+    # page otherwise has to fetch them from maven.fabricmc.net at play time - and a visitor whose resolver
+    # filters that host gets "without Fabric this route has nothing to run" instead of a game.
+    if args.fabric:
+        loader_dir = out / "loader"
+        loader_dir.mkdir(parents=True, exist_ok=True)
+        for path in FABRIC:
+            name = path.split("/")[-1]
+            target = loader_dir / name
+            cached = ROOT / "work" / "client" / "fabric" / name
+            if cached.is_file() and not target.is_file():
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(cached, target)
+                print(f"  cached {name} ({target.stat().st_size // 1024} KB)")
+            try:
+                fetch(f"{FABRIC_MAVEN}/{path}", target, args.proxy)
+            except Exception as error:  # noqa: BLE001 - the page can still fetch it live
+                print(f"  ! {name}: {error}")
+                continue
+            files.append({"path": f"loader/{name}", "bytes": target.stat().st_size, "sha256": sha256(target),
+                          "what": f"{name} (Fabric)"})
+            loader_count += 1
+
+    assets = 0
+    if args.assets:
+        # The index is one small JSON from piston-meta, which does allow CORS - but this machine's DNS does not
+        # resolve Mojang's hosts, and a cached copy is the same bytes: use it when it is there.
+        cached_index = ROOT / "work" / "client" / "assets-index.json"
+        if cached_index.is_file():
+            index = json.loads(cached_index.read_text())
+            print(f"  using the cached asset index ({len(index['objects'])} objects)")
+        else:
+            index_url = document["assetIndex"]["url"]
+            index = json.loads(fetch(index_url, out / "assets-index.json", args.proxy).read_text())
+        # The index itself goes into the bundle: the client opens /str/assets/indexes/<id>.json during
+        # startup and logs "Can't open the resource index file" and then cannot find a single texture if
+        # it is missing. It is 15 KB.
+        index_id = document["assetIndex"].get("id", args.version)
+        asset_index = index_id
+        index_target = out / "assets" / "indexes" / f"{index_id}.json"
+        index_target.parent.mkdir(parents=True, exist_ok=True)
+        # Prune the index to what the bundle actually carries. A full index lists 4591 objects, and every
+        # one the client asks for and cannot open is an exception it logs and carries on from - hundreds
+        # of them during startup, on a JVM that is already a thousand times slower than a desktop.
+        index["objects"] = {name: entry for name, entry in index["objects"].items()
+                            if name.startswith(TITLE_SCREEN_PREFIXES)}
+        print(f"  asset index pruned to {len(index['objects'])} object(s)")
+        index_target.write_bytes(json.dumps(index).encode())
+        files.append({"path": f"assets/indexes/{index_id}.json", "bytes": index_target.stat().st_size,
+                      "sha256": sha256(index_target), "what": f"asset index {index_id}"})
+
+        wanted = {name: entry for name, entry in index["objects"].items()
+                  if name.startswith(TITLE_SCREEN_PREFIXES)}
+        for name, entry in sorted(wanted.items()):
+            digest = entry["hash"]
+            source = ROOT / "work" / "client" / "assets" / digest[:2] / digest
+            try:
+                fetch(f"https://resources.download.minecraft.net/{digest[:2]}/{digest}", source, args.proxy)
+            except Exception as error:  # noqa: BLE001 - one asset must not stop the bundle
+                print(f"  ! {name}: {error}")
+                continue
+            target = out / "assets" / "objects" / digest[:2] / digest
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(source, target)
+            files.append({"path": f"assets/objects/{digest[:2]}/{digest}", "bytes": target.stat().st_size,
+                          "sha256": sha256(target), "what": name})
+            assets += 1
+        # the index itself, which is how the client maps a logical name to an object
+        (out / "assets" / "indexes").mkdir(parents=True, exist_ok=True)
+        (out / "assets" / "indexes" / f"{args.version}.json").write_text(json.dumps(index))
+        if (out / "assets-index.json").is_file():
+            (out / "assets-index.json").unlink()
+
+    manifest = {
+        "version": args.version,
+        "note": "Assembled by tools/jvm_bundle.py. The libraries and assets are here because their hosts send no "
+                "CORS header; the client is here because it is the backported one. Fabric is fetched at play time "
+                "from maven.fabricmc.net, which does allow it.",
+        "client": "client.jar",
+        "assets_index": f"assets/indexes/{args.version}.json",
+        "files": files,
+        "total_bytes": sum(entry["bytes"] for entry in files),
+        # Mojang's asset index id ("29" for 1.21.11), not the version: the client opens
+        # assets/indexes/<id>.json, and a page that passes the version name gets "Can't open the
+        # resource index file" and no textures at all.
+        "asset_index": asset_index,
+        "counts": {"files": len(files), "libraries": len(files) - (1 if client.is_file() else 0) - assets - mod_count
+                   - loader_count, "loader": loader_count,
+                   "assets": assets, "mods": mod_count},
+    }
+    (out / "manifest.json").write_text(json.dumps(manifest, indent=1) + "\n")
+    print(f"{out}: {len(files)} file(s), {manifest['total_bytes'] / 1048576:.0f} MB "
+          f"({manifest['counts']})")
+    if args.report:
+        for entry in sorted(files, key=lambda item: -item["bytes"])[:8]:
+            print(f"   {entry['bytes'] / 1048576:6.1f} MB  {entry['path']}")
+    return 0
+
+
+def applies(rules: list[dict]) -> bool:
+    """Whether a library's rules allow this machine - kept simple on purpose: the page runs in browsers."""
+    allowed = True
+    for rule in rules:
+        action = rule.get("action") == "allow"
+        os_name = (rule.get("os") or {}).get("name")
+        if os_name in (None, "macos", "linux", "windows"):
+            allowed = action
+    return allowed
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
