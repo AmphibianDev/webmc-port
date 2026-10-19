@@ -486,7 +486,13 @@ jobs:
             INTERMEDIARY_MAPPINGS="mods/vendor/intermediary-mappings-1.21.11.tiny"
             MAPPING_ARGS=""
             if [ -f "$OFFICIAL_MAPPINGS" ] && [ -f "$INTERMEDIARY_MAPPINGS" ]; then
-              MAPPING_ARGS="--mappings $OFFICIAL_MAPPINGS --mappings-intermediary $INTERMEDIARY_MAPPINGS --asm $(printf '%s' "$ASM_JARS" | tr ' ' ':')"
+              MAPPING_ARGS="--mappings $OFFICIAL_MAPPINGS --mappings-intermediary $INTERMEDIARY_MAPPINGS"
+              # --asm only when there is something to pass: an empty value is an argparse error, and the
+              # baker already looks in /tmp/mods, which is where this step stages them
+              ASM_PATH="$(printf '%s' "$ASM_JARS" | tr ' ' ':')"
+              if [ -n "$ASM_PATH" ]; then
+                MAPPING_ARGS="$MAPPING_ARGS --asm $ASM_PATH"
+              fi
             else
               echo "::warning::mods are being baked without the intermediary->official remap: $OFFICIAL_MAPPINGS or $INTERMEDIARY_MAPPINGS is missing"
             fi
