@@ -703,7 +703,7 @@ def remap_mods_to_official(mod_jars: list[pathlib.Path], official: pathlib.Path,
         log(f"  ! mod remap skipped, the mapping could not be composed: {compose.stderr.strip()[:200]}")
         return mod_jars
     log("  " + compose.stdout.strip().splitlines()[-1])
-    asm = asm_classpath_for(here)
+    asm = asm_classpath_for(here, os.environ.get("WEBMC_ASM"))
     if not asm:
         log("  ! mod remap skipped: no ASM jars")
         return mod_jars
@@ -728,9 +728,17 @@ def remap_mods_to_official(mod_jars: list[pathlib.Path], official: pathlib.Path,
     return remapped
 
 
-def asm_classpath_for(here: pathlib.Path) -> str:
-    """The ASM jars, from this checkout or from maven, whoever has them."""
+def asm_classpath_for(here: pathlib.Path, explicit: str | None = None) -> str:
+    """The ASM jars: what the caller named, then the places a build actually stages them.
+
+    /tmp/mods is where the build job puts them (it collects asm-*.jar from the engine for the bake), and
+    that is the one that mattered: without it the remap was skipped with "no ASM jars" and the compiler
+    then failed on the very references the remap removes.
+    """
+    if explicit:
+        return explicit
     for directory in (here.parent / "work" / "asm",
+                      pathlib.Path("/tmp/mods"),
                       pathlib.Path("work/asm"),
                       pathlib.Path.home() / ".m2" / "repository" / "org" / "ow2" / "asm"):
         if directory.is_dir():
@@ -873,6 +881,8 @@ def main(argv=None) -> int:
                         help="Mojang's client mappings for this version; with --intermediary, the mod jars "
                              "are remapped from intermediary to official names first, which is what the "
                              "compiler needs and what no previous build did")
+    parser.add_argument("--asm", default=None,
+                        help="a classpath of ASM jars for the remapper (the build stages them for the bake)")
     parser.add_argument("--mappings-intermediary", default=None,
                         help="Fabric's intermediary mapping file (mappings.tiny)")
     parser.add_argument("--mods-dir", default=None, help="where those jars came from")
@@ -888,6 +898,8 @@ def main(argv=None) -> int:
     if args.mappings:
         print("remapping the mod set to Mojang's official names, which is what the compiled client uses")
         official = pathlib.Path("/tmp/mods-official")
+        if args.asm:
+            os.environ["WEBMC_ASM"] = args.asm
         mod_jars = remap_mods_to_official(mod_jars, pathlib.Path(args.mappings),
                                           pathlib.Path(args.mappings_intermediary), official)
         # The bake also scans a mods directory, and that directory holds the *originals*: leaving it in

@@ -486,7 +486,7 @@ jobs:
             INTERMEDIARY_MAPPINGS="mods/vendor/intermediary-mappings-1.21.11.tiny"
             MAPPING_ARGS=""
             if [ -f "$OFFICIAL_MAPPINGS" ] && [ -f "$INTERMEDIARY_MAPPINGS" ]; then
-              MAPPING_ARGS="--mappings $OFFICIAL_MAPPINGS --mappings-intermediary $INTERMEDIARY_MAPPINGS"
+              MAPPING_ARGS="--mappings $OFFICIAL_MAPPINGS --mappings-intermediary $INTERMEDIARY_MAPPINGS --asm $(printf '%s' "$ASM_JARS" | tr ' ' ':')"
             else
               echo "::warning::mods are being baked without the intermediary->official remap: $OFFICIAL_MAPPINGS or $INTERMEDIARY_MAPPINGS is missing"
             fi
