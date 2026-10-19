@@ -812,7 +812,21 @@ def backport_client(engine: pathlib.Path, version: str, log=print) -> bool:
             shutil.copyfile(library, work / "libs" / "client" / library.name)
         except OSError:
             continue
-    log(f"  backporting the client to Java 17 ({len(libraries)} library jar(s) beside it)")
+    # the backport tool looks for ASM in work/asm, which a build machine does not have: it comes from the
+    # engine, staged for the remap. Put them where the tool looks.
+    asm = asm_classpath_for(here, os.environ.get("WEBMC_ASM"))
+    if asm:
+        target = pathlib.Path(__file__).resolve().parents[1] / "work" / "asm"
+        target.mkdir(parents=True, exist_ok=True)
+        for entry in asm.split(os.pathsep):
+            source = pathlib.Path(entry)
+            if source.is_file() and not (target / source.name).exists():
+                try:
+                    shutil.copyfile(source, target / source.name)
+                except OSError:
+                    continue
+        copy = len(list(target.glob("*.jar")))
+    log(f"  backporting the client to Java 17 ({len(libraries)} library jar(s) beside it, {copy} ASM jar(s) staged)")
     result = subprocess.run([sys.executable, str(here / "backport17.py"),
                              "--input", str(work / "client-j17.jar"),
                              "--output", str(work / "client-j17-out.jar")],
