@@ -306,6 +306,26 @@
     return response.json();
   }
 
+  /* A version's own document, which is where the asset index URL lives.
+   *
+   * Preference order: this site's staged copy (meta/<version>.json, if whoever deployed it staged
+   * one), then Mojang's own metadata. piston-meta.mojang.com answers with
+   * access-control-allow-origin: *, so a page may read it, and the staged copy is therefore a
+   * convenience rather than a requirement. It used to be a requirement by accident: a deployment
+   * without meta/ made every launch fail here with "HTTP 404" before the client was even started. */
+  async function versionDocument(launch) {
+    const staged = launch.meta || new URL(`meta/${launch.version}.json`, location.href).href;
+    try {
+      return await fetchJson(staged);
+    } catch (error) {
+      log(`no staged version document (${error && error.message ? error.message : error}) - asking Mojang`);
+    }
+    const manifest = await fetchJson("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json");
+    const entry = (manifest.versions || []).find((candidate) => candidate.id === launch.version);
+    if (!entry) throw new Error(`Mojang's manifest does not list ${launch.version}`);
+    return await fetchJson(entry.url);
+  }
+
   /* Who starts what, and with which files. The index (launch.json) says whether a version is
    * playable and which modes it has; the plan (plans/<version>.json) is fetched for the one launch
    * that is actually happening. Returns the same shape for the plan path and the legacy path, so
@@ -590,7 +610,7 @@
     // so the game knows what it is missing instead of failing to start.
     if (launch.assets.index) {
       try {
-        const document = await fetchJson(launch.meta || new URL(`meta/${launch.version}.json`, location.href).href);
+        const document = await versionDocument(launch);
         const index = document.assetIndex || {};
         if (index.url) {
           const bytes = new Uint8Array(await (await fetch(index.url)).arrayBuffer());
