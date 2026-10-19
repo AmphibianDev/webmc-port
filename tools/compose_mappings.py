@@ -40,8 +40,8 @@ def type_descriptor(source: str) -> str:
     arrays = source.count("[]")
     source = source.replace("[]", "").strip()
     if source in PRIMITIVES:
-        return PRIMITIVES[source] + "[" * arrays
-    return "L" + source.replace(".", "/") + ";" + "[" * arrays
+        return "[" * arrays + PRIMITIVES[source]
+    return "[" * arrays + "L" + source.replace(".", "/") + ";"
 
 
 def method_descriptor(signature: str) -> str:

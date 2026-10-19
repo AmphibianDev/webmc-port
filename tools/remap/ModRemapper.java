@@ -31,6 +31,17 @@ public class ModRemapper {
     private static final Map<String, String> METHODS = new HashMap<>();
     private static final Map<String, String> FIELDS_BY_DESCRIPTOR = new HashMap<>();
     private static final Map<String, String> METHODS_BY_DESCRIPTOR = new HashMap<>();
+    // the same members, keyed without their owner, for calls made through a subclass: a mod compiled
+    // against intermediary calls RegistryFriendlyByteBuf.method_10812 while the mapping declares
+    // method_10812 on FriendlyByteBuf, and TeaVM wants the name to be official regardless of which class
+    // in the hierarchy the call names. The descriptor keeps this exact where an intermediary name is not
+    // unique (two of 48,667 methods), and a name is only used alone when it stands for one member.
+    private static final Map<String, String> GLOBAL_BY_DESCRIPTOR = new HashMap<>();
+    private static final Map<String, String> GLOBAL_FIELDS_BY_DESCRIPTOR = new HashMap<>();
+    private static final Map<String, String> GLOBAL_FIELDS_BY_NAME = new HashMap<>();
+    private static final Map<String, String> GLOBAL_BY_NAME = new HashMap<>();
+    private static final java.util.Set<String> GLOBAL_AMBIGUOUS = new java.util.HashSet<>();
+    private static int throughHierarchy = 0;
 
     public static void main(String[] args) throws Exception {
         Path input = Path.of(args[0]);
@@ -47,7 +58,8 @@ public class ModRemapper {
         int[] counts = new int[3];   // classes remapped, strings rewritten, nested jars
         writeJar(input, output, counts);
         System.out.println("remapped " + counts[0] + " class(es), " + counts[1] + " string reference(s), "
-            + counts[2] + " nested jar(s) -> " + output);
+            + counts[2] + " nested jar(s), " + throughHierarchy + " member(s) resolved through the class "
+            + "hierarchy -> " + output);
     }
 
     private static void load(Path prefix) throws IOException {
@@ -74,6 +86,15 @@ public class ModRemapper {
             } else if (parts.length == 4) {
                 METHODS_BY_DESCRIPTOR.put(parts[0] + "#" + parts[1] + "#" + parts[2], parts[3]);
                 METHODS.putIfAbsent(parts[0] + "#" + parts[1], parts[3]);
+                String previous = GLOBAL_BY_DESCRIPTOR.putIfAbsent(parts[1] + "#" + parts[2], parts[3]);
+                if (previous != null && !previous.equals(parts[3])) {
+                    GLOBAL_AMBIGUOUS.add(parts[1] + "#" + parts[2]);
+                }
+                previous = GLOBAL_BY_NAME.putIfAbsent(parts[1], parts[3]);
+                if (previous != null && !previous.equals(parts[3])) {
+                    GLOBAL_BY_NAME.remove(parts[1]);
+                    GLOBAL_AMBIGUOUS.add(parts[1]);
+                }
             }
         }
     }
@@ -151,7 +172,27 @@ public class ModRemapper {
             @Override
             public String mapFieldName(String owner, String name, String descriptor) {
                 String exact = FIELDS_BY_DESCRIPTOR.get(owner + "#" + name + "#" + descriptor);
-                return exact != null ? exact : FIELDS.getOrDefault(owner + "#" + name, name);
+                if (exact != null) {
+                    return exact;
+                }
+                String byOwner = FIELDS.get(owner + "#" + name);
+                if (byOwner != null) {
+                    return byOwner;
+                }
+                // a field read through a subclass names the subclass, while the mapping declares it on the
+                // ancestor: LocalPlayer.field_5969 is Entity's x, and without this every such read kept its
+                // intermediary name
+                String byDescriptor = GLOBAL_FIELDS_BY_DESCRIPTOR.get(name + "#" + descriptor);
+                if (byDescriptor != null && !GLOBAL_AMBIGUOUS.contains(name + "#" + descriptor)) {
+                    throughHierarchy++;
+                    return byDescriptor;
+                }
+                String byName = GLOBAL_FIELDS_BY_NAME.get(name);
+                if (byName != null && !GLOBAL_AMBIGUOUS.contains(name)) {
+                    throughHierarchy++;
+                    return byName;
+                }
+                return name;
             }
 
             @Override
@@ -159,7 +200,24 @@ public class ModRemapper {
                 // the descriptor decides between overloads that share an obfuscated name: Tuple's field,
                 // getA and setA are all "a" in the official file
                 String exact = METHODS_BY_DESCRIPTOR.get(owner + "#" + name + "#" + descriptor);
-                return exact != null ? exact : METHODS.getOrDefault(owner + "#" + name, name);
+                if (exact != null) {
+                    return exact;
+                }
+                String byOwner = METHODS.get(owner + "#" + name);
+                if (byOwner != null) {
+                    return byOwner;
+                }
+                String byDescriptor = GLOBAL_BY_DESCRIPTOR.get(name + "#" + descriptor);
+                if (byDescriptor != null && !GLOBAL_AMBIGUOUS.contains(name + "#" + descriptor)) {
+                    throughHierarchy++;
+                    return byDescriptor;
+                }
+                String byName = GLOBAL_BY_NAME.get(name);
+                if (byName != null && !GLOBAL_AMBIGUOUS.contains(name)) {
+                    throughHierarchy++;
+                    return byName;
+                }
+                return name;
             }
         };
         try {
