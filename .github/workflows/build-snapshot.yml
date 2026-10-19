@@ -451,7 +451,21 @@ jobs:
           # Sodium generates part of its own mixin config with ASM at runtime. ASM is plain Java - no JVM
           # internals - so a compiled client can carry it. The engine has already fetched it by now (the
           # patcher pre-check below uses the same jars), so the bake set gets them too.
-          ASM_JARS="$(find ../engine -name 'asm-*.jar' 2>/dev/null | sort -u | tr '\n' ' ')"
+          # Every ASM jar the remapper needs, from wherever they are - and if this checkout does not have
+          # them all (org.objectweb.asm.commons is asm-commons, which the engine's tree does not always
+          # carry), from Maven Central. A missing one is not a warning: the renderer of a mod set is what
+          # turns intermediary names into the official ones the compiler reads.
+          for artefact in asm asm-tree asm-commons asm-analysis asm-util; do
+            found="$(find ../engine -name "$artefact-*.jar" 2>/dev/null | head -1)"
+            if [ -n "$found" ]; then
+              cp "$found" /tmp/mods/ 2>/dev/null || true
+            else
+              curl -fsSL --retry 3 --max-time 120 -o "/tmp/mods/$artefact-9.8.jar" \
+                "https://repo1.maven.org/maven2/org/ow2/asm/$artefact/9.8/$artefact-9.8.jar" \
+                || echo "::warning::could not fetch $artefact from Maven Central"
+            fi
+          done
+          ASM_JARS="$(ls /tmp/mods/asm*.jar 2>/dev/null | tr '\n' ' ')"
           for asm in $ASM_JARS; do
             cp "$asm" /tmp/mods/ 2>/dev/null || true
           done
