@@ -245,7 +245,30 @@ public class ModRemapper {
             }
         };
         try {
-            reader.accept(new ClassRemapper(writer, remapper), 0);
+            ClassRemapper delegate = new ClassRemapper(writer, remapper) {
+                @Override
+                public MethodVisitor visitMethod(int access, String name, String descriptor, String signature,
+                                                 String[] exceptions) {
+                    MethodVisitor inner = super.visitMethod(access, name, descriptor, signature, exceptions);
+                    return inner == null ? null : new MethodVisitor(Opcodes.ASM9, inner) {
+                        @Override
+                        public void visitMethodInsn(int opcode, String owner, String target, String targetDesc,
+                                                    boolean isInterface) {
+                            // java.base has methods the compiler's class library does not, and this one is
+                            // called from code somebody else compiled: the call is pointed at a small shim
+                            // that ships with the client instead of being left to fail translation
+                            if (owner.equals("java/lang/Class") && target.equals("getPackageName")
+                                    && targetDesc.equals("()Ljava/lang/String;")) {
+                                super.visitMethodInsn(Opcodes.INVOKESTATIC, "webmc/shim/Jdk", "packageName",
+                                        "(Ljava/lang/Class;)Ljava/lang/String;", false);
+                                return;
+                            }
+                            super.visitMethodInsn(opcode, owner, target, targetDesc, isInterface);
+                        }
+                    };
+                }
+            };
+            reader.accept(delegate, 0);
             return writer.toByteArray();
         } catch (RuntimeException problem) {
             System.out.println("  ! a class could not be remapped, left as it was: " + problem);

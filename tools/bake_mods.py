@@ -38,6 +38,7 @@ import os
 import pathlib
 import subprocess
 import shutil
+import zipfile
 import sys
 import zipfile
 
@@ -820,9 +821,14 @@ def backport_client(engine: pathlib.Path, version: str, log=print) -> bool:
         target.mkdir(parents=True, exist_ok=True)
         for entry in asm.split(os.pathsep):
             source = pathlib.Path(entry)
-            if source.is_file() and not (target / source.name).exists():
+            if not source.is_file():
+                continue
+            # the tool looks for work/asm/asm.jar, asm-tree.jar, ... (its own layout), not for the maven
+            # names the engine stages for the remap: with the wrong names it reports ASM: False and skips
+            plain = source.name.split("-")[0] + ".jar"
+            if not (target / plain).exists():
                 try:
-                    shutil.copyfile(source, target / source.name)
+                    shutil.copyfile(source, target / plain)
                 except OSError:
                     continue
         copy = len(list(target.glob("*.jar")))
@@ -1012,6 +1018,26 @@ def main(argv=None) -> int:
             target = staging / jar.name
             if jar.resolve() != target.resolve():
                 shutil.copyfile(jar, target)
+        # A mod may bundle its libraries as nested jars (Meteor carries DiscordIPC, MinecraftAuth and the
+        # rest under META-INF/jars). A client compiled whole has them on its classpath one way or another,
+        # and only jars a mod explicitly declares as nested *mods* are extracted by the engine - which is how
+        # 'Class meteordevelopment.discordipc.DiscordIPC was not found' happened. Lifting them out of the
+        # jars puts them on the classpath like every other jar in the set.
+        for jar in list(staging.glob("*.jar")):
+            if jar.name.startswith("webmc-"):
+                continue
+            try:
+                with zipfile.ZipFile(jar) as archive:
+                    nested = [name for name in archive.namelist() if name.startswith("META-INF/jars/")
+                              and name.endswith(".jar")]
+                    for name in nested:
+                        target = staging / pathlib.Path(name).name
+                        if not target.exists():
+                            target.write_bytes(archive.read(name))
+                    if nested:
+                        print(f"  {jar.name}: lifted {len(nested)} bundled jar(s) out")
+            except (zipfile.BadZipFile, OSError):
+                continue
         mods_dir = staging
         mod_jars = sorted(staging.glob("*.jar"))
         print(f"  baking {len(mod_jars)} remapped jar(s) from {staging}")
