@@ -340,6 +340,53 @@ jobs:
             commit -m "snapshot log: prepared $VERSION" || true
           git push origin HEAD:refs/heads/build-log --force || echo "::warning::could not push the early report"
 
+      - name: Put the bake report and the log on the release
+        # The git push at the end of this job is the one step that keeps failing, and it is the step that
+        # carries the log to a branch. The release upload always works, so the report and the log go there too:
+        # a 55-minute build whose log nobody can open is a wasted day.
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          gh release view built-clients >/dev/null 2>&1 || gh release create built-clients \
+            --title "Built browser clients" \
+            --notes "Compiled from the official client by this repository's build jobs." || true
+          for file in /tmp/bake.json /tmp/build.log; do
+            [ -f "$file" ] && gh release upload built-clients "$file" --clobber 2>/dev/null || true
+          done
+          echo "uploaded: $(ls -la /tmp/bake.json /tmp/build.log 2>/dev/null | wc -l) file(s)"
+
+      - name: Fetch the client, its libraries and its assets
+        if: steps.engine_kind.outputs.kind != 'eaglercraft-workspace'
+        working-directory: engine
+        run: |
+          set -uo pipefail
+          # GitHub runs this step's shell with -e, so a failing pipeline aborts the step before
+          # the lines below can read PIPESTATUS and report *why* it failed. That is how a broken
+          # patch chain stayed unreadable for four runs.
+          set +e
+          export GAIUS_VERSION_PROFILE_PATH="versions/$VERSION.json"
+          bash port/scripts/fetch-version.sh 2>&1 | tee -a /tmp/build.log
+          STATUS=${PIPESTATUS[0]}
+          echo "fetch exit: $STATUS"
+          exit "$STATUS"
+
+      - name: Remap the client if this version is obfuscated
+        if: steps.engine_kind.outputs.kind != 'eaglercraft-workspace'
+        working-directory: engine
+        run: |
+          set -uo pipefail
+          # GitHub runs this step's shell with -e, so a failing pipeline aborts the step before
+          # the lines below can read PIPESTATUS and report *why* it failed. That is how a broken
+          # patch chain stayed unreadable for four runs.
+          set +e
+          export GAIUS_VERSION_PROFILE_PATH="versions/$VERSION.json"
+          bash port/scripts/remap-client.sh 2>&1 | tee -a /tmp/build.log
+          STATUS=${PIPESTATUS[0]}
+          echo "remap exit: $STATUS"
+          exit "$STATUS"
+
       - name: Bake the mod set, if one was asked for
         # Mods on a compiled client can only go in before the compile. Two kinds of engine, two bakes:
         # a workspace has source hooks the bake tool knows, and a profile engine gets our generated
@@ -470,53 +517,6 @@ jobs:
               echo "no ASM jar found to pre-check the patcher with; the engine's own build will compile it" | tee -a /tmp/build.log
             fi
           fi
-
-      - name: Put the bake report and the log on the release
-        # The git push at the end of this job is the one step that keeps failing, and it is the step that
-        # carries the log to a branch. The release upload always works, so the report and the log go there too:
-        # a 55-minute build whose log nobody can open is a wasted day.
-        if: always()
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -uo pipefail
-          gh release view built-clients >/dev/null 2>&1 || gh release create built-clients \
-            --title "Built browser clients" \
-            --notes "Compiled from the official client by this repository's build jobs." || true
-          for file in /tmp/bake.json /tmp/build.log; do
-            [ -f "$file" ] && gh release upload built-clients "$file" --clobber 2>/dev/null || true
-          done
-          echo "uploaded: $(ls -la /tmp/bake.json /tmp/build.log 2>/dev/null | wc -l) file(s)"
-
-      - name: Fetch the client, its libraries and its assets
-        if: steps.engine_kind.outputs.kind != 'eaglercraft-workspace'
-        working-directory: engine
-        run: |
-          set -uo pipefail
-          # GitHub runs this step's shell with -e, so a failing pipeline aborts the step before
-          # the lines below can read PIPESTATUS and report *why* it failed. That is how a broken
-          # patch chain stayed unreadable for four runs.
-          set +e
-          export GAIUS_VERSION_PROFILE_PATH="versions/$VERSION.json"
-          bash port/scripts/fetch-version.sh 2>&1 | tee -a /tmp/build.log
-          STATUS=${PIPESTATUS[0]}
-          echo "fetch exit: $STATUS"
-          exit "$STATUS"
-
-      - name: Remap the client if this version is obfuscated
-        if: steps.engine_kind.outputs.kind != 'eaglercraft-workspace'
-        working-directory: engine
-        run: |
-          set -uo pipefail
-          # GitHub runs this step's shell with -e, so a failing pipeline aborts the step before
-          # the lines below can read PIPESTATUS and report *why* it failed. That is how a broken
-          # patch chain stayed unreadable for four runs.
-          set +e
-          export GAIUS_VERSION_PROFILE_PATH="versions/$VERSION.json"
-          bash port/scripts/remap-client.sh 2>&1 | tee -a /tmp/build.log
-          STATUS=${PIPESTATUS[0]}
-          echo "remap exit: $STATUS"
-          exit "$STATUS"
 
       - name: Build the overlays (the patch chain, bring-up allowed)
         if: steps.engine_kind.outputs.kind != 'eaglercraft-workspace'
