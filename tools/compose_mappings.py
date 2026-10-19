@@ -110,7 +110,12 @@ def read_official(path: pathlib.Path):
                 continue
             if not line.startswith(" ") and "->" in line:
                 left, right = line.split("->")
-                obf_owner = right.strip().rstrip(":")
+                # the obfuscated side is keyed in internal form: Mojang's file spells the packages it does
+                # not obfuscate the source way ("com.mojang.blaze3d.vertex.VertexFormat$a"), Fabric's tiny
+                # file spells them the internal way ("com/mojang/blaze3d/vertex/VertexFormat$a"), and
+                # comparing the two unreconciled silently dropped every class outside net.minecraft - whose
+                # obfuscated names are single letters and therefore never disagreed
+                obf_owner = right.strip().rstrip(":").replace(".", "/")
                 official_owner = left.strip()
                 classes[obf_owner] = official_owner
                 continue
