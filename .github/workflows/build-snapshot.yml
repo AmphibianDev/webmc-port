@@ -431,8 +431,20 @@ jobs:
             # a client that looks fine and behaves wrongly is the failure this repository already paid for.
             # While the remaining parts are being closed, the build asks for the other policy - the client
             # runs, and every unapplied part is printed into this log and recorded in the report.
+            # --mappings: a mod is compiled against intermediary names and a compiled client uses Mojang's
+            # official ones, so the mod set is remapped before it is baked. Without this the compiler is
+            # handed references it cannot resolve ("Class net.minecraft.class_2561 was not found") and the
+            # build ends in a gap report - which is what the first build with Meteor did.
+            OFFICIAL_MAPPINGS="../engine/port/work/$VERSION/client-mappings.txt"
+            INTERMEDIARY_MAPPINGS="mods/vendor/intermediary-mappings-1.21.11.tiny"
+            MAPPING_ARGS=""
+            if [ -f "$OFFICIAL_MAPPINGS" ] && [ -f "$INTERMEDIARY_MAPPINGS" ]; then
+              MAPPING_ARGS="--mappings $OFFICIAL_MAPPINGS --mappings-intermediary $INTERMEDIARY_MAPPINGS"
+            else
+              echo "::warning::mods are being baked without the intermediary->official remap: $OFFICIAL_MAPPINGS or $INTERMEDIARY_MAPPINGS is missing"
+            fi
             python3 tools/bake_mods.py --engine ../engine --version "$VERSION" --mods-dir /tmp/mods \
-              --report /tmp/bake.json $MOD_ARGS 2>&1 | tee -a /tmp/build.log
+              --report /tmp/bake.json $MAPPING_ARGS $MOD_ARGS 2>&1 | tee -a /tmp/build.log
             BAKE_STATUS=${PIPESTATUS[0]}
             echo "bake exit: $BAKE_STATUS"
             [ "$BAKE_STATUS" = "0" ] || exit "$BAKE_STATUS"

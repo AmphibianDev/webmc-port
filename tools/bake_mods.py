@@ -34,7 +34,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import pathlib
+import subprocess
 import shutil
 import sys
 import zipfile
@@ -674,6 +676,70 @@ def read_mod(jar: pathlib.Path) -> dict:
     }
 
 
+
+def remap_mods_to_official(mod_jars: list[pathlib.Path], official: pathlib.Path,
+                           intermediary: pathlib.Path, out_dir: pathlib.Path, log=print) -> list[pathlib.Path]:
+    """Rewrite mod jars from intermediary names to Mojang's official ones.
+
+    A Fabric mod is compiled against intermediary names (`net/minecraft/class_2561`) because that is what
+    Fabric Loader hands it at play time. A client compiled here has been remapped to Mojang's official names
+    (`net/minecraft/network/chat/Component`), so a mod baked into it is full of references the compiler
+    cannot resolve - the first build with Meteor died of exactly that, with "Class net.minecraft.class_2561
+    was not found" and a gap report. Nothing bridged the two until this.
+
+    The mapping is composed from the two files that already exist (Mojang's client.txt and Fabric's
+    mappings.tiny); neither alone can do it.
+    """
+    if not official.is_file() or not intermediary.is_file():
+        log(f"  ! mod remap skipped: {official} / {intermediary} missing")
+        return mod_jars
+    here = pathlib.Path(__file__).resolve().parent
+    composed = out_dir / "int-to-official"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    compose = subprocess.run([sys.executable, str(here / "compose_mappings.py"),
+                              "--official", str(official), "--intermediary", str(intermediary),
+                              "--out", str(composed)], capture_output=True, text=True)
+    if compose.returncode != 0:
+        log(f"  ! mod remap skipped, the mapping could not be composed: {compose.stderr.strip()[:200]}")
+        return mod_jars
+    log("  " + compose.stdout.strip().splitlines()[-1])
+    asm = asm_classpath_for(here)
+    if not asm:
+        log("  ! mod remap skipped: no ASM jars")
+        return mod_jars
+    work = out_dir / "remapper"
+    work.mkdir(parents=True, exist_ok=True)
+    javac = subprocess.run(["javac", "--release", "17", "-nowarn", "-cp", asm, "-d", str(work),
+                            str(here / "remap" / "ModRemapper.java")], capture_output=True, text=True)
+    if javac.returncode != 0:
+        log(f"  ! mod remap skipped, the remapper did not compile: {javac.stderr.strip()[:200]}")
+        return mod_jars
+    remapped = []
+    for jar in mod_jars:
+        target = out_dir / f"{jar.stem}-official.jar"
+        run = subprocess.run(["java", "-cp", f"{work}{os.pathsep}{asm}", "ModRemapper",
+                              str(jar), str(target), str(composed)], capture_output=True, text=True)
+        if run.returncode != 0 or not target.is_file():
+            log(f"  ! {jar.name}: could not be remapped, used as it was ({run.stderr.strip()[:120]})")
+            remapped.append(jar)
+            continue
+        log("  " + run.stdout.strip().splitlines()[-1].replace(str(target), jar.name))
+        remapped.append(target)
+    return remapped
+
+
+def asm_classpath_for(here: pathlib.Path) -> str:
+    """The ASM jars, from this checkout or from maven, whoever has them."""
+    for directory in (here.parent / "work" / "asm",
+                      pathlib.Path("work/asm"),
+                      pathlib.Path.home() / ".m2" / "repository" / "org" / "ow2" / "asm"):
+        if directory.is_dir():
+            jars = [str(path) for path in sorted(directory.glob("*.jar"))]
+            if jars:
+                return os.pathsep.join(jars)
+    return ""
+
+
 def bake(engine: pathlib.Path, version: str, mod_jars: list[pathlib.Path], mods_dir: pathlib.Path | None,
          log=print) -> dict:
     """Write the patcher, the hook and the shim, and add the patcher to the version profile."""
@@ -803,6 +869,12 @@ def main(argv=None) -> int:
     parser.add_argument("--engine", required=True)
     parser.add_argument("--version", required=True)
     parser.add_argument("--mods", action="append", default=[], help="a mod jar (repeatable)")
+    parser.add_argument("--mappings", default=None,
+                        help="Mojang's client mappings for this version; with --intermediary, the mod jars "
+                             "are remapped from intermediary to official names first, which is what the "
+                             "compiler needs and what no previous build did")
+    parser.add_argument("--mappings-intermediary", default=None,
+                        help="Fabric's intermediary mapping file (mappings.tiny)")
     parser.add_argument("--mods-dir", default=None, help="where those jars came from")
     parser.add_argument("--report", default=None)
     parser.add_argument("--print", action="store_true")
@@ -811,8 +883,26 @@ def main(argv=None) -> int:
     if not args.mods:
         print("nothing to bake: pass --mods")
         return 2
-    report = bake(pathlib.Path(args.engine), args.version, [pathlib.Path(p) for p in args.mods],
-                  pathlib.Path(args.mods_dir) if args.mods_dir else None)
+    mod_jars = [pathlib.Path(p) for p in args.mods]
+    mods_dir = pathlib.Path(args.mods_dir) if args.mods_dir else None
+    if args.mappings:
+        print("remapping the mod set to Mojang's official names, which is what the compiled client uses")
+        official = pathlib.Path("/tmp/mods-official")
+        mod_jars = remap_mods_to_official(mod_jars, pathlib.Path(args.mappings),
+                                          pathlib.Path(args.mappings_intermediary), official)
+        # The bake also scans a mods directory, and that directory holds the *originals*: leaving it in
+        # place baked both copies, which is exactly the failure the remap exists to prevent. The remapped
+        # jars become the mods directory.
+        staging = official / "mods"
+        staging.mkdir(parents=True, exist_ok=True)
+        for jar in mod_jars:
+            target = staging / jar.name
+            if jar.resolve() != target.resolve():
+                shutil.copyfile(jar, target)
+        mods_dir = staging
+        mod_jars = sorted(staging.glob("*.jar"))
+        print(f"  baking {len(mod_jars)} remapped jar(s) from {staging}")
+    report = bake(pathlib.Path(args.engine), args.version, mod_jars, mods_dir)
     print(f"baked {len(report['mods'])} mod(s) into {args.version}: "
           f"entrypoints {', '.join(report['entrypoints']) or 'none'}"
           + (f"; mixins present in {', '.join(report['with_mixins'])} (not applied)" if report["with_mixins"] else ""))
