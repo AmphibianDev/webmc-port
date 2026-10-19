@@ -196,7 +196,7 @@ def main(argv=None) -> int:
     classes = {}
     for obf, intermediary in int_classes.items():
         official = off_classes.get(obf)
-        if official and intermediary.startswith("net/minecraft/"):
+        if official and official.replace(".", "/") != intermediary:
             # internal names, with slashes: the remapper puts this value straight into a class reference,
             # and Mojang's file spells classes the source way, so a dotted value produced a Meteor jar whose
             # every call was to "net.minecraft.client.Minecraft" - a name that does not resolve as a member
@@ -215,8 +215,6 @@ def main(argv=None) -> int:
     unnamed = 0
     ambiguous_name = 0
     for kind, obf_class, obf_member, intermediary_class, intermediary_member, descriptor in int_members:
-        if not intermediary_class.startswith("net/minecraft/"):
-            continue
         # the descriptor first, and only where that leaves nothing, a name that stands for exactly one
         # official member. A name shared by several is skipped on purpose: guessing is what produced
         # "Method net.minecraft.util.Tuple.setA() was not found" in the compiler.

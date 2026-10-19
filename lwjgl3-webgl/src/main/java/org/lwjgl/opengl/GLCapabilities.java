@@ -23,6 +23,13 @@ public final class GLCapabilities {
     public final boolean GL_EXT_debug_label;
     public final boolean GL_EXT_texture_filter_anisotropic;
     public final boolean GL_KHR_debug;
+    public final boolean GL_KHR_no_error;
+    public final boolean GL_ARB_shader_image_load_store;
+    /** Whether the context claims at least this version, as LWJGL's own fields do. */
+    public final boolean OpenGL44;
+    public final boolean OpenGL46;
+    /** Named for the extension it guards; false here means "do not take the barrier path". */
+    public final boolean glMemoryBarrier;
 
     /** The context this describes, for the log. */
     public final String version;
@@ -35,6 +42,11 @@ public final class GLCapabilities {
         this.GL_EXT_debug_label = false;
         this.GL_EXT_texture_filter_anisotropic = anisotropic;
         this.GL_KHR_debug = false;
+        this.GL_KHR_no_error = false;
+        this.GL_ARB_shader_image_load_store = false;
+        this.OpenGL44 = false;
+        this.OpenGL46 = false;
+        this.glMemoryBarrier = false;
         this.version = version;
     }
 
