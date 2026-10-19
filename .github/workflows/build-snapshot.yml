@@ -523,11 +523,16 @@ jobs:
             # Pre-flight: compile the generated patcher here, with the ASM the engine fetches anyway, so a
             # Java mistake costs two minutes instead of the hour the build takes to reach it.
             PATCHER_CLASS="$(python3 -c "import sys; sys.path.insert(0, 'tools'); import bake_mods; print(bake_mods.PATCHER_CLASS)")"
-            ASM="$(find ../engine -name 'asm-*.jar' 2>/dev/null | sort -u | tr '\n' ':')"
+            ASM_JARS_LOCAL="$(ls /tmp/mods/asm*.jar 2>/dev/null | tr '\n' ' ')"
+            [ -n "$ASM_JARS_LOCAL" ] || ASM_JARS_LOCAL="$(find ../engine -name 'asm-*.jar' 2>/dev/null | sort -u | tr '\n' ' ')"
+            ASM="$(printf '%s' "$ASM_JARS_LOCAL" | tr ' ' ':')"
             if [ -n "$ASM" ]; then
               mkdir -p /tmp/patcher-check
+              # both generated files: the patcher calls the applier, and compiling one without the other
+              # fails with "package WebMcMixinApplier does not exist" - a two-minute check that cost a build
               if javac -nowarn -cp "${ASM%:}" -d /tmp/patcher-check \
-                   "../engine/port/tools/src/main/java/dev/gaius/tools/$PATCHER_CLASS.java" 2>&1 | tee -a /tmp/build.log; then
+                   "../engine/port/tools/src/main/java/dev/gaius/tools/$PATCHER_CLASS.java" \
+                   "../engine/port/tools/src/main/java/dev/gaius/tools/WebMcMixinApplier.java" 2>&1 | tee -a /tmp/build.log; then
                 echo "the generated patcher compiles" | tee -a /tmp/build.log
               else
                 echo "::error::the generated patcher does not compile (see the log above)"
