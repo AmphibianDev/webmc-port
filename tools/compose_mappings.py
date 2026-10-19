@@ -15,6 +15,11 @@ Neither file on its own can do it. Mojang's client.txt says official <-> obfusca
 mappings.tiny says obfuscated <-> intermediary. Composing them gives intermediary <-> official, which is
 the mapping a mod needs.
 
+Members are joined on their **descriptor**, not just their name. That is not a detail: obfuscated names
+repeat (bridge methods, overrides), so a name-only join silently binds an intermediary name to whichever
+official member happened to be read last, and the compiler then reports a method that does not exist on
+the class - `Method net.minecraft.util.Tuple.setA() was not found` was the first of those.
+
 Output is three TSV files: classes, fields and methods, each "from<TAB>to".
 """
 
@@ -25,54 +30,137 @@ import pathlib
 import re
 
 
+PRIMITIVES = {"void": "V", "boolean": "Z", "byte": "B", "char": "C", "short": "S", "int": "I", "long": "J",
+              "float": "F", "double": "D"}
+
+
+def type_descriptor(source: str) -> str:
+    """`java.lang.String[]` -> `[Ljava/lang/String;`, `int` -> `I`, generics dropped."""
+    source = re.sub(r"<[^<>]*>", "", source).strip()      # List<String> is List in a descriptor
+    arrays = source.count("[]")
+    source = source.replace("[]", "").strip()
+    if source in PRIMITIVES:
+        return PRIMITIVES[source] + "[" * arrays
+    return "L" + source.replace(".", "/") + ";" + "[" * arrays
+
+
+def method_descriptor(signature: str) -> str:
+    """`9:10:void youJustLostTheGame(int,java.lang.String)` -> `(ILjava/lang/String;)V`."""
+    signature = re.sub(r"^\d+:\d+:", "", signature.strip())
+    returns, arguments = signature.split(" ", 1)
+    inside = arguments[arguments.index("(") + 1:arguments.rindex(")")]
+    arguments = "".join(type_descriptor(part) for part in inside.split(",") if part.strip())
+    return "(" + arguments + ")" + type_descriptor(returns)
+
+
+def official_descriptor(descriptor: str, official_classes: dict) -> str:
+    """Rewrite a descriptor's class names from obfuscated to official: `La;` -> `Lcom/mojang/math/Axis;`.
+
+    The two files disagree on the namespace of their type fields - Fabric's descriptor says `La;` because
+    its first column is the obfuscated game, Mojang's signature says the source name - and comparing them
+    unreconciled threw away 56,840 members ("same arity, different descriptor"), which would have left the
+    compiler with exactly the unresolved references this whole exercise is meant to remove.
+    """
+    out = []
+    index = 0
+    while index < len(descriptor):
+        character = descriptor[index]
+        if character == "L":
+            end = descriptor.find(";", index)
+            if end == -1:
+                return descriptor
+            name = descriptor[index + 1:end]
+            out.append("L" + official_classes.get(name, name) + ";")
+            index = end + 1
+        else:
+            out.append(character)
+            index += 1
+    return "".join(out)
+
+
+def rename_in_descriptor(descriptor: str, names: dict) -> str:
+    """Rewrite the class names inside a descriptor through a mapping, leaving primitives and arrays alone."""
+    out = []
+    index = 0
+    while index < len(descriptor):
+        character = descriptor[index]
+        if character == "L":
+            end = descriptor.find(";", index)
+            if end == -1:
+                return descriptor
+            out.append("L" + names.get(descriptor[index + 1:end], descriptor[index + 1:end]) + ";")
+            index = end + 1
+        else:
+            out.append(character)
+            index += 1
+    return "".join(out)
+
+
 def read_official(path: pathlib.Path):
-    """Mojang's ProGuard mapping: official on the left, obfuscated on the right, members indented."""
+    """Mojang's ProGuard mapping: official on the left, obfuscated on the right, members indented.
+
+    Returns (classes, members) with members as (kind, obf_class, obf_member, official_name, descriptor).
+    """
     classes = {}
-    members = []          # (obf_owner, obf_name, official_owner, official_name)
-    owner_official = None
+    members = []
+    official_owner = obf_owner = None
     with path.open(errors="replace") as handle:
         for line in handle:
             if line.startswith("#"):
                 continue
             if not line.startswith(" ") and "->" in line:
                 left, right = line.split("->")
-                obf = right.strip().rstrip(":")
-                owner_official = left.strip()
-                classes[obf] = owner_official
+                obf_owner = right.strip().rstrip(":")
+                official_owner = left.strip()
+                classes[obf_owner] = official_owner
                 continue
-            match = re.match(r"^\s+(?:\d+:\d+:)?[\w.$\[\]/<>]+ (\S+)\(.*?\) -> (\S+)", line)
-            if match and owner_official:
-                members.append(("m", None, match.group(1), owner_official, match.group(2)))
+            if official_owner is None:
                 continue
-            match = re.match(r"^\s+[\w.$\[\]/<>]+ (\S+) -> (\S+)", line)
-            if match and owner_official:
-                members.append(("f", None, match.group(1), owner_official, match.group(2)))
+            # 9:10:java.lang.Object getA() -> a   (the line numbers are optional)
+            match = re.match(r"^\s+(\d+:\d+:)?(.+\(.*?\))\s*->\s*(\S+)\s*$", line)
+            if match:
+                # the left side is "return type name(args)", and the name is what goes in the table: an
+                # earlier rewrite captured the whole signature there, which made every mapped method a
+                # string like "21:21:java.lang.Object getB()"
+                signature = match.group(2)
+                name = re.search(r"([^\s(]+)\s*\(", signature).group(1)
+                members.append(("m", obf_owner, match.group(3), name, method_descriptor(signature)))
+                continue
+            match = re.match(r"^\s+(?:\d+:\d+:)?(\S+)\s+(\S+)\s*->\s*(\S+)\s*$", line)
+            if match:
+                members.append(("f", obf_owner, match.group(3), match.group(2), type_descriptor(match.group(1))))
     return classes, members
 
 
 def read_intermediary(path: pathlib.Path):
-    """Fabric's Tiny v2: `official` first, `intermediary` second, members under each class."""
+    """Fabric's Tiny v2: `official` first, `intermediary` second, members under each class.
+
+    Returns (classes, members) with members as
+    (kind, obf_class, obf_member, intermediary_class, intermediary_member, descriptor).
+    """
     classes = {}
-    member_rows = []      # (kind, obf_class, obf_member_name, intermediary_class, intermediary_member)
+    members = []
     with path.open(errors="replace") as handle:
         header = handle.readline().split()
         columns = header[3:]
         if "official" not in columns or "intermediary" not in columns:
             raise SystemExit(f"unexpected tiny header: {header}")
         official_at, intermediary_at = columns.index("official"), columns.index("intermediary")
-        current = None
+        obf_class = intermediary_class = None
         for line in handle:
             if line.startswith("c\t"):
                 parts = line.rstrip("\n").split("\t")
                 names = parts[1:]
-                current = (names[official_at], names[intermediary_at])
-                classes[current[0]] = current[1]
-            elif line.lstrip("\t").startswith(("f\t", "m\t")) and current:
-                # member lines are indented with a tab in Tiny v2: "\tf\t<desc>\tofficial\tintermediary"
+                obf_class, intermediary_class = names[official_at], names[intermediary_at]
+                classes[obf_class] = intermediary_class
+            elif line.lstrip("\t").startswith(("f\t", "m\t")) and obf_class:
+                # "\tf\t<descriptor>\tofficial\tintermediary" - the descriptor is the first field, which
+                # the earlier version of this dropped, and dropping it is what let overloads collide
                 parts = line.lstrip("\t").rstrip("\n").split("\t")
                 names = parts[2:]
-                member_rows.append((parts[0], current[0], names[official_at], current[1], names[intermediary_at]))
-    return classes, member_rows
+                members.append((parts[0], obf_class, names[official_at], intermediary_class,
+                                names[intermediary_at], parts[1]))
+    return classes, members
 
 
 def main(argv=None) -> int:
@@ -87,33 +175,65 @@ def main(argv=None) -> int:
     print(f"official mapping: {len(off_classes)} class(es), {len(off_members)} member line(s)")
     print(f"intermediary mapping: {len(int_classes)} class(es), {len(int_members)} member line(s)")
 
-    # obfuscated -> official, by class and by (owner, name) for members
-    off_by_member = {}
-    for kind, _, official_name, official_owner, obf_member in off_members:
-        # keyed by the obfuscated member name, valued by the official one, with one letter for the kind -
-        # the first version of this stored the obfuscated name and used M/F here against m/f from the tiny
-        # file, which composed 10,201 classes and exactly zero members.
-        off_by_member[(kind.lower(), official_owner, obf_member)] = official_name
+    # (kind, obf class, obf member, descriptor) -> official name. The descriptor is in the key because
+    # obfuscated names repeat, and a key without it produced mappings that pointed at a sibling overload.
+    # obfuscated class names, as they appear inside the tiny file's descriptors, to official ones
+    obf_to_official_class = {}
+    for obf, official in off_classes.items():
+        obf_to_official_class[obf] = official.replace(".", "/")
+    for obf, intermediary in int_classes.items():
+        official = off_classes.get(obf)
+        if official:
+            obf_to_official_class.setdefault(intermediary, official.replace(".", "/"))
+
+    official_by_member = {}
+    by_name = {}
+    for kind, obf_class, obf_member, official_name, descriptor in off_members:
+        official_by_member.setdefault((kind, obf_class, obf_member, descriptor), official_name)
+        by_name.setdefault((kind, obf_class, obf_member), set()).add(official_name)
+    unique_by_name = {key: next(iter(names)) for key, names in by_name.items() if len(names) == 1}
 
     classes = {}
     for obf, intermediary in int_classes.items():
         official = off_classes.get(obf)
         if official and intermediary.startswith("net/minecraft/"):
-            classes[intermediary] = official
+            # internal names, with slashes: the remapper puts this value straight into a class reference,
+            # and Mojang's file spells classes the source way, so a dotted value produced a Meteor jar whose
+            # every call was to "net.minecraft.client.Minecraft" - a name that does not resolve as a member
+            # owner, which is what the compiler then complained about.
+            classes[intermediary] = official.replace(".", "/")
+
+    # the mod jar's own descriptors: a mod compiled against intermediary has "Lnet/minecraft/class_310;"
+    # in its descriptors, while the tiny file writes them in its first column's namespace ("La;"), so the
+    # table keys have to be built on the intermediary form
+    obf_to_intermediary = {obf: intermediary for obf, intermediary in int_classes.items()}
 
     fields = {}
     methods = {}
-    for kind, obf_class, obf_member, intermediary_class, intermediary_member in int_members:
+    fields_by_descriptor = {}
+    methods_by_descriptor = {}
+    unnamed = 0
+    ambiguous_name = 0
+    for kind, obf_class, obf_member, intermediary_class, intermediary_member, descriptor in int_members:
         if not intermediary_class.startswith("net/minecraft/"):
             continue
-        official_owner = off_classes.get(obf_class)
-        if not official_owner:
+        # the descriptor first, and only where that leaves nothing, a name that stands for exactly one
+        # official member. A name shared by several is skipped on purpose: guessing is what produced
+        # "Method net.minecraft.util.Tuple.setA() was not found" in the compiler.
+        official_name = official_by_member.get(
+            (kind, obf_class, obf_member, official_descriptor(descriptor, obf_to_official_class)))
+        if not official_name:
+            official_name = unique_by_name.get((kind, obf_class, obf_member))
+            if official_name:
+                ambiguous_name += 1
+        if not official_name:
+            if (kind, obf_class, obf_member) in by_name:
+                unnamed += 1
             continue
-        official_member = off_by_member.get((kind, official_owner, obf_member))
-        if not official_member:
-            continue
-        target = fields if kind == "f" else methods
-        target[(intermediary_class, intermediary_member)] = official_member
+        intermediary_descriptor = rename_in_descriptor(descriptor, obf_to_intermediary)
+        (fields if kind == "f" else methods)[(intermediary_class, intermediary_member)] = official_name
+        (fields_by_descriptor if kind == "f" else methods_by_descriptor)[
+            (intermediary_class, intermediary_member, intermediary_descriptor)] = official_name
 
     out = pathlib.Path(args.out)
     if out.suffix != ".tsv":
@@ -122,11 +242,21 @@ def main(argv=None) -> int:
         out = out.with_suffix(".tsv")
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text("\n".join(f"{was}\t{now}" for was, now in sorted(classes.items())) + "\n")
+    # members are written with their descriptor when one is known: obfuscated names repeat inside a class
+    # (Tuple's field, getA and setA are all "a"), so a name-only key can bind the wrong overload, and the
+    # remapper prefers the four-column form for exactly that reason
     out.with_suffix(".fields.tsv").write_text(
-        "\n".join(f"{owner}\t{was}\t{now}" for (owner, was), now in sorted(fields.items())) + "\n")
+        "\n".join(f"{owner}\t{was}\t{descriptor}\t{now}" for (owner, was, descriptor), now
+                   in sorted(fields_by_descriptor.items()))
+        + "\n" + "\n".join(f"{owner}\t{was}\t{now}" for (owner, was), now in sorted(fields.items())
+                             if (owner, was, rename_in_descriptor("", {})) or True) + "\n")
     out.with_suffix(".methods.tsv").write_text(
-        "\n".join(f"{owner}\t{was}\t{now}" for (owner, was), now in sorted(methods.items())) + "\n")
-    print(f"intermediary -> official: {len(classes)} class(es), {len(fields)} field(s), {len(methods)} method(s)")
+        "\n".join(f"{owner}\t{was}\t{descriptor}\t{now}" for (owner, was, descriptor), now
+                   in sorted(methods_by_descriptor.items()))
+        + "\n" + "\n".join(f"{owner}\t{was}\t{now}" for (owner, was), now in sorted(methods.items())) + "\n")
+    print(f"intermediary -> official: {len(classes)} class(es), {len(fields)} field(s), {len(methods)} method(s)"
+          + (f", {ambiguous_name} by name alone" if ambiguous_name else "")
+          + (f", {unnamed} ambiguous and left out" if unnamed else ""))
     print(f"  wrote {out}, {out.with_suffix('.fields.tsv')}, {out.with_suffix('.methods.tsv')}")
     return 0
 

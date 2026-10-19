@@ -29,6 +29,8 @@ public class ModRemapper {
     private static final Map<String, String> CLASSES = new HashMap<>();
     private static final Map<String, String> FIELDS = new HashMap<>();
     private static final Map<String, String> METHODS = new HashMap<>();
+    private static final Map<String, String> FIELDS_BY_DESCRIPTOR = new HashMap<>();
+    private static final Map<String, String> METHODS_BY_DESCRIPTOR = new HashMap<>();
 
     public static void main(String[] args) throws Exception {
         Path input = Path.of(args[0]);
@@ -59,12 +61,19 @@ public class ModRemapper {
             String[] parts = line.split("\t");
             if (parts.length == 3) {
                 FIELDS.put(parts[0] + "#" + parts[1], parts[2]);
+            } else if (parts.length == 4) {
+                // with a descriptor: preferred, because obfuscated names repeat inside a class
+                FIELDS_BY_DESCRIPTOR.put(parts[0] + "#" + parts[1] + "#" + parts[2], parts[3]);
+                FIELDS.putIfAbsent(parts[0] + "#" + parts[1], parts[3]);
             }
         }
         for (String line : Files.readAllLines(Path.of(prefix + ".methods.tsv"))) {
             String[] parts = line.split("\t");
             if (parts.length == 3) {
                 METHODS.put(parts[0] + "#" + parts[1], parts[2]);
+            } else if (parts.length == 4) {
+                METHODS_BY_DESCRIPTOR.put(parts[0] + "#" + parts[1] + "#" + parts[2], parts[3]);
+                METHODS.putIfAbsent(parts[0] + "#" + parts[1], parts[3]);
             }
         }
     }
@@ -100,6 +109,16 @@ public class ModRemapper {
                         data = rewritten.getBytes(java.nio.charset.StandardCharsets.UTF_8);
                     }
                 }
+                // the entry name is not rewritten by the class visitor, so a remapped jar used to keep its
+                // obfuscated file names ("fzu.class") while the classes inside were official - which makes
+                // the jar useless for anything that looks a class up by name, including this project's
+                // member checker
+                if (name.endsWith(".class")) {
+                    String internal = CLASSES.get(name.substring(0, name.length() - 6));
+                    if (internal != null) {
+                        name = internal.replace('.', '/') + ".class";
+                    }
+                }
                 out.putNextEntry(new ZipEntry(name));
                 out.write(data);
                 out.closeEntry();
@@ -119,17 +138,28 @@ public class ModRemapper {
         Remapper remapper = new Remapper() {
             @Override
             public String map(String internalName) {
-                return CLASSES.getOrDefault(internalName, internalName);
+                String official = CLASSES.get(internalName);
+                if (official == null) {
+                    return internalName;
+                }
+                // a class reference is an internal name: dots here made every remapped call in the mod a
+                // call to a name the compiler could not match against any member ("Method
+                // net.minecraft.util.Tuple.setA() was not found", with the dotted owner in the message)
+                return official.replace('.', '/');
             }
 
             @Override
             public String mapFieldName(String owner, String name, String descriptor) {
-                return FIELDS.getOrDefault(owner + "#" + name, name);
+                String exact = FIELDS_BY_DESCRIPTOR.get(owner + "#" + name + "#" + descriptor);
+                return exact != null ? exact : FIELDS.getOrDefault(owner + "#" + name, name);
             }
 
             @Override
             public String mapMethodName(String owner, String name, String descriptor) {
-                return METHODS.getOrDefault(owner + "#" + name, name);
+                // the descriptor decides between overloads that share an obfuscated name: Tuple's field,
+                // getA and setA are all "a" in the official file
+                String exact = METHODS_BY_DESCRIPTOR.get(owner + "#" + name + "#" + descriptor);
+                return exact != null ? exact : METHODS.getOrDefault(owner + "#" + name, name);
             }
         };
         try {
