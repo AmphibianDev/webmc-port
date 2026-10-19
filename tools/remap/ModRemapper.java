@@ -53,7 +53,10 @@ public class ModRemapper {
             : args[2];
         load(Path.of(prefix));
         System.out.println("mappings: " + CLASSES.size() + " class(es), " + FIELDS.size() + " field(s), "
-            + METHODS.size() + " method(s)");
+            + METHODS.size() + " method(s); by descriptor " + FIELDS_BY_DESCRIPTOR.size() + "/"
+            + METHODS_BY_DESCRIPTOR.size() + "; ownerless by name " + GLOBAL_FIELDS_BY_NAME.size() + "/"
+            + GLOBAL_BY_NAME.size() + ", by descriptor " + GLOBAL_FIELDS_BY_DESCRIPTOR.size() + "/"
+            + GLOBAL_BY_DESCRIPTOR.size() + ", ambiguous " + GLOBAL_AMBIGUOUS.size());
         Files.createDirectories(output.getParent() == null ? Path.of(".") : output.getParent());
         int[] counts = new int[3];   // classes remapped, strings rewritten, nested jars
         writeJar(input, output, counts);
@@ -77,6 +80,15 @@ public class ModRemapper {
                 // with a descriptor: preferred, because obfuscated names repeat inside a class
                 FIELDS_BY_DESCRIPTOR.put(parts[0] + "#" + parts[1] + "#" + parts[2], parts[3]);
                 FIELDS.putIfAbsent(parts[0] + "#" + parts[1], parts[3]);
+                String previousField = GLOBAL_FIELDS_BY_DESCRIPTOR.putIfAbsent(parts[1] + "#" + parts[2], parts[3]);
+                if (previousField != null && !previousField.equals(parts[3])) {
+                    GLOBAL_AMBIGUOUS.add(parts[1] + "#" + parts[2]);
+                }
+                previousField = GLOBAL_FIELDS_BY_NAME.putIfAbsent(parts[1], parts[3]);
+                if (previousField != null && !previousField.equals(parts[3])) {
+                    GLOBAL_FIELDS_BY_NAME.remove(parts[1]);
+                    GLOBAL_AMBIGUOUS.add(parts[1]);
+                }
             }
         }
         for (String line : Files.readAllLines(Path.of(prefix + ".methods.tsv"))) {
@@ -171,6 +183,10 @@ public class ModRemapper {
 
             @Override
             public String mapFieldName(String owner, String name, String descriptor) {
+                if (System.getenv("WEBMC_DEBUG_MEMBER") != null && name.equals(System.getenv("WEBMC_DEBUG_MEMBER"))) {
+                    System.out.println("  [debug] mapFieldName owner=" + owner + " name=" + name
+                        + " descriptor=" + descriptor);
+                }
                 String exact = FIELDS_BY_DESCRIPTOR.get(owner + "#" + name + "#" + descriptor);
                 if (exact != null) {
                     return exact;
