@@ -526,23 +526,37 @@ jobs:
             if [ -f "$CLIENT_JAR" ]; then
               STUB_ARGS="$STUB_ARGS --client $CLIENT_JAR"
             fi
-            python3 tools/build_optional_stubs.py $STUB_ARGS 2>&1 | tail -3 | tee -a /tmp/build.log
+            echo "stubs: scanning /tmp/mods against ${CLIENT_JAR}" | tee -a /tmp/build.log
+            python3 tools/build_optional_stubs.py $STUB_ARGS 2>&1 | tail -6 | tee -a /tmp/build.log
             # The client, read as Java 17. The compiler's class library has WebGL2 and nothing newer, and
-            # the one place that showed up in a build was java.util.SequencedSet: the client's own method
-            # returns it (Java 21) while everything compiled against Fabric's intermediary says Set, and the
-            # compiler then reports the method as missing. tools/backport17.py already exists for the runtime
-            # JVM route and does exactly this - class version 65 to 61, the three sequenced types to their
-            # pre-21 equivalents, and a shim for the calls that need the newer methods - and the mod side is
-            # mapped to the same view by the remapper.
+            # the one place that showed up in a build was java.util.SequencedSet: the client's own code
+            # returns it (Java 21) while everything built against Fabric's intermediary says Set, and the
+            # compiler then reports the method as missing.
+            #
+            # tools/backport17.py is the tool that already does this for the runtime JVM route. It writes
+            # shim sources for the client's own types, so it needs the client *and its libraries* where it
+            # can read them: the runtime route hands it "<dir>/client-j17.jar" with "libs/client/*.jar"
+            # beside it. That layout is recreated here, because without it the tool cannot compile its
+            # shims ("location: package net.minecraft", seven errors, no output).
+            BACKPORT_WORK=/tmp/backport-work
+            rm -rf "$BACKPORT_WORK"
+            mkdir -p "$BACKPORT_WORK/libs/client"
             if [ -f "../engine/port/work/$VERSION/client-named.jar" ]; then
-              python3 tools/backport17.py --input "../engine/port/work/$VERSION/client-named.jar" \
-                --output "../engine/port/work/$VERSION/client-named.jar.backported" 2>&1 | tail -3 | tee -a /tmp/build.log
-              if [ -s "../engine/port/work/$VERSION/client-named.jar.backported" ]; then
-                mv "../engine/port/work/$VERSION/client-named.jar.backported" "../engine/port/work/$VERSION/client-named.jar"
-                echo "the client is backported for the compiler" | tee -a /tmp/build.log
+              cp "../engine/port/work/$VERSION/client-named.jar" "$BACKPORT_WORK/client-j17.jar"
+              find ../engine/port/work/$VERSION/libraries -name '*.jar' -exec cp {} "$BACKPORT_WORK/libs/client/" \; \
+                2>/dev/null || true
+              echo "backport: $(ls "$BACKPORT_WORK/client-j17.jar" | wc -l) client, \
+$(ls "$BACKPORT_WORK/libs/client" | wc -l) libraries" | tee -a /tmp/build.log
+              python3 tools/backport17.py --input "$BACKPORT_WORK/client-j17.jar" \
+                --output "$BACKPORT_WORK/client-j17-out.jar" 2>&1 | tail -5 | tee -a /tmp/build.log
+              if [ -s "$BACKPORT_WORK/client-j17-out.jar" ]; then
+                cp "$BACKPORT_WORK/client-j17-out.jar" "../engine/port/work/$VERSION/client-named.jar"
+                echo "the client is backported to Java 17 for the compiler" | tee -a /tmp/build.log
               else
                 echo "::warning::the backport produced nothing; the client is compiled as it is"
               fi
+            else
+              echo "::warning::no client-named.jar to backport"
             fi
             python3 tools/bake_mods.py --engine ../engine --version "$VERSION" --mods-dir /tmp/mods \
               --report /tmp/bake.json $MAPPING_ARGS $MOD_ARGS 2>&1 | tee -a /tmp/build.log
