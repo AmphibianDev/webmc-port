@@ -1,8 +1,8 @@
 {
  "first_supported": "1.14",
- "loader_count": 254,
+ "loader_count": 255,
  "maven": "https://maven.fabricmc.net",
- "newest_loader": "0.20.0",
+ "newest_loader": "0.20.1",
  "source": {
   "game": "https://meta.fabricmc.net/v2/versions/game",
   "loader": "https://meta.fabricmc.net/v2/versions/loader"
