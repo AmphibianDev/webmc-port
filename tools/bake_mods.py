@@ -748,6 +748,87 @@ def asm_classpath_for(here: pathlib.Path, explicit: str | None = None) -> str:
     return ""
 
 
+def build_optional_stubs(mod_jars: list[pathlib.Path], engine: pathlib.Path, version: str,
+                         prefixes: list[str], scan: pathlib.Path | None = None,
+                         log=print) -> list[pathlib.Path]:
+    """Shapes for the mods' optional dependencies, as a jar added to the set that gets baked.
+
+    Meteor Client carries a Baritone integration, so its classes name baritone.api.IBaritone and friends.
+    Fabric Loader tolerates a missing class until something touches it; a browser client is compiled whole
+    and stops there ("Class baritone.api.IBaritone was not found"). The stubs are generated from the mods'
+    own bytecode, compiled against the client, and handed to the rest of the pipeline as one more jar.
+    """
+    if not prefixes:
+        return mod_jars
+    here = pathlib.Path(__file__).resolve().parent
+    client = engine / "port" / "work" / version / "client-named.jar"
+    scan = scan or pathlib.Path("/tmp/mods")
+    out = scan / "webmc-optional-stubs.jar"
+    command = [sys.executable, str(here / "build_optional_stubs.py"),
+               "--scan", str(scan), "--out", str(out)]
+    for prefix in prefixes:
+        command += ["--prefix", prefix]
+    asm = asm_classpath_for(here, os.environ.get("WEBMC_ASM"))
+    if asm:
+        command += ["--asm", asm]
+    if client.is_file():
+        command += ["--client", str(client)]
+    log(f"  optional dependencies: {', '.join(prefixes)} against {client.name}")
+    result = subprocess.run(command, capture_output=True, text=True)
+    for line in (result.stdout or "").strip().splitlines()[-6:]:
+        log("  " + line)
+    if result.returncode != 0 or not out.is_file():
+        for line in (result.stderr or "").strip().splitlines()[-6:]:
+            log("  ! " + line)
+        log("  ! the stubs were not built; a mod that needs an absent dependency will not compile")
+        return mod_jars
+    log(f"  stubs built: {out.name} ({out.stat().st_size} bytes)")
+    return sorted({*mod_jars, out})
+
+
+def backport_client(engine: pathlib.Path, version: str, log=print) -> bool:
+    """Read the client as Java 17, the way the compiler's class library expects.
+
+    The client's own code returns java.util.SequencedSet where everything built against Fabric's
+    intermediary says java.util.Set, and the compiler reports the method as missing rather than the type.
+    tools/backport17.py already does this for the runtime JVM route; it needs the client and its libraries
+    together, because it compiles shims for the client's own types.
+
+    Runs in here rather than in the workflow because this output is certain to reach the build log: two
+    runs died silently in a shell step whose later lines never produced a line of output.
+    """
+    here = pathlib.Path(__file__).resolve().parent
+    work = pathlib.Path("/tmp/backport-work")
+    client = engine / "port" / "work" / version / "client-named.jar"
+    if not client.is_file():
+        log("  ! no client-named.jar to backport")
+        return False
+    shutil.rmtree(work, ignore_errors=True)
+    (work / "libs" / "client").mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(client, work / "client-j17.jar")
+    libraries = list((engine / "port" / "work" / version / "libraries").rglob("*.jar"))
+    for library in libraries:
+        try:
+            shutil.copyfile(library, work / "libs" / "client" / library.name)
+        except OSError:
+            continue
+    log(f"  backporting the client to Java 17 ({len(libraries)} library jar(s) beside it)")
+    result = subprocess.run([sys.executable, str(here / "backport17.py"),
+                             "--input", str(work / "client-j17.jar"),
+                             "--output", str(work / "client-j17-out.jar")],
+                            capture_output=True, text=True)
+    for line in (result.stdout or "").strip().splitlines()[-4:]:
+        log("  " + line)
+    if result.returncode != 0 or not (work / "client-j17-out.jar").is_file():
+        for line in (result.stderr or "").strip().splitlines()[-6:]:
+            log("  ! " + line)
+        log("  ! the client could not be backported; it is compiled as it is")
+        return False
+    shutil.copyfile(work / "client-j17-out.jar", client)
+    log("  the client is backported to Java 17 for the compiler")
+    return True
+
+
 def bake(engine: pathlib.Path, version: str, mod_jars: list[pathlib.Path], mods_dir: pathlib.Path | None,
          log=print) -> dict:
     """Write the patcher, the hook and the shim, and add the patcher to the version profile."""
@@ -887,12 +968,18 @@ def main(argv=None) -> int:
                         help="Fabric's intermediary mapping file (mappings.tiny)")
     parser.add_argument("--mods-dir", default=None, help="where those jars came from")
     parser.add_argument("--report", default=None)
+    parser.add_argument("--optional-stubs", default=None,
+                        help="comma-separated package prefixes to generate stubs for (baritone), so a mod "
+                             "that treats another mod as optional still compiles; also reads the client as "
+                             "Java 17 first")
     parser.add_argument("--print", action="store_true")
     args = parser.parse_args(argv)
 
     if not args.mods:
         print("nothing to bake: pass --mods")
         return 2
+    if args.optional_stubs:
+        backport_client(pathlib.Path(args.engine), args.version)
     mod_jars = [pathlib.Path(p) for p in args.mods]
     mods_dir = pathlib.Path(args.mods_dir) if args.mods_dir else None
     if args.mappings:
@@ -914,6 +1001,9 @@ def main(argv=None) -> int:
         mods_dir = staging
         mod_jars = sorted(staging.glob("*.jar"))
         print(f"  baking {len(mod_jars)} remapped jar(s) from {staging}")
+        mod_jars = build_optional_stubs(mod_jars, pathlib.Path(args.engine), args.version,
+                                       [p for p in args.optional_stubs.split(",") if p],
+                                       scan=mods_dir)
     report = bake(pathlib.Path(args.engine), args.version, mod_jars, mods_dir)
     print(f"baked {len(report['mods'])} mod(s) into {args.version}: "
           f"entrypoints {', '.join(report['entrypoints']) or 'none'}"
