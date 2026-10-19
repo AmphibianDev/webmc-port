@@ -510,6 +510,19 @@ jobs:
             else
               echo "::warning::mods are being baked without the intermediary->official remap: $OFFICIAL_MAPPINGS or $INTERMEDIARY_MAPPINGS is missing"
             fi
+            # Optional dependencies. Meteor Client carries a Baritone integration, so its classes name
+            # baritone.api.IBaritone and friends, which are not in this build - and a browser client is
+            # compiled whole, so every reference has to resolve. The shapes are generated from the mods'
+            # own bytecode and compiled against the client; nothing is fetched and nothing is committed.
+            CLIENT_JAR="../engine/port/work/$VERSION/client-named.jar"
+            STUB_ARGS="--scan /tmp/mods --prefix baritone --out /tmp/mods/webmc-optional-stubs.jar"
+            if [ -n "$ASM_PATH" ]; then
+              STUB_ARGS="$STUB_ARGS --asm $ASM_PATH"
+            fi
+            if [ -f "$CLIENT_JAR" ]; then
+              STUB_ARGS="$STUB_ARGS --client $CLIENT_JAR"
+            fi
+            python3 tools/build_optional_stubs.py $STUB_ARGS 2>&1 | tail -3 | tee -a /tmp/build.log
             python3 tools/bake_mods.py --engine ../engine --version "$VERSION" --mods-dir /tmp/mods \
               --report /tmp/bake.json $MAPPING_ARGS $MOD_ARGS 2>&1 | tee -a /tmp/build.log
             BAKE_STATUS=${PIPESTATUS[0]}
