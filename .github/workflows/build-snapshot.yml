@@ -263,8 +263,13 @@ jobs:
       - name: Cache what this version always fetches and remaps
         # Measured: a build spends five to ten minutes downloading the client, its libraries and its assets,
         # and remapping the client with Mojang's mappings - and every one of those is a pure function of the
-        # version, the engine commit and the mod set, which is exactly what a cache key can say. The engine's
-        # own work directory is where all of it lands.
+        # version and the engine, which is what a cache key can say.
+        #
+        # engine/port/work/overlays is deliberately NOT cached. It is the patched client with the mod set
+        # already merged into it, so it is a function of these tools as well, and restore-keys only match a
+        # prefix: a key containing the commit still restored the previous commit's overlays, and the build
+        # then compiled the old mod set while the log showed the new one being baked. Three "fixes" in a row
+        # changed nothing until this was found.
         uses: actions/cache@v4
         with:
           path: |
@@ -272,7 +277,6 @@ jobs:
             engine/port/work/${{ steps.want.outputs.version }}/version.json
             engine/port/work/${{ steps.want.outputs.version }}/libraries
             engine/port/work/${{ steps.want.outputs.version }}/assets
-            engine/port/work/overlays/${{ steps.want.outputs.version }}
             ~/.m2/repository
           key: gaius-${{ steps.want.outputs.version }}-${{ steps.engine_kind.outputs.engine }}-${{ github.sha }}-${{ hashFiles('mods/mods.json', 'mods/vendor/*.jar') }}
           restore-keys: |
