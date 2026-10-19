@@ -849,6 +849,46 @@ def backport_client(engine: pathlib.Path, version: str, log=print) -> bool:
     return True
 
 
+def repair_descriptors(mod_jars: list[pathlib.Path], engine: pathlib.Path, version: str, log=print
+                       ) -> list[pathlib.Path]:
+    """Point a mod's method references at the descriptors the client actually has.
+
+    A mod compiled against Fabric's intermediary can disagree with the official client about a JDK type
+    that grew between versions: Meteor asks for FuelValues.fuelItems()Ljava/util/Set; while 1.21.11
+    returns java.util.SequencedSet, and the compiler reports the method as missing - which is true and
+    says nothing about the type. The client is the authority: each reference is checked against it and
+    rewritten to the Java 21 spelling when that is what resolves. Anything unresolved is left alone.
+    """
+    here = pathlib.Path(__file__).resolve().parent
+    client = engine / "port" / "work" / version / "client-named.jar"
+    if not client.is_file():
+        log("  ! no client-named.jar to check the mod set against")
+        return mod_jars
+    asm = asm_classpath_for(here, os.environ.get("WEBMC_ASM"))
+    if not asm:
+        log("  ! no ASM to compile the descriptor repair with")
+        return mod_jars
+    work = pathlib.Path("/tmp/repair")
+    work.mkdir(parents=True, exist_ok=True)
+    javac = subprocess.run(["javac", "--release", "17", "-nowarn", "-cp", asm, "-d", str(work),
+                            str(here / "remap" / "RepairDescriptors.java")], capture_output=True, text=True)
+    if javac.returncode != 0:
+        log(f"  ! the descriptor repair did not compile: {javac.stderr.strip()[:160]}")
+        return mod_jars
+    repaired = []
+    for jar in mod_jars:
+        target = work / f"{jar.stem}-repaired.jar"
+        run = subprocess.run(["java", "-cp", f"{work}{os.pathsep}{asm}", "RepairDescriptors",
+                              str(client), str(jar), str(target)], capture_output=True, text=True)
+        summary = [line for line in run.stdout.splitlines() if line.startswith("repaired ")]
+        if run.returncode == 0 and target.is_file() and summary:
+            repaired.append(target)
+            log("  " + summary[-1] + f" ({jar.name})")
+        else:
+            repaired.append(jar)
+    return repaired
+
+
 def bake(engine: pathlib.Path, version: str, mod_jars: list[pathlib.Path], mods_dir: pathlib.Path | None,
          log=print) -> dict:
     """Write the patcher, the hook and the shim, and add the patcher to the version profile."""
@@ -1040,6 +1080,7 @@ def main(argv=None) -> int:
                 continue
         mods_dir = staging
         mod_jars = sorted(staging.glob("*.jar"))
+        mod_jars = repair_descriptors(mod_jars, pathlib.Path(args.engine), args.version)
         print(f"  baking {len(mod_jars)} remapped jar(s) from {staging}")
         mod_jars = build_optional_stubs(mod_jars, pathlib.Path(args.engine), args.version,
                                        [p for p in args.optional_stubs.split(",") if p],
