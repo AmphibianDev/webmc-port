@@ -65,6 +65,14 @@ public final class Launch {
             }
         }
 
+        // Always: it is the only view of where a client that logs nothing has got to, and it costs one
+        // line every thirty seconds.
+        try {
+            Diag.startMarkReporter();
+        } catch (Throwable problem) {
+            say("mark reporter failed: " + problem);
+        }
+
         say("LAUNCH: " + target);
         try {
             Class<?> type = Class.forName(target, true, Launch.class.getClassLoader());

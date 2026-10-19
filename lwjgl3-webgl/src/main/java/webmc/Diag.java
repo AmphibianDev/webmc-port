@@ -102,6 +102,64 @@ public final class Diag {
         return new RuntimeException(description, problem);
     }
 
+    /**
+     * Say what the client is doing.
+     *
+     * Called from method entry points that tools/backport/TraceCalls.java rewrites into the client, so the
+     * page's log shows the client's own progress through phases that otherwise log nothing at all. Every
+     * mark also goes to /files/marks.log, which is the copy that survives a stalled run.
+     */
+    private static final java.util.ArrayDeque<String> MARKS = new java.util.ArrayDeque<>();
+
+    private static volatile String lastMark;
+    private static int markCount;
+    private static long lastReport = System.currentTimeMillis();
+
+    public static void mark(String where) {
+        synchronized (MARKS) {
+            if (where.equals(lastMark)) {
+                return;                      // the same method re-entering: one line is enough
+            }
+            lastMark = where;
+            lastMark = where;
+            MARKS.addLast(where);
+            while (MARKS.size() > 300) {
+                MARKS.removeFirst();
+            }
+            markCount++;
+            long now = System.currentTimeMillis();
+            if (now - lastReport > 30_000L) {
+                lastReport = now;
+                // Reported from inside the client's own thread: a watchdog thread does not get scheduled
+                // while the render thread is busy (this JVM's threads are cooperative), so the only place
+                // a progress report can be written from is the path the client itself is running.
+                say("MARKS at " + markCount + ": " + String.join(" <- ", MARKS));
+            }
+        }
+    }
+
+    public static String marks() {
+        synchronized (MARKS) {
+            return String.join(" <- ", MARKS) + "  (total " + markCount + ")";
+        }
+    }
+
+    /** Report the latest marks every 30 seconds: the ring buffer is the current state, the log is history. */
+    public static void startMarkReporter() {
+        Thread reporter = new Thread(() -> {
+            for (int round = 0; round < 400; round++) {
+                try {
+                    Thread.sleep(30_000L);
+                    say("MARKS round " + (round + 1) + ": " + marks());
+                } catch (Throwable problem) {
+                    return;
+                }
+            }
+        }, "webmc-marks");
+        reporter.setDaemon(true);
+        reporter.start();
+    }
+
     /** The report so far, for the page to display. */
     public static String report() {
         try {
