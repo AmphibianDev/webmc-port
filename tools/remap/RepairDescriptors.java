@@ -124,10 +124,15 @@ public class RepairDescriptors {
             if (members != null && members.getOrDefault(name, Set.of()).contains(descriptor)) {
                 return true;
             }
-            if (members == null && !SUPERCLASS.containsKey(current) && !MOD_CLASSES.contains(current)) {
-                // neither in the client nor one of the mod's own classes: not ours to judge. The mod's own
-                // classes are compiled together with the mod, so a call into one always resolves.
-                return true;
+            if (members == null && !SUPERCLASS.containsKey(current)) {
+                // not in the client index. If this is the owner itself there is nothing to judge; if it is an
+                // ancestor, this branch is simply a dead end and the walk has to keep looking - returning
+                // true here for java/lang/Object (every hierarchy ends there) made this tool repair nothing
+                // at all while reporting "repaired 0", which is how fuelItems survived three builds.
+                if (current.equals(owner)) {
+                    return true;
+                }
+                continue;
             }
             queue.add(SUPERCLASS.get(current));
             for (String parent : INTERFACES.getOrDefault(current, List.of())) {

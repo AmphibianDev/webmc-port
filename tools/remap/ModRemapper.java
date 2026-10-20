@@ -42,14 +42,6 @@ public class ModRemapper {
     private static final Map<String, String> GLOBAL_BY_NAME = new HashMap<>();
     private static final java.util.Set<String> GLOBAL_AMBIGUOUS = new java.util.HashSet<>();
     private static int throughHierarchy = 0;
-    // Java 21 types that this client does not have: the compiler's class library stops at 17 for the
-    // sequenced collections, so a mod's descriptor that says java/util/SequencedSet has to be read as
-    // java/util/Set - otherwise the compiler reports a method that exists under a different signature
-    // ("Method net.minecraft.world.level.block.entity.FuelValues.fuelItems()Ljava/util/Set; was not found").
-    private static final Map<String, String> JDK_EQUIVALENTS = Map.of(
-            "java/util/SequencedSet", "java/util/Set",
-            "java/util/SequencedCollection", "java/util/Collection",
-            "java/util/SequencedMap", "java/util/Map");
 
     public static void main(String[] args) throws Exception {
         Path input = Path.of(args[0]);
@@ -181,7 +173,7 @@ public class ModRemapper {
             public String map(String internalName) {
                 String official = CLASSES.get(internalName);
                 if (official == null) {
-                    return JDK_EQUIVALENTS.getOrDefault(internalName, internalName);
+                    return internalName;
                 }
                 // a class reference is an internal name: dots here made every remapped call in the mod a
                 // call to a name the compiler could not match against any member ("Method

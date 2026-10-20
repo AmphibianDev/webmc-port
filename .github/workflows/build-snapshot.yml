@@ -713,6 +713,33 @@ jobs:
           fi
           exit "$STATUS"
 
+      - name: What the compiler could not resolve
+        # Always, even when the compile failed - especially then. TeaVM's log carries every symbol it could
+        # not resolve, and the engine's own analyser ranks them by how much of the call graph they block, so
+        # printing it here means one failing build reports the whole compatibility surface instead of the
+        # first error (which is how this project spent a day learning one missing class at a time).
+        if: always()
+        run: |
+          set -uo pipefail
+          for report in engine/port/target/"$VERSION"/teavm-gap.md engine/port/target/teavm-gap.md; do
+            if [ -f "$report" ]; then
+              echo "::group::$report"
+              head -120 "$report"
+              echo "::endgroup::"
+              cp "$report" /tmp/teavm-gap.md 2>/dev/null || true
+            fi
+          done
+          if [ -f /tmp/teavm-gap.md ]; then
+            cp /tmp/teavm-gap.md "unresolved-$VERSION.md" 2>/dev/null || true
+          fi
+          # the raw lines too, so nothing is lost to the analyser's grouping
+          if [ -f /tmp/build.log ]; then
+            echo "::group::unresolved symbols, as the compiler printed them"
+            grep -aoE "(Class|Method|Field) [^ ]+ (was not found|is missing in the classpath)" /tmp/build.log \
+              | sort | uniq -c | sort -rn | head -80 || true
+            echo "::endgroup::"
+          fi
+
       - name: What the engine produced
         run: |
           set -euo pipefail

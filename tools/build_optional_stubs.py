@@ -40,7 +40,27 @@ PRIMITIVES = {"V": "void", "Z": "boolean", "B": "byte", "C": "char", "S": "short
               "F": "float", "D": "double"}
 
 
-def java_type(descriptor: str) -> str:
+def moved(name: str, moves: list) -> str:
+    """`java/lang/management/ManagementFactory` -> `webmc/platform/ManagementFactory` under a move rule."""
+    for rule in moves:
+        source, _, target = rule.partition(":")
+        source = source.rstrip("/")
+        target = target.rstrip("/")
+        if not source:
+            continue
+        # a rule names a class, and applies to it, to its inner classes, and to anything under it if it
+        # names a package: an exact match was missing at first, so every stub was still emitted in java.*
+        # and javac refused the lot ("package exists in another module: java.base")
+        if name == source:
+            return target
+        if name.startswith(source + "$"):
+            return target + name[len(source):]
+        if name.startswith(source + "/"):
+            return target + "/" + name[len(source) + 1:]
+    return name
+
+
+def java_type(descriptor: str, moves=()) -> str:
     """A descriptor, as a Java source type. Generics are dropped and nested classes use a dot."""
     arrays = 0
     while descriptor.startswith("["):
@@ -49,7 +69,8 @@ def java_type(descriptor: str) -> str:
     if descriptor in PRIMITIVES:
         name = PRIMITIVES[descriptor]
     elif descriptor.startswith("L") and descriptor.endswith(";"):
-        name = descriptor[1:-1].replace("$", ".").replace("/", ".")
+        internal = moved(descriptor[1:-1], list(moves))
+        name = internal.replace("$", ".").replace("/", ".")
     else:
         name = "java.lang.Object"
     return name + "[]" * arrays
@@ -111,7 +132,8 @@ class Shapes:
                 self.note_type(name)
 
 
-def sources_for(shapes: Shapes, seed_methods: dict) -> dict:
+def sources_for(shapes: Shapes, seed_methods: dict, moves=()) -> dict:
+    moves = list(moves)
     """One Java file per *outer* type, with inner types nested inside it.
 
     Nesting matters: `baritone.api.Settings$Setting` has to be a class inside `Settings`, because the mods
@@ -121,8 +143,14 @@ def sources_for(shapes: Shapes, seed_methods: dict) -> dict:
     kinds = {}
     for name in shapes.types:
         kinds[name] = "interface" if (shapes.types[name]["interface"] or name in shapes.implemented) else "class"
+    kinds.setdefault("__shell__", "class")
 
     def members(name: str) -> list:
+        if name not in shapes.types:
+            # an inner class can be missing while its outer is provided by the class library (Thread's
+            # nested types, for instance): the outer is then only a shell for nesting, with no members of
+            # its own, and references to the real outer are left alone
+            return []
         shape = shapes.types[name]
         lines = [f"    public {java_type(descriptor)} {field};" for field, descriptor in sorted(shape["fields"])]
         for method_name, descriptor in sorted(shape["methods"]):
@@ -130,20 +158,21 @@ def sources_for(shapes: Shapes, seed_methods: dict) -> dict:
                 continue
             returns = descriptor[descriptor.index(")") + 1:]
             arguments = descriptor[descriptor.index("(") + 1:descriptor.index(")")]
-            parameters = [f"{java_type(piece)} argument{index}"
+            parameters = [f"{java_type(piece, moves)} argument{index}"
                           for index, piece in enumerate(_arguments(arguments))]
             call = f"{method_name}({', '.join(parameters)})"
             if kinds[name] == "interface":
-                lines.append(f"    {java_type(returns)} {call};")
+                lines.append(f"    {java_type(returns, moves)} {call};")
             elif returns == "V":
                 lines.append(f"    public void {call} {{}}")
             else:
-                lines.append(f"    public {java_type(returns)} {call} {{ return {default_value(returns)}; }}")
+                lines.append(f"    public {java_type(returns, moves)} {call}"
+                             f" {{ return {default_value(returns)}; }}")
         if kinds[name] == "class":
             simple = name.rsplit("/", 1)[-1].split("$")[-1]
             for descriptor in sorted(shape["constructors"]) or ["()V"]:
                 arguments = descriptor[descriptor.index("(") + 1:descriptor.index(")")]
-                parameters = [f"{java_type(piece)} argument{index}"
+                parameters = [f"{java_type(piece, moves)} argument{index}"
                               for index, piece in enumerate(_arguments(arguments))]
                 lines.append(f"    public {simple}({', '.join(parameters)}) {{}}")
         return lines
@@ -153,13 +182,14 @@ def sources_for(shapes: Shapes, seed_methods: dict) -> dict:
         children = sorted(other for other in shapes.types
                           if other.startswith(name + "$") and "$" not in other[len(name) + 1:])
         body = members(name) + [""] * (1 if children else 0) + [declaration(child) for child in children]
-        text = f"public {kinds[name]} {simple} {{\n" + "\n".join(body) + "\n}"
+        kind = kinds.get(name, "class")
+        text = f"public {kind} {simple} {{\n" + "\n".join(body) + "\n}"
         return text if not children else text[:-1] + "}\n"
 
     files = {}
     for outer in sorted({name.split("$")[0] for name in shapes.types}):
-        package, _, _simple = outer.rpartition("/")
-        files[outer] = f"package {package.replace('/', '.')};\n\n" + declaration(outer) + "\n"
+        package, _, _simple = moved(outer, list(moves)).rpartition("/")
+        files[moved(outer, list(moves))] = f"package {package.replace('/', '.')};\n\n" + declaration(outer) + "\n"
     return files
 
 
@@ -189,6 +219,12 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--scan", action="append", default=[], help="a jar (or directory of jars) to read")
     parser.add_argument("--prefix", action="append", default=[], help="a package prefix that must be stubbed")
+    parser.add_argument("--class", action="append", default=[], dest="classes",
+                        help="an exact class to stub, in internal form (java/nio/channels/SocketChannel)")
+    parser.add_argument("--move", action="append", default=[],
+                        help="from:to package prefixes, applied to every stub generated. A class in java.* "
+                             "cannot be compiled as itself (javac refuses to define java.* sources), so the "
+                             "shims live in webmc.platform and the references are renamed to match.")
     parser.add_argument("--out", required=True)
     parser.add_argument("--asm", default=None, help="classpath of ASM jars, to compile the scanner")
     parser.add_argument("--client", default=None,
@@ -198,14 +234,15 @@ def main(argv=None) -> int:
                         help="directory to find the client in: the largest .jar in it, which is what it is")
     parser.add_argument("--source-out", default=None, help="keep the generated sources here, to read them")
     args = parser.parse_args(argv)
-    if not args.prefix:
-        print("no --prefix given: nothing to stub")
+    if not args.prefix and not args.classes:
+        print("no --prefix or --class given: nothing to stub")
         return 0
 
     # The scan runs in Java, because that is where class files can be read: tools/ScanRefs.java prints one
     # line per reference and this collects them. It is compiled here, against the ASM jars the build already
     # stages for the mod remap, so nothing new has to be fetched.
-    shapes = Shapes(args.prefix)
+    shapes = Shapes(args.prefix + [name.rsplit("/", 1)[0] + "/" for name in args.classes]
+                    if False else args.prefix + args.classes)
     javac = build_loader.find_javac()
     if not javac:
         print("no javac: the scanner has to be compiled")
@@ -221,7 +258,7 @@ def main(argv=None) -> int:
             print(result.stderr[-2000:])
             return 1
         scan = subprocess.run([java, "-cp", str(compiled) + (":" + args.asm if args.asm else ""), "ScanRefs",
-                               ",".join(args.prefix)] + args.scan, capture_output=True, text=True)
+                               ",".join(args.prefix + args.classes)] + args.scan, capture_output=True, text=True)
     if scan.returncode != 0:
         print(scan.stderr[-2000:])
         return 1
@@ -244,7 +281,35 @@ def main(argv=None) -> int:
         print("nothing referenced from " + ", ".join(args.prefix) + ": no stubs needed")
         return 0
 
-    files = sources_for(shapes, {})
+    # every generated source is emitted under its moved name, and the members' types are rewritten too, so
+    # the stubs refer to each other rather than to classes javac will not let us define
+    original = sources_for
+    def sources_moved(shapes_arg, seed):
+        return original(shapes_arg, seed, args.move)
+    # A stub can name a type that was never collected: a member's return type that only appears inside
+    # another missing class's signature, or an inner class of a missing outer. Every such type needs a
+    # stub too, or javac fails on a name that has no source - which is exactly what "cannot find symbol:
+    # class javax_naming_directory_Attribute" and "package webmc.platform.Thread does not exist" were.
+    def referenced(types) -> set:
+        names = set()
+        for shape in types.values():
+            descriptors = [descriptor for _name, descriptor in shape["fields"] | shape["methods"]]
+            descriptors += list(shape["constructors"])
+            for descriptor in descriptors:
+                for piece in re.findall(r"L([^;]+);", descriptor):
+                    names.add(piece)
+        return names
+
+    for _round in range(4):
+        added = 0
+        for name in sorted(referenced(shapes.types)):
+            if name not in shapes.types and moved(name, list(args.move)) != name:
+                shapes.types[name] = {"interface": False, "methods": set(), "fields": set(),
+                                      "constructors": set()}
+                added += 1
+        if not added:
+            break
+    files = sources_moved(shapes, {})
     out = pathlib.Path(args.out)
     with tempfile.TemporaryDirectory(prefix="webmc-stubs-") as tmp:
         root = pathlib.Path(tmp) / "src"

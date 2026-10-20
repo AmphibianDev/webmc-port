@@ -882,7 +882,10 @@ def repair_descriptors(mod_jars: list[pathlib.Path], engine: pathlib.Path, versi
                               str(client), str(jar), str(target)], capture_output=True, text=True)
         summary = [line for line in run.stdout.splitlines() if line.startswith("repaired ")]
         if run.returncode == 0 and target.is_file() and summary:
-            repaired.append(target)
+            # in place: the bake ships jars from the staging directory, so a repaired copy in /tmp/repair
+            # is a copy nothing reads (that is why 'fuelItems' survived a build whose log said it repaired)
+            shutil.copyfile(target, jar)
+            repaired.append(jar)
             log("  " + summary[-1] + f" ({jar.name})")
         else:
             repaired.append(jar)
