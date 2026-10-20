@@ -38,6 +38,15 @@ import build_loader  # noqa: E402 - the JDK finder that already knows about macO
 PLATFORM_PACKAGES = ("java/lang/management/", "java/nio/channels/", "java/net/", "javax/", "jdk/",
                      "java/awt/", "java/time/", "java/security/", "java/nio/file/")
 
+# The packages the compiler has actually named. Both callers use this list: the bake rewrites the mod set
+# (which the patch chain merges), and a later step rewrites the patched client (which the engine's own
+# patch chain has already been over - renaming inside the client *before* that chain breaks it, because the
+# patcher looks for instructions it can no longer find: "Server offline authentication-service patch point
+# was not found").
+KNOWN = ("java/lang/management/", "java/nio/channels/", "java/net/", "java/sql/", "java/io/",
+         "java/lang/reflect/", "javax/management/", "javax/net/", "org/jboss/",
+         "org/spongepowered/asm/mixin/", "net/fabricmc/")
+
 TARGET_PACKAGE = "webmc/platform"
 
 PRIMITIVES = {"V": "void", "Z": "boolean", "B": "byte", "C": "char", "S": "short", "I": "int", "J": "long",
@@ -215,6 +224,30 @@ def write_rewrite_tables(work: pathlib.Path, names: dict, methods: list, fields:
 
 
 
+def find_classlib(hint: pathlib.Path, log) -> pathlib.Path | None:
+    """The compiler's class library: from a directory that might hold a maven cache, or from Maven Central."""
+    if hint.is_dir():
+        for candidate in (hint.glob("org/teavm/teavm-classlib/*/teavm-classlib-*.jar"),
+                          hint.glob("**/teavm-classlib-*.jar")):
+            for path in sorted(candidate):
+                return path
+    cached = pathlib.Path("/tmp/teavm/teavm-classlib-0.15.0.jar")
+    if cached.is_file() and cached.stat().st_size > 1_000_000:
+        return cached
+    cached.parent.mkdir(parents=True, exist_ok=True)
+    url = ("https://repo1.maven.org/maven2/org/teavm/teavm-classlib/0.15.0/"
+           "teavm-classlib-0.15.0.jar")
+    log(f"  fetching the compiler's class library: {url}")
+    try:
+        import urllib.request
+        with urllib.request.urlopen(url, timeout=180) as response:
+            cached.write_bytes(response.read())
+        return cached
+    except Exception as problem:
+        log(f"  ! could not fetch it ({problem})")
+        return None
+
+
 def run(command, **kwargs):
     return subprocess.run(command, capture_output=True, text=True, **kwargs)
 
@@ -304,6 +337,8 @@ def main(argv=None) -> int:
     parser.add_argument("--mods-dir", default=None, help="where the mod jars are, and where the stubs land")
     parser.add_argument("--asm", required=True, help="classpath of ASM jars")
     parser.add_argument("--out", required=True, help="directory for the generated stub jar")
+    parser.add_argument("--known", action="store_true",
+                        help="use the shared set of packages the compiler reported (see KNOWN)")
     parser.add_argument("--only", action="append", default=[],
                         help="restrict stubbing to this class or package (a trailing / means package). The "
                              "detector is deliberately wider than the compiler: it reads the class library "
@@ -323,7 +358,9 @@ def main(argv=None) -> int:
     java = str(pathlib.Path(javac).parent / "java")
     classlib = pathlib.Path(args.classlib)
     if not classlib.is_file():
-        log(f"! the class library is missing: {classlib}")
+        classlib = find_classlib(classlib, log)
+    if classlib is None or not classlib.is_file():
+        log(f"! the class library is missing: {args.classlib}")
         return 2
 
     scan = []
@@ -349,11 +386,12 @@ def main(argv=None) -> int:
                 break
             if pass_number > 1:
                 log(f"  pass {pass_number}: {len(missing)} more class(es): {', '.join(missing[:4])}")
-            if args.only:
+            wanted_set = list(args.only) + (list(KNOWN) if args.known else [])
+            if wanted_set:
                 before = len(missing)
                 missing = [name for name in missing
                            if any(name == wanted or (wanted.endswith("/") and name.startswith(wanted))
-                                  or name.startswith(wanted + "$") for wanted in args.only)]
+                                  or name.startswith(wanted + "$") for wanted in wanted_set)]
                 log(f"  {len(missing)} of {before} missing class(es) are in the requested set")
                 if not missing:
                     # the detector is wider than the compiler on purpose: what is left is out of scope for

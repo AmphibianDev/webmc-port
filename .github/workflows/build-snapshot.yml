@@ -682,6 +682,31 @@ jobs:
           fi
           exit "$STATUS"
 
+      - name: Platform compatibility pass
+        # After the patch chain, before the compiler. The client is rewritten here rather than in the bake
+        # because the engine's own patcher looks for specific instructions in the client it patches, and a
+        # renamed reference makes it fail ("Server offline authentication-service patch point was not
+        # found"). The mod set was already done in the bake - the chain merges those classes, it does not
+        # look for instructions in them.
+        if: steps.engine_kind.outputs.kind != 'eaglercraft-workspace'
+        working-directory: ours
+        run: |
+          set -uo pipefail
+          VERSION="${{ steps.want.outputs.version }}"
+          # the ASM jars this build already stages for the mod remap, or the engine's own
+          ASM_JARS="$(ls /tmp/mods/asm*.jar 2>/dev/null | tr '\n' ':')"
+          [ -n "$ASM_JARS" ] || ASM_JARS="$(find ../engine -name 'asm-*.jar' 2>/dev/null | sort -u | tr '\n' ':')"
+          PATCHED="../engine/port/work/overlays/$VERSION/client-named-$VERSION-gaius.jar"
+          if [ ! -f "$PATCHED" ]; then
+            echo "::warning::no patched client to check ($PATCHED)"
+            exit 0
+          fi
+          python3 tools/platform_shims.py \
+            --classlib ../engine/port/work/maven \
+            --client "$PATCHED" \
+            --mods-dir "../engine/port/work/$VERSION/webmc-mods" \
+            --asm "$ASM_JARS" --known --out /tmp/webmc-platform 2>&1 | tail -20 | tee -a /tmp/build.log
+
       - name: Compile, link and package the release
         if: steps.engine_kind.outputs.kind != 'eaglercraft-workspace'
         env:

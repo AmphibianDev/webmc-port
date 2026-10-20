@@ -905,18 +905,15 @@ def platform_shims(mod_jars: list[pathlib.Path], engine: pathlib.Path, version: 
     mods_dir = mod_jars[0].parent if mod_jars else None
     command = [sys.executable, str(here / "platform_shims.py"), "--classlib", str(classlib),
                "--asm", asm, "--out", "/tmp/webmc-platform"]
-    if client.is_file():
-        command += ["--client", str(client)]
+    # deliberately not the client: the engine's patch chain runs after the bake and looks for specific
+    # instructions in it, so the client is done later, once the chain has been over it (see the workflow's
+    # platform step). Rewriting it here made the chain fail with "Server offline authentication-service
+    # patch point was not found".
     if mods_dir:
         command += ["--mods-dir", str(mods_dir)]
-    # What the compiler has actually reported, and nothing more. The detector's full list includes classes
-    # the compiler can resolve anyway (its class library provides some by substitution), and renaming those
-    # inside the client changes what the engine's own patch sources compile against - "class file for
-    # webmc.platform.CompletableFuture not found" was that mistake.
-    for wanted in ("java/lang/management/", "java/nio/channels/", "java/net/", "java/sql/", "java/io/",
-                   "java/lang/reflect/", "javax/management/", "javax/net/", "org/jboss/",
-                   "org/spongepowered/asm/mixin/", "net/fabricmc/"):
-        command += ["--only", wanted]
+    # What the compiler has actually reported, and nothing more: the detector's full list includes classes
+    # the compiler can resolve anyway, and renaming those changes API surface for no reason.
+    command += ["--known"]
     result = subprocess.run(command, capture_output=True, text=True)
     for line in (result.stdout or "").strip().splitlines():
         log("  " + line)
