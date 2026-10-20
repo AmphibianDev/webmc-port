@@ -51,7 +51,12 @@ public class ScanRefs {
             return false;
         }
         for (String prefix : PREFIXES) {
-            if (name.startsWith(prefix)) {
+            // a class name matches itself and its inner classes; a name ending in '/' is a package. A plain
+            // string prefix is wrong here: "java/lang/reflect/Parameter" matched "ParameterizedType", which
+            // put a stub in java.* and made javac refuse the whole set.
+            if (name.equals(prefix)
+                    || (prefix.endsWith("/") && name.startsWith(prefix))
+                    || name.startsWith(prefix + "$")) {
                 return true;
             }
         }

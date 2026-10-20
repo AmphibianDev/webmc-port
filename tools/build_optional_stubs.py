@@ -103,7 +103,10 @@ class Shapes:
         self.implemented = set()  # types some mod class inherits from, which must be interfaces
 
     def wanted(self, name: str) -> bool:
-        return any(name.startswith(prefix) for prefix in self.prefixes)
+        # the same rule the scanner uses: a class name matches itself and its inner classes, a name ending
+        # in '/' is a package. A bare string prefix over-collects (Parameter matched ParameterizedType)
+        return any(name == prefix or (prefix.endswith("/") and name.startswith(prefix))
+                   or name.startswith(prefix + "$") for prefix in self.prefixes)
 
     def note_type(self, name: str, is_interface: bool = False) -> dict:
         if name not in self.types:
@@ -163,7 +166,8 @@ def sources_for(shapes: Shapes, seed_methods: dict, moves=()) -> dict:
             # its own, and references to the real outer are left alone
             return []
         shape = shapes.types[name]
-        lines = [f"    public {java_type(descriptor)} {field};" for field, descriptor in sorted(shape["fields"])]
+        lines = [f"    public {java_type(descriptor, moves, generated)} {field};"
+                 for field, descriptor in sorted(shape["fields"])]
         for method_name, descriptor in sorted(shape["methods"]):
             if method_name in OBJECT_METHODS:
                 continue
@@ -260,6 +264,10 @@ def main(argv=None) -> int:
                              "compiler needs the client on its classpath")
     parser.add_argument("--client-dir", default=None,
                         help="directory to find the client in: the largest .jar in it, which is what it is")
+    parser.add_argument("--extra-source", action="append", default=[],
+                        help="a handwritten source to compile with the stubs: it may refer to the stub types, "
+                             "which is what lets a helper stand in for a platform method whose signature "
+                             "names a class the compiler does not have")
     parser.add_argument("--source-out", default=None, help="keep the generated sources here, to read them")
     args = parser.parse_args(argv)
     if not args.prefix and not args.classes:
@@ -345,6 +353,11 @@ def main(argv=None) -> int:
             path = root / (name + ".java")
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(text)
+        for extra in args.extra_source:
+            source = pathlib.Path(extra)
+            target = root / source.name          # it declares its own package, so it lands at the root
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(source.read_text())
         if args.source_out:
             directory = pathlib.Path(args.source_out)
             directory.mkdir(parents=True, exist_ok=True)

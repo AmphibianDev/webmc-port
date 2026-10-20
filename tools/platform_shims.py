@@ -40,6 +40,180 @@ PLATFORM_PACKAGES = ("java/lang/management/", "java/nio/channels/", "java/net/",
 
 TARGET_PACKAGE = "webmc/platform"
 
+PRIMITIVES = {"V": "void", "Z": "boolean", "B": "byte", "C": "char", "S": "short", "I": "int", "J": "long",
+              "F": "float", "D": "double"}
+
+# The methods and fields the compiler lacks *on classes it has*, with what to do about each. A stub cannot
+# help here: the class exists in the class library, so the only way through is to point the call somewhere
+# else. Each entry is (owner, name, descriptor) -> (helper, kind):
+#   noop       nothing to do, and that is the truthful implementation
+#   throw      a browser cannot do this at all, so it fails loudly where it is called
+#   zipStream  expressible with what the class library has
+#   emptyArray / emptySet   nothing to report, so nothing is reported
+#   constant   a field that only needs a value
+METHOD_POLICY = {
+    ("java/lang/Thread", "onSpinWait", "()V"):
+        ("onSpinWait", "noop"),
+    ("java/io/RandomAccessFile", "getChannel", "()Ljava/nio/channels/FileChannel;"):
+        ("getChannel", "throw"),
+    ("java/net/URLConnection", "getContent", "()Ljava/lang/Object;"):
+        ("getContent", "throw"),
+    ("java/util/zip/ZipFile", "stream", "()Ljava/util/stream/Stream;"):
+        ("zipStream", "zipStream"),
+    ("java/lang/reflect/Method", "getParameters", "()[Ljava/lang/reflect/Parameter;"):
+        ("getParameters", "emptyArray"),
+    ("java/lang/reflect/Field", "accessFlags", "()Ljava/util/Set;"):
+        ("accessFlags", "emptySet"),
+    # Meteor's event bus resolves its listeners through MethodHandles, which a browser cannot do
+    # reflectively. These throw for now so the build can see the rest of the surface; replacing orbit's
+    # listener with one that calls the lambda directly is the real fix and is next.
+    ("java/lang/invoke/MethodHandles$Lookup", "findStatic",
+     "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/MethodHandle;"):
+        ("noFindStatic", "throw"),
+    ("java/lang/invoke/MethodHandles$Lookup", "findVirtual",
+     "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/MethodHandle;"):
+        ("noFindVirtual", "throw"),
+    ("java/lang/invoke/MethodType", "methodType",
+     "(Ljava/lang/Class;Ljava/lang/Class;)Ljava/lang/invoke/MethodType;"):
+        ("noMethodType", "throw"),
+    ("java/lang/invoke/MethodHandle", "invoke", "()Ljava/util/function/Consumer;"):
+        ("noInvoke", "throw"),
+    ("java/lang/invoke/MethodHandle", "invoke", "(Ljava/lang/Object;)Ljava/util/function/Consumer;"):
+        ("noInvokeWith", "throw"),
+}
+
+FIELD_POLICY = {
+    ("java/awt/Color", "LIGHT_GRAY", "Ljava/awt/Color;"):
+        ("LIGHT_GRAY", "constant"),
+}
+
+
+def java_source_type(descriptor: str, names: dict) -> str:
+    """A descriptor as Java source, after the renames: arrays first, then primitives, then objects.
+
+    The first attempt stripped characters off the ends of the descriptor, which turned an array of a stub
+    type into `[Lwebmc.platform.Parameter` - javac said no, twenty-seven times.
+    """
+    arrays = 0
+    while descriptor.startswith("["):
+        arrays += 1
+        descriptor = descriptor[1:]
+    if descriptor == "V":
+        base = "void"
+    elif descriptor in PRIMITIVES:
+        base = PRIMITIVES[descriptor]
+    elif descriptor.startswith("L") and descriptor.endswith(";"):
+        internal = descriptor[1:-1]
+        # a type we are stubbing keeps its binary name (webmc.platform.Outer$Inner); a type that lives
+        # elsewhere - java.lang.invoke.MethodHandles$Lookup, say - is written the source way, because javac
+        # will not resolve a '$' in a qualified name against a real module
+        if internal in names:
+            base = names[internal].replace("/", ".")
+        else:
+            base = internal.replace("$", ".").replace("/", ".")
+    else:
+        base = "java.lang.Object"
+    return base + "[]" * arrays
+
+
+def rename_descriptor(descriptor: str, names: dict) -> str:
+    """Apply the class renames to a descriptor, so a helper's signature matches the rewritten call site."""
+    for was, now in names.items():
+        descriptor = descriptor.replace("L" + was + ";", "L" + now + ";")
+    return descriptor
+
+
+def helper_source(names: dict, methods: list, fields: list) -> str:
+    """The Java for every helper the policy asked for, in the package the stubs live in."""
+    body = []
+    for key, (helper, kind) in sorted(METHOD_POLICY.items()):
+        owner, name, descriptor = key
+        if (owner, name, descriptor) not in {(m[0], m[1], m[2]) for m in methods}:
+            continue
+        returns = descriptor[descriptor.index(")") + 1:]
+        arguments = descriptor[descriptor.index("(") + 1:descriptor.index(")")]
+        parameters = [f"{java_source_type('L' + owner + ';', names)} receiver"]
+        for index, piece in enumerate(_argument_descriptors(arguments)):
+            parameters.append(f"{java_source_type(piece, names)} argument{index}")
+        result_type = java_source_type(returns, names)
+        signature = f"public static {result_type} {helper}({', '.join(parameters)})"
+        if kind == "noop":
+            body.append(f"    {signature} {{ }}")
+        elif kind == "throw":
+            body.append(f"    {signature} {{ throw new UnsupportedOperationException("
+                        f"\"not available in a browser: {owner.replace('/', '.')}.{name}\"); }}")
+        elif kind == "zipStream":
+            body.append(f"""    {signature} {{
+        java.util.List<java.util.zip.ZipEntry> entries = new java.util.ArrayList<>();
+        java.util.Enumeration<? extends java.util.zip.ZipEntry> enumeration = receiver.entries();
+        while (enumeration.hasMoreElements()) {{
+            entries.add(enumeration.nextElement());
+        }}
+        return entries.stream();
+    }}""")
+        elif kind == "emptyArray":
+            body.append(f"    {signature} {{ return new {result_type[:-2]}[0]; }}")
+        elif kind == "emptySet":
+            body.append(f"    {signature} {{ return java.util.Collections.emptySet(); }}")
+    for key, (helper, kind) in sorted(FIELD_POLICY.items()):
+        owner, name, descriptor = key
+        if (owner, name, descriptor) not in {(f[0], f[1], f[2]) for f in fields}:
+            continue
+        body.append(f"    public static final {java_source_type(descriptor, names)} {helper} = null;")
+    if not body:
+        return ""
+    return ("package webmc.platform;\n\n// GENERATED by tools/platform_shims.py: the helpers that stand in for\n"
+            "// platform methods the browser compiler does not have. See METHOD_POLICY there for why each\n"
+            "// one is a no-op, a real implementation, or a loud failure.\n"
+            "public final class Support {\n\n" + "\n\n".join(body) + "\n}\n")
+
+
+def _argument_descriptors(arguments: str) -> list:
+    pieces, current, index = [], "", 0
+    while index < len(arguments):
+        character = arguments[index]
+        if character == "[":
+            current += character
+            index += 1
+            continue
+        if character == "L":
+            end = arguments.index(";", index)
+            pieces.append(current + arguments[index:end + 1])
+            current = ""
+            index = end + 1
+            continue
+        pieces.append(current + character)
+        current = ""
+        index += 1
+    return pieces
+
+
+def write_rewrite_tables(work: pathlib.Path, names: dict, methods: list, fields: list) -> pathlib.Path:
+    calls, statics = [], []
+    for key, (helper, kind) in sorted(METHOD_POLICY.items()):
+        owner, name, descriptor = key
+        if (owner, name, descriptor) not in {(m[0], m[1], m[2]) for m in methods}:
+            continue
+        new_owner = names.get(owner, owner)
+        new_descriptor = rename_descriptor(descriptor, names)
+        receiver = "L" + new_owner + ";"
+        helper_descriptor = "(" + receiver + new_descriptor[1:]
+        calls.append("\t".join([new_owner, name, new_descriptor, f"{TARGET_PACKAGE}/Support", helper,
+                                 helper_descriptor]))
+    for key, (helper, kind) in sorted(FIELD_POLICY.items()):
+        owner, name, descriptor = key
+        if (owner, name, descriptor) not in {(f[0], f[1], f[2]) for f in fields}:
+            continue
+        new_descriptor = rename_descriptor(descriptor, names)
+        statics.append("\t".join([names.get(owner, owner), name, new_descriptor,
+                                   f"{TARGET_PACKAGE}/Support", helper, new_descriptor]))
+    path = work / "calls.tsv"
+    path.write_text("".join(line + "\n" for line in calls))
+    path.with_suffix(".fields.tsv").write_text("".join(line + "\n" for line in statics))
+    return path
+
+
+
 
 def run(command, **kwargs):
     return subprocess.run(command, capture_output=True, text=True, **kwargs)
@@ -66,12 +240,18 @@ def missing_classes(java: str, tools: pathlib.Path, asm: str, classlib: pathlib.
     classes, methods, fields = [], [], []
     for line in result.stdout.splitlines():
         parts = line.split("\t")
-        if parts[0] == "class" and len(parts) > 1:
-            classes.append(parts[1])
+        if parts[0] == "class" and len(parts) > 1 and parts[1].strip():
+            classes.append(parts[1].strip())
         elif parts[0] == "method" and len(parts) > 1:
-            methods.append(parts[1])
+            # the scanner prints "owner name descriptor" as one field: splitting it here is what the policy
+            # table keys on, and leaving it as a string meant every entry silently matched nothing
+            piece = parts[1].split(" ")
+            if len(piece) == 3:
+                methods.append(tuple(piece))
         elif parts[0] == "field" and len(parts) > 1:
-            fields.append(parts[1])
+            piece = parts[1].split(" ")
+            if len(piece) == 3:
+                fields.append(tuple(piece))
     summary = [line for line in result.stdout.splitlines() if line.startswith("# checked")]
     log("  " + (summary[-1] if summary else "no summary"))
     return classes, methods, fields
@@ -93,7 +273,7 @@ def target_names(missing: list) -> dict:
 
 
 def write_table(work: pathlib.Path, names: dict) -> pathlib.Path:
-    prefix = work / "platform-rename"
+    prefix = work / "platform-rename.tsv"
     prefix.write_text("".join(f"{was}\t{now}\n" for was, now in sorted(names.items())))
     prefix.with_suffix(".fields.tsv").write_text("")
     prefix.with_suffix(".methods.tsv").write_text("")
@@ -152,52 +332,69 @@ def main(argv=None) -> int:
         work = pathlib.Path(tmp)
         tools = compile_tools(javac, args.asm, work, log)
 
-        # 1. what does the compiler lack that these jars reference?
-        missing, methods, fields = missing_classes(java, tools, args.asm, classlib, scan, log)
-        if not missing:
+        # 1. detect, stub, rename - repeated, because generating stubs can introduce references that were
+        #    not there before (a stub whose method returns a type nothing had mentioned yet)
+        all_names = {}
+        for pass_number in range(1, 7):
+            missing, methods, fields = missing_classes(java, tools, args.asm, classlib, scan, log)
+            if not missing:
+                log(f"  pass {pass_number}: nothing missing")
+                break
+            if pass_number > 1:
+                log(f"  pass {pass_number}: {len(missing)} more class(es): {', '.join(missing[:4])}")
+            by_package = {}
+            for name in missing:
+                by_package.setdefault(name.rpartition("/")[0], []).append(name)
+            log(f"  {len(missing)} class(es) the compiler does not have, from {len(by_package)} package(s):")
+            for package, group in sorted(by_package.items(), key=lambda item: -len(item[1]))[:8]:
+                log(f"    {len(group):3d}  {package}")
+
+            # 2. shapes for them, generated from how they are used, emitted under our own package
+            names = {**all_names, **target_names(missing)}
+            all_names = names
+            stubs = pathlib.Path(args.out) / "webmc-platform-stubs.jar"
+            stubs.parent.mkdir(parents=True, exist_ok=True)
+            command = [sys.executable, str(ROOT / "tools" / "build_optional_stubs.py"),
+                       "--asm", args.asm, "--out", str(stubs),
+                       "--client", str(args.client or scan[0])]
+            for path in scan:
+                command += ["--scan", str(path)]
+            for source in missing:
+                command += ["--class", source]
+            for source, target in names.items():
+                command += ["--move", f"{source}:{target}"]
+            helpers = helper_source(names, methods, fields)
+            if helpers:
+                extra = work / "Support.java"
+                extra.write_text(helpers)
+                command += ["--extra-source", str(extra)]
+            result = run(command)
+            if result.returncode != 0 or not stubs.is_file():
+                log(result.stdout[-2000:])
+                log(result.stderr[-2000:])
+                log("! the platform stubs could not be built")
+                return 1
+            for line in result.stdout.strip().splitlines()[-3:]:
+                log("  " + line)
+
+            # 3. rename every reference to them, in the client and in the mods, and point the calls the
+            #    compiler cannot make at the helpers
+            table = write_table(work, names)
+            rewrites = write_rewrite_tables(work, names, methods, fields)
+            os.environ["WEBMC_CALL_REWRITES"] = str(rewrites)
+            renamed = 0
+            for jar in scan:
+                if rename(java, tools, args.asm, table, jar, work, log):
+                    renamed += 1
+            log(f"  renamed references in {renamed} jar(s)")
+
+            if args.mods_dir:
+                shutil.copyfile(stubs, pathlib.Path(args.mods_dir) / stubs.name)
+                log(f"  stub jar shipped as {stubs.name}")
+
+        if not all_names:
             log("  nothing platform-shaped is missing: no stubs needed")
             return 0
-        by_package = {}
-        for name in missing:
-            by_package.setdefault(name.rpartition("/")[0], []).append(name)
-        log(f"  {len(missing)} class(es) the compiler does not have, from {len(by_package)} package(s):")
-        for package, names in sorted(by_package.items(), key=lambda item: -len(item[1]))[:8]:
-            log(f"    {len(names):3d}  {package}")
-
-        # 2. shapes for them, generated from how they are used, emitted under our own package
-        names = target_names(missing)
-        stubs = pathlib.Path(args.out) / "webmc-platform-stubs.jar"
-        stubs.parent.mkdir(parents=True, exist_ok=True)
-        moves = [f"{source}:{target}" for source, target in names.items()]
-        command = [sys.executable, str(ROOT / "tools" / "build_optional_stubs.py"),
-                   "--asm", args.asm, "--out", str(stubs),
-                   "--client", str(args.client or scan[0]), "--source-out", str(work / "sources")]
-        for path in scan:
-            command += ["--scan", str(path)]
-        for source in missing:
-            command += ["--class", source]
-        for move in moves:
-            command += ["--move", move]
-        result = run(command)
-        if result.returncode != 0 or not stubs.is_file():
-            log(result.stdout[-2000:])
-            log(result.stderr[-2000:])
-            log("! the platform stubs could not be built")
-            return 1
-        for line in result.stdout.strip().splitlines()[-3:]:
-            log("  " + line)
-
-        # 3. rename every reference to them, in the client and in the mods
-        table = write_table(work, names)
-        renamed = 0
-        for jar in scan:
-            if rename(java, tools, args.asm, table, jar, work, log):
-                renamed += 1
-        log(f"  renamed references in {renamed} jar(s)")
-
-        if args.mods_dir:
-            shutil.copyfile(stubs, pathlib.Path(args.mods_dir) / stubs.name)
-            log(f"  stub jar shipped as {stubs.name}")
 
         names_path = ROOT / "tools" / "platform-shims.json"
         names_path.write_text(json.dumps({"stubbed": names, "methods": methods, "fields": fields},

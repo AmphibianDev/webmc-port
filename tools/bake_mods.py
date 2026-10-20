@@ -849,6 +849,78 @@ def backport_client(engine: pathlib.Path, version: str, log=print) -> bool:
     return True
 
 
+def teavm_classlib(engine: pathlib.Path, log=print) -> pathlib.Path | None:
+    """The compiler's class library jar, from wherever this machine has it - or from Maven Central.
+
+    Everything the platform stage does is measured against this jar: it is the only definition of what the
+    compiler can and cannot resolve. The engine downloads it into its own maven repository during the
+    compile (after the bake), so on a runner it has to be fetched here instead.
+    """
+    version = "0.15.0"
+    roots = [engine / "port" / "work" / "maven", engine.parent.parent / "work" / "maven",
+             pathlib.Path.home() / ".m2" / "repository"]
+    for root in roots:
+        for candidate in root.glob(f"org/teavm/teavm-classlib/{version}/teavm-classlib-{version}.jar"):
+            return candidate
+        for candidate in root.glob(f"org/teavm/teavm-classlib/*/teavm-classlib-*.jar"):
+            return candidate
+    target = pathlib.Path("/tmp/teavm") / f"teavm-classlib-{version}.jar"
+    if target.is_file() and target.stat().st_size > 1_000_000:
+        return target
+    target.parent.mkdir(parents=True, exist_ok=True)
+    url = (f"https://repo1.maven.org/maven2/org/teavm/teavm-classlib/{version}/"
+           f"teavm-classlib-{version}.jar")
+    log(f"  fetching the compiler's class library: teavm-classlib-{version}.jar")
+    try:
+        import urllib.request
+        with urllib.request.urlopen(url, timeout=180) as response:
+            target.write_bytes(response.read())
+            return target
+    except Exception as problem:
+        log(f"  ! could not fetch the class library ({problem}); the network resolver on this machine "
+            f"answers 0.0.0.0 for some hosts - see the note in tools/platform_shims.py")
+        return None
+
+
+def platform_shims(mod_jars: list[pathlib.Path], engine: pathlib.Path, version: str, log=print
+                   ) -> list[pathlib.Path]:
+    """Point the client and the mod set at browser-safe stubs for platform APIs the compiler lacks.
+
+    A browser compiler implements a subset of java.base, and a real mod set leaves that subset immediately:
+    Meteor's bundled Discord IPC opens a SocketChannel, reads a RuntimeMXBean and takes a file channel, and
+    the client's own SystemReport reads one too. The stage detects every missing class against the class
+    library, generates stubs in webmc.platform (javac will not let us define java.*), renames the
+    references, and ships the stubs with the mod set.
+    """
+    here = pathlib.Path(__file__).resolve().parent
+    client = engine / "port" / "work" / version / "client-named.jar"
+    classlib = teavm_classlib(engine, log)
+    if classlib is None:
+        log("  ! no class library: the platform stage cannot run")
+        return mod_jars
+    asm = asm_classpath_for(here, os.environ.get("WEBMC_ASM"))
+    if not asm:
+        log("  ! no ASM: the platform stage cannot run")
+        return mod_jars
+    mods_dir = mod_jars[0].parent if mod_jars else None
+    command = [sys.executable, str(here / "platform_shims.py"), "--classlib", str(classlib),
+               "--asm", asm, "--out", "/tmp/webmc-platform"]
+    if client.is_file():
+        command += ["--client", str(client)]
+    if mods_dir:
+        command += ["--mods-dir", str(mods_dir)]
+    result = subprocess.run(command, capture_output=True, text=True)
+    for line in (result.stdout or "").strip().splitlines():
+        log("  " + line)
+    if result.returncode != 0:
+        for line in (result.stderr or "").strip().splitlines()[-8:]:
+            log("  ! " + line)
+        log("  ! the platform stage did not finish; unresolved platform references will fail the compile")
+        return mod_jars
+    # the stubs are one more jar in the set, and the jars on disk have changed
+    return sorted(set(mod_jars) | set(mods_dir.glob("*.jar"))) if mods_dir else mod_jars
+
+
 def repair_descriptors(mod_jars: list[pathlib.Path], engine: pathlib.Path, version: str, log=print
                        ) -> list[pathlib.Path]:
     """Point a mod's method references at the descriptors the client actually has.
@@ -1084,6 +1156,7 @@ def main(argv=None) -> int:
         mods_dir = staging
         mod_jars = sorted(staging.glob("*.jar"))
         mod_jars = repair_descriptors(mod_jars, pathlib.Path(args.engine), args.version)
+        mod_jars = platform_shims(mod_jars, pathlib.Path(args.engine), args.version)
         print(f"  baking {len(mod_jars)} remapped jar(s) from {staging}")
         mod_jars = build_optional_stubs(mod_jars, pathlib.Path(args.engine), args.version,
                                        [p for p in args.optional_stubs.split(",") if p],

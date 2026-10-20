@@ -31,6 +31,15 @@ public class ModRemapper {
     private static final Map<String, String> METHODS = new HashMap<>();
     private static final Map<String, String> FIELDS_BY_DESCRIPTOR = new HashMap<>();
     private static final Map<String, String> METHODS_BY_DESCRIPTOR = new HashMap<>();
+    // calls the compiler cannot make, and the helper that stands in for them:
+    //   owner  name  descriptor  helperClass  helperName  helperDescriptor
+    // The helper is static and its first parameter is the receiver, so an invokevirtual turns into an
+    // invokestatic with the same operands on the stack - no other change to the call site.
+    private static final Map<String, String[]> CALL_REWRITES = new HashMap<>();
+    // static fields that do not exist, and the holder that does have one:
+    //   owner  name  descriptor  holderClass  holderName  holderDescriptor
+    private static final Map<String, String[]> STATIC_REWRITES = new HashMap<>();
+    private static int rewrittenCalls = 0;
     // the same members, keyed without their owner, for calls made through a subclass: a mod compiled
     // against intermediary calls RegistryFriendlyByteBuf.method_10812 while the mapping declares
     // method_10812 on FriendlyByteBuf, and TeaVM wants the name to be official regardless of which class
@@ -52,6 +61,11 @@ public class ModRemapper {
             ? args[2].substring(0, args[2].length() - 4)
             : args[2];
         load(Path.of(prefix));
+        String rewrites = System.getenv("WEBMC_CALL_REWRITES");
+        if (rewrites != null) {
+            loadRewrites(Path.of(rewrites), CALL_REWRITES);
+            loadRewrites(Path.of(rewrites + ".fields.tsv"), STATIC_REWRITES);
+        }
         System.out.println("mappings: " + CLASSES.size() + " class(es), " + FIELDS.size() + " field(s), "
             + METHODS.size() + " method(s); by descriptor " + FIELDS_BY_DESCRIPTOR.size() + "/"
             + METHODS_BY_DESCRIPTOR.size() + "; ownerless by name " + GLOBAL_FIELDS_BY_NAME.size() + "/"
@@ -62,7 +76,23 @@ public class ModRemapper {
         writeJar(input, output, counts);
         System.out.println("remapped " + counts[0] + " class(es), " + counts[1] + " string reference(s), "
             + counts[2] + " nested jar(s), " + throughHierarchy + " member(s) resolved through the class "
-            + "hierarchy -> " + output);
+            + "hierarchy, " + rewrittenCalls + " call(s) pointed at a shim -> " + output);
+    }
+
+    private static void loadRewrites(Path file, Map<String, String[]> into) throws IOException {
+        if (!Files.isRegularFile(file)) {
+            return;
+        }
+        for (String line : Files.readAllLines(file)) {
+            if (line.isBlank() || line.startsWith("#")) {
+                continue;
+            }
+            String[] parts = line.split("\t");
+            if (parts.length == 6) {
+                into.put(parts[0] + "#" + parts[1] + "#" + parts[2],
+                        new String[]{parts[3], parts[4], parts[5]});
+            }
+        }
     }
 
     private static void load(Path prefix) throws IOException {
@@ -253,6 +283,13 @@ public class ModRemapper {
                                     && targetDesc.equals("()Ljava/lang/String;")) {
                                 super.visitMethodInsn(Opcodes.INVOKESTATIC, "webmc/shim/Jdk", "packageName",
                                         "(Ljava/lang/Class;)Ljava/lang/String;", false);
+                                return;
+                            }
+                            String[] replacement = CALL_REWRITES.get(owner + "#" + target + "#" + targetDesc);
+                            if (replacement != null) {
+                                rewrittenCalls++;
+                                super.visitMethodInsn(Opcodes.INVOKESTATIC, replacement[0], replacement[1],
+                                        replacement[2], false);
                                 return;
                             }
                             super.visitMethodInsn(opcode, owner, target, targetDesc, isInterface);

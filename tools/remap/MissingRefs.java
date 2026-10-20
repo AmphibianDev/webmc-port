@@ -35,6 +35,7 @@ public class MissingRefs {
     private static final Set<String> MISSING_METHOD = new TreeSet<>();
     private static final Set<String> MISSING_FIELD = new TreeSet<>();
     private static int checked = 0;
+    private static boolean reporting = true;       // false while walking the class library itself
 
     public static void main(String[] args) throws Exception {
         List<Path> classlib = new ArrayList<>(), scan = new ArrayList<>();
@@ -61,12 +62,20 @@ public class MissingRefs {
         for (Path jar : scan) {
             visit(jar, false);
         }
-        for (Path jar : classlib) {
-            visit(jar, true);
+        // The class library is indexed but not *judged*: a classlib class that references a class it does
+        // not ship (TFileChannel and java.io.FileDescriptor, for one) is the compiler's own gap, and a
+        // report of it can never be acted on here - it made the platform stage loop forever, one class per
+        // pass, forever finding the same one.
+        
+        if (!MISSING_CLASS.isEmpty()) {
+            System.out.println("class\t" + String.join("\nclass\t", MISSING_CLASS));
         }
-        System.out.println("class\t" + String.join("\nclass\t", MISSING_CLASS));
-        System.out.println("method\t" + String.join("\nmethod\t", MISSING_METHOD));
-        System.out.println("field\t" + String.join("\nfield\t", MISSING_FIELD));
+        if (!MISSING_METHOD.isEmpty()) {
+            System.out.println("method\t" + String.join("\nmethod\t", MISSING_METHOD));
+        }
+        if (!MISSING_FIELD.isEmpty()) {
+            System.out.println("field\t" + String.join("\nfield\t", MISSING_FIELD));
+        }
         System.out.println("# checked " + checked + " reference(s): " + MISSING_CLASS.size() + " class(es), "
                 + MISSING_METHOD.size() + " method(s), " + MISSING_FIELD.size() + " field(s) unavailable");
     }
@@ -181,12 +190,14 @@ public class MissingRefs {
     }
 
     private static void visit(Path path, boolean classlib) throws Exception {
+        reporting = !classlib;
         each(path, (name, data) -> {
             String owner = classlib ? classlibName(name) : name;
             if (owner != null) {
                 scanClass(owner, data);
             }
         });
+        reporting = true;
     }
 
     private static void scanClass(String owner, byte[] data) {
@@ -230,7 +241,7 @@ public class MissingRefs {
                                                     boolean isInterface) {
                             checkClass(target);
                             checkDescriptor(targetDesc);
-                            if (target.startsWith("java/") || target.startsWith("javax/")) {
+                            if (reporting && (target.startsWith("java/") || target.startsWith("javax/"))) {
                                 checked++;
                                 if (!declaresMethod(target, name, targetDesc)) {
                                     MISSING_METHOD.add(target + " " + name + " " + targetDesc);
@@ -242,7 +253,7 @@ public class MissingRefs {
                         public void visitFieldInsn(int opcode, String target, String name, String fieldDesc) {
                             checkClass(target);
                             checkDescriptor(fieldDesc);
-                            if (target.startsWith("java/") || target.startsWith("javax/")) {
+                            if (reporting && (target.startsWith("java/") || target.startsWith("javax/"))) {
                                 checked++;
                                 if (!declaresField(target, name, fieldDesc)) {
                                     MISSING_FIELD.add(target + " " + name + " " + fieldDesc);
@@ -339,7 +350,7 @@ public class MissingRefs {
     }
 
     private static void checkClass(String name) {
-        if (name == null || name.startsWith("[")) {
+        if (name == null || name.startsWith("[") || !reporting) {
             return;
         }
         if (name.startsWith("java/") || name.startsWith("javax/") || name.startsWith("jdk/")) {
