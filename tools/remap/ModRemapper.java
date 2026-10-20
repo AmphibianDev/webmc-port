@@ -71,7 +71,12 @@ public class ModRemapper {
             + METHODS_BY_DESCRIPTOR.size() + "; ownerless by name " + GLOBAL_FIELDS_BY_NAME.size() + "/"
             + GLOBAL_BY_NAME.size() + ", by descriptor " + GLOBAL_FIELDS_BY_DESCRIPTOR.size() + "/"
             + GLOBAL_BY_DESCRIPTOR.size() + ", ambiguous " + GLOBAL_AMBIGUOUS.size());
-        Files.createDirectories(output.getParent() == null ? Path.of(".") : output.getParent());
+        Path parent = output.getParent();
+        // createDirectories throws FileAlreadyExistsException when the parent is a symlink to a directory,
+        // which /tmp is on macOS - and a direct run writing into /tmp died there
+        if (parent != null && !Files.isDirectory(parent)) {
+            Files.createDirectories(parent);
+        }
         int[] counts = new int[3];   // classes remapped, strings rewritten, nested jars
         writeJar(input, output, counts);
         System.out.println("remapped " + counts[0] + " class(es), " + counts[1] + " string reference(s), "
@@ -190,6 +195,36 @@ public class ModRemapper {
     }
 
     /** Class references (and their member references) rewritten with the frames left alone. */
+    /** Rewrites class names inside annotation string values, which the applier turns into references. */
+    private static AnnotationVisitor wrap(AnnotationVisitor visitor) {
+        if (visitor == null) {
+            return null;
+        }
+        return new AnnotationVisitor(Opcodes.ASM9, visitor) {
+            @Override
+            public void visit(String name, Object value) {
+                if (value instanceof String text) {
+                    String mapped = mapNameString(text);
+                    if (mapped != null) {
+                        super.visit(name, mapped);
+                        return;
+                    }
+                }
+                super.visit(name, value);
+            }
+
+            @Override
+            public AnnotationVisitor visitArray(String name) {
+                return wrap(super.visitArray(name));
+            }
+
+            @Override
+            public AnnotationVisitor visitAnnotation(String name, String descriptor) {
+                return wrap(super.visitAnnotation(name, descriptor));
+            }
+        };
+    }
+
     private static byte[] remapClass(byte[] data) {
         ClassReader reader;
         try {
@@ -269,6 +304,17 @@ public class ModRemapper {
         try {
             ClassRemapper delegate = new ClassRemapper(writer, remapper) {
                 @Override
+                public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
+                    return wrap(super.visitAnnotation(descriptor, visible));
+                }
+
+                @Override
+                public AnnotationVisitor visitTypeAnnotation(int typeRef, TypePath typePath, String descriptor,
+                                                            boolean visible) {
+                    return wrap(super.visitTypeAnnotation(typeRef, typePath, descriptor, visible));
+                }
+
+                @Override
                 public MethodVisitor visitMethod(int access, String name, String descriptor, String signature,
                                                  String[] exceptions) {
                     MethodVisitor inner = super.visitMethod(access, name, descriptor, signature, exceptions);
@@ -303,6 +349,22 @@ public class ModRemapper {
             System.out.println("  ! a class could not be remapped, left as it was: " + problem);
             return null;
         }
+    }
+
+    /**
+     * A class name inside a string: `net.minecraft.class_2561` or `net.minecraft/class_2561`.
+     *
+     * Mixin targets, access widener entries and refmap entries are names in text, and the applier reads
+     * them and *generates* references from what it finds - which is how an intermediary name in an
+     * annotation string ends up as "Class net.minecraft.class_2561 was not found" at compile time, with no
+     * reference to it anywhere in the bytecode to find.
+     */
+    private static String mapNameString(String text) {
+        if (text == null || !text.contains("class_") || !text.contains("minecraft")) {
+            return null;
+        }
+        String mapped = remapText(text, new int[3]);
+        return mapped.equals(text) ? null : mapped;
     }
 
     /** Names inside strings: mixin targets, access widener entries, refmap entries. */
