@@ -148,6 +148,12 @@ jobs:
         uses: actions/checkout@v7
         with:
           repository: ${{ steps.engine_kind.outputs.engine }}
+          # Pinned deliberately. The engine is a live branch, and a change to it lands in the middle of a
+          # build: 5c57ec1d began requiring an `assetIndexSha1Alternates` array in the version profile, so
+          # every build started failing in the fetch step with a message about a field that has nothing to
+          # do with this repository. dca63954 is the commit the last working builds used. Bumping this is a
+          # deliberate act: run a build, read what changed, and move it.
+          ref: dca63954db8781b8139b8a952e557fcdea53d713
           path: engine
           fetch-depth: 1
           # The engine keeps part of its tree in Git LFS and its build reads it.
