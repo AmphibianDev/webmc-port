@@ -1,0 +1,6 @@
+{
+  "id": "hello-webmc",
+  "name": "Hello WebMC",
+  "version": "1.0.0",
+  "entrypoint": "com.example.HelloMod"
+}

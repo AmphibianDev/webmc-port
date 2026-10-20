@@ -1,0 +1,76 @@
+1.21.11 -> 1.21.11 (release, 2025-12-09)
+  downloading the client from Mojang…
+  work/client-1.21.11.jar (30 MB, sha1 verified)
+  port fields copied from 1.21.11: patchSet='legacy-12111', extraPatchers=[], worldgenTelemetryMode='checkpoint-only', clientDistribution='obfuscated-with-mappings'
+  the engine's own profile for 1.21.11 stays, with 1 version fact(s) refreshed from Mojang: official
+  patched port/scripts/fetch-version.sh: the browser sound/font/background staging is fatal on any 404, and the list is partly hardcoded (minecraft/sounds/ui/toast/*.ogg, minecraft/font/unifont.zip) - assets that older 1.21.x versions do not have, so every one of them stopped the build at the fetch step. A menu sound that does not exist cannot be a reason not to build a client, and the engine's own comment says these objects are only needed by the TeaVM asset packaging, not by the profile check or the overlay build.
+  patched port/scripts/check-version-profile.mjs: the profile check reads only the post-rename field names, so every 1.21.x version before the rename fails with 'client resource pack major version undefined does not match 46' even when the profile is right. Build run 38581076827 shows it for 1.21.4, whose own version.json says pack_version {resource: 46, data: 61}.
+  patched port/tools/src/main/java/dev/gaius/tools/GuavaFutureStatePatcher.java: the patcher throws when the class it rewrites is absent, and 1.21.4's Guava predates it: build run 38583471729 stopped with 'com/google/common/util/concurrent/AbstractFutureState.class not found'. Nothing to patch is a reason to skip, not to fail a build.
+  patched port/scripts/build-overlays.sh: there is no other extension point for a patcher on the legacy-12111 chain: extraPatchers are rejected by the engine's own profile check, and this is the same helper the chain itself uses. It applies to every version on purpose: the block it adds only runs when WEBMC_MOD_PATCHER is set, and the bake sets that only for a version whose patch set cannot take an extraPatcher.
+  wrote port/tools/bringup/1.21.11.txt with 0 carried-over and 0 declared entr(y/ies)
+  ! no existing override directory under ../engine/port/overrides/client/src/versions: the new version starts with none, and the build will say which classes need one
+  no version-gated patcher was found: the shared patch chain is all that will run
+
+1.21.11: profile written, 0 override(s) from None, bring-up list created empty, patcher None
+{
+ "version": "1.21.11",
+ "profile": "port/versions/1.21.11.json",
+ "generated_profile": false,
+ "refreshed_from_mojang": [
+  "official"
+ ],
+ "started_from_newer_profile": false,
+ "protocol_note": null,
+ "java": 21,
+ "classFileVersion": 65,
+ "protocolVersion": 774,
+ "worldVersion": 4671,
+ "overrides": {
+  "copied_from": null,
+  "files": 0,
+  "mentions_old_version": [],
+  "created": false
+ },
+ "fixups": {
+  "file": "aot_fixups.json",
+  "applied": [
+   {
+    "file": "port/scripts/fetch-version.sh",
+    "why": "the browser sound/font/background staging is fatal on any 404, and the list is partly hardcoded (minecraft/sounds/ui/toast/*.ogg, minecraft/font/unifont.zip) - assets that older 1.21.x versions do not have, so every one of them stopped the build at the fetch step. A menu sound that does not exist cannot be a reason not to build a client, and the engine's own comment says these objects are only needed by the TeaVM asset packaging, not by the profile check or the overlay build.",
+    "matches": 1
+   },
+   {
+    "file": "port/scripts/check-version-profile.mjs",
+    "why": "the profile check reads only the post-rename field names, so every 1.21.x version before the rename fails with 'client resource pack major version undefined does not match 46' even when the profile is right. Build run 38581076827 shows it for 1.21.4, whose own version.json says pack_version {resource: 46, data: 61}.",
+    "matches": 1
+   },
+   {
+    "file": "port/tools/src/main/java/dev/gaius/tools/GuavaFutureStatePatcher.java",
+    "why": "the patcher throws when the class it rewrites is absent, and 1.21.4's Guava predates it: build run 38583471729 stopped with 'com/google/common/util/concurrent/AbstractFutureState.class not found'. Nothing to patch is a reason to skip, not to fail a build.",
+    "matches": 1
+   },
+   {
+    "file": "port/scripts/build-overlays.sh",
+    "why": "there is no other extension point for a patcher on the legacy-12111 chain: extraPatchers are rejected by the engine's own profile check, and this is the same helper the chain itself uses. It applies to every version on purpose: the block it adds only runs when WEBMC_MOD_PATCHER is set, and the bake sets that only for a version whose patch set cannot take an extraPatcher.",
+    "matches": 1
+   }
+  ],
+  "already": [],
+  "failed": []
+ },
+ "bringup": {
+  "path": "port/tools/bringup/1.21.11.txt",
+  "seeded_from": null,
+  "entries": 0,
+  "ours": 0
+ },
+ "patchers": {
+  "profile": "1.21.11",
+  "own_profile": true,
+  "patchers": [],
+  "will_run": null
+ },
+ "review": [],
+ "metaless": false
+}
+wrote /tmp/snapshot-report.json

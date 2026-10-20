@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Minecraft — WebMC</title>
+<!-- Preconnected on purpose: the JVM runtime, the client jar and Fabric's Maven are the three
+     things the critical path starts with, and beginning all three conversations during HTML parsing
+     saves a round trip each. -->
+<link rel="preconnect" href="https://cjrtnc.leaningtech.com" crossorigin />
+<link rel="preconnect" href="https://piston-data.mojang.com" crossorigin />
+<link rel="preconnect" href="https://maven.fabricmc.net" crossorigin />
+<!-- CheerpJ: a JVM compiled to WebAssembly. If this script is blocked (ad-blocker, offline, CSP,
+     https-only extension) nothing below can run, which the page says out loud instead of failing
+     with a reference error. -->
+<!-- CheerpJ: the JVM this page runs Minecraft in. It is loaded by the script below with fallbacks,
+     because "CheerpJ is not on this page" has several causes - a runtime release being unavailable, an
+     ad-blocker, an offline network, a content-security policy - and trying each known release turns most
+     of them from a dead page into a slower one. The log says which URL answered. -->
+<style>
+  body { margin: 0; background: #111; color: #ddd; font: 14px/1.5 monospace; }
+  main { max-width: 880px; margin: 0 auto; padding: 16px; }
+  canvas { width: 100%; max-width: 854px; aspect-ratio: 854/480; background: #000; border: 1px solid #333; display: block; }
+  #display { height: 0; overflow: hidden; }
+  button { font: inherit; padding: 6px 12px; margin: 8px 0; }
+  pre { background: #000; border: 1px solid #333; padding: 10px; overflow: auto; max-height: 300px; white-space: pre-wrap; }
+  a { color: #8cf; }
+  #bar { height: 6px; background: #222; margin: 8px 0; }
+  #bar > i { display: block; height: 100%; width: 0; background: #3d7d51; }
+  .small { font-size: 12px; color: #888; }
+  .badge { display: inline-block; border: 1px solid #333; border-radius: 3px; padding: 1px 6px; margin-right: 6px; }
+  .mods { margin: 4px 0 0; padding-left: 18px; }
+  .err { color: #e88; }
+</style>
+</head>
+<body>
+<main>
+  <h1 id="title" style="font-size:16px">Starting…</h1>
+  <p id="subtitle" class="small">—</p>
+  <canvas id="lwjgl" width="854" height="480" tabindex="-1"></canvas>
+  <div id="display"></div>
+  <div id="bar"><i id="bar-fill"></i></div>
+  <p><span id="status">working…</span>
+     <button id="again" style="display:none">▶ start again</button></p>
+  <details id="mod-list" style="display:none"><summary class="small">mods in this launch</summary><ul id="mods" class="mods small"></ul></details>
+  <details><summary class="small">log</summary><pre id="log"></pre></details>
+  <p class="small">
+    This runs the <b>official Minecraft client, unmodified</b>, in a JVM compiled for the browser.
+    Your browser downloads the game <b>from Mojang</b>, the loader's libraries from <b>Fabric's
+    Maven</b>, and the mods from this site; this page hosts no Minecraft files.
+    Starting it means you accept the <a href="https://www.minecraft.net/eula" target="_blank" rel="noopener">Minecraft EULA</a>.
+    Not an official Minecraft product. Not approved by or associated with Mojang or Microsoft.
+  </p>
+</main>
+
+<script>
+  /* The launch page does one thing: turn a plan into a running JVM. The plan (site/launch.json,
+   * written by tools/launchplan.py) says which row a version is on, which class starts it, which jars
+   * are needed and where they come from. Everything that needs a decision is in that file, so this
+   * page never has to know what version 1.12.2 is - and adding a version does not touch it.
+   *
+   * Three rows, three realities:
+   *
+   *   cheerpj  the official jar in CheerpJ. LWJGL 2, which CheerpJ ships natives for. 1.0 - 1.12.2.
+   *   shim     the same, with this project's JavaScript LWJGL 3. 1.13 - 1.20.4. Not playable yet:
+   *            the plan says so, and this page refuses rather than showing a black rectangle.
+   *   aot      Java 21+ clients, compiled ahead of time. Not this page's job: it links to the build.
+   *
+   * The classpath is assembled here, in one order that matters:
+   *
+   *   our loader -> the loader's own libraries (Fabric) -> the version's libraries -> the game -> mods
+   *
+   * Loader first so nothing can shadow it, mods last so a mod can never shadow the game.
+   */
+  const params = new URLSearchParams(location.search);
+  const version = params.get("version") || "1.12.2";
+  const requestedMode = params.get("mode") || "vanilla";
+  /* Absent means "everything the plan offers for this version and mode" - the mods folder is the
+   * feature, not an opt-in. An empty value means none, and that is how the launcher turns mods off. */
+  const requestedMods = params.has("mods") ? params.get("mods") : null;
+  /* The old links (and the check-links job) carry the client in the URL rather than in a plan. They
+   * still work: a launch that finds no plan falls back to exactly what this page used to do. */
+  const legacy = {
+    jar: params.get("jar") || "",
+    main: params.get("main") || "net.minecraft.client.Minecraft",
+    assetIndex: params.get("assetIndex") || version,
+    meta: params.get("meta") || "",
+    natives: params.get("natives") || "lwjgl-natives",
+    libs: (params.get("libs") || "lwjgl/lwjgl-2.9.3.jar:lwjgl/lwjgl_util-2.9.3.jar").split(":"),
+  };
+
+  const el = (id) => document.getElementById(id);
+  /* The log goes to the DOM, and - when the page is being served locally - to a collector as well.
+   * A headless browser cannot be asked what its DOM says, and a launch that fails before it draws is
+   * exactly when the log is the only thing worth reading. The collector only answers on localhost, so a
+   * visitor's browser never posts anything anywhere. */
+  const COLLECTOR = location.hostname === "127.0.0.1" || location.hostname === "localhost";
+  /* A heartbeat while a launch is happening: the page reports the last natives the shim entered, so a
+   * client that stops responding says *where* instead of leaving a blank screen and a stopped clock. */
+  if (COLLECTOR) {
+    setInterval(() => {
+      const trace = window.webmc && window.webmc.trace ? window.webmc.trace() : null;
+      if (!trace) return;
+      fetch("/result", {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ code: -1, stage: "alive: " + trace.count + " natives",
+                               trace: trace.called, log: [] }),
+      }).catch(() => {});
+    }, 20000);
+  }
+
+  /* The JVM's own output goes to the browser console, which a script cannot read. When the page is served
+   * locally, those lines are forwarded to the collector as well: a boot that takes twenty minutes in a
+   * browser JVM is otherwise twenty minutes of not knowing whether it is progressing or wedged. */
+  if (COLLECTOR) {
+    let forwarded = 0;
+    const forward = (kind, args, write) => {
+      write(...args);
+      const line = args.map(String).join(" ");
+      if (forwarded < 4000 && line.length < 400) {
+        forwarded += 1;
+        fetch("/result", {
+          method: "POST", headers: { "content-type": "application/json" },
+          body: JSON.stringify({ code: -1, stage: "[" + kind + "] " + line, log: [] }),
+        }).catch(() => {});
+      }
+    };
+    // error and warn too, not just log: the JVM's stderr - which is where a Java crash goes - arrives as
+    // console.error, and forwarding only console.log is how the reason a launch stopped stayed invisible
+    for (const kind of ["log", "error", "warn", "info"]) {
+      const write = console[kind].bind(console);
+      console[kind] = (...args) => forward(kind, args, write);
+    }
+  }
+  const posted = [];
+  const log = (message) => {
+    el("log").textContent += message + "\n";
+    if (typeof console !== "undefined" && console.log) {
+      console.log(message);
+    }
+    if (COLLECTOR) {
+      posted.push(message);
+      if (posted.length <= 400) {
+        fetch("/result", {
+          method: "POST", headers: { "content-type": "application/json" },
+          body: JSON.stringify({ code: -1, stage: message, log: posted.slice(-40) }),
+        }).catch(() => {});
+      }
+    }
+  };
+
+  /* CheerpJ's releases, newest first. The first one that defines cheerpjInit is the one this launch uses;
+   * a launch that failed with "CheerpJ is not on this page" is why there is more than one. */
+  const CHEERPJ_URLS = [
+    "https://cjrtnc.leaningtech.com/4.3/loader.js",
+    "https://cjrtnc.leaningtech.com/4.2/loader.js",
+    "https://cjrtnc.leaningtech.com/3.1/cj3loader.js",
+  ];
+
+  function loadScript(url) {
+    return new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = url;
+      script.onload = () => resolve(url);
+      script.onerror = () => reject(new Error(url + " did not load"));
+      document.head.appendChild(script);
+    });
+  }
+
+  async function loadCheerpJ() {
+    if (typeof globalThis.cheerpjInit === "function") { return "already present"; }
+    const failures = [];
+    for (const url of CHEERPJ_URLS) {
+      try {
+        await loadScript(url);
+        if (typeof globalThis.cheerpjInit === "function") { return url; }
+        failures.push(url + " loaded but defines no cheerpjInit");
+      } catch (error) {
+        failures.push(error.message);
+      }
+    }
+    throw new Error("no CheerpJ runtime could be loaded: " + failures.join("; ") +
+      ". If you use an ad-blocker or a filtering DNS, allow cjrtnc.leaningtech.com.");
+  }
+  const status = (message) => { el("status").textContent = message; };
+  const progress = (fraction) => {
+    el("bar-fill").style.width = Math.max(0, Math.min(1, fraction)) * 100 + "%";
+  };
+
+  /* A JVM in a browser needs the game's files to exist inside a virtual filesystem, and the API that
+   * writes them has been renamed more than once: cheerpjAddStringFile in CheerpJ 2/3, cheerpOSAddFile
+   * or cheerpOSAddStringFile in 4.x. So find whichever this build exposes, and if none, say which
+   * names were looked for - a hard-coded name is exactly what broke this page once. */
+  function fileWriter() {
+    const candidates = ["cheerpOSAddFile", "cheerpOSAddStringFile", "cheerpjAddFile",
+                        "cheerpjAddStringFile", "cheerpjAddBinaryFile"];
+    for (const name of candidates) {
+      if (typeof globalThis[name] === "function") return { name, fn: globalThis[name].bind(globalThis) };
+    }
+    return null;
+  }
+
+  function cheerpGlobals() {
+    return Object.keys(globalThis).filter((key) => /^cheerp/i.test(key)).sort();
+  }
+
+  /* Downloads are the whole wait, and they are the same bytes every visit: keep them in the
+   * browser's cache so the second start has nothing left to fetch but the JVM runtime itself. */
+  const CACHE = "webmc-clients-v2";
+
+  async function fetchBytes(url, label, onProgress) {
+    const bump = (fraction) => { if (onProgress) onProgress(fraction); };
+    if (typeof caches !== "undefined") {
+      try {
+        const hit = await caches.open(CACHE).then((cache) => cache.match(url));
+        if (hit) {
+          const bytes = new Uint8Array(await hit.arrayBuffer());
+          log(`  ${label}: ${(bytes.length / 1048576).toFixed(1)} MB from this browser's cache`);
+          bump(1);
+          return bytes;
+        }
+      } catch (error) { /* a cache failure must never stop a launch */ }
+    }
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`${label}: HTTP ${response.status}`);
+    const total = Number(response.headers.get("content-length")) || 0;
+    let bytes;
+    if (response.body && onProgress && total) {
+      const reader = response.body.getReader();
+      const chunks = [];
+      let seen = 0;
+      for (;;) {
+        const step = await reader.read();
+        if (step.done) break;
+        chunks.push(step.value);
+        seen += step.value.length;
+        bump(Math.min(1, seen / total));
+        status(`${label} — ${(seen / 1048576).toFixed(1)} / ${(total / 1048576).toFixed(1)} MB`);
+      }
+      bytes = new Uint8Array(await new Blob(chunks).arrayBuffer());
+    } else {
+      bytes = new Uint8Array(await response.arrayBuffer());
+    }
+    log(`  ${label}: ${(bytes.length / 1048576).toFixed(1)} MB`);
+    if (typeof caches !== "undefined") {
+      try {
+        await caches.open(CACHE).then((cache) => cache.put(url, new Response(bytes, {
+          headers: { "content-type": "application/octet-stream" }
+        })));
+      } catch (error) { /* over quota, private mode: fine, it just will not be cached */ }
+    }
+    return bytes;
+  }
+
+  /* Installs one file into the JVM's filesystem. The two callbacks are how the single shared
+   * progress bar knows where this file sits in the whole launch. */
+  async function put(url, dest, label, onStart, onProgress) {
+    const writer = fileWriter();
+    if (!writer) {
+      throw new Error(
+        `no CheerpJ file API on this page. Looked for cheerpOSAddFile, cheerpOSAddStringFile, ` +
+        `cheerpjAddFile, cheerpjAddStringFile, cheerpjAddBinaryFile. CheerpJ globals present: ` +
+        `${cheerpGlobals().join(", ") || "none — the loader script did not load"}`);
+    }
+    if (onStart) onStart();
+    const bytes = await fetchBytes(url, label, onProgress);
+    await writer.fn(dest, bytes);
+    return bytes;
+  }
+
+  /* Bytes or text; the CheerpJ writer takes both, and passing bytes through avoids a needless
+   * UTF-8 decode/encode round trip on files that are not text at all. */
+  function putFile(dest, data, label) {
+    const writer = fileWriter();
+    if (!writer) throw new Error("no CheerpJ file API on this page");
+    writer.fn(dest, data);
+    log(`  ${label}: ${data.length || data.byteLength || 0} bytes written`);
+  }
+
+  /* The arguments differ by era, and getting them wrong is why a version "fails to start" with no
+   * explanation: 1.6+ takes a long-form command line, everything before it takes a player name. */
+  function clientArgs(className, assetIndex) {
+    // The launcher's settings hold the name a player wants, so it travels in the URL. Anything outside the
+    // characters the game allows (letters, digits, underscore, up to 16 of them) is dropped rather than passed
+    // through, because the argument is a command line this page builds by hand.
+    const requested = (params.get("username") || "").replace(/[^A-Za-z0-9_]/g, "").slice(0, 16);
+    const username = requested || "WebMC";
+    if (className.endsWith("main.Main") || className.endsWith("knot.KnotClient")) {
+      return ["--username", username, "--version", version, "--gameDir", ".",
+              "--assetsDir", "/str/assets", "--assetIndex", assetIndex,
+              "--uuid", "0", "--accessToken", "0", "--userType", "legacy"];
+    }
+    return [username];
+  }
+
+  function fileBase(url) {
+    const name = String(url).split("?")[0].split("/").pop();
+    return name || "file.jar";
+  }
+
+  // ------------------------------------------------------------------ the plan
+
+  async function fetchJson(url) {
+    const response = await fetch(url, { cache: "no-cache" });
+    if (!response.ok) throw new Error(`${url}: HTTP ${response.status}`);
+    return response.json();
+  }
+
+  /* A version's own document, which is where the asset index URL lives.
+   *
+   * Preference order: this site's staged copy (meta/<version>.json, if whoever deployed it staged
+   * one), then Mojang's own metadata. piston-meta.mojang.com answers with
+   * access-control-allow-origin: *, so a page may read it, and the staged copy is therefore a
+   * convenience rather than a requirement. It used to be a requirement by accident: a deployment
+   * without meta/ made every launch fail here with "HTTP 404" before the client was even started. */
+  async function versionDocument(launch) {
+    const staged = launch.meta || new URL(`meta/${launch.version}.json`, location.href).href;
+    try {
+      return await fetchJson(staged);
+    } catch (error) {
+      log(`no staged version document (${error && error.message ? error.message : error}) - asking Mojang`);
+    }
+    const manifest = await fetchJson("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json");
+    const entry = (manifest.versions || []).find((candidate) => candidate.id === launch.version);
+    if (!entry) throw new Error(`Mojang's manifest does not list ${launch.version}`);
+    return await fetchJson(entry.url);
+  }
+
+  /* Who starts what, and with which files. The index (launch.json) says whether a version is
+   * playable and which modes it has; the plan (plans/<version>.json) is fetched for the one launch
+   * that is actually happening. Returns the same shape for the plan path and the legacy path, so
+   * there is exactly one place that assembles a classpath. */
+  async function resolve() {
+    let index = null;
+    let plan = null;
+    try {
+      index = await fetchJson("launch.json");
+      if (index.versions && index.versions[version]) {
+        plan = await fetchJson(new URL(`plans/${encodeURIComponent(version)}.json`, location.href).href);
+      }
+    } catch (error) {
+      log(`no launch plan (${error.message}) — falling back to the client in the URL`);
+    }
+    if (!plan) {
+      return {
+        source: "url",
+        version,
+        mode: "vanilla",
+        row: "cheerpj",
+        java: 8,
+        natives: legacy.natives,
+        playable: Boolean(legacy.jar),
+        blocker: legacy.jar ? null : "no client url in the catalog for this version",
+        main: legacy.main,
+        args: clientArgs(legacy.main, legacy.assetIndex),
+        client: { url: legacy.jar },
+        meta: legacy.meta || null,
+        assets: { index: null },
+        // The old links carry no plan, but this site may still have vendored the version's own
+        // classpath - which is the difference between starting and not starting, so try it.
+        libsIndex: `libs/${version}.json`,
+        platform: [],
+        libs: legacy.libs.map((entry) => ({ url: new URL(entry, location.href).href, file: entry })),
+        mods: [],
+        props: {},
+        label: "official client from Mojang (no plan: the client came from the link itself)",
+      };
+    }
+
+    const run = plan.modes ? plan.modes[requestedMode] : null;
+    if (!run) {
+      const offered = Object.keys(plan.modes || {});
+      return {
+        source: "plan",
+        version,
+        mode: requestedMode,
+        row: plan.row,
+        playable: false,
+        caveats: plan.caveats || [],
+        blocker: plan.blocker || plan.note ||
+          (offered.length
+            ? `this version has no ${requestedMode} route; it offers ${offered.join(", ")}`
+            : `no browser route for this one yet${plan.why ? ": " + plan.why : ""}`),
+        why: plan.why,
+        label: plan.why || "",
+      };
+    }
+
+    // the mods this launch will actually load: what the plan offers, narrowed by the link
+    const wanted = new Set(requestedMods === null ? (run.mods || []) : requestedMods.split(",").filter(Boolean));
+    const known = new Map((index.mods || []).map((mod) => [mod.id, mod]));
+    const mods = (run.mods || []).filter((id) => wanted.has(id)).map((id) => known.get(id) || { id });
+    const missing = [...wanted].filter((id) => !(run.mods || []).includes(id));
+
+    return {
+      source: "plan",
+      version,
+      mode: run.mode || requestedMode,
+      row: plan.row,
+      java: plan.java || 8,
+      natives: plan.natives || "lwjgl-natives",
+      playable: plan.playable !== false,
+      blocker: plan.blocker,
+      caveats: plan.caveats || [],
+      main: run.main,
+      // With no mods the loader is one class between the click and the title screen, and it is not
+      // needed: the game's own main class starts directly.
+      useLoader: run.loader !== false && (mods.length > 0 || run.loader === true),
+      args: clientArgs(run.main, plan.asset_index || version),
+      client: plan.client || {},
+      meta: plan.meta_url || null,
+      assets: { index: plan.asset_index || null },
+      libsIndex: plan.libs,
+      libsReady: plan.libs_ready !== false,
+      platform: run.jars || [],
+      libs: [],
+      mods,
+      missing,
+      props: run.props || {},
+      // named in the log line the page shows, e.g. "fabric 0.19.5 · 2 mod(s)"
+      loaderLabel: run.loader_version,
+      label: (run.loader ? `${run.loader} ${run.loader_version || ""}`.trim() : "vanilla")
+        + (mods.length ? ` · ${mods.length} mod(s)` : ""),
+    };
+  }
+
+  // ------------------------------------------------------------------ the launch
+
+  async function start() {
+    el("again").style.display = "none";
+    el("mods").textContent = "";
+    el("mod-list").style.display = "none";
+    progress(0);
+    log("");
+    try {
+      const launch = await resolve();
+      if (!launch.playable) {
+        refuse(launch);
+        return;
+      }
+      await run(launch);
+    } catch (error) {
+      log("FAILED: " + (error && error.message ? error.message : error));
+      status("failed — open the log");
+    } finally {
+      el("again").style.display = "inline-block";
+    }
+  }
+
+  /* A version that cannot run says why, in its own words, and does not pretend to try. */
+  function refuse(launch) {
+    status("cannot start " + version);
+    el("subtitle").textContent = `${launch.row || "?"} · ${launch.why || "not playable in a browser yet"}`;
+    log(`Minecraft ${version} is not playable in a browser yet.`);
+    if (launch.blocker) log("reason: " + launch.blocker);
+    if (launch.why) log("verdict: " + launch.why);
+    log("");
+    log("What would have happened here: the leader of this row is the same page for every version -");
+    log("  cheerpj  the official jar under a browser JVM (this is 1.0 - 1.12.2, and it works today)");
+    log("  shim     the same with this project's JavaScript LWJGL 3 (1.13 - 1.20.4, first frame pending)");
+    log("  aot      a client this project compiled (1.20.5 and newer: Java 21+, no browser JVM)");
+    el("title").textContent = `Minecraft ${version} — not playable yet`;
+  }
+
+  async function run(launch) {
+    if (!launch.client.url) throw new Error("no client url for this version in the catalog");
+
+    el("title").textContent = `Minecraft ${launch.version}`;
+    el("subtitle").textContent = [
+      launch.row,
+      `Java ${launch.java}`,
+      launch.label,
+    ].join(" · ");
+
+    const rows = [];
+    rows.push([`row: ${launch.row}`, launch.why || "the official client, unmodified"]);
+    rows.push([`mode: ${launch.mode}`, launch.row === "cheerpj"
+      ? "a real JVM in the page, LWJGL 2 translated by CheerpJ's native layer"
+      : "a real JVM in the page, LWJGL 3 translated by this project's shim"]);
+    if (launch.libsIndex) rows.push([`libraries: ${launch.libsIndex}`, "the version's own classpath, vendored by this site"]);
+    for (const [key, value] of Object.entries(launch.props || {})) rows.push([`${key}=${value}`, "a JVM property the loader or Fabric reads"]);
+    for (const row of rows) log(`${row[0].padEnd(28)} ${row[1]}`);
+    log(`client: ${launch.client.url}`);
+
+    // The version's own library list, if this site has vendored it. Without it the JVM gets two or
+    // three jars instead of the thirty-odd a modern-ish client declares.
+    if (launch.libsIndex) {
+      try {
+        const index = await fetchJson(new URL(launch.libsIndex, location.href).href);
+        launch.libs = (index.classpath || []).map((entry) => ({
+          // The URL keeps the path this site deployed the jar at; the *file* name is its basename, because
+          // CheerpJ's filesystem does not create directories for a path it is handed ("Directories are not
+          // supported /str/libs/x.jar") and a jar that is not really there is "Unable to initialize main
+          // class" three lines later.
+          file: entry.split("/").pop(), url: new URL(entry, location.href).href,
+        }));
+        log(`classpath: ${launch.libs.length} jars from the version's own metadata`);
+        launch.libsReady = true;
+      } catch (error) {
+        launch.libsReady = false;
+        log(`classpath unavailable (${error.message}): the client will stop early with a missing class`);
+      }
+    }
+    if (!launch.libsReady) {
+      // The pipeline knows whether a version's own libraries have been vendored yet, and that is the
+      // difference between "it starts" and "it stops with NoClassDefFoundError before it draws".
+      log("this version's library set is not deployed on this site yet: expect it to stop early. "
+        + "The catalog job vendors a few more versions every run, newest first.");
+    }
+
+    if (launch.missing && launch.missing.length) {
+      log(`not offered for ${launch.mode}: ${launch.missing.join(", ")}`);
+    }
+    if (launch.mods.length) {
+      el("mod-list").style.display = "block";
+      for (const mod of launch.mods) {
+        const item = document.createElement("li");
+        item.textContent = `${mod.id} ${mod.version || ""} — ${mod.file}${mod.note ? " — " + mod.note : ""}`;
+        el("mods").appendChild(item);
+      }
+    }
+
+    /* The loader's report, straight from the JVM. A static native the page registers, which is the
+     * same mechanism the LWJGL shim uses for its 216 members - and the reason a failed launch is
+     * readable instead of a black canvas. */
+    const natives = {};
+    natives["Java_webmc_loader_WebMcLoader_nativeReport"] = (line) => { log("[loader] " + line); };
+    if (launch.row === "shim") {
+      try {
+        const shim = await import(new URL("loader/natives/webmc-lwjgl3.js", location.href).href);
+        Object.assign(natives, shim.natives);
+        log(`shim imported: ${shim.count} natives`);
+      } catch (error) {
+        log("the LWJGL 3 shim is not deployed here: " + (error && error.message ? error.message : error));
+      }
+    }
+
+    // The runtime comes first: nothing below can start without it.
+    const runtime = await loadCheerpJ();
+    log(`CheerpJ runtime: ${runtime}`);
+    // cheeerpjInit is the only one of these that exists before init: cheerpjRunMain and
+    // cheerpjCreateDisplay are defined *by* it, so checking for them here fails every launch with
+    // "CheerpJ ... is incomplete" while the runtime is perfectly fine. They are checked after init.
+    if (typeof globalThis.cheerpjInit !== "function") {
+      throw new Error(`CheerpJ loaded from ${runtime} but defines no cheerpjInit.`);
+    }
+
+    // Properties that depend on paths this page chose. Fabric needs the game jar explicitly when the
+    // launcher did not put it where Fabric expects it, and it needs to be told about every mod jar
+    // that lives outside a ./mods directory - which, in a browser filesystem, is all of them.
+    const clientPath = `/str/client_${launch.version}.jar`;
+    const modPaths = launch.mods.map((mod) => `/str/${mod.file}`);
+    const properties = [`java.library.path=/app/${launch.natives}/`];
+    for (const [key, value] of Object.entries(launch.props || {})) {
+      if (value !== null && value !== undefined) properties.push(`${key}=${value}`);
+    }
+    if (launch.mode.startsWith("fabric")) {
+      properties.push(`fabric.gameJarPath=${clientPath}`);
+      properties.push("fabric.side=client");
+      if (modPaths.length) properties.push(`fabric.addMods=${modPaths.join(":")}`);
+    }
+    log(`jvm: version ${launch.java}, ${properties.length} propert${properties.length === 1 ? "y" : "ies"}`);
+
+    /* The JVM runtime is a download of its own, so start it now and fetch the game while it runs.
+     * These two are independent and used to be sequential, which doubled the wait to first frame. */
+    status("starting the JVM…");
+    const booting = cheerpjInit({ version: launch.java, natives, javaProperties: properties });
+    await booting;
+    const absentAfterInit = ["cheerpjRunMain", "cheerpjCreateDisplay"].filter(
+      (name) => typeof globalThis[name] !== "function");
+    if (absentAfterInit.length) {
+      throw new Error(`CheerpJ started but defines no ${absentAfterInit.join(", ")}.`);
+    }
+
+    // ------------------------------------------------------------------ install the files
+    const total = launch.platform.length + launch.libs.length + 1 + launch.mods.length
+                + (launch.useLoader ? 1 : 0);
+    let done = 0;
+    /* One installer, so the bar is monotonic no matter how many files are in the launch: `done`
+     * counts finished files and the fraction of the file in flight is added to it. */
+    const installer = (what) => (url, dest, label) => put(
+      url, dest, label,
+      () => { done += 1; status(`${what} ${done}/${total}: ${label}`); },
+      (fraction) => progress(Math.min(1, (done - 1 + fraction) / total)));
+    const install = installer("installing");
+
+    const platform = [];
+    if (launch.useLoader) {
+      const loaderUrl = new URL("loader/webmc-loader.jar", location.href).href;
+      await install(loaderUrl, "/str/webmc/webmc-loader.jar", "webmc-loader.jar");
+      platform.push("/str/webmc/webmc-loader.jar");
+    }
+    for (const url of launch.platform) {
+      const dest = `/str/loader/${fileBase(url)}`;
+      await install(url, dest, `loader: ${fileBase(url)}`);
+      platform.push(dest);
+    }
+    const libraries = [];
+    for (const entry of launch.libs) {
+      const dest = `/str/${entry.file}`;
+      await install(entry.url, dest, entry.file);
+      libraries.push(dest);
+    }
+    await install(launch.client.url, clientPath, `${launch.version} client (from Mojang)`);
+
+    // The asset index is small and tells the client where its textures live. The objects themselves
+    // are hundreds of megabytes and - measured, not assumed - resources.download.minecraft.net serves
+    // them with no access-control-allow-origin, so a page cannot fetch them at all, and neither can
+    // Java inside CheerpJ (its HTTP is the browser's fetch, same origin only). This fetches the index
+    // so the game knows what it is missing instead of failing to start.
+    if (launch.assets.index) {
+      try {
+        const document = await versionDocument(launch);
+        const index = document.assetIndex || {};
+        if (index.url) {
+          const bytes = new Uint8Array(await (await fetch(index.url)).arrayBuffer());
+          putFile(`/str/assets/indexes/${index.id || launch.assets.index}.json`, bytes,
+                  `asset index ${index.id}`);
+        } else {
+          log("MoJang's document has no asset index for this version");
+        }
+      } catch (error) {
+        log(`asset index unavailable: ${error && error.message ? error.message : error}`);
+      }
+    }
+
+    const modDestinations = [];
+    for (const mod of launch.mods) {
+      const dest = `/str/${mod.file}`;
+      await install(new URL(mod.file, location.href).href, dest, `mod ${mod.id}`);
+      modDestinations.push(dest);
+    }
+
+    // ------------------------------------------------------------------ and go
+    await booting;
+    await cheerpjCreateDisplay(-1, -1, el("display"));
+    window.lwjglCanvasElement = el("lwjgl");
+    progress(1);
+
+    // Our loader is what knows vanilla from Fabric, and what starts a vanilla mod. The classpath order
+    // is the one thing that cannot be got wrong: loader, its libraries, the version's libraries, the
+    // game, then the mods.
+    let main = launch.main;
+    let args = launch.args;
+    if (launch.useLoader) {
+      main = "webmc.loader.WebMcLoader";
+      args = ["/str/webmc/plan.properties"].concat(launch.args);
+      putFile("/str/webmc/plan.properties", planFile(launch, clientPath, modDestinations), "launch plan");
+    }
+    const classpath = platform.concat(libraries, [clientPath], modDestinations).join(":");
+
+    log(`running ${main} …`);
+    log(`classpath: ${platform.length} loader/own + ${libraries.length} version + client + ${modDestinations.length} mod jar(s)`);
+    status("launching…");
+    const code = await cheerpjRunMain(main, classpath, ...args);
+    log(code === 0 ? "the game exited cleanly" : `the game exited with ${code}`);
+    status(code === 0 ? "finished" : `exited with ${code}`);
+  }
+
+  /* The plan our loader reads. Java properties, one flat key=value per line: the loader is a few
+   * kilobytes of Java 8 with no dependencies on purpose, so its input format is the one java.util
+   * has always been able to parse. Paths are absolute inside the JVM, because that is where it is. */
+  function planFile(launch, clientPath, modPaths) {
+    const lines = [
+      `mode=${launch.mode}`,
+      `version=${launch.version}`,
+      `game.class=${launch.main}`,
+      `game.jar=${clientPath}`,
+      `loader.main=${launch.main}`,
+      `loader.jars=${launch.platform.map(fileBase).join(",")}`,
+      `mods.dir=/str/mods`,
+      `mod.count=${modPaths.length}`,
+    ];
+    modPaths.forEach((path, index) => {
+      lines.push(`mod.${index}.file=${path}`);
+      lines.push(`mod.${index}.id=${launch.mods[index] ? launch.mods[index].id : index}`);
+    });
+    return lines.join("\n") + "\n";
+  }
+
+  el("title").textContent = `Minecraft ${version}`;
+  el("subtitle").textContent = `mode ${requestedMode} · reading the launch plan…`;
+  start();
+  el("again").addEventListener("click", start);
+
+  /* Fullscreen is what a game wants, and the browser only grants it after a click - so the launch
+   * happens first and fullscreen is one click away, never a wall in front of the game. */
+  el("lwjgl").addEventListener("dblclick", () => {
+    const canvas = el("lwjgl");
+    if (document.fullscreenElement) { document.exitFullscreen(); return; }
+    (canvas.requestFullscreen ? canvas : document.documentElement)
+      .requestFullscreen({ navigationUI: "hide" }).catch((error) => log("fullscreen refused: " + error.message));
+  });
+</script>
+</body>
+</html>

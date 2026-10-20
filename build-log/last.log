@@ -1,0 +1,1120 @@
+Fetching Minecraft 1.21.11 client (obfuscated-with-mappings)
+Fetching Java libraries
+Fetching browser sound asset index 29
+Fetching browser gameplay sound assets
+Fetched and verified:
+  client:   /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/client-original.jar
+  mappings: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/client-mappings.txt
+  libraries: 107
+  browser sound assets: 4112 playable, 1 metadata
+  browser Unicode font assets: 5
+{
+  "id": "1.21.11",
+  "protocol_version": 774,
+  "world_version": 4671,
+  "java_version": 21,
+  "pack_version": {
+    "resource_major": 75,
+    "resource_minor": 0,
+    "data_major": 94,
+    "data_minor": 1
+  }
+}
+{
+  "ok": true,
+  "profile": "1.21.11",
+  "protocolVersion": 774,
+  "worldVersion": 4671,
+  "javaVersion": 21,
+  "classFileVersion": 65,
+  "clientDistribution": "obfuscated-with-mappings",
+  "worldgenTelemetryMode": "checkpoint-only",
+  "patchSet": "legacy-12111",
+  "extraPatchers": [],
+  "bringup": {
+    "list": "port/tools/bringup/1.21.11.txt",
+    "entries": 0
+  },
+  "packVersions": {
+    "resource": {
+      "major": 75,
+      "minor": 0
+    },
+    "data": {
+      "major": 94,
+      "minor": 1
+    }
+  },
+  "assetIndex": {
+    "id": "29",
+    "sha1": "e81d9e2536723a11eb68e11c5642708926b8be5f"
+  },
+  "storage": {
+    "schema": 2,
+    "databaseName": "gaius-fs-v2-1.21.11",
+    "prefix": "gaius.fs.v2:1.21.11:",
+    "opfsDirectory": "regions-v2-1.21.11"
+  },
+  "checkedLocalMetadata": true,
+  "checkedClientVersion": true,
+  "checkedRemoteMetadata": false
+}
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+100  739k  100  739k    0     0  6203k      0 --:--:-- --:--:-- --:--:-- 6211k
+Remapping official Minecraft 1.21.11 client to Mojang names
+Forge Auto Renaming Tool v2.0.18
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/at/yawk/lz4/lz4-java/1.8.1/lz4-java-1.8.1.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/ca/weblite/java-objc-bridge/1.1/java-objc-bridge-1.1.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/com/azure/azure-json/1.4.0/azure-json-1.4.0.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/com/github/oshi/oshi-core/6.9.0/oshi-core-6.9.0.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/com/google/code/gson/gson/2.13.2/gson-2.13.2.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/com/google/guava/failureaccess/1.0.3/failureaccess-1.0.3.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/com/google/guava/guava/33.5.0-jre/guava-33.5.0-jre.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/com/ibm/icu/icu4j/77.1/icu4j-77.1.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/com/microsoft/azure/msal4j/1.23.1/msal4j-1.23.1.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/com/mojang/authlib/7.0.61/authlib-7.0.61.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/com/mojang/blocklist/1.0.10/blocklist-1.0.10.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/com/mojang/brigadier/1.3.10/brigadier-1.3.10.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/com/mojang/datafixerupper/9.0.19/datafixerupper-9.0.19.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/com/mojang/jtracy/1.0.37/jtracy-1.0.37-natives-linux.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/com/mojang/jtracy/1.0.37/jtracy-1.0.37-natives-macos-arm64.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/com/mojang/jtracy/1.0.37/jtracy-1.0.37-natives-macos.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/com/mojang/jtracy/1.0.37/jtracy-1.0.37-natives-windows.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/com/mojang/jtracy/1.0.37/jtracy-1.0.37.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/com/mojang/logging/1.6.11/logging-1.6.11.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/com/mojang/patchy/2.2.10/patchy-2.2.10.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/com/mojang/text2speech/1.18.11/text2speech-1.18.11.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/commons-codec/commons-codec/1.19.0/commons-codec-1.19.0.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/commons-io/commons-io/2.20.0/commons-io-2.20.0.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/io/netty/netty-buffer/4.2.7.Final/netty-buffer-4.2.7.Final.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/io/netty/netty-codec-base/4.2.7.Final/netty-codec-base-4.2.7.Final.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/io/netty/netty-codec-compression/4.2.7.Final/netty-codec-compression-4.2.7.Final.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/io/netty/netty-codec-http/4.2.7.Final/netty-codec-http-4.2.7.Final.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/io/netty/netty-common/4.2.7.Final/netty-common-4.2.7.Final.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/io/netty/netty-handler/4.2.7.Final/netty-handler-4.2.7.Final.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/io/netty/netty-resolver/4.2.7.Final/netty-resolver-4.2.7.Final.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/io/netty/netty-transport-classes-epoll/4.2.7.Final/netty-transport-classes-epoll-4.2.7.Final.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/io/netty/netty-transport-classes-kqueue/4.2.7.Final/netty-transport-classes-kqueue-4.2.7.Final.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/io/netty/netty-transport-native-epoll/4.2.7.Final/netty-transport-native-epoll-4.2.7.Final-linux-aarch_64.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/io/netty/netty-transport-native-epoll/4.2.7.Final/netty-transport-native-epoll-4.2.7.Final-linux-x86_64.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/io/netty/netty-transport-native-kqueue/4.2.7.Final/netty-transport-native-kqueue-4.2.7.Final-osx-aarch_64.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/io/netty/netty-transport-native-kqueue/4.2.7.Final/netty-transport-native-kqueue-4.2.7.Final-osx-x86_64.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/io/netty/netty-transport-native-unix-common/4.2.7.Final/netty-transport-native-unix-common-4.2.7.Final.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/io/netty/netty-transport/4.2.7.Final/netty-transport-4.2.7.Final.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/it/unimi/dsi/fastutil/8.5.18/fastutil-8.5.18.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/net/java/dev/jna/jna-platform/5.17.0/jna-platform-5.17.0.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/net/java/dev/jna/jna/5.17.0/jna-5.17.0.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/net/sf/jopt-simple/jopt-simple/5.0.4/jopt-simple-5.0.4.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/apache/commons/commons-compress/1.28.0/commons-compress-1.28.0.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/apache/commons/commons-lang3/3.19.0/commons-lang3-3.19.0.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/apache/logging/log4j/log4j-api/2.25.2/log4j-api-2.25.2.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/apache/logging/log4j/log4j-core/2.25.2/log4j-core-2.25.2.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/apache/logging/log4j/log4j-slf4j2-impl/2.25.2/log4j-slf4j2-impl-2.25.2.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/jcraft/jorbis/0.0.17/jorbis-0.0.17.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/joml/joml/1.10.8/joml-1.10.8.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/jspecify/jspecify/1.0.0/jspecify-1.0.0.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-freetype/3.3.3/lwjgl-freetype-3.3.3-natives-linux.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-freetype/3.3.3/lwjgl-freetype-3.3.3-natives-macos-arm64.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-freetype/3.3.3/lwjgl-freetype-3.3.3-natives-macos-patch.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-freetype/3.3.3/lwjgl-freetype-3.3.3-natives-windows-arm64.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-freetype/3.3.3/lwjgl-freetype-3.3.3-natives-windows-x86.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-freetype/3.3.3/lwjgl-freetype-3.3.3-natives-windows.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-freetype/3.3.3/lwjgl-freetype-3.3.3.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-glfw/3.3.3/lwjgl-glfw-3.3.3-natives-linux.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-glfw/3.3.3/lwjgl-glfw-3.3.3-natives-macos-arm64.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-glfw/3.3.3/lwjgl-glfw-3.3.3-natives-macos.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-glfw/3.3.3/lwjgl-glfw-3.3.3-natives-windows-arm64.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-glfw/3.3.3/lwjgl-glfw-3.3.3-natives-windows-x86.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-glfw/3.3.3/lwjgl-glfw-3.3.3-natives-windows.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-glfw/3.3.3/lwjgl-glfw-3.3.3.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-jemalloc/3.3.3/lwjgl-jemalloc-3.3.3-natives-linux.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-jemalloc/3.3.3/lwjgl-jemalloc-3.3.3-natives-macos-arm64.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-jemalloc/3.3.3/lwjgl-jemalloc-3.3.3-natives-macos.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-jemalloc/3.3.3/lwjgl-jemalloc-3.3.3-natives-windows-arm64.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-jemalloc/3.3.3/lwjgl-jemalloc-3.3.3-natives-windows-x86.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-jemalloc/3.3.3/lwjgl-jemalloc-3.3.3-natives-windows.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-jemalloc/3.3.3/lwjgl-jemalloc-3.3.3.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-openal/3.3.3/lwjgl-openal-3.3.3-natives-linux.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-openal/3.3.3/lwjgl-openal-3.3.3-natives-macos-arm64.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-openal/3.3.3/lwjgl-openal-3.3.3-natives-macos.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-openal/3.3.3/lwjgl-openal-3.3.3-natives-windows-arm64.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-openal/3.3.3/lwjgl-openal-3.3.3-natives-windows-x86.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-openal/3.3.3/lwjgl-openal-3.3.3-natives-windows.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-openal/3.3.3/lwjgl-openal-3.3.3.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-opengl/3.3.3/lwjgl-opengl-3.3.3-natives-linux.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-opengl/3.3.3/lwjgl-opengl-3.3.3-natives-macos-arm64.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-opengl/3.3.3/lwjgl-opengl-3.3.3-natives-macos.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-opengl/3.3.3/lwjgl-opengl-3.3.3-natives-windows-arm64.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-opengl/3.3.3/lwjgl-opengl-3.3.3-natives-windows-x86.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-opengl/3.3.3/lwjgl-opengl-3.3.3-natives-windows.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-opengl/3.3.3/lwjgl-opengl-3.3.3.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-stb/3.3.3/lwjgl-stb-3.3.3-natives-linux.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-stb/3.3.3/lwjgl-stb-3.3.3-natives-macos-arm64.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-stb/3.3.3/lwjgl-stb-3.3.3-natives-macos.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-stb/3.3.3/lwjgl-stb-3.3.3-natives-windows-arm64.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-stb/3.3.3/lwjgl-stb-3.3.3-natives-windows-x86.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-stb/3.3.3/lwjgl-stb-3.3.3-natives-windows.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-stb/3.3.3/lwjgl-stb-3.3.3.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-tinyfd/3.3.3/lwjgl-tinyfd-3.3.3-natives-linux.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-tinyfd/3.3.3/lwjgl-tinyfd-3.3.3-natives-macos-arm64.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-tinyfd/3.3.3/lwjgl-tinyfd-3.3.3-natives-macos.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-tinyfd/3.3.3/lwjgl-tinyfd-3.3.3-natives-windows-arm64.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-tinyfd/3.3.3/lwjgl-tinyfd-3.3.3-natives-windows-x86.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-tinyfd/3.3.3/lwjgl-tinyfd-3.3.3-natives-windows.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl-tinyfd/3.3.3/lwjgl-tinyfd-3.3.3.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl/3.3.3/lwjgl-3.3.3-natives-linux.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl/3.3.3/lwjgl-3.3.3-natives-macos-arm64.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl/3.3.3/lwjgl-3.3.3-natives-macos.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl/3.3.3/lwjgl-3.3.3-natives-windows-arm64.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl/3.3.3/lwjgl-3.3.3-natives-windows-x86.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl/3.3.3/lwjgl-3.3.3-natives-windows.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/lwjgl/lwjgl/3.3.3/lwjgl-3.3.3.jar
+lib: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/libraries/org/slf4j/slf4j-api/2.0.17/slf4j-api-2.0.17.jar
+log: null
+input: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/client-original.jar
+output: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/client-named.jar
+threads: 4
+Names: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/client-mappings.txt(reversed: true)
+Fix Annotations: true
+Unfinal Parameters: false
+Fix Records: true
+Fix Identifiers: false
+Fix SourceFile: JAVA
+Fix Line Numbers: false
+Strip codesigning signatures: ALL
+Adding Libraries to Inheritance
+Reading Input: /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/client-original.jar
+Adding input to inheritance map
+Processing 28163 entries
+Adding extras
+Sorting
+Writing 28162 to output /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/client-named.jar
+Named client ready:
+  output:  /home/runner/work/webmc-port/webmc-port/engine/port/work/1.21.11/client-named.jar
+  classes: 10291
+  main:    net/minecraft/client/main/Main.class
+  hello-mixin: hello-mixin.jar (3 entries)
+  hello-webmc: hello-webmc.jar (5 entries)
+built 3 of 3 example mod(s) into mods/jars/
+    webmc/shim/Jdk.class
+    webmc/shim/Platform.class
+asm staged for the bake: 5 jar(s)
+total 8004
+drwxr-xr-x  2 runner runner    4096 Oct 20 13:51 .
+drwxrwxrwt 17 root   root      4096 Oct 20 13:51 ..
+-rw-r--r--  1 runner runner  126113 Oct 20 13:51 asm-9.8.jar
+-rw-r--r--  1 runner runner   35151 Oct 20 13:51 asm-analysis-9.8.jar
+-rw-r--r--  1 runner runner   73498 Oct 20 13:51 asm-commons-9.8.jar
+-rw-r--r--  1 runner runner   51934 Oct 20 13:51 asm-tree-9.8.jar
+-rw-r--r--  1 runner runner   94559 Oct 20 13:51 asm-util-9.8.jar
+-rw-r--r--  1 runner runner 2461010 Oct 20 13:51 fabric-api-0.141.6+1.21.11.jar
+-rw-r--r--  1 runner runner 5319572 Oct 20 13:51 meteor-client-1.21.11-86.jar
+-rw-r--r--  1 runner runner   13552 Oct 20 13:51 webmc-mixin-shims.jar
+  backporting the client to Java 17 (107 library jar(s) beside it, 4 ASM jar(s) staged)
+                  MethodVisitor next = super.visitMethod(access, methodName, descriptor, signature, exceptions);
+                                            ^
+    symbol: method visitMethod(int,String,String,String,String[])
+  12 errors
+  ! the client could not be backported; it is compiled as it is
+remapping the mod set to Mojang's official names, which is what the compiled client uses
+    wrote /tmp/mods-official/int-to-official.tsv, /tmp/mods-official/int-to-official.fields.tsv, /tmp/mods-official/int-to-official.methods.tsv
+  remapped 39 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> asm-9.8.jar
+  remapped 15 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> asm-analysis-9.8.jar
+  remapped 28 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> asm-commons-9.8.jar
+  remapped 39 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> asm-tree-9.8.jar
+  remapped 27 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> asm-util-9.8.jar
+  remapped 1918 class(es), 1983 string reference(s), 43 nested jar(s), 1476 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-api-0.141.6+1.21.11.jar
+  remapped 2625 class(es), 29 string reference(s), 15 nested jar(s), 3965 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> meteor-client-1.21.11-86.jar
+  remapped 25 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> webmc-mixin-shims.jar
+  fabric-api-0.141.6+1.21.11-official.jar: lifted 43 bundled jar(s) out
+  meteor-client-1.21.11-86-official.jar: lifted 15 bundled jar(s) out
+  repaired 0 descriptor(s) against client-named.jar (MinecraftAuth-5.0.2.jar)
+  repaired 0 descriptor(s) against client-named.jar (WaybackAuthLib-1.0.1.jar)
+  repaired 0 descriptor(s) against client-named.jar (asm-9.8-official.jar)
+  repaired 0 descriptor(s) against client-named.jar (asm-analysis-9.8-official.jar)
+  repaired 0 descriptor(s) against client-named.jar (asm-commons-9.8-official.jar)
+  repaired 0 descriptor(s) against client-named.jar (asm-tree-9.8-official.jar)
+  repaired 0 descriptor(s) against client-named.jar (asm-util-9.8-official.jar)
+  repaired 0 descriptor(s) against client-named.jar (discord-ipc-1.1.jar)
+  repaired 0 descriptor(s) against client-named.jar (error_prone_annotations-2.48.0.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-api-0.141.6+1.21.11-official.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-api-base-1.0.5+4ebb5c083e.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-api-lookup-api-v1-1.6.114+20dc27073e.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-biome-api-v1-17.1.1+4fc5413f3e.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-block-api-v1-1.1.10+4ebb5c083e.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-block-view-api-v2-1.0.39+4ebb5c083e.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-command-api-v2-2.4.7+6b42a6003e.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-content-registries-v0-10.2.14+4fc5413f3e.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-convention-tags-v1-2.1.55+7f945d5b3e.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-convention-tags-v2-2.17.3+8ef948ba3e.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-crash-report-info-v1-0.3.23+4ebb5c083e.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-data-attachment-api-v1-1.8.48+eed0806f3e.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-data-generation-api-v1-23.5.0+88d7da613e.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-dimensions-v1-4.0.28+4fc5413f3e.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-entity-events-v1-3.1.1+1d0ab4303e.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-events-interaction-v0-4.1.1+3b89ecf63e.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-game-rule-api-v1-2.0.3+4fc5413f3e.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-item-api-v1-11.6.0+67f17bb43e.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-item-group-api-v1-4.2.36+4fc5413f3e.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-key-binding-api-v1-1.1.7+4fc5413f3e.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-lifecycle-events-v1-2.6.15+4ebb5c083e.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-loot-api-v2-3.0.73+3f89f5a53e.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-loot-api-v3-2.0.20+78c8b4663e.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-message-api-v1-6.1.12+4ebb5c083e.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-model-loading-api-v1-6.0.15+4fc5413f3e.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-networking-api-v1-5.1.6+6b6d71a53e.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-object-builder-api-v1-21.1.40+4fc5413f3e.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-particles-v1-4.2.12+4fc5413f3e.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-recipe-api-v1-8.2.4+4ebb5c083e.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-registry-sync-v0-6.2.6+1718722b3e.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-renderer-api-v1-8.0.3+f4ffd2e53e.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-renderer-indigo-5.0.3+f4ffd2e53e.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-rendering-fluids-v1-3.1.43+4ebb5c083e.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-rendering-v1-16.2.10+0290ad933e.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-resource-conditions-api-v1-5.0.35+4fc5413f3e.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-resource-loader-v0-3.3.4+4fc5413f3e.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-resource-loader-v1-1.0.10+78c8b4663e.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-screen-api-v1-3.1.7+4ebb5c083e.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-screen-handler-api-v1-1.3.162+4fc5413f3e.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-serialization-api-v1-1.0.5+4ebb5c083e.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-sound-api-v1-1.0.51+4fc5413f3e.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-tag-api-v1-1.3.0+88d7da613e.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-transfer-api-v1-6.0.25+4fc5413f3e.jar)
+  repaired 0 descriptor(s) against client-named.jar (fabric-transitive-access-wideners-v1-7.1.0+014c8cec3e.jar)
+  repaired 0 descriptor(s) against client-named.jar (gson-1.9.2.jar)
+  repaired 0 descriptor(s) against client-named.jar (gson-2.14.0.jar)
+  repaired 0 descriptor(s) against client-named.jar (httpclient-1.9.2.jar)
+  repaired 0 descriptor(s) against client-named.jar (javassist-3.28.0-GA.jar)
+  repaired 4 descriptor(s) against client-named.jar (meteor-client-1.21.11-86-official.jar)
+  repaired 0 descriptor(s) against client-named.jar (netty-codec-socks-4.2.7.Final.jar)
+  repaired 0 descriptor(s) against client-named.jar (netty-handler-proxy-4.2.7.Final.jar)
+  repaired 0 descriptor(s) against client-named.jar (orbit-0.2.4.jar)
+  repaired 0 descriptor(s) against client-named.jar (reflections-0.10.2.jar)
+  repaired 0 descriptor(s) against client-named.jar (starscript-0.2.5.jar)
+  repaired 0 descriptor(s) against client-named.jar (webmc-mixin-shims-official.jar)
+  fetching the compiler's class library: teavm-classlib-0.15.0.jar
+  # checked 311266 reference(s): 153 class(es), 657 method(s), 35 field(s) unavailable
+    63 of 153 missing class(es) are in the requested set
+    63 class(es) the compiler does not have, from 8 package(s):
+       19  java/net
+       15  java/net/http
+        7  java/nio/channels
+        7  javax/net/ssl
+        5  java/io
+        5  java/lang/management
+        3  java/sql
+        2  java/lang/reflect
+      java/lang/management/ThreadInfo
+      java/lang/reflect/AccessFlag
+      java/lang/reflect/Parameter
+    remapped 105 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> MinecraftAuth-5.0.2.jar
+    remapped 13 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> WaybackAuthLib-1.0.1.jar
+    remapped 39 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> asm-9.8-official.jar
+    remapped 15 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> asm-analysis-9.8-official.jar
+    remapped 28 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> asm-commons-9.8-official.jar
+    remapped 39 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> asm-tree-9.8-official.jar
+    remapped 27 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> asm-util-9.8-official.jar
+    remapped 14 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 2 call(s) pointed at a shim -> discord-ipc-1.1.jar
+    remapped 32 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> error_prone_annotations-2.48.0.jar
+    remapped 1918 class(es), 0 string reference(s), 43 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-api-0.141.6+1.21.11-official.jar
+    remapped 18 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-api-base-1.0.5+4ebb5c083e.jar
+    remapped 36 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-api-lookup-api-v1-1.6.114+20dc27073e.jar
+    remapped 48 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-biome-api-v1-17.1.1+4fc5413f3e.jar
+    remapped 12 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-block-api-v1-1.1.10+4ebb5c083e.jar
+    remapped 15 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-block-view-api-v2-1.0.39+4ebb5c083e.jar
+    remapped 23 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-command-api-v2-2.4.7+6b42a6003e.jar
+    remapped 55 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-content-registries-v0-10.2.14+4fc5413f3e.jar
+    remapped 14 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-convention-tags-v1-2.1.55+7f945d5b3e.jar
+    remapped 19 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-convention-tags-v2-2.17.3+8ef948ba3e.jar
+    remapped 8 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-crash-report-info-v1-0.3.23+4ebb5c083e.jar
+    remapped 55 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-data-attachment-api-v1-1.8.48+eed0806f3e.jar
+    remapped 92 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-data-generation-api-v1-23.5.0+88d7da613e.jar
+    remapped 11 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-dimensions-v1-4.0.28+4fc5413f3e.jar
+    remapped 64 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-entity-events-v1-3.1.1+1d0ab4303e.jar
+    remapped 46 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-events-interaction-v0-4.1.1+3b89ecf63e.jar
+    remapped 34 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-game-rule-api-v1-2.0.3+4fc5413f3e.jar
+    remapped 55 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-item-api-v1-11.6.0+67f17bb43e.jar
+    remapped 26 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-item-group-api-v1-4.2.36+4fc5413f3e.jar
+    remapped 11 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-key-binding-api-v1-1.1.7+4fc5413f3e.jar
+    remapped 82 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-lifecycle-events-v1-2.6.15+4ebb5c083e.jar
+    remapped 16 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-loot-api-v2-3.0.73+3f89f5a53e.jar
+    remapped 23 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-loot-api-v3-2.0.20+78c8b4663e.jar
+    remapped 35 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-message-api-v1-6.1.12+4ebb5c083e.jar
+    remapped 63 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-model-loading-api-v1-6.0.15+4fc5413f3e.jar
+    remapped 159 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-networking-api-v1-5.1.6+6b6d71a53e.jar
+    remapped 54 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-object-builder-api-v1-21.1.40+4fc5413f3e.jar
+    remapped 43 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-particles-v1-4.2.12+4fc5413f3e.jar
+    remapped 67 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-recipe-api-v1-8.2.4+4ebb5c083e.jar
+    remapped 66 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-registry-sync-v0-6.2.6+1718722b3e.jar
+    remapped 91 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-renderer-api-v1-8.0.3+f4ffd2e53e.jar
+    remapped 67 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-renderer-indigo-5.0.3+f4ffd2e53e.jar
+    remapped 16 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-rendering-fluids-v1-3.1.43+4ebb5c083e.jar
+    remapped 125 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-rendering-v1-16.2.10+0290ad933e.jar
+    remapped 30 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-resource-conditions-api-v1-5.0.35+4fc5413f3e.jar
+    remapped 13 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-resource-loader-v0-3.3.4+4fc5413f3e.jar
+    remapped 78 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-resource-loader-v1-1.0.10+78c8b4663e.jar
+    remapped 45 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-screen-api-v1-3.1.7+4ebb5c083e.jar
+    remapped 15 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-screen-handler-api-v1-1.3.162+4fc5413f3e.jar
+    remapped 16 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-serialization-api-v1-1.0.5+4ebb5c083e.jar
+    remapped 7 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-sound-api-v1-1.0.51+4fc5413f3e.jar
+    remapped 30 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-tag-api-v1-1.3.0+88d7da613e.jar
+    remapped 131 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-transfer-api-v1-6.0.25+4fc5413f3e.jar
+    remapped 2 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> fabric-transitive-access-wideners-v1-7.1.0+014c8cec3e.jar
+    remapped 11 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> gson-1.9.2.jar
+    remapped 224 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> gson-2.14.0.jar
+    remapped 72 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 2 call(s) pointed at a shim -> httpclient-1.9.2.jar
+    remapped 428 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> javassist-3.28.0-GA.jar
+    remapped 2625 class(es), 0 string reference(s), 15 nested jar(s), 0 member(s) resolved through the class hierarchy, 19 call(s) pointed at a shim -> meteor-client-1.21.11-86-official.jar
+    remapped 119 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> netty-codec-socks-4.2.7.Final.jar
+    remapped 15 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> netty-handler-proxy-4.2.7.Final.jar
+    remapped 13 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 12 call(s) pointed at a shim -> orbit-0.2.4.jar
+    remapped 76 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 2 call(s) pointed at a shim -> reflections-0.10.2.jar
+    remapped 56 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> starscript-0.2.5.jar
+    remapped 25 class(es), 0 string reference(s), 0 nested jar(s), 0 member(s) resolved through the class hierarchy, 0 call(s) pointed at a shim -> webmc-mixin-shims-official.jar
+    renamed references in 64 jar(s)
+    stub jar shipped as webmc-platform-stubs.jar
+    # checked 309101 reference(s): 90 class(es), 644 method(s), 35 field(s) unavailable
+    pass 2: 90 more class(es): java/applet/Applet, java/awt/Component, java/awt/Container, java/awt/Graphics2D
+    0 of 90 missing class(es) are in the requested set
+  baking 65 remapped jar(s) from /tmp/mods-official/mods
+  optional dependencies: baritone against client-named.jar
+    baritone/api/cache/IWorldScanner
+    baritone/api/command/manager/ICommandManager
+    baritone/api/pathing/calc/IPathingControlManager
+    baritone/api/pathing/goals/Goal (interface)
+    baritone/api/pathing/goals/GoalBlock
+    baritone/api/pathing/goals/GoalGetToBlock
+  stubs built: webmc-optional-stubs.jar (10741 bytes)
+  fabric-api-lookup-api-v1 carries mixins (1 config(s), 3 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  fabric-biome-api-v1 carries mixins (1 config(s), 11 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  fabric-block-api-v1 carries mixins (1 config(s), 6 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  fabric-block-view-api-v2 carries mixins (2 config(s), 8 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  fabric-command-api-v2 carries mixins (2 config(s), 9 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  fabric-content-registries-v0 carries mixins (1 config(s), 19 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  fabric-convention-tags-v2 carries mixins (1 config(s), 2 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  fabric-crash-report-info-v1 carries mixins (1 config(s), 3 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  fabric-data-attachment-api-v1 carries mixins (2 config(s), 17 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  fabric-data-generation-api-v1 carries mixins (2 config(s), 27 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  fabric-dimensions-v1 carries mixins (1 config(s), 5 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  fabric-entity-events-v1 carries mixins (1 config(s), 16 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  fabric-events-interaction-v0 carries mixins (2 config(s), 12 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  fabric-game-rule-api-v1 carries mixins (2 config(s), 10 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  fabric-item-api-v1 carries mixins (2 config(s), 23 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  fabric-item-group-api-v1 carries mixins (2 config(s), 7 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  fabric-key-binding-api-v1 carries mixins (1 config(s), 4 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  fabric-lifecycle-events-v1 carries mixins (2 config(s), 21 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  fabric-loot-api-v2 carries mixins (1 config(s), 3 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  fabric-loot-api-v3 carries mixins (1 config(s), 9 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  fabric-message-api-v1 carries mixins (2 config(s), 6 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  fabric-model-loading-api-v1 carries mixins (1 config(s), 7 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  fabric-networking-api-v1 carries mixins (2 config(s), 38 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  fabric-object-builder-api-v1 carries mixins (2 config(s), 16 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  fabric-particles-v1 carries mixins (2 config(s), 14 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  fabric-recipe-api-v1 carries mixins (2 config(s), 17 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  fabric-registry-sync-v0 carries mixins (2 config(s), 24 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  fabric-renderer-api-v1 carries mixins (1 config(s), 34 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  fabric-renderer-indigo carries mixins (1 config(s), 13 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  fabric-rendering-fluids-v1 carries mixins (1 config(s), 2 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  fabric-rendering-v1 carries mixins (1 config(s), 40 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  fabric-resource-conditions-api-v1 carries mixins (1 config(s), 8 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  fabric-resource-loader-v1 carries mixins (2 config(s), 27 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  fabric-screen-api-v1 carries mixins (1 config(s), 8 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  fabric-screen-handler-api-v1 carries mixins (1 config(s), 3 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  fabric-serialization-api-v1 carries mixins (1 config(s), 5 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  fabric-sound-api-v1 carries mixins (1 config(s), 3 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  fabric-tag-api-v1 carries mixins (1 config(s), 9 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  fabric-transfer-api-v1 carries mixins (1 config(s), 19 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  meteor-client carries mixins (6 config(s), 239 class(es) named like one): the applier merges them into the client before it is compiled, and the build log says what it applied and what it refused
+  wrote port/tools/src/main/java/dev/gaius/tools/WebMcMixinApplier.java (the mixin applier the patcher calls)
+  wrote port/tools/src/main/java/dev/gaius/tools/WebMcModBakePatcher.java
+  8 jar(s) are libraries rather than mods (no descriptor, nothing to call): asm-9.8-official, asm-analysis-9.8-official, asm-commons-9.8-official, asm-tree-9.8-official, asm-util-9.8-official, webmc-mixin-shims-official, webmc-optional-stubs, webmc-platform-stubs
+  each entrypoint is called from the client's static initialiser as bytecode
+  staged 47 shim source file(s) the mods compile against (com/sun/jna/Platform.java, com/sun/jna/platform/win32/Kernel32.java, com/sun/jna/platform/win32/Kernel32Util.java…)
+  the patcher runs after the engine's chain (patch set legacy-12111, WEBMC_MOD_PATCHER=WebMcModBakePatcher)
+baked 66 mod(s) into 1.21.11: entrypoints fabric-api-lookup-api-v1, fabric-convention-tags-v1, fabric-convention-tags-v2, fabric-data-attachment-api-v1, fabric-events-interaction-v0, fabric-lifecycle-events-v1, fabric-loot-api-v2, fabric-model-loading-api-v1, fabric-networking-api-v1, fabric-particles-v1, fabric-recipe-api-v1, fabric-registry-sync-v0, fabric-renderer-api-v1, fabric-renderer-indigo, fabric-rendering-v1, fabric-resource-conditions-api-v1, fabric-screen-handler-api-v1, fabric-tag-api-v1, meteor-client; mixins present in fabric-api-lookup-api-v1, fabric-biome-api-v1, fabric-block-api-v1, fabric-block-view-api-v2, fabric-command-api-v2, fabric-content-registries-v0, fabric-convention-tags-v2, fabric-crash-report-info-v1, fabric-data-attachment-api-v1, fabric-data-generation-api-v1, fabric-dimensions-v1, fabric-entity-events-v1, fabric-events-interaction-v0, fabric-game-rule-api-v1, fabric-item-api-v1, fabric-item-group-api-v1, fabric-key-binding-api-v1, fabric-lifecycle-events-v1, fabric-loot-api-v2, fabric-loot-api-v3, fabric-message-api-v1, fabric-model-loading-api-v1, fabric-networking-api-v1, fabric-object-builder-api-v1, fabric-particles-v1, fabric-recipe-api-v1, fabric-registry-sync-v0, fabric-renderer-api-v1, fabric-renderer-indigo, fabric-rendering-fluids-v1, fabric-rendering-v1, fabric-resource-conditions-api-v1, fabric-resource-loader-v1, fabric-screen-api-v1, fabric-screen-handler-api-v1, fabric-serialization-api-v1, fabric-sound-api-v1, fabric-tag-api-v1, fabric-transfer-api-v1, meteor-client (not applied)
+WEBMC_MODS=../engine/port/work/1.21.11/webmc-mods/MinecraftAuth-5.0.2.jar:../engine/port/work/1.21.11/webmc-mods/WaybackAuthLib-1.0.1.jar:../engine/port/work/1.21.11/webmc-mods/asm-9.8-official.jar:../engine/port/work/1.21.11/webmc-mods/asm-analysis-9.8-official.jar:../engine/port/work/1.21.11/webmc-mods/asm-commons-9.8-official.jar:../engine/port/work/1.21.11/webmc-mods/asm-tree-9.8-official.jar:../engine/port/work/1.21.11/webmc-mods/asm-util-9.8-official.jar:../engine/port/work/1.21.11/webmc-mods/discord-ipc-1.1.jar:../engine/port/work/1.21.11/webmc-mods/error_prone_annotations-2.48.0.jar:../engine/port/work/1.21.11/webmc-mods/fabric-api-0.141.6+1.21.11-official.jar:../engine/port/work/1.21.11/webmc-mods/fabric-api-base-1.0.5+4ebb5c083e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-api-lookup-api-v1-1.6.114+20dc27073e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-biome-api-v1-17.1.1+4fc5413f3e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-block-api-v1-1.1.10+4ebb5c083e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-block-view-api-v2-1.0.39+4ebb5c083e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-command-api-v2-2.4.7+6b42a6003e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-content-registries-v0-10.2.14+4fc5413f3e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-convention-tags-v1-2.1.55+7f945d5b3e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-convention-tags-v2-2.17.3+8ef948ba3e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-crash-report-info-v1-0.3.23+4ebb5c083e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-data-attachment-api-v1-1.8.48+eed0806f3e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-data-generation-api-v1-23.5.0+88d7da613e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-dimensions-v1-4.0.28+4fc5413f3e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-entity-events-v1-3.1.1+1d0ab4303e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-events-interaction-v0-4.1.1+3b89ecf63e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-game-rule-api-v1-2.0.3+4fc5413f3e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-item-api-v1-11.6.0+67f17bb43e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-item-group-api-v1-4.2.36+4fc5413f3e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-key-binding-api-v1-1.1.7+4fc5413f3e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-lifecycle-events-v1-2.6.15+4ebb5c083e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-loot-api-v2-3.0.73+3f89f5a53e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-loot-api-v3-2.0.20+78c8b4663e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-message-api-v1-6.1.12+4ebb5c083e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-model-loading-api-v1-6.0.15+4fc5413f3e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-networking-api-v1-5.1.6+6b6d71a53e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-object-builder-api-v1-21.1.40+4fc5413f3e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-particles-v1-4.2.12+4fc5413f3e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-recipe-api-v1-8.2.4+4ebb5c083e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-registry-sync-v0-6.2.6+1718722b3e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-renderer-api-v1-8.0.3+f4ffd2e53e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-renderer-indigo-5.0.3+f4ffd2e53e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-rendering-fluids-v1-3.1.43+4ebb5c083e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-rendering-v1-16.2.10+0290ad933e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-resource-conditions-api-v1-5.0.35+4fc5413f3e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-resource-loader-v0-3.3.4+4fc5413f3e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-resource-loader-v1-1.0.10+78c8b4663e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-screen-api-v1-3.1.7+4ebb5c083e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-screen-handler-api-v1-1.3.162+4fc5413f3e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-serialization-api-v1-1.0.5+4ebb5c083e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-sound-api-v1-1.0.51+4fc5413f3e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-tag-api-v1-1.3.0+88d7da613e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-transfer-api-v1-6.0.25+4fc5413f3e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-transitive-access-wideners-v1-7.1.0+014c8cec3e.jar:../engine/port/work/1.21.11/webmc-mods/gson-1.9.2.jar:../engine/port/work/1.21.11/webmc-mods/gson-2.14.0.jar:../engine/port/work/1.21.11/webmc-mods/httpclient-1.9.2.jar:../engine/port/work/1.21.11/webmc-mods/javassist-3.28.0-GA.jar:../engine/port/work/1.21.11/webmc-mods/meteor-client-1.21.11-86-official.jar:../engine/port/work/1.21.11/webmc-mods/netty-codec-socks-4.2.7.Final.jar:../engine/port/work/1.21.11/webmc-mods/netty-handler-proxy-4.2.7.Final.jar:../engine/port/work/1.21.11/webmc-mods/orbit-0.2.4.jar:../engine/port/work/1.21.11/webmc-mods/reflections-0.10.2.jar:../engine/port/work/1.21.11/webmc-mods/starscript-0.2.5.jar:../engine/port/work/1.21.11/webmc-mods/webmc-mixin-shims-official.jar:../engine/port/work/1.21.11/webmc-mods/webmc-optional-stubs.jar:../engine/port/work/1.21.11/webmc-mods/webmc-platform-stubs.jar
+baked: ['net_raphimc_minecraftauth', 'de_florianmichael_waybackauthlib', 'asm-9.8-official', 'asm-analysis-9.8-official', 'asm-commons-9.8-official', 'asm-tree-9.8-official', 'asm-util-9.8-official', 'meteordevelopment_discord-ipc', 'com_google_errorprone_error_prone_annotations', 'fabric-api', 'fabric-api-base', 'fabric-api-lookup-api-v1', 'fabric-biome-api-v1', 'fabric-block-api-v1', 'fabric-block-view-api-v2', 'fabric-command-api-v2', 'fabric-content-registries-v0', 'fabric-convention-tags-v1', 'fabric-convention-tags-v2', 'fabric-crash-report-info-v1', 'fabric-data-attachment-api-v1', 'fabric-data-generation-api-v1', 'fabric-dimensions-v1', 'fabric-entity-events-v1', 'fabric-events-interaction-v0', 'fabric-game-rule-api-v1', 'fabric-item-api-v1', 'fabric-item-group-api-v1', 'fabric-key-binding-api-v1', 'fabric-lifecycle-events-v1', 'fabric-loot-api-v2', 'fabric-loot-api-v3', 'fabric-message-api-v1', 'fabric-model-loading-api-v1', 'fabric-networking-api-v1', 'fabric-object-builder-api-v1', 'fabric-particles-v1', 'fabric-recipe-api-v1', 'fabric-registry-sync-v0', 'fabric-renderer-api-v1', 'fabric-renderer-indigo', 'fabric-rendering-fluids-v1', 'fabric-rendering-v1', 'fabric-resource-conditions-api-v1', 'fabric-resource-loader-v0', 'fabric-resource-loader-v1', 'fabric-screen-api-v1', 'fabric-screen-handler-api-v1', 'fabric-serialization-api-v1', 'fabric-sound-api-v1', 'fabric-tag-api-v1', 'fabric-transfer-api-v1', 'fabric-transitive-access-wideners-v1', 'net_lenni0451_commons_gson', 'com_google_code_gson_gson', 'net_lenni0451_commons_httpclient', 'org_javassist_javassist', 'meteor-client', 'io_netty_netty-codec-socks', 'io_netty_netty-handler-proxy', 'meteordevelopment_orbit', 'org_reflections_reflections', 'org_meteordev_starscript', 'webmc-mixin-shims-official', 'webmc-optional-stubs', 'webmc-platform-stubs']
+entrypoints: ['fabric-api-lookup-api-v1', 'fabric-convention-tags-v1', 'fabric-convention-tags-v2', 'fabric-data-attachment-api-v1', 'fabric-events-interaction-v0', 'fabric-lifecycle-events-v1', 'fabric-loot-api-v2', 'fabric-model-loading-api-v1', 'fabric-networking-api-v1', 'fabric-particles-v1', 'fabric-recipe-api-v1', 'fabric-registry-sync-v0', 'fabric-renderer-api-v1', 'fabric-renderer-indigo', 'fabric-rendering-v1', 'fabric-resource-conditions-api-v1', 'fabric-screen-handler-api-v1', 'fabric-tag-api-v1', 'meteor-client']
+mixins to apply: ['fabric-api-lookup-api-v1', 'fabric-biome-api-v1', 'fabric-block-api-v1', 'fabric-block-view-api-v2', 'fabric-command-api-v2', 'fabric-content-registries-v0', 'fabric-convention-tags-v2', 'fabric-crash-report-info-v1', 'fabric-data-attachment-api-v1', 'fabric-data-generation-api-v1', 'fabric-dimensions-v1', 'fabric-entity-events-v1', 'fabric-events-interaction-v0', 'fabric-game-rule-api-v1', 'fabric-item-api-v1', 'fabric-item-group-api-v1', 'fabric-key-binding-api-v1', 'fabric-lifecycle-events-v1', 'fabric-loot-api-v2', 'fabric-loot-api-v3', 'fabric-message-api-v1', 'fabric-model-loading-api-v1', 'fabric-networking-api-v1', 'fabric-object-builder-api-v1', 'fabric-particles-v1', 'fabric-recipe-api-v1', 'fabric-registry-sync-v0', 'fabric-renderer-api-v1', 'fabric-renderer-indigo', 'fabric-rendering-fluids-v1', 'fabric-rendering-v1', 'fabric-resource-conditions-api-v1', 'fabric-resource-loader-v1', 'fabric-screen-api-v1', 'fabric-screen-handler-api-v1', 'fabric-serialization-api-v1', 'fabric-sound-api-v1', 'fabric-tag-api-v1', 'fabric-transfer-api-v1', 'meteor-client']
+the generated patcher compiles
+mods to bake: ../engine/port/work/1.21.11/webmc-mods/MinecraftAuth-5.0.2.jar:../engine/port/work/1.21.11/webmc-mods/WaybackAuthLib-1.0.1.jar:../engine/port/work/1.21.11/webmc-mods/asm-9.8-official.jar:../engine/port/work/1.21.11/webmc-mods/asm-analysis-9.8-official.jar:../engine/port/work/1.21.11/webmc-mods/asm-commons-9.8-official.jar:../engine/port/work/1.21.11/webmc-mods/asm-tree-9.8-official.jar:../engine/port/work/1.21.11/webmc-mods/asm-util-9.8-official.jar:../engine/port/work/1.21.11/webmc-mods/discord-ipc-1.1.jar:../engine/port/work/1.21.11/webmc-mods/error_prone_annotations-2.48.0.jar:../engine/port/work/1.21.11/webmc-mods/fabric-api-0.141.6+1.21.11-official.jar:../engine/port/work/1.21.11/webmc-mods/fabric-api-base-1.0.5+4ebb5c083e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-api-lookup-api-v1-1.6.114+20dc27073e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-biome-api-v1-17.1.1+4fc5413f3e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-block-api-v1-1.1.10+4ebb5c083e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-block-view-api-v2-1.0.39+4ebb5c083e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-command-api-v2-2.4.7+6b42a6003e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-content-registries-v0-10.2.14+4fc5413f3e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-convention-tags-v1-2.1.55+7f945d5b3e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-convention-tags-v2-2.17.3+8ef948ba3e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-crash-report-info-v1-0.3.23+4ebb5c083e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-data-attachment-api-v1-1.8.48+eed0806f3e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-data-generation-api-v1-23.5.0+88d7da613e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-dimensions-v1-4.0.28+4fc5413f3e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-entity-events-v1-3.1.1+1d0ab4303e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-events-interaction-v0-4.1.1+3b89ecf63e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-game-rule-api-v1-2.0.3+4fc5413f3e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-item-api-v1-11.6.0+67f17bb43e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-item-group-api-v1-4.2.36+4fc5413f3e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-key-binding-api-v1-1.1.7+4fc5413f3e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-lifecycle-events-v1-2.6.15+4ebb5c083e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-loot-api-v2-3.0.73+3f89f5a53e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-loot-api-v3-2.0.20+78c8b4663e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-message-api-v1-6.1.12+4ebb5c083e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-model-loading-api-v1-6.0.15+4fc5413f3e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-networking-api-v1-5.1.6+6b6d71a53e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-object-builder-api-v1-21.1.40+4fc5413f3e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-particles-v1-4.2.12+4fc5413f3e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-recipe-api-v1-8.2.4+4ebb5c083e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-registry-sync-v0-6.2.6+1718722b3e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-renderer-api-v1-8.0.3+f4ffd2e53e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-renderer-indigo-5.0.3+f4ffd2e53e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-rendering-fluids-v1-3.1.43+4ebb5c083e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-rendering-v1-16.2.10+0290ad933e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-resource-conditions-api-v1-5.0.35+4fc5413f3e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-resource-loader-v0-3.3.4+4fc5413f3e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-resource-loader-v1-1.0.10+78c8b4663e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-screen-api-v1-3.1.7+4ebb5c083e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-screen-handler-api-v1-1.3.162+4fc5413f3e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-serialization-api-v1-1.0.5+4ebb5c083e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-sound-api-v1-1.0.51+4fc5413f3e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-tag-api-v1-1.3.0+88d7da613e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-transfer-api-v1-6.0.25+4fc5413f3e.jar:../engine/port/work/1.21.11/webmc-mods/fabric-transitive-access-wideners-v1-7.1.0+014c8cec3e.jar:../engine/port/work/1.21.11/webmc-mods/gson-1.9.2.jar:../engine/port/work/1.21.11/webmc-mods/gson-2.14.0.jar:../engine/port/work/1.21.11/webmc-mods/httpclient-1.9.2.jar:../engine/port/work/1.21.11/webmc-mods/javassist-3.28.0-GA.jar:../engine/port/work/1.21.11/webmc-mods/meteor-client-1.21.11-86-official.jar:../engine/port/work/1.21.11/webmc-mods/netty-codec-socks-4.2.7.Final.jar:../engine/port/work/1.21.11/webmc-mods/netty-handler-proxy-4.2.7.Final.jar:../engine/port/work/1.21.11/webmc-mods/orbit-0.2.4.jar:../engine/port/work/1.21.11/webmc-mods/reflections-0.10.2.jar:../engine/port/work/1.21.11/webmc-mods/starscript-0.2.5.jar:../engine/port/work/1.21.11/webmc-mods/webmc-mixin-shims-official.jar:../engine/port/work/1.21.11/webmc-mods/webmc-optional-stubs.jar:../engine/port/work/1.21.11/webmc-mods/webmc-platform-stubs.jar
+mod patcher: WebMcModBakePatcher
+  present: ../engine/port/work/1.21.11/webmc-mods/MinecraftAuth-5.0.2.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/WaybackAuthLib-1.0.1.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/asm-9.8-official.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/asm-analysis-9.8-official.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/asm-commons-9.8-official.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/asm-tree-9.8-official.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/asm-util-9.8-official.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/discord-ipc-1.1.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/error_prone_annotations-2.48.0.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-api-0.141.6+1.21.11-official.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-api-base-1.0.5+4ebb5c083e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-api-lookup-api-v1-1.6.114+20dc27073e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-biome-api-v1-17.1.1+4fc5413f3e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-block-api-v1-1.1.10+4ebb5c083e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-block-view-api-v2-1.0.39+4ebb5c083e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-command-api-v2-2.4.7+6b42a6003e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-content-registries-v0-10.2.14+4fc5413f3e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-convention-tags-v1-2.1.55+7f945d5b3e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-convention-tags-v2-2.17.3+8ef948ba3e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-crash-report-info-v1-0.3.23+4ebb5c083e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-data-attachment-api-v1-1.8.48+eed0806f3e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-data-generation-api-v1-23.5.0+88d7da613e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-dimensions-v1-4.0.28+4fc5413f3e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-entity-events-v1-3.1.1+1d0ab4303e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-events-interaction-v0-4.1.1+3b89ecf63e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-game-rule-api-v1-2.0.3+4fc5413f3e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-item-api-v1-11.6.0+67f17bb43e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-item-group-api-v1-4.2.36+4fc5413f3e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-key-binding-api-v1-1.1.7+4fc5413f3e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-lifecycle-events-v1-2.6.15+4ebb5c083e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-loot-api-v2-3.0.73+3f89f5a53e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-loot-api-v3-2.0.20+78c8b4663e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-message-api-v1-6.1.12+4ebb5c083e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-model-loading-api-v1-6.0.15+4fc5413f3e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-networking-api-v1-5.1.6+6b6d71a53e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-object-builder-api-v1-21.1.40+4fc5413f3e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-particles-v1-4.2.12+4fc5413f3e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-recipe-api-v1-8.2.4+4ebb5c083e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-registry-sync-v0-6.2.6+1718722b3e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-renderer-api-v1-8.0.3+f4ffd2e53e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-renderer-indigo-5.0.3+f4ffd2e53e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-rendering-fluids-v1-3.1.43+4ebb5c083e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-rendering-v1-16.2.10+0290ad933e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-resource-conditions-api-v1-5.0.35+4fc5413f3e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-resource-loader-v0-3.3.4+4fc5413f3e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-resource-loader-v1-1.0.10+78c8b4663e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-screen-api-v1-3.1.7+4ebb5c083e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-screen-handler-api-v1-1.3.162+4fc5413f3e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-serialization-api-v1-1.0.5+4ebb5c083e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-sound-api-v1-1.0.51+4fc5413f3e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-tag-api-v1-1.3.0+88d7da613e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-transfer-api-v1-6.0.25+4fc5413f3e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/fabric-transitive-access-wideners-v1-7.1.0+014c8cec3e.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/gson-1.9.2.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/gson-2.14.0.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/httpclient-1.9.2.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/javassist-3.28.0-GA.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/meteor-client-1.21.11-86-official.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/netty-codec-socks-4.2.7.Final.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/netty-handler-proxy-4.2.7.Final.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/orbit-0.2.4.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/reflections-0.10.2.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/starscript-0.2.5.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/webmc-mixin-shims-official.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/webmc-optional-stubs.jar
+  present: ../engine/port/work/1.21.11/webmc-mods/webmc-platform-stubs.jar
+  chain hook references: 3
+GAIUS_BRINGUP=1 is ignored for release profile 1.21.11
+Bootstrapping Maven artifact org.teavm:teavm-classlib:0.15.0
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+  2 8946k    2  195k    0     0   157k      0  0:00:56  0:00:01  0:00:55  157k
+  5 8946k    5  468k    0     0   206k      0  0:00:43  0:00:02  0:00:41  206k
+  9 8946k    9  828k    0     0   246k      0  0:00:36  0:00:03  0:00:33  246k
+ 11 8946k   11 1054k    0     0   248k      0  0:00:35  0:00:04  0:00:31  248k
+ 14 8946k   14 1335k    0     0   255k      0  0:00:35  0:00:05  0:00:30  269k
+ 17 8946k   17 1601k    0     0   256k      0  0:00:34  0:00:06  0:00:28  281k
+ 20 8946k   20 1874k    0     0   259k      0  0:00:34  0:00:07  0:00:27  283k
+ 24 8946k   24 2171k    0     0   263k      0  0:00:33  0:00:08  0:00:25  275k
+ 27 8946k   27 2445k    0     0   264k      0  0:00:33  0:00:09  0:00:24  277k
+ 30 8946k   30 2742k    0     0   267k      0  0:00:33  0:00:10  0:00:23  281k
+ 34 8946k   34 3054k    0     0   271k      0  0:00:32  0:00:11  0:00:21  290k
+ 37 8946k   37 3351k    0     0   273k      0  0:00:32  0:00:12  0:00:20  294k
+ 40 8946k   40 3624k    0     0   272k      0  0:00:32  0:00:13  0:00:19  286k
+ 43 8946k   43 3898k    0     0   273k      0  0:00:32  0:00:14  0:00:18  290k
+ 46 8946k   46 4187k    0     0   274k      0  0:00:32  0:00:15  0:00:17  288k
+ 50 8946k   50 4484k    0     0   276k      0  0:00:32  0:00:16  0:00:16  285k
+ 53 8946k   53 4757k    0     0   276k      0  0:00:32  0:00:17  0:00:15  281k
+ 56 8946k   56 5085k    0     0   277k      0  0:00:32  0:00:18  0:00:14  292k
+ 59 8946k   59 5335k    0     0   277k      0  0:00:32  0:00:19  0:00:13  287k
+ 62 8946k   62 5624k    0     0   277k      0  0:00:32  0:00:20  0:00:12  283k
+ 65 8946k   65 5867k    0     0   276k      0  0:00:32  0:00:21  0:00:11  276k
+ 67 8946k   67 6054k    0     0   272k      0  0:00:32  0:00:22  0:00:10  259k
+ 69 8946k   69 6203k    0     0   266k      0  0:00:33  0:00:23  0:00:10  226k
+ 70 8946k   70 6351k    0     0   262k      0  0:00:34  0:00:24  0:00:10  203k
+ 72 8946k   72 6476k    0     0   256k      0  0:00:34  0:00:25  0:00:09  172k
+ 73 8946k   73 6578k    0     0   250k      0  0:00:35  0:00:26  0:00:09  141k
+ 74 8946k   74 6656k    0     0   244k      0  0:00:36  0:00:27  0:00:09  120k
+ 75 8946k   75 6765k    0     0   239k      0  0:00:37  0:00:28  0:00:09  112k
+ 77 8946k   77 6898k    0     0   235k      0  0:00:37  0:00:29  0:00:08  109k
+ 78 8946k   78 7039k    0     0   232k      0  0:00:38  0:00:30  0:00:08  112k
+ 79 8946k   79 7124k    0     0   227k      0  0:00:39  0:00:31  0:00:08  108k
+ 80 8946k   80 7226k    0     0   223k      0  0:00:39  0:00:32  0:00:07  113k
+ 81 8946k   81 7328k    0     0   220k      0  0:00:40  0:00:33  0:00:07  112k
+ 83 8946k   83 7437k    0     0   217k      0  0:00:41  0:00:34  0:00:07  107k
+ 84 8946k   84 7554k    0     0   214k      0  0:00:41  0:00:35  0:00:06  102k
+ 85 8946k   85 7656k    0     0   211k      0  0:00:42  0:00:36  0:00:06  107k
+ 86 8946k   86 7765k    0     0   208k      0  0:00:42  0:00:37  0:00:05  108k
+ 88 8946k   88 7882k    0     0   206k      0  0:00:43  0:00:38  0:00:05  111k
+ 89 8946k   89 7999k    0     0   203k      0  0:00:43  0:00:39  0:00:04  112k
+ 90 8946k   90 8070k    0     0   200k      0  0:00:44  0:00:40  0:00:04  101k
+ 90 8946k   90 8117k    0     0   196k      0  0:00:45  0:00:41  0:00:04 94061
+ 91 8946k   91 8187k    0     0   193k      0  0:00:46  0:00:42  0:00:04 86642
+ 92 8946k   92 8242k    0     0   190k      0  0:00:46  0:00:43  0:00:03 72914
+ 92 8946k   92 8296k    0     0   187k      0  0:00:47  0:00:44  0:00:03 60413
+ 93 8946k   93 8374k    0     0   184k      0  0:00:48  0:00:45  0:00:03 61782
+ 94 8946k   94 8460k    0     0   182k      0  0:00:48  0:00:46  0:00:02 70626
+ 95 8946k   95 8554k    0     0   181k      0  0:00:49  0:00:47  0:00:02 75260
+ 96 8946k   96 8617k    0     0   178k      0  0:00:50  0:00:48  0:00:02 77497
+ 97 8946k   97 8703k    0     0   176k      0  0:00:50  0:00:49  0:00:01 83854
+ 98 8946k   98 8843k    0     0   175k      0  0:00:50  0:00:50 --:--:-- 98159
+100 8946k  100 8946k    0     0   174k      0  0:00:51  0:00:51 --:--:--   99k
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ------------------< org.apache.maven:standalone-pom >-------------------
+[INFO] Building Maven Stub Project (No POM) 1
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.8.1:get (default-cli) @ standalone-pom ---
+[INFO] Resolving org.teavm:teavm-classlib:jar:0.15.0
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  9.949 s
+[INFO] Finished at: 2026-10-20T13:55:09Z
+[INFO] ------------------------------------------------------------------------
+Bootstrapping Maven artifact org.teavm:teavm-interop:0.15.0
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ------------------< org.apache.maven:standalone-pom >-------------------
+[INFO] Building Maven Stub Project (No POM) 1
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.8.1:get (default-cli) @ standalone-pom ---
+[INFO] Resolving org.teavm:teavm-interop:jar:0.15.0
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  1.560 s
+[INFO] Finished at: 2026-10-20T13:55:12Z
+[INFO] ------------------------------------------------------------------------
+Bootstrapping Maven artifact org.teavm:teavm-jso:0.15.0
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ------------------< org.apache.maven:standalone-pom >-------------------
+[INFO] Building Maven Stub Project (No POM) 1
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.8.1:get (default-cli) @ standalone-pom ---
+[INFO] Resolving org.teavm:teavm-jso:jar:0.15.0
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  1.442 s
+[INFO] Finished at: 2026-10-20T13:55:15Z
+[INFO] ------------------------------------------------------------------------
+Bootstrapping Maven artifact org.teavm:teavm-jso-apis:0.15.0
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ------------------< org.apache.maven:standalone-pom >-------------------
+[INFO] Building Maven Stub Project (No POM) 1
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.8.1:get (default-cli) @ standalone-pom ---
+[INFO] Resolving org.teavm:teavm-jso-apis:jar:0.15.0
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  1.606 s
+[INFO] Finished at: 2026-10-20T13:55:18Z
+[INFO] ------------------------------------------------------------------------
+Bootstrapping Maven artifact org.teavm:teavm-core:0.15.0
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ------------------< org.apache.maven:standalone-pom >-------------------
+[INFO] Building Maven Stub Project (No POM) 1
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.8.1:get (default-cli) @ standalone-pom ---
+[INFO] Resolving org.teavm:teavm-core:jar:0.15.0
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  1.709 s
+[INFO] Finished at: 2026-10-20T13:55:21Z
+[INFO] ------------------------------------------------------------------------
+Bootstrapping Maven artifact org.teavm:teavm-platform:0.15.0
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ------------------< org.apache.maven:standalone-pom >-------------------
+[INFO] Building Maven Stub Project (No POM) 1
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.8.1:get (default-cli) @ standalone-pom ---
+[INFO] Resolving org.teavm:teavm-platform:jar:0.15.0
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  1.629 s
+[INFO] Finished at: 2026-10-20T13:55:24Z
+[INFO] ------------------------------------------------------------------------
+Bootstrapping Maven artifact com.jcraft:jzlib:1.1.3
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ------------------< org.apache.maven:standalone-pom >-------------------
+[INFO] Building Maven Stub Project (No POM) 1
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.8.1:get (default-cli) @ standalone-pom ---
+[INFO] Resolving com.jcraft:jzlib:jar:1.1.3
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  1.609 s
+[INFO] Finished at: 2026-10-20T13:55:27Z
+[INFO] ------------------------------------------------------------------------
+Bootstrapping Maven artifact org.ow2.asm:asm:9.8
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ------------------< org.apache.maven:standalone-pom >-------------------
+[INFO] Building Maven Stub Project (No POM) 1
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.8.1:get (default-cli) @ standalone-pom ---
+[INFO] Resolving org.ow2.asm:asm:jar:9.8
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  1.455 s
+[INFO] Finished at: 2026-10-20T13:55:30Z
+[INFO] ------------------------------------------------------------------------
+Bootstrapping Maven artifact org.ow2.asm:asm-tree:9.8
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ------------------< org.apache.maven:standalone-pom >-------------------
+[INFO] Building Maven Stub Project (No POM) 1
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.8.1:get (default-cli) @ standalone-pom ---
+[INFO] Resolving org.ow2.asm:asm-tree:jar:9.8
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  1.548 s
+[INFO] Finished at: 2026-10-20T13:55:33Z
+[INFO] ------------------------------------------------------------------------
+Using unmodified jtracy base: no source overrides at /home/runner/work/webmc-port/webmc-port/engine/port/overrides/libraries/jtracy/src/main/java
+Using unmodified oshi base: no source overrides at /home/runner/work/webmc-port/webmc-port/engine/port/overrides/libraries/oshi/src/main/java
+Note: /home/runner/work/webmc-port/webmc-port/engine/port/overrides/libraries/slf4j/src/main/java/org/slf4j/impl/BrowserLogger.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+Note: /home/runner/work/webmc-port/webmc-port/engine/port/overrides/libraries/mojang-logging/src/main/java/com/mojang/logging/LogUtils.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+Using unmodified joml base: no source overrides at /home/runner/work/webmc-port/webmc-port/engine/port/overrides/libraries/joml/src/main/java
+Verified jopt-simple browser line wrapping
+Patched jopt-simple File conversion for browser use
+Using unmodified guava base: no source overrides at /home/runner/work/webmc-port/webmc-port/engine/port/overrides/libraries/guava/src/main/java
+Using unmodified netty-common base: no source overrides at /home/runner/work/webmc-port/webmc-port/engine/port/overrides/libraries/netty-common/src/main/java
+Using unmodified netty-buffer base: no source overrides at /home/runner/work/webmc-port/webmc-port/engine/port/overrides/libraries/netty-buffer/src/main/java
+Using unmodified netty-codec-http base: no source overrides at /home/runner/work/webmc-port/webmc-port/engine/port/overrides/libraries/netty-codec-http/src/main/java
+Forced 12 Netty heap-buffer accessors onto portable byte arrays
+Forced Netty byte-array operations onto portable implementations
+Replaced Netty's legacy high-byte String constructor
+Patched 9 LWJGL Callback methods
+Verified LWJGL browser architecture identity
+Verified LWJGL browser Platform os.name replacement
+Patched 935 Unsafe calls in 94 LWJGL classes
+Patched 2025 desktop native methods
+Patched required and optional LWJGL APIUtil methods
+Patched 0 LWJGL callback descriptors in lwjgl-3.3.3.jar
+LWJGL module steps for Minecraft 1.21.11 (renderpearl client: false)
+Patched 16 Unsafe calls in 4 LWJGL classes
+Patched 0 LWJGL callback descriptors in lwjgl-glfw-3.3.3.jar
+Skipping LWJGL module lwjgl-sdl: not in the Minecraft 1.21.11 libraries
+Patched 334 OpenGL methods
+Patched 7 Unsafe calls in 2 LWJGL classes
+Patched 2154 desktop native methods
+Patched 0 LWJGL callback descriptors in lwjgl-opengl-3.3.3.jar
+Patched 259 Unsafe calls in 53 LWJGL classes
+Patched 0 desktop native methods
+Patched 0 LWJGL callback descriptors in lwjgl-freetype-3.3.3.jar
+Patched 95 Unsafe calls in 14 LWJGL classes
+Patched 165 desktop native methods
+Patched 0 LWJGL callback descriptors in lwjgl-stb-3.3.3.jar
+Patched 191 OpenAL methods
+Patched 0 desktop native methods
+Patched 0 LWJGL callback descriptors in lwjgl-openal-3.3.3.jar
+Patched 11 desktop native methods
+Patched 0 LWJGL callback descriptors in lwjgl-tinyfd-3.3.3.jar
+Skipping LWJGL module lwjgl-vma: not in the Minecraft 1.21.11 libraries
+Skipping LWJGL module lwjgl-vulkan: not in the Minecraft 1.21.11 libraries
+Skipping LWJGL module lwjgl-shaderc: not in the Minecraft 1.21.11 libraries
+Skipping LWJGL module lwjgl-spvc: not in the Minecraft 1.21.11 libraries
+Patched 24 desktop native methods
+Patched TracyClient for browser use
+Compiling 56 Minecraft 1.21.11 browser overrides
+Instrumented exact decoded-packet queue accounting
+Instrumented MinecraftServer.pollTask active-work scope: returns=1
+Instrumented Mob.serverAiStep browser AI checkpoints=7, Mob.aiStep boundaries=2, LivingEntity.tick Mob fallback=1
+Cached worldgen record hash codes for profile 1.21.11: 20 targets
+Instrumented NaturalSpawner generation spawn telemetry (1.21.11): returns=2, entityAdds=1
+Added the Relays button to JoinMultiplayerScreen
+Added the NativeImage.copyRect row-copy fast path
+Memoized BlockStateBase.Cache face sturdiness per support shape
+Patched GameRenderer frame-scoped browser upload budget
+Patched block targeting after renderLevel(Lnet/minecraft/client/DeltaTracker;)V
+Skipped 26.2 early occlusion update: render shape not present
+Skipped 26.2 visible section refresh: render shape not present
+PATCH_SUMMARY applied=170 dropped=0 bringupSkipped=0
+Preserved Minecraft 1.21.11 FAST graphics preset distances at render=8 simulation=6
+Bounded Minecraft 1.21.11 chunk-generation layer at holder boundaries
+Patched worldgen PriorityConsecutiveExecutor with budgeted bookkeeping turns
+WebMcModBakePatcher: 105 class(es) from MinecraftAuth-5.0.2.jar (id net_raphimc_minecraftauth)
+WebMcModBakePatcher: 13 class(es) from WaybackAuthLib-1.0.1.jar (id de_florianmichael_waybackauthlib)
+WebMcModBakePatcher: 39 class(es) from asm-9.8-official.jar
+WebMcModBakePatcher: 15 class(es) from asm-analysis-9.8-official.jar
+WebMcModBakePatcher: 28 class(es) from asm-commons-9.8-official.jar
+WebMcModBakePatcher: 39 class(es) from asm-tree-9.8-official.jar
+WebMcModBakePatcher: 27 class(es) from asm-util-9.8-official.jar
+WebMcModBakePatcher: 14 class(es) from discord-ipc-1.1.jar (id meteordevelopment_discord-ipc)
+WebMcModBakePatcher: 32 class(es) from error_prone_annotations-2.48.0.jar (id com_google_errorprone_error_prone_annotations)
+WebMcModBakePatcher:   18 class(es) from fabric-api-base-1.0.5+4ebb5c083e.jar (nested, id fabric-api-base)
+WebMcModBakePatcher:   36 class(es) from fabric-api-lookup-api-v1-1.6.114+20dc27073e.jar (nested, id fabric-api-lookup-api-v1, entrypoint net.fabricmc.fabric.impl.lookup.ApiLookupImpl)
+WebMcModBakePatcher:   48 class(es) from fabric-biome-api-v1-17.1.1+4fc5413f3e.jar (nested, id fabric-biome-api-v1)
+WebMcModBakePatcher:   12 class(es) from fabric-block-api-v1-1.1.10+4ebb5c083e.jar (nested, id fabric-block-api-v1)
+WebMcModBakePatcher:   15 class(es) from fabric-block-view-api-v2-1.0.39+4ebb5c083e.jar (nested, id fabric-block-view-api-v2)
+WebMcModBakePatcher:   23 class(es) from fabric-command-api-v2-2.4.7+6b42a6003e.jar (nested, id fabric-command-api-v2)
+WebMcModBakePatcher:   55 class(es) from fabric-content-registries-v0-10.2.14+4fc5413f3e.jar (nested, id fabric-content-registries-v0)
+WebMcModBakePatcher:   14 class(es) from fabric-convention-tags-v1-2.1.55+7f945d5b3e.jar (nested, id fabric-convention-tags-v1, entrypoint net.fabricmc.fabric.impl.tag.convention.ConventionLogWarnings)
+WebMcModBakePatcher:   19 class(es) from fabric-convention-tags-v2-2.17.3+8ef948ba3e.jar (nested, id fabric-convention-tags-v2, entrypoint net.fabricmc.fabric.impl.tag.convention.v2.TranslationConventionLogWarnings)
+WebMcModBakePatcher:   8 class(es) from fabric-crash-report-info-v1-0.3.23+4ebb5c083e.jar (nested, id fabric-crash-report-info-v1)
+WebMcModBakePatcher:   55 class(es) from fabric-data-attachment-api-v1-1.8.48+eed0806f3e.jar (nested, id fabric-data-attachment-api-v1, entrypoint net.fabricmc.fabric.impl.attachment.AttachmentEntrypoint)
+WebMcModBakePatcher:   92 class(es) from fabric-data-generation-api-v1-23.5.0+88d7da613e.jar (nested, id fabric-data-generation-api-v1)
+WebMcModBakePatcher:   11 class(es) from fabric-dimensions-v1-4.0.28+4fc5413f3e.jar (nested, id fabric-dimensions-v1)
+WebMcModBakePatcher:   64 class(es) from fabric-entity-events-v1-3.1.1+1d0ab4303e.jar (nested, id fabric-entity-events-v1)
+WebMcModBakePatcher:   46 class(es) from fabric-events-interaction-v0-4.1.1+3b89ecf63e.jar (nested, id fabric-events-interaction-v0, entrypoint net.fabricmc.fabric.impl.event.interaction.InteractionEventsRouter)
+WebMcModBakePatcher:   34 class(es) from fabric-game-rule-api-v1-2.0.3+4fc5413f3e.jar (nested, id fabric-game-rule-api-v1)
+WebMcModBakePatcher:   55 class(es) from fabric-item-api-v1-11.6.0+67f17bb43e.jar (nested, id fabric-item-api-v1)
+WebMcModBakePatcher:   26 class(es) from fabric-item-group-api-v1-4.2.36+4fc5413f3e.jar (nested, id fabric-item-group-api-v1)
+WebMcModBakePatcher:   11 class(es) from fabric-key-binding-api-v1-1.1.7+4fc5413f3e.jar (nested, id fabric-key-binding-api-v1)
+WebMcModBakePatcher:   82 class(es) from fabric-lifecycle-events-v1-2.6.15+4ebb5c083e.jar (nested, id fabric-lifecycle-events-v1, entrypoint net.fabricmc.fabric.impl.event.lifecycle.LifecycleEventsImpl)
+WebMcModBakePatcher:   16 class(es) from fabric-loot-api-v2-3.0.73+3f89f5a53e.jar (nested, id fabric-loot-api-v2, entrypoint net.fabricmc.fabric.impl.loot.v2.LootInitializer)
+WebMcModBakePatcher:   23 class(es) from fabric-loot-api-v3-2.0.20+78c8b4663e.jar (nested, id fabric-loot-api-v3)
+WebMcModBakePatcher:   35 class(es) from fabric-message-api-v1-6.1.12+4ebb5c083e.jar (nested, id fabric-message-api-v1)
+WebMcModBakePatcher:   63 class(es) from fabric-model-loading-api-v1-6.0.15+4fc5413f3e.jar (nested, id fabric-model-loading-api-v1, entrypoint net.fabricmc.fabric.impl.client.model.loading.CustomUnbakedBlockStateModelInit)
+WebMcModBakePatcher:   159 class(es) from fabric-networking-api-v1-5.1.6+6b6d71a53e.jar (nested, id fabric-networking-api-v1, entrypoint net.fabricmc.fabric.impl.networking.CommonPacketsImpl::init)
+WebMcModBakePatcher:   54 class(es) from fabric-object-builder-api-v1-21.1.40+4fc5413f3e.jar (nested, id fabric-object-builder-api-v1)
+WebMcModBakePatcher:   43 class(es) from fabric-particles-v1-4.2.12+4fc5413f3e.jar (nested, id fabric-particles-v1, entrypoint net.fabricmc.fabric.impl.particle.ExtendedBlockStateParticleEffectSync)
+WebMcModBakePatcher:   67 class(es) from fabric-recipe-api-v1-8.2.4+4ebb5c083e.jar (nested, id fabric-recipe-api-v1, entrypoint net.fabricmc.fabric.impl.recipe.ingredient.CustomIngredientInit)
+WebMcModBakePatcher:   66 class(es) from fabric-registry-sync-v0-6.2.6+1718722b3e.jar (nested, id fabric-registry-sync-v0, entrypoint net.fabricmc.fabric.impl.registry.sync.FabricRegistryInit)
+WebMcModBakePatcher:   91 class(es) from fabric-renderer-api-v1-8.0.3+f4ffd2e53e.jar (nested, id fabric-renderer-api-v1, entrypoint net.fabricmc.fabric.impl.renderer.DebugHudClient)
+WebMcModBakePatcher:   67 class(es) from fabric-renderer-indigo-5.0.3+f4ffd2e53e.jar (nested, id fabric-renderer-indigo, entrypoint net.fabricmc.fabric.impl.client.indigo.Indigo)
+WebMcModBakePatcher:   16 class(es) from fabric-rendering-fluids-v1-3.1.43+4ebb5c083e.jar (nested, id fabric-rendering-fluids-v1)
+WebMcModBakePatcher:   125 class(es) from fabric-rendering-v1-16.2.10+0290ad933e.jar (nested, id fabric-rendering-v1, entrypoint net.fabricmc.fabric.impl.client.rendering.hud.HudStatusBarHeightRegistryImpl)
+WebMcModBakePatcher:   30 class(es) from fabric-resource-conditions-api-v1-5.0.35+4fc5413f3e.jar (nested, id fabric-resource-conditions-api-v1, entrypoint net.fabricmc.fabric.impl.resource.conditions.ResourceConditionsImpl)
+WebMcModBakePatcher:   13 class(es) from fabric-resource-loader-v0-3.3.4+4fc5413f3e.jar (nested, id fabric-resource-loader-v0)
+WebMcModBakePatcher:   78 class(es) from fabric-resource-loader-v1-1.0.10+78c8b4663e.jar (nested, id fabric-resource-loader-v1)
+WebMcModBakePatcher:   45 class(es) from fabric-screen-api-v1-3.1.7+4ebb5c083e.jar (nested, id fabric-screen-api-v1)
+WebMcModBakePatcher:   15 class(es) from fabric-screen-handler-api-v1-1.3.162+4fc5413f3e.jar (nested, id fabric-screen-handler-api-v1, entrypoint net.fabricmc.fabric.impl.screenhandler.Networking)
+WebMcModBakePatcher:   16 class(es) from fabric-serialization-api-v1-1.0.5+4ebb5c083e.jar (nested, id fabric-serialization-api-v1)
+WebMcModBakePatcher:   7 class(es) from fabric-sound-api-v1-1.0.51+4fc5413f3e.jar (nested, id fabric-sound-api-v1)
+WebMcModBakePatcher:   30 class(es) from fabric-tag-api-v1-1.3.0+88d7da613e.jar (nested, id fabric-tag-api-v1, entrypoint net.fabricmc.fabric.impl.tag.TagInit)
+WebMcModBakePatcher:   131 class(es) from fabric-transfer-api-v1-6.0.25+4fc5413f3e.jar (nested, id fabric-transfer-api-v1)
+WebMcModBakePatcher:   2 class(es) from fabric-transitive-access-wideners-v1-7.1.0+014c8cec3e.jar (nested, id fabric-transitive-access-wideners-v1)
+WebMcModBakePatcher: 1918 class(es) from fabric-api-0.141.6+1.21.11-official.jar (id fabric-api)
+WebMcModBakePatcher: 18 class(es) from fabric-api-base-1.0.5+4ebb5c083e.jar (id fabric-api-base)
+WebMcModBakePatcher: 36 class(es) from fabric-api-lookup-api-v1-1.6.114+20dc27073e.jar (id fabric-api-lookup-api-v1), entrypoint net.fabricmc.fabric.impl.lookup.ApiLookupImpl
+  mixin net.fabricmc.fabric.mixin.lookup.ServerLevelMixin -> net.minecraft.server.level.ServerLevel: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 10 member(s) copied, 0 shadow(s) read
+WebMcModBakePatcher: 1 mixin part(s) were not applied in fabric-api-lookup-api-v1-1.6.114+20dc27073e.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 48 class(es) from fabric-biome-api-v1-17.1.1+4fc5413f3e.jar (id fabric-biome-api-v1)
+  mixin net.fabricmc.fabric.mixin.biome.NoiseChunkMixin -> net.minecraft.world.level.levelgen.NoiseChunk: 0 overwritten, 1 injected, 0 redirected, 0 modified, 0 generated, 1 member(s) copied, 0 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.biome.modification.MinecraftServerMixin -> net.minecraft.server.MinecraftServer: 0 overwritten, 1 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 1 shadow(s) read
+WebMcModBakePatcher: 37 mixin part(s) were not applied in fabric-biome-api-v1-17.1.1+4fc5413f3e.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 12 class(es) from fabric-block-api-v1-1.1.10+4ebb5c083e.jar (id fabric-block-api-v1)
+  mixin net.fabricmc.fabric.mixin.block.LevelChunkSectionMixin -> net.minecraft.world.level.chunk.LevelChunkSection: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.block.LivingEntityMixin -> net.minecraft.world.entity.LivingEntity: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 0 shadow(s) read
+WebMcModBakePatcher: 2 mixin part(s) were not applied in fabric-block-api-v1-1.1.10+4ebb5c083e.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 15 class(es) from fabric-block-view-api-v2-1.0.39+4ebb5c083e.jar (id fabric-block-view-api-v2)
+WebMcModBakePatcher: 1 mixin part(s) were not applied in fabric-block-view-api-v2-1.0.39+4ebb5c083e.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 23 class(es) from fabric-command-api-v2-2.4.7+6b42a6003e.jar (id fabric-command-api-v2)
+WebMcModBakePatcher: 3 mixin part(s) were not applied in fabric-command-api-v2-2.4.7+6b42a6003e.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 55 class(es) from fabric-content-registries-v0-10.2.14+4fc5413f3e.jar (id fabric-content-registries-v0)
+  mixin net.fabricmc.fabric.mixin.content.registry.BlockBehaviourBlockStateBaseMixin -> net.minecraft.world.level.block.state.BlockBehaviour$BlockStateBase: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 1 member(s) copied, 2 shadow(s) read
+WebMcModBakePatcher: 2 mixin part(s) were not applied in fabric-content-registries-v0-10.2.14+4fc5413f3e.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 14 class(es) from fabric-convention-tags-v1-2.1.55+7f945d5b3e.jar (id fabric-convention-tags-v1), entrypoint net.fabricmc.fabric.impl.tag.convention.ConventionLogWarnings
+WebMcModBakePatcher: 19 class(es) from fabric-convention-tags-v2-2.17.3+8ef948ba3e.jar (id fabric-convention-tags-v2), entrypoint net.fabricmc.fabric.impl.tag.convention.v2.TranslationConventionLogWarnings
+WebMcModBakePatcher: 1 mixin part(s) were not applied in fabric-convention-tags-v2-2.17.3+8ef948ba3e.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 8 class(es) from fabric-crash-report-info-v1-0.3.23+4ebb5c083e.jar (id fabric-crash-report-info-v1)
+WebMcModBakePatcher: 1 mixin part(s) were not applied in fabric-crash-report-info-v1-0.3.23+4ebb5c083e.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 55 class(es) from fabric-data-attachment-api-v1-1.8.48+eed0806f3e.jar (id fabric-data-attachment-api-v1), entrypoint net.fabricmc.fabric.impl.attachment.AttachmentEntrypoint
+  mixin net.fabricmc.fabric.mixin.attachment.PlayerChunkSenderMixin -> net.minecraft.server.network.PlayerChunkSender: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 1 member(s) copied, 0 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.attachment.ConnectionMixin -> net.minecraft.network.Connection: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 3 member(s) copied, 0 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.attachment.EntityMixin -> net.minecraft.world.entity.Entity: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 5 member(s) copied, 2 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.attachment.ServerLevelMixin -> net.minecraft.server.level.ServerLevel: 0 overwritten, 1 injected, 0 redirected, 0 modified, 0 generated, 6 member(s) copied, 1 shadow(s) read
+WebMcModBakePatcher: 1 mixin part(s) were not applied in fabric-data-attachment-api-v1-1.8.48+eed0806f3e.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 92 class(es) from fabric-data-generation-api-v1-23.5.0+88d7da613e.jar (id fabric-data-generation-api-v1)
+  mixin net.fabricmc.fabric.mixin.datagen.server.MainMixin -> net.minecraft.server.Main: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 0 shadow(s) read
+WebMcModBakePatcher: 381 mixin part(s) were not applied in fabric-data-generation-api-v1-23.5.0+88d7da613e.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 11 class(es) from fabric-dimensions-v1-4.0.28+4fc5413f3e.jar (id fabric-dimensions-v1)
+WebMcModBakePatcher: 1 mixin part(s) were not applied in fabric-dimensions-v1-4.0.28+4fc5413f3e.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 64 class(es) from fabric-entity-events-v1-3.1.1+1d0ab4303e.jar (id fabric-entity-events-v1)
+  mixin net.fabricmc.fabric.mixin.entity.event.EntityMixin -> net.minecraft.world.entity.Entity: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 1 member(s) copied, 1 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.entity.event.LivingEntityMixin -> net.minecraft.world.entity.LivingEntity: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 2 member(s) copied, 2 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.entity.event.MobMixin -> net.minecraft.world.entity.Mob: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.entity.event.effect.LivingEntityMixin -> net.minecraft.world.entity.LivingEntity: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 3 member(s) copied, 0 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.entity.event.elytra.LivingEntityMixin -> net.minecraft.world.entity.LivingEntity: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 0 shadow(s) read
+WebMcModBakePatcher: 8 mixin part(s) were not applied in fabric-entity-events-v1-3.1.1+1d0ab4303e.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 46 class(es) from fabric-events-interaction-v0-4.1.1+3b89ecf63e.jar (id fabric-events-interaction-v0), entrypoint net.fabricmc.fabric.impl.event.interaction.InteractionEventsRouter
+  mixin net.fabricmc.fabric.mixin.event.interaction.BlockBehaviourBlockStateBaseMixin -> net.minecraft.world.level.block.state.BlockBehaviour$BlockStateBase: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 1 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.event.interaction.ServerGamePacketListenerImplMixin -> net.minecraft.server.network.ServerGamePacketListenerImpl: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 2 member(s) copied, 2 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.event.interaction.ServerPlayerGameModeMixin -> net.minecraft.server.level.ServerPlayerGameMode: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 2 shadow(s) read
+WebMcModBakePatcher: 1 mixin part(s) were not applied in fabric-events-interaction-v0-4.1.1+3b89ecf63e.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 34 class(es) from fabric-game-rule-api-v1-2.0.3+4fc5413f3e.jar (id fabric-game-rule-api-v1)
+  mixin net.fabricmc.fabric.mixin.gamerule.MinecraftServerMixin -> net.minecraft.server.MinecraftServer: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 0 shadow(s) read
+WebMcModBakePatcher: 5 mixin part(s) were not applied in fabric-game-rule-api-v1-2.0.3+4fc5413f3e.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 55 class(es) from fabric-item-api-v1-11.6.0+67f17bb43e.jar (id fabric-item-api-v1)
+  mixin net.fabricmc.fabric.mixin.item.LivingEntityMixin -> net.minecraft.world.entity.LivingEntity: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.item.BuiltInRegistriesMixin -> net.minecraft.core.registries.BuiltInRegistries: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 0 shadow(s) read
+WebMcModBakePatcher: 1 mixin part(s) were not applied in fabric-item-api-v1-11.6.0+67f17bb43e.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 26 class(es) from fabric-item-group-api-v1-4.2.36+4fc5413f3e.jar (id fabric-item-group-api-v1)
+WebMcModBakePatcher: 19 mixin part(s) were not applied in fabric-item-group-api-v1-4.2.36+4fc5413f3e.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 11 class(es) from fabric-key-binding-api-v1-1.1.7+4fc5413f3e.jar (id fabric-key-binding-api-v1)
+  mixin net.fabricmc.fabric.mixin.client.keybinding.OptionsMixin -> net.minecraft.client.Options: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 1 shadow(s) read
+WebMcModBakePatcher: 1 mixin part(s) were not applied in fabric-key-binding-api-v1-1.1.7+4fc5413f3e.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 82 class(es) from fabric-lifecycle-events-v1-2.6.15+4ebb5c083e.jar (id fabric-lifecycle-events-v1), entrypoint net.fabricmc.fabric.impl.event.lifecycle.LifecycleEventsImpl
+  mixin net.fabricmc.fabric.mixin.event.lifecycle.LivingEntityMixin -> net.minecraft.world.entity.LivingEntity: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.event.lifecycle.MinecraftServerMixin -> net.minecraft.server.MinecraftServer: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 2 member(s) copied, 1 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.event.lifecycle.ChunkMapMixin -> net.minecraft.server.level.ChunkMap: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 1 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.event.lifecycle.ServerLevelMixin -> net.minecraft.server.level.ServerLevel: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 0 shadow(s) read
+WebMcModBakePatcher: 4 mixin part(s) were not applied in fabric-lifecycle-events-v1-2.6.15+4ebb5c083e.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 16 class(es) from fabric-loot-api-v2-3.0.73+3f89f5a53e.jar (id fabric-loot-api-v2), entrypoint net.fabricmc.fabric.impl.loot.v2.LootInitializer
+WebMcModBakePatcher: 1 mixin part(s) were not applied in fabric-loot-api-v2-3.0.73+3f89f5a53e.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 23 class(es) from fabric-loot-api-v3-2.0.20+78c8b4663e.jar (id fabric-loot-api-v3)
+  mixin net.fabricmc.fabric.mixin.loot.SimpleJsonResourceReloadListenerMixin -> net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 0 shadow(s) read
+WebMcModBakePatcher: 1 mixin part(s) were not applied in fabric-loot-api-v3-2.0.20+78c8b4663e.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 35 class(es) from fabric-message-api-v1-6.1.12+4ebb5c083e.jar (id fabric-message-api-v1)
+  mixin net.fabricmc.fabric.mixin.message.MinecraftServerMixin -> net.minecraft.server.MinecraftServer: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 1 member(s) copied, 0 shadow(s) read
+WebMcModBakePatcher: 1 mixin part(s) were not applied in fabric-message-api-v1-6.1.12+4ebb5c083e.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 63 class(es) from fabric-model-loading-api-v1-6.0.15+4fc5413f3e.jar (id fabric-model-loading-api-v1), entrypoint net.fabricmc.fabric.impl.client.model.loading.CustomUnbakedBlockStateModelInit
+WebMcModBakePatcher: 1 mixin part(s) were not applied in fabric-model-loading-api-v1-6.0.15+4fc5413f3e.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 159 class(es) from fabric-networking-api-v1-5.1.6+6b6d71a53e.jar (id fabric-networking-api-v1), entrypoint net.fabricmc.fabric.impl.networking.CommonPacketsImpl::init
+  mixin net.fabricmc.fabric.mixin.networking.ConnectionMixin -> net.minecraft.network.Connection: 0 overwritten, 2 injected, 0 redirected, 0 modified, 0 generated, 5 member(s) copied, 1 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.networking.FriendlyByteBufMixin -> net.minecraft.network.FriendlyByteBuf: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.networking.PacketEncoderMixin -> net.minecraft.network.PacketEncoder: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.networking.ServerCommonPacketListenerImplMixin -> net.minecraft.server.network.ServerCommonPacketListenerImpl: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 1 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.networking.ServerLoginPacketListenerImplMixin -> net.minecraft.server.network.ServerLoginPacketListenerImpl: 0 overwritten, 1 injected, 0 redirected, 0 modified, 0 generated, 4 member(s) copied, 1 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.networking.ServerGamePacketListenerImplMixin -> net.minecraft.server.network.ServerGamePacketListenerImpl: 0 overwritten, 1 injected, 0 redirected, 0 modified, 0 generated, 4 member(s) copied, 0 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.networking.accessor.PacketEncoderAccessor -> net.minecraft.network.PacketEncoder: 0 overwritten, 0 injected, 0 redirected, 0 modified, 1 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.networking.accessor.ChunkMapAccessor -> net.minecraft.server.level.ChunkMap: 0 overwritten, 0 injected, 0 redirected, 0 modified, 1 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.networking.accessor.ServerCommonPacketListenerImplAccessor -> net.minecraft.server.network.ServerCommonPacketListenerImpl: 0 overwritten, 0 injected, 0 redirected, 0 modified, 2 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.networking.accessor.ServerLoginPacketListenerImplAccessor -> net.minecraft.server.network.ServerLoginPacketListenerImpl: 0 overwritten, 0 injected, 0 redirected, 0 modified, 2 generated, 0 member(s) copied, 0 shadow(s) read
+WebMcModBakePatcher: 9 mixin part(s) were not applied in fabric-networking-api-v1-5.1.6+6b6d71a53e.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 54 class(es) from fabric-object-builder-api-v1-21.1.40+4fc5413f3e.jar (id fabric-object-builder-api-v1)
+WebMcModBakePatcher: 12 mixin part(s) were not applied in fabric-object-builder-api-v1-21.1.40+4fc5413f3e.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 43 class(es) from fabric-particles-v1-4.2.12+4fc5413f3e.jar (id fabric-particles-v1), entrypoint net.fabricmc.fabric.impl.particle.ExtendedBlockStateParticleEffectSync
+  mixin net.fabricmc.fabric.mixin.particle.EntityMixin -> net.minecraft.world.entity.Entity: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.particle.LivingEntityMixin -> net.minecraft.world.entity.LivingEntity: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 0 shadow(s) read
+WebMcModBakePatcher: 8 mixin part(s) were not applied in fabric-particles-v1-4.2.12+4fc5413f3e.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 67 class(es) from fabric-recipe-api-v1-8.2.4+4ebb5c083e.jar (id fabric-recipe-api-v1), entrypoint net.fabricmc.fabric.impl.recipe.ingredient.CustomIngredientInit
+  mixin net.fabricmc.fabric.mixin.recipe.ingredient.ConnectionMixin -> net.minecraft.network.Connection: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 3 member(s) copied, 0 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.recipe.ingredient.PacketEncoderMixin -> net.minecraft.network.PacketEncoder: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.recipe.sync.ConnectionMixin -> net.minecraft.network.Connection: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 3 member(s) copied, 0 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.recipe.sync.ServerCommonPacketListenerImplAccessor -> net.minecraft.server.network.ServerCommonPacketListenerImpl: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 0 shadow(s) read
+WebMcModBakePatcher: 7 mixin part(s) were not applied in fabric-recipe-api-v1-8.2.4+4ebb5c083e.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 66 class(es) from fabric-registry-sync-v0-6.2.6+1718722b3e.jar (id fabric-registry-sync-v0), entrypoint net.fabricmc.fabric.impl.registry.sync.FabricRegistryInit
+  mixin net.fabricmc.fabric.mixin.registry.sync.BlocksMixin -> net.minecraft.world.level.block.Blocks: 0 overwritten, 1 injected, 0 redirected, 0 modified, 0 generated, 1 member(s) copied, 0 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.registry.sync.MainMixin -> net.minecraft.server.Main: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 1 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.registry.sync.BuiltInRegistriesAccessor -> net.minecraft.core.registries.BuiltInRegistries: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.registry.sync.BuiltInRegistriesMixin -> net.minecraft.core.registries.BuiltInRegistries: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 1 member(s) copied, 0 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.registry.sync.WorldLoaderMixin -> net.minecraft.server.WorldLoader: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 0 shadow(s) read
+WebMcModBakePatcher: 12 mixin part(s) were not applied in fabric-registry-sync-v0-6.2.6+1718722b3e.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 91 class(es) from fabric-renderer-api-v1-8.0.3+f4ffd2e53e.jar (id fabric-renderer-api-v1), entrypoint net.fabricmc.fabric.impl.renderer.DebugHudClient
+WebMcModBakePatcher: 3 mixin part(s) were not applied in fabric-renderer-api-v1-8.0.3+f4ffd2e53e.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 67 class(es) from fabric-renderer-indigo-5.0.3+f4ffd2e53e.jar (id fabric-renderer-indigo), entrypoint net.fabricmc.fabric.impl.client.indigo.Indigo
+  mixin net.fabricmc.fabric.mixin.client.indigo.renderer.RenderSectionRegionMixin -> net.minecraft.client.renderer.chunk.RenderSectionRegion: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 3 member(s) copied, 0 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.client.indigo.renderer.SectionCompilerMixin -> net.minecraft.client.renderer.chunk.SectionCompiler: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 1 member(s) copied, 2 shadow(s) read
+WebMcModBakePatcher: 5 mixin part(s) were not applied in fabric-renderer-indigo-5.0.3+f4ffd2e53e.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 16 class(es) from fabric-rendering-fluids-v1-3.1.43+4ebb5c083e.jar (id fabric-rendering-fluids-v1)
+WebMcModBakePatcher: 125 class(es) from fabric-rendering-v1-16.2.10+0290ad933e.jar (id fabric-rendering-v1), entrypoint net.fabricmc.fabric.impl.client.rendering.hud.HudStatusBarHeightRegistryImpl
+  mixin net.fabricmc.fabric.mixin.client.rendering.ClientLevelMixin -> net.minecraft.client.multiplayer.ClientLevel: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 3 member(s) copied, 1 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.client.rendering.GuiGraphicsMixin -> net.minecraft.client.gui.GuiGraphics: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.client.rendering.EntityRenderDispatcherMixin -> net.minecraft.client.renderer.entity.EntityRenderDispatcher: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.client.rendering.GameRendererMixin -> net.minecraft.client.renderer.GameRenderer: 0 overwritten, 1 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 2 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.client.rendering.GuiRendererMixin -> net.minecraft.client.gui.render.GuiRenderer: 0 overwritten, 2 injected, 0 redirected, 0 modified, 0 generated, 6 member(s) copied, 2 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.client.rendering.LevelRendererMixin -> net.minecraft.client.renderer.LevelRenderer: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 4 member(s) copied, 5 shadow(s) read
+WebMcModBakePatcher: 7 mixin part(s) were not applied in fabric-rendering-v1-16.2.10+0290ad933e.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 30 class(es) from fabric-resource-conditions-api-v1-5.0.35+4fc5413f3e.jar (id fabric-resource-conditions-api-v1), entrypoint net.fabricmc.fabric.impl.resource.conditions.ResourceConditionsImpl
+  mixin net.fabricmc.fabric.mixin.resource.conditions.SimpleJsonResourceReloadListenerMixin -> net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 2 member(s) copied, 0 shadow(s) read
+WebMcModBakePatcher: 2 mixin part(s) were not applied in fabric-resource-conditions-api-v1-5.0.35+4fc5413f3e.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 13 class(es) from fabric-resource-loader-v0-3.3.4+4fc5413f3e.jar (id fabric-resource-loader-v0)
+WebMcModBakePatcher: 78 class(es) from fabric-resource-loader-v1-1.0.10+78c8b4663e.jar (id fabric-resource-loader-v1)
+  mixin net.fabricmc.fabric.mixin.resource.MinecraftServerMixin -> net.minecraft.server.MinecraftServer: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 4 member(s) copied, 1 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.resource.SimpleReloadInstanceMixin -> net.minecraft.server.packs.resources.SimpleReloadInstance: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 0 shadow(s) read
+WebMcModBakePatcher: 10 mixin part(s) were not applied in fabric-resource-loader-v1-1.0.10+78c8b4663e.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 45 class(es) from fabric-screen-api-v1-3.1.7+4ebb5c083e.jar (id fabric-screen-api-v1)
+  mixin net.fabricmc.fabric.mixin.screen.KeyboardHandlerMixin -> net.minecraft.client.KeyboardHandler: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 2 member(s) copied, 0 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.screen.MouseHandlerMixin -> net.minecraft.client.MouseHandler: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 4 member(s) copied, 0 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.screen.ScreenAccessor -> net.minecraft.client.gui.screens.Screen: 0 overwritten, 0 injected, 0 redirected, 0 modified, 1 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.screen.GameRendererMixin -> net.minecraft.client.renderer.GameRenderer: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 1 member(s) copied, 0 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.screen.MinecraftMixin -> net.minecraft.client.Minecraft: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 2 member(s) copied, 2 shadow(s) read
+  mixin net.fabricmc.fabric.mixin.screen.ScreenMixin -> net.minecraft.client.gui.screens.Screen: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 53 member(s) copied, 3 shadow(s) read
+WebMcModBakePatcher: 1 mixin part(s) were not applied in fabric-screen-api-v1-3.1.7+4ebb5c083e.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 15 class(es) from fabric-screen-handler-api-v1-1.3.162+4fc5413f3e.jar (id fabric-screen-handler-api-v1), entrypoint net.fabricmc.fabric.impl.screenhandler.Networking
+WebMcModBakePatcher: 8 mixin part(s) were not applied in fabric-screen-handler-api-v1-1.3.162+4fc5413f3e.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 16 class(es) from fabric-serialization-api-v1-1.0.5+4ebb5c083e.jar (id fabric-serialization-api-v1)
+WebMcModBakePatcher: 1 mixin part(s) were not applied in fabric-serialization-api-v1-1.0.5+4ebb5c083e.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 7 class(es) from fabric-sound-api-v1-1.0.51+4fc5413f3e.jar (id fabric-sound-api-v1)
+WebMcModBakePatcher: 30 class(es) from fabric-tag-api-v1-1.3.0+88d7da613e.jar (id fabric-tag-api-v1), entrypoint net.fabricmc.fabric.impl.tag.TagInit
+WebMcModBakePatcher: 5 mixin part(s) were not applied in fabric-tag-api-v1-1.3.0+88d7da613e.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 131 class(es) from fabric-transfer-api-v1-6.0.25+4fc5413f3e.jar (id fabric-transfer-api-v1)
+WebMcModBakePatcher: 1 mixin part(s) were not applied in fabric-transfer-api-v1-6.0.25+4fc5413f3e.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 2 class(es) from fabric-transitive-access-wideners-v1-7.1.0+014c8cec3e.jar (id fabric-transitive-access-wideners-v1)
+WebMcModBakePatcher: 273 mixin part(s) were not applied in fabric-transitive-access-wideners-v1-7.1.0+014c8cec3e.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 11 class(es) from gson-1.9.2.jar (id net_lenni0451_commons_gson)
+WebMcModBakePatcher: 224 class(es) from gson-2.14.0.jar (id com_google_code_gson_gson)
+WebMcModBakePatcher: 72 class(es) from httpclient-1.9.2.jar (id net_lenni0451_commons_httpclient)
+WebMcModBakePatcher: 428 class(es) from javassist-3.28.0-GA.jar (id org_javassist_javassist)
+WebMcModBakePatcher:   2 class(es) from MinecraftAuth-5.0.2.jar (nested, id net_raphimc_minecraftauth, 103 kept the client's own copy)
+WebMcModBakePatcher:   2 class(es) from WaybackAuthLib-1.0.1.jar (nested, id de_florianmichael_waybackauthlib, 11 kept the client's own copy)
+WebMcModBakePatcher:   skipped discord-ipc-1.1.jar (a nested library that needs a JVM: Unsafe, runtime bytecode or class scanning)
+WebMcModBakePatcher:   2 class(es) from error_prone_annotations-2.48.0.jar (nested, id com_google_errorprone_error_prone_annotations, 30 kept the client's own copy)
+WebMcModBakePatcher:   2 class(es) from fabric-api-base-1.0.5+4ebb5c083e.jar (nested, id fabric-api-base, 16 kept the client's own copy)
+WebMcModBakePatcher:   2 class(es) from fabric-resource-loader-v1-1.0.10+78c8b4663e.jar (nested, id fabric-resource-loader-v1, 76 kept the client's own copy)
+WebMcModBakePatcher:   2 class(es) from gson-1.9.2.jar (nested, id net_lenni0451_commons_gson, 9 kept the client's own copy)
+WebMcModBakePatcher:   3 class(es) from gson-2.14.0.jar (nested, id com_google_code_gson_gson, 221 kept the client's own copy)
+WebMcModBakePatcher:   2 class(es) from httpclient-1.9.2.jar (nested, id net_lenni0451_commons_httpclient, 70 kept the client's own copy)
+WebMcModBakePatcher:   skipped javassist-3.28.0-GA.jar (a nested library that needs a JVM: Unsafe, runtime bytecode or class scanning)
+WebMcModBakePatcher:   119 class(es) from netty-codec-socks-4.2.7.Final.jar (nested, id io_netty_netty-codec-socks)
+WebMcModBakePatcher:   15 class(es) from netty-handler-proxy-4.2.7.Final.jar (nested, id io_netty_netty-handler-proxy)
+WebMcModBakePatcher:   13 class(es) from orbit-0.2.4.jar (nested, id meteordevelopment_orbit)
+WebMcModBakePatcher:   skipped reflections-0.10.2.jar (a nested library that needs a JVM: Unsafe, runtime bytecode or class scanning)
+WebMcModBakePatcher:   56 class(es) from starscript-0.2.5.jar (nested, id org_meteordev_starscript)
+WebMcModBakePatcher: 1571 class(es) from meteor-client-1.21.11-86-official.jar (id meteor-client), entrypoint meteordevelopment.meteorclient.MeteorClient
+  mixin meteordevelopment.meteorclient.mixin.AbstractBlockStateMixin -> net.minecraft.world.level.block.state.BlockBehaviour$BlockStateBase: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin meteordevelopment.meteorclient.mixin.ClientConnectionAccessor -> net.minecraft.network.Connection: 0 overwritten, 0 injected, 0 redirected, 0 modified, 1 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin meteordevelopment.meteorclient.mixin.ClientConnectionMixin -> net.minecraft.network.Connection: 0 overwritten, 1 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin meteordevelopment.meteorclient.mixin.ClientPlayerInteractionManagerAccessor -> net.minecraft.client.multiplayer.MultiPlayerGameMode: 0 overwritten, 0 injected, 0 redirected, 0 modified, 3 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin meteordevelopment.meteorclient.mixin.ClientPlayerInteractionManagerMixin -> net.minecraft.client.multiplayer.MultiPlayerGameMode: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 3 member(s) copied, 4 shadow(s) read
+  mixin meteordevelopment.meteorclient.mixin.ClientPlayNetworkHandlerAccessor -> net.minecraft.client.multiplayer.ClientPacketListener: 0 overwritten, 0 injected, 0 redirected, 0 modified, 5 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin meteordevelopment.meteorclient.mixin.ClientPlayNetworkHandlerMixin -> net.minecraft.client.multiplayer.ClientPacketListener: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 1 shadow(s) read
+  mixin meteordevelopment.meteorclient.mixin.ClientWorldMixin -> net.minecraft.client.multiplayer.ClientLevel: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 1 shadow(s) read
+  mixin meteordevelopment.meteorclient.mixin.ConnectScreenMixin -> net.minecraft.client.gui.screens.ConnectScreen: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin meteordevelopment.meteorclient.mixin.DownloaderMixin -> net.minecraft.server.packs.DownloadQueue: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 1 shadow(s) read
+  mixin meteordevelopment.meteorclient.mixin.DrawContextAccessor -> net.minecraft.client.gui.GuiGraphics: 0 overwritten, 0 injected, 0 redirected, 0 modified, 2 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin meteordevelopment.meteorclient.mixin.DrawContextMixin -> net.minecraft.client.gui.GuiGraphics: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin meteordevelopment.meteorclient.mixin.EntityAccessor -> net.minecraft.world.entity.Entity: 0 overwritten, 0 injected, 0 redirected, 0 modified, 1 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin meteordevelopment.meteorclient.mixin.EntityMixin -> net.minecraft.world.entity.Entity: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin meteordevelopment.meteorclient.mixin.EntityRenderManagerMixin -> net.minecraft.client.renderer.entity.EntityRenderDispatcher: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 1 shadow(s) read
+  mixin meteordevelopment.meteorclient.mixin.GameOptionsMixin -> net.minecraft.client.Options: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 1 shadow(s) read
+  mixin meteordevelopment.meteorclient.mixin.GameRendererMixin -> net.minecraft.client.renderer.GameRenderer: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 5 member(s) copied, 10 shadow(s) read
+  mixin meteordevelopment.meteorclient.mixin.GlBackendMixin -> com.mojang.blaze3d.opengl.GlDevice: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 8 member(s) copied, 0 shadow(s) read
+  mixin meteordevelopment.meteorclient.mixin.GlCommandEncoderMixin -> com.mojang.blaze3d.opengl.GlCommandEncoder: 0 overwritten, 1 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 1 shadow(s) read
+  mixin meteordevelopment.meteorclient.mixin.KeyboardMixin -> net.minecraft.client.KeyboardHandler: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 1 shadow(s) read
+  mixin meteordevelopment.meteorclient.mixin.LivingEntityAccessor -> net.minecraft.world.entity.LivingEntity: 0 overwritten, 0 injected, 0 redirected, 0 modified, 4 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin meteordevelopment.meteorclient.mixin.LivingEntityMixin -> net.minecraft.world.entity.LivingEntity: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 1 member(s) copied, 0 shadow(s) read
+  mixin meteordevelopment.meteorclient.mixin.MinecraftClientAccessor -> net.minecraft.client.Minecraft: 0 overwritten, 0 injected, 0 redirected, 0 modified, 13 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin meteordevelopment.meteorclient.mixin.MinecraftClientMixin -> net.minecraft.client.Minecraft: 0 overwritten, 1 injected, 0 redirected, 0 modified, 0 generated, 12 member(s) copied, 11 shadow(s) read
+  mixin meteordevelopment.meteorclient.mixin.MinecraftServerAccessor -> net.minecraft.server.MinecraftServer: 0 overwritten, 0 injected, 0 redirected, 0 modified, 1 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin meteordevelopment.meteorclient.mixin.MobEntityMixin -> net.minecraft.world.entity.Mob: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin meteordevelopment.meteorclient.mixin.MouseMixin -> net.minecraft.client.MouseHandler: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 3 shadow(s) read
+  mixin meteordevelopment.meteorclient.mixin.MultiplayerScreenMixin -> net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 14 member(s) copied, 0 shadow(s) read
+  mixin meteordevelopment.meteorclient.mixin.PacketByteBufMixin -> net.minecraft.network.FriendlyByteBuf: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin meteordevelopment.meteorclient.mixin.PlayerSkinProviderAccessor -> net.minecraft.client.resources.SkinManager: 0 overwritten, 0 injected, 0 redirected, 0 modified, 1 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin meteordevelopment.meteorclient.mixin.RegistriesMixin -> net.minecraft.core.registries.BuiltInRegistries: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin meteordevelopment.meteorclient.mixin.RenderSystemMixin -> com.mojang.blaze3d.systems.RenderSystem: 0 overwritten, 1 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin meteordevelopment.meteorclient.mixin.ScreenMixin -> net.minecraft.client.gui.screens.Screen: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin meteordevelopment.meteorclient.mixin.ServerResourcePackLoaderMixin -> net.minecraft.client.resources.server.DownloadedPackSource: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin meteordevelopment.meteorclient.mixin.TitleScreenMixin -> net.minecraft.client.gui.screens.TitleScreen: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin meteordevelopment.meteorclient.mixin.WorldRendererAccessor -> net.minecraft.client.renderer.LevelRenderer: 0 overwritten, 0 injected, 0 redirected, 0 modified, 1 generated, 0 member(s) copied, 0 shadow(s) read
+  mixin meteordevelopment.meteorclient.mixin.WorldRendererMixin -> net.minecraft.client.renderer.LevelRenderer: 0 overwritten, 1 injected, 0 redirected, 0 modified, 0 generated, 16 member(s) copied, 3 shadow(s) read
+  mixin meteordevelopment.meteorclient.mixin.indigo.AbstractTerrainRenderContextMixin -> net.fabricmc.fabric.impl.client.indigo.renderer.render.AbstractTerrainRenderContext: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 1 member(s) copied, 1 shadow(s) read
+  mixin meteordevelopment.meteorclient.mixin.indigo.BlockRenderInfoMixin -> net.fabricmc.fabric.impl.client.indigo.renderer.render.BlockRenderInfo: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 0 member(s) copied, 3 shadow(s) read
+  mixin meteordevelopment.meteorclient.mixin.sodium.MeshVertexConsumerMixin -> meteordevelopment.meteorclient.utils.render.MeshBuilderVertexConsumerProvider$MeshBuilderVertexConsumer: 0 overwritten, 0 injected, 0 redirected, 0 modified, 0 generated, 1 member(s) copied, 0 shadow(s) read
+WebMcModBakePatcher: 73 mixin part(s) were not applied in meteor-client-1.21.11-86-official.jar: a build log has to say what a mod is missing
+WebMcModBakePatcher: 119 class(es) from netty-codec-socks-4.2.7.Final.jar (id io_netty_netty-codec-socks)
+WebMcModBakePatcher: 15 class(es) from netty-handler-proxy-4.2.7.Final.jar (id io_netty_netty-handler-proxy)
+WebMcModBakePatcher: 13 class(es) from orbit-0.2.4.jar (id meteordevelopment_orbit)
+WebMcModBakePatcher: 76 class(es) from reflections-0.10.2.jar (id org_reflections_reflections)
+WebMcModBakePatcher: 56 class(es) from starscript-0.2.5.jar (id org_meteordev_starscript)
+WebMcModBakePatcher: 25 class(es) from webmc-mixin-shims-official.jar
+WebMcModBakePatcher: 27 class(es) from webmc-optional-stubs.jar
+WebMcModBakePatcher: 62 class(es) from webmc-platform-stubs.jar
+WebMcModBakePatcher: mixins touched 52 client class(es)
+WebMcModBakePatcher: PARTIAL BUILD (WEBMC_MODS_ALLOW_PARTIAL=1): 640 mixin part(s) could not be applied: the build log above names each one. The client runs without those parts, and this log is the list of them.
+WebMcModBakePatcher: copied 6845 class(es) from 66 mod jar(s)
+WebMcModBakePatcher: 37 baked entrypoint call(s) into the client's runTick(), behind a one-shot guard: the mods start on the first tick, after the client is up
+WebMcModBakePatcher:   net.fabricmc.fabric.impl.lookup.ApiLookupImpl.onInitialize()
+WebMcModBakePatcher:   net.fabricmc.fabric.impl.tag.convention.ConventionLogWarnings.onInitialize()
+WebMcModBakePatcher:   net.fabricmc.fabric.impl.tag.convention.v2.TranslationConventionLogWarnings.onInitialize()
+WebMcModBakePatcher:   net.fabricmc.fabric.impl.attachment.AttachmentEntrypoint.onInitialize()
+WebMcModBakePatcher:   net.fabricmc.fabric.impl.event.interaction.InteractionEventsRouter.onInitialize()
+WebMcModBakePatcher:   net.fabricmc.fabric.impl.event.lifecycle.LifecycleEventsImpl.onInitialize()
+WebMcModBakePatcher:   net.fabricmc.fabric.impl.loot.v2.LootInitializer.onInitialize()
+WebMcModBakePatcher:   net.fabricmc.fabric.impl.client.model.loading.CustomUnbakedBlockStateModelInit.onInitializeClient()
+WebMcModBakePatcher:   net.fabricmc.fabric.impl.networking.CommonPacketsImpl.init()
+WebMcModBakePatcher:   net.fabricmc.fabric.impl.particle.ExtendedBlockStateParticleEffectSync.onInitialize()
+WebMcModBakePatcher:   net.fabricmc.fabric.impl.recipe.ingredient.CustomIngredientInit.onInitialize()
+WebMcModBakePatcher:   net.fabricmc.fabric.impl.registry.sync.FabricRegistryInit.onInitialize()
+WebMcModBakePatcher:   net.fabricmc.fabric.impl.renderer.DebugHudClient.onInitializeClient()
+WebMcModBakePatcher:   net.fabricmc.fabric.impl.client.indigo.Indigo.onInitializeClient()
+WebMcModBakePatcher:   net.fabricmc.fabric.impl.client.rendering.hud.HudStatusBarHeightRegistryImpl.onInitializeClient()
+WebMcModBakePatcher:   net.fabricmc.fabric.impl.resource.conditions.ResourceConditionsImpl.onInitialize()
+WebMcModBakePatcher:   net.fabricmc.fabric.impl.screenhandler.Networking.onInitialize()
+WebMcModBakePatcher:   net.fabricmc.fabric.impl.tag.TagInit.onInitialize()
+WebMcModBakePatcher:   net.fabricmc.fabric.impl.lookup.ApiLookupImpl.onInitialize()
+WebMcModBakePatcher:   net.fabricmc.fabric.impl.tag.convention.ConventionLogWarnings.onInitialize()
+WebMcModBakePatcher:   net.fabricmc.fabric.impl.tag.convention.v2.TranslationConventionLogWarnings.onInitialize()
+WebMcModBakePatcher:   net.fabricmc.fabric.impl.attachment.AttachmentEntrypoint.onInitialize()
+WebMcModBakePatcher:   net.fabricmc.fabric.impl.event.interaction.InteractionEventsRouter.onInitialize()
+WebMcModBakePatcher:   net.fabricmc.fabric.impl.event.lifecycle.LifecycleEventsImpl.onInitialize()
+WebMcModBakePatcher:   net.fabricmc.fabric.impl.loot.v2.LootInitializer.onInitialize()
+WebMcModBakePatcher:   net.fabricmc.fabric.impl.client.model.loading.CustomUnbakedBlockStateModelInit.onInitializeClient()
+WebMcModBakePatcher:   net.fabricmc.fabric.impl.networking.CommonPacketsImpl.init()
+WebMcModBakePatcher:   net.fabricmc.fabric.impl.particle.ExtendedBlockStateParticleEffectSync.onInitialize()
+WebMcModBakePatcher:   net.fabricmc.fabric.impl.recipe.ingredient.CustomIngredientInit.onInitialize()
+WebMcModBakePatcher:   net.fabricmc.fabric.impl.registry.sync.FabricRegistryInit.onInitialize()
+WebMcModBakePatcher:   net.fabricmc.fabric.impl.renderer.DebugHudClient.onInitializeClient()
+WebMcModBakePatcher:   net.fabricmc.fabric.impl.client.indigo.Indigo.onInitializeClient()
+WebMcModBakePatcher:   net.fabricmc.fabric.impl.client.rendering.hud.HudStatusBarHeightRegistryImpl.onInitializeClient()
+WebMcModBakePatcher:   net.fabricmc.fabric.impl.resource.conditions.ResourceConditionsImpl.onInitialize()
+WebMcModBakePatcher:   net.fabricmc.fabric.impl.screenhandler.Networking.onInitialize()
+WebMcModBakePatcher:   net.fabricmc.fabric.impl.tag.TagInit.onInitialize()
+WebMcModBakePatcher:   meteordevelopment.meteorclient.MeteorClient.onInitializeClient()
+/home/runner/work/webmc-port/webmc-port/engine/port/work/overlays/1.21.11/teavm-classlib-0.15.0-gaius.jar
+== the patched client jar after the chain
+-rw-r--r-- 1 runner runner 40281867 Oct 20 13:56 port/work/overlays/1.21.11/client-named-1.21.11-gaius.jar
+        0  2026-10-20 13:56   webmc/
+        0  2026-10-20 13:56   webmc/runtime/
+     1245  2026-10-20 13:56   webmc/runtime/JdkCompat$1.class
+     2598  2026-10-20 13:56   webmc/runtime/JdkCompat.class
+        0  2026-10-20 13:56   webmc/j21/
+     2298  2026-10-20 13:56   webmc/j21/J21.class
+      413  2026-10-20 13:56   webmc/j21/MatchException.class
+        0  2026-10-20 13:56   webmc/platform/
+      289  2026-10-20 13:56   webmc/platform/AccessFlag.class
+      179  2026-10-20 13:56   webmc/platform/Authenticator.class
+grep: write error: Broken pipe
+no baked classes in the jar
+== the patched jar, after the chain
+-rw-r--r-- 1 runner runner 40281867 Oct 20 13:56 port/work/overlays/1.21.11/client-named-1.21.11-gaius.jar
+mod classes in the jar: 0
+injected calls in the client class: 9
+::warning::bake check: 0 mod class(es), 9 injected call(s) in port/work/overlays/1.21.11/client-named-1.21.11-gaius.jar
+::error::the mod set was requested and the patched jar has no trace of it
+    public void setRelease(com.google.common.util.concurrent.AbstractFutureState.Waiter argument0, java.lang.Thread argument1) {}
+                                                                                ^
+/tmp/webmc-stubs-3otb8kqy/src/webmc/platform/VarHandle.java:28: error: package io.netty.util does not exist
+    public void setRelease(io.netty.util.ReferenceCounted argument0, int argument1) {}
+                                        ^
+/tmp/webmc-stubs-3otb8kqy/src/webmc/platform/VarHandle.java:6: error: name clash: class VarHandle has two methods with the same erasure, yet neither overrides the other
+    public boolean compareAndSet(com.google.common.util.concurrent.AbstractFutureState argument0, java.lang.Object argument1, java.lang.Object argument2) { return false; }
+                   ^
+  first method:  compareAndSet(AbstractFutureState,Waiter,Waiter) in VarHandle
+  second method: compareAndSet(ReferenceCounted,int,int) in VarHandle
+/tmp/webmc-stubs-3otb8kqy/src/webmc/platform/VarHandle.java:27: error: name clash: class VarHandle has two methods with the same erasure, yet neither overrides the other
+    public void setRelease(com.google.common.util.concurrent.AbstractFutureState.Waiter argument0, java.lang.Thread argument1) {}
+                ^
+  first method:  setRelease(Waiter,Waiter) in VarHandle
+  second method: setRelease(ReferenceCounted,int) in VarHandle
+28 errors
+
+
+
+! the platform stubs could not be built

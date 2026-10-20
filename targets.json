@@ -1,0 +1,67 @@
+{
+  "note": "The versions this project is supposed to cover, and the eras they belong to. tools/targets.py prints a verdict for each one: real Java (a JVM in the page), one layer away, or blocked by the runtime. Scope: every release and every snapshot, not a hand-picked list. Two rows answer for them, and the launcher says which one a version is on: the compiled row (smooth, mods baked at build time) and the real-JVM row (an unmodified client, Fabric at play time, not smooth). A version with no build on either row is listed as blocked, with the reason, rather than offered.",
+  "groups": [
+    {
+      "name": "Newest releases",
+      "why": "what people actually play",
+      "versions": [
+        "26.3",
+        "1.21.11"
+      ]
+    },
+    {
+      "name": "Latest snapshot",
+      "why": "so a new version is never a surprise: the newest snapshot is always the hardest one, because it is the one nobody has ported",
+      "versions": [
+        "26.4-snapshot-4"
+      ]
+    },
+    {
+      "name": "The 26.x generation",
+      "why": "Java 25 and a renderer Mojang rewrites: compiled by the workspace engine for releases, and the wall for snapshots is the renderer, named in ports.json rather than hidden",
+      "versions": [
+        "26.3",
+        "26.2"
+      ]
+    },
+    {
+      "name": "Legacy but modern enough",
+      "why": "modded servers, old worlds, the versions mods were written for",
+      "versions": [
+        "1.18.2",
+        "1.16.5",
+        "1.12.2",
+        "1.8.9"
+      ]
+    },
+    {
+      "name": "Pre-release eras",
+      "why": "Indev, Alpha and Beta: tiny clients, everything they need is inside the jar",
+      "versions": [
+        "b1.8.1",
+        "a1.2.6",
+        "in-20100223"
+      ]
+    },
+    {
+      "name": "The 1.21 line",
+      "why": "compiled from the official client, vanilla, with the mods path documented rather than pretended",
+      "versions": [
+        "1.21.11",
+        "1.21.8",
+        "1.21.4",
+        "1.21.1"
+      ]
+    },
+    {
+      "name": "Uncovered middle (own engine needed)",
+      "why": "1.16.5 - 1.20.4 has no licensed engine at all, and every snapshot of that era inherits the gap: this is the range the project's own TeaVM engine is for",
+      "versions": [
+        "1.20.4",
+        "1.19.4",
+        "1.17.1",
+        "1.16.5"
+      ]
+    }
+  ]
+}

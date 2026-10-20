@@ -1,0 +1,395 @@
+#!/usr/bin/env python3
+"""Tests for the mod bake: a Fabric mod set turned into code the compiled client runs.
+
+    python3 tests/test_bake_mods.py
+
+Offline. A fake engine tree is built here in the shape the real one has (a profile, a tools package, an
+overrides tree), a fake mod jar is built with a `fabric.mod.json` and a class in it, and the test checks
+what the bake writes rather than only that it wrote something:
+
+  * the patcher source is glued in with its own class name in the right places (a `printf` template with a
+    mistyped placeholder is a compile error 45 minutes into a build);
+  * the hook calls one entrypoint per mod, and does *not* invent a call for a mod that declares none;
+  * the mod's classes are shipped to where the patcher will look, and the `WEBMC_MODS` list points at them;
+  * the version profile's `extraPatchers` gains the patcher, once, and keeps whatever was there;
+  * a mod carrying mixins is reported as such, because the bake applies entrypoints and the report is the
+    only place that says so.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import pathlib
+import shutil
+import subprocess
+import sys
+import tempfile
+import zipfile
+
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "tools"))
+
+import bake_mods  # noqa: E402
+
+FAILURES = 0
+
+
+def check(label: str, ok: bool, detail: str = "") -> None:
+    global FAILURES
+    print(f"  {'PASS' if ok else 'FAIL'}  {label}" + ("" if ok or not detail else f" — {detail}"))
+    if not ok:
+        FAILURES += 1
+
+
+FAKE_CLASS = b"\xca\xfe\xba\xbe\x00\x00\x00\x41fake"
+
+
+def fake_engine(root: pathlib.Path, version: str = "1.21.11", patch_set: str = "legacy-12111") -> pathlib.Path:
+    (root / "port" / "versions").mkdir(parents=True)
+    (root / "port" / "versions" / f"{version}.json").write_text(json.dumps({
+        "id": version, "releaseType": "release", "protocolVersion": 777, "worldVersion": 1,
+        "javaVersion": 21, "classFileVersion": 65, "clientDistribution": "obfuscated-with-mappings",
+        "patchSet": patch_set,
+        "extraPatchers": ["Minecraft12111BrowserPatcher"] if patch_set.startswith("legacy") else [],
+    }))
+    (root / "port" / "tools" / "src" / "main" / "java" / "dev" / "gaius" / "tools").mkdir(parents=True)
+    (root / "port" / "overrides" / "client" / "src" / "versions" / version / "java").mkdir(parents=True)
+    return root
+
+
+def fake_mod(path: pathlib.Path, mod_id: str, entrypoint: str | None, mixins: bool = False,
+             descriptor: bool = True) -> pathlib.Path:
+    # the parameter and the dictionary must not share a name: they did, so "no descriptor" was always written
+    manifest = {"schemaVersion": 1, "id": mod_id, "name": mod_id.upper(), "version": "1.0.0",
+                "environment": "client"}
+    if entrypoint:
+        manifest["entrypoints"] = {"client": [entrypoint]}
+    if mixins:
+        manifest["mixins"] = ["example.mixins.json"]
+    with zipfile.ZipFile(path, "w") as jar:
+        if descriptor:
+            jar.writestr("fabric.mod.json", json.dumps(manifest))
+        # a real mod's class sits at the path its descriptor names, which is what the hook then calls
+        jar.writestr((entrypoint.replace(".", "/") if entrypoint else f"{mod_id}/Mod") + ".class", FAKE_CLASS)
+        if mixins:
+            jar.writestr("example.mixins.json", '{"required": true, "package": "example.mixin"}')
+            jar.writestr("example/mixin/MixinThing.class", FAKE_CLASS)
+    return path
+
+
+def test_read_mod(tmp: pathlib.Path) -> None:
+    print("\nwhat a mod jar says about itself")
+    plain = bake_mods.read_mod(fake_mod(tmp / "plain.jar", "plain", "com.example.Plain"))
+    check("the id, the entrypoint and the class count come out", plain["id"] == "plain"
+          and plain["entrypoint"] == "com.example.Plain" and plain["classes"] == 1, str(plain))
+    check("a mod with no mixins is not marked as needing them", plain["needs_mixins"] is False)
+    check("a mod with no entrypoint says so rather than inventing one",
+          bake_mods.read_mod(fake_mod(tmp / "lib.jar", "lib", None))["entrypoint"] is None)
+    mixed = bake_mods.read_mod(fake_mod(tmp / "mixed.jar", "mixed", "com.example.Mixed", mixins=True))
+    check("a mod that carries mixins is flagged", mixed["needs_mixins"] is True, str(mixed))
+    check("and its mixin configs are listed", mixed["mixin_configs"] == ["example.mixins.json"])
+
+    print("\nthe patcher is told what to call, not what to compile against")
+    patcher = bake_mods.PATCHER_JAVA
+    check("the injection is bytecode, not generated Java",
+          "INVOKESPECIAL" in patcher and "INVOKEVIRTUAL" in patcher and "new TypeInsnNode" in patcher,
+          "generated Java would have to name the mod's package, which the engine's compiler cannot resolve")
+    check("there is no hook class left to write", "hook_source" not in dir(bake_mods)
+          and "WebMcBakedMods" not in patcher)
+    check("a declared entrypoint that is not in the jar is a clear error, not a NoClassDefFoundError later",
+          "declares the" in patcher and "is not in that jar" in patcher)
+
+
+def test_bake(tmp: pathlib.Path) -> None:
+    print("\nbaking a set into an engine")
+    engine = fake_engine(tmp / "engine")
+    jars = tmp / "jars"
+    jars.mkdir()
+    one = fake_mod(jars / "hello-fabric.jar", "hello-fabric", "com.example.HelloFabricMod")
+    two = fake_mod(jars / "mixed.jar", "mixed", "com.example.Mixed", mixins=True)
+    # a hook source left behind by an older bake must be removed by this one: that file is exactly what broke
+    # the engine's compile ('package com.example does not exist'), so its absence is part of the contract
+    stale = engine / "port" / "overrides" / "client" / "src" / "versions" / "1.21.11" / "java" / "webmc" / "baked" / "WebMcBakedMods.java"
+    stale.parent.mkdir(parents=True, exist_ok=True)
+    stale.write_text("package webmc.baked; public class WebMcBakedMods { }\n")
+    lines: list[str] = []
+    # a library jar that lives somewhere else than --mods-dir: this is how a real build failed on a jar that was
+    # in the repository's own output directory, and it must be copied from where it really is
+    (tmp / "elsewhere").mkdir(parents=True, exist_ok=True)
+    library = fake_mod(tmp / "elsewhere" / "webmc-mixin-shims.jar", "webmc-mixin-shims", None, descriptor=False)
+    report = bake_mods.bake(engine, "1.21.11", [one, two, library], jars, log=lines.append)
+    check("a jar outside the mods directory is copied from where it is",
+          any(path.endswith("webmc-mixin-shims.jar") for path in report["mod_jars"]),
+          str(report["mod_jars"]))
+    check("and a library is not read for mixin intent by its class names",
+          "webmc-mixin-shims" not in report["mods_with_mixins"] and "webmc-mixin-shims" in report["libraries"],
+          str((report["mods_with_mixins"], report["libraries"])))
+
+    patcher = engine / "port" / "tools" / "src" / "main" / "java" / "dev" / "gaius" / "tools" / "WebMcModBakePatcher.java"
+    check("the patcher source is written into the engine's tools package", patcher.is_file())
+    source = patcher.read_text()
+    check("it declares the class its file name promises",
+          f"public final class {bake_mods.PATCHER_CLASS} {{" in source, source[:200])
+    check("and names itself as the class to construct",
+          f"private {bake_mods.PATCHER_CLASS}() {{" in source)
+    check("its usage message names itself too",
+          f"usage: {bake_mods.PATCHER_CLASS} <input.jar>" in source, source[:900])
+    check("it reads the mod list from the environment, not from a hardcoded path",
+          'System.getenv("WEBMC_MODS")' in source)
+    check("it copies classes rather than recompiling them",
+          "Files.write(target, stream.readAllBytes())" in source)
+    check("it starts the mods from the client's own tick, not from its static initialiser",
+          '"runTick", "tick"' in source and 'startName = "<clinit>"' in source,
+          "a mod that touches a registry from a static initialiser drags Minecraft's own bootstrap into the compile")
+    check("behind a one-shot guard, so the mods start once",
+          "webmc$modsStarted" in source and "JumpInsnNode(Opcodes.IFNE, alreadyStarted)" in source)
+    check("and before the return rather than before the last node",
+          "node2.getOpcode() >= Opcodes.IRETURN" in source and "instructions.getLast()" in source
+          and "instructions.insertBefore(exit" in source,
+          "a method that ends with a label has code after its return, and a compiler may drop it")
+    check("and it says in the log how many calls it inserted, and where",
+          "entrypoint call(s) into the client's" in source and "behind a one-shot guard" in source)
+
+    check("a hook source left by an older bake is deleted, not built on", not stale.is_file())
+    check("a jar with no descriptor is a library, not something to name on a loading screen",
+          report["libraries"] == ["webmc-mixin-shims"]
+          and sorted(report["mod_ids"]) == ["hello-fabric", "mixed"],
+          str((report.get("libraries"), report.get("mod_ids"))))
+    check("the report says which entrypoints will be called",
+          sorted(call["class"] for call in report["calls"]) == ["com.example.HelloFabricMod", "com.example.Mixed"],
+          str(report.get("calls")))
+
+    shim = engine / "port" / "overrides" / "client" / "src" / "versions" / "1.21.11" / "java" / "net" / "fabricmc" / "api" / "ClientModInitializer.java"
+    check("the Fabric interface a mod compiles against is written from this repository's shim", shim.is_file())
+
+    # The engine's validator refuses extraPatchers outside the modern patch set, so the patcher is not
+    # listed there: the build job appends it after the chain with the engine's own helper.
+    profile = json.loads((engine / "port" / "versions" / "1.21.11.json").read_text())
+    check("a legacy profile is left as the engine wrote it, apart from nothing",
+          profile["extraPatchers"] == ["Minecraft12111BrowserPatcher"], str(profile["extraPatchers"]))
+    check("and the report names the patcher and the variable the chain reads",
+          report["patcher"] == bake_mods.PATCHER_CLASS
+          and report["patcher_env"].startswith("WEBMC_MOD_PATCHER="), str(report.get("patcher_env")))
+    check("a legacy patch set routes through the chain hook, and says so",
+          report["patcher_route"] == "chain hook", str(report.get("patcher_route")))
+
+    # the other route: a modern patch set takes the patcher the documented way, in the profile
+    modern = fake_engine(tmp / "engine-modern", version="26.3", patch_set="modern")
+    modern_report = bake_mods.bake(modern, "26.3", [one], jars, log=lambda *_: None)
+    profile = json.loads((modern / "port" / "versions" / "26.3.json").read_text())
+    check("a modern patch set lists the patcher in the profile instead",
+          modern_report["patcher_route"] == "extraPatchers" and bake_mods.PATCHER_CLASS in profile["extraPatchers"],
+          str(profile.get("extraPatchers")))
+    check("and does not also set the chain hook, so the patcher runs once and not twice",
+          modern_report["patcher_env"] == "", repr(modern_report["patcher_env"]))
+    check("baking twice does not list it twice",
+          bake_mods.bake(modern, "26.3", [one], jars, log=lambda *_: None)["patcher_route"] == "extraPatchers"
+          and json.loads((modern / "port" / "versions" / "26.3.json").read_text())["extraPatchers"].count(
+              bake_mods.PATCHER_CLASS) == 1)
+
+    shipped = pathlib.Path(report["mod_jars"][0])
+    check("the mod jars are copied to where the build will run", shipped.is_file()
+          and shipped.parent.name == "webmc-mods", str(shipped))
+    check("and the environment list points at them", report["webmc_mods"] == ":".join(report["mod_jars"]))
+    check("the report names the entrypoints that will be called",
+          report["entrypoints"] == ["hello-fabric", "mixed"], str(report["entrypoints"]))
+    check("and names the mod whose mixins the applier will apply",
+          report["with_mixins"] == ["mixed"], str(report["with_mixins"]))
+    check("which the log says out loud too, as work the applier will do",
+          any("the applier merges them into the client" in line for line in lines), str(lines))
+
+    print("\nwhat it does when the profile is not there yet")
+    # A generated profile may not exist when the bake runs: the bake does not need it except to decide how the
+    # patcher is called, and a build that refuses here would refuse every version whose profile is generated
+    # later in the job. So it warns, and takes the route that works without the profile.
+    lines.clear()
+    no_profile = bake_mods.bake(engine, "1.21.10", [one], jars, log=lines.append)
+    check("a version with no profile is not refused, it is routed through the chain hook",
+          no_profile["patcher_route"] == "chain hook" and no_profile["patch_set"] is None,
+          str(no_profile.get("patcher_route")))
+    check("and the log says why that is the route it took",
+          any("no profile" in line for line in lines), str(lines)[:300])
+
+    print("\nwhat it refuses")
+    empty = tmp / "not-an-engine"
+    empty.mkdir()
+    try:
+        bake_mods.bake(empty, "1.21.11", [one], jars, log=lambda *_: None)
+        check("something that is not a profile engine is refused", False, "no error")
+    except SystemExit as error:
+        check("something that is not a profile engine is refused",
+              "does not look like a profile-based engine" in str(error), str(error))
+
+
+def test_command_line(tmp: pathlib.Path) -> None:
+    print("\nthe command")
+    engine = fake_engine(tmp / "engine-cli")
+    jar = fake_mod(tmp / "one.jar", "one", "com.example.One")
+    report_path = tmp / "report.json"
+    code = bake_mods.main(["--engine", str(engine), "--version", "1.21.11", "--mods", str(jar),
+                           "--report", str(report_path)])
+    check("it exits zero", code == 0, str(code))
+    check("and writes the report", report_path.is_file()
+          and json.loads(report_path.read_text())["version"] == "1.21.11")
+    check("with no mods it says so instead of writing an empty bake",
+          bake_mods.main(["--engine", str(engine), "--version", "1.21.11"]) == 2)
+
+
+def test_patcher_runs(tmp: pathlib.Path) -> None:
+    """The generated Java, compiled and executed for real - the half a Python test cannot see.
+
+    Needs javac, java and ASM on disk (the engine's build fetches ASM anyway); without them it says so and
+    moves on, like every other test here that wants a JDK. What it proves is the whole contract: the class
+    compiles, the mod's classes are copied into the patch output, and the call lands in the client's own
+    static initialiser - verified by reading the bytecode back with javap.
+    """
+    print("\nthe generated patcher, compiled and run")
+    # a JDK that actually works: macOS ships a /usr/bin/javac that exists and cannot compile, so the
+    # finder from the loader's build tool is used and the stub is weeded out by running it
+    import build_loader  # noqa: PLC0415 - only on this path
+    javac = build_loader.find_javac()
+    if javac:
+        probe = subprocess.run([javac, "-version"], capture_output=True, text=True)
+        if "Unable to locate" in (probe.stderr + probe.stdout):
+            javac = None
+    java = str(pathlib.Path(javac).parent / "java") if javac else None
+    if javac and not pathlib.Path(java).exists():
+        java = None
+    javap = str(pathlib.Path(javac).parent / "javap") if javac else None
+    asm = None
+    for candidate in (ROOT / "work" / "asm", pathlib.Path("/tmp/baketest")):
+        jars = sorted(candidate.glob("asm*.jar")) if candidate.is_dir() else []
+        if len(jars) >= 2:
+            asm = ":".join(str(jar) for jar in jars)
+            break
+    if not javac or not java or not asm:
+        print("  SKIP  needs javac, java and asm/asm-tree jars (put them in work/asm/)")
+        return
+
+    engine = fake_engine(tmp / "engine-patch")
+    jar = fake_mod(tmp / "hello-fabric.jar", "hello-fabric", "com.example.HelloFabricMod")
+    bake_mods.bake(engine, "1.21.11", [jar], tmp, log=lambda *_: None)
+    patcher = engine / "port" / "tools" / "src" / "main" / "java" / "dev" / "gaius" / "tools" / "WebMcModBakePatcher.java"
+
+    # a client jar of our own: one class, with a static initialiser to inject into
+    source = tmp / "clientsrc" / "net" / "minecraft" / "client"
+    source.mkdir(parents=True, exist_ok=True)
+    (source / "Minecraft.java").write_text(
+        "package net.minecraft.client;\n"
+        "public class Minecraft {\n"
+        "    static { System.setProperty(\"mc\", \"loaded\"); }\n"
+        "}\n")
+    classes = tmp / "clientclasses"
+    classes.mkdir(parents=True, exist_ok=True)
+    compiled = subprocess.run([javac, "-d", str(classes), str(source / "Minecraft.java")],
+                              capture_output=True, text=True)
+    check("a fake client compiles", compiled.returncode == 0, compiled.stderr[:200])
+    client_jar = tmp / "client.jar"
+    with zipfile.ZipFile(client_jar, "w") as archive:
+        for path in classes.rglob("*.class"):
+            archive.write(path, str(path.relative_to(classes)))
+
+    patcher_classes = tmp / "patcher-classes"
+    # both files in dev.gaius.tools: the patcher calls the applier, so they compile together - which is also
+    # how the engine compiles them, since the bake writes them into the same directory
+    applier = engine / "port" / "tools" / "src" / "main" / "java" / "dev" / "gaius" / "tools" / "WebMcMixinApplier.java"
+    check("the mixin applier is written into the engine beside the patcher", applier.is_file())
+    built = subprocess.run([javac, "-nowarn", "-cp", asm, "-d", str(patcher_classes), str(patcher), str(applier)],
+                           capture_output=True, text=True)
+    check("the generated patcher compiles as it is written", built.returncode == 0, built.stderr[:400])
+    if built.returncode != 0:
+        return
+
+    output = tmp / "patched"
+    environment = dict(os.environ)
+    environment["WEBMC_MODS"] = str(engine / "port" / "work" / "1.21.11" / "webmc-mods" / jar.name)
+    run = subprocess.run([java, "-cp", f"{patcher_classes}{os.pathsep}{asm}",
+                          f"dev.gaius.tools.{bake_mods.PATCHER_CLASS}", str(client_jar), str(output),
+                          "1.21.11"], capture_output=True, text=True, env=environment)
+    check("it runs against a client jar and reports what it did",
+          run.returncode == 0 and "entrypoint call(s) into the client's" in run.stdout,
+          (run.stdout + run.stderr)[:300])
+    check("the mod's own class is copied into the client's patch output",
+          (output / "com" / "example" / "HelloFabricMod.class").is_file())
+    check("and the client class is rewritten", (output / "net" / "minecraft" / "client" / "Minecraft.class").is_file())
+
+    # What a compiled method really looks like: javac ends <clinit> with a label after the return (for a local
+    # variable's scope, or an exception handler's target), and an ahead-of-time compiler may drop code that sits
+    # after a return. A patcher that inserts "before the last node" therefore inserts nothing that survives -
+    # which is exactly how a baked mod came out of a real build with its class in the jar and its code nowhere.
+    label_tool = tmp / "AppendLabel.java"
+    label_tool.write_text("""
+import java.nio.file.Files;
+import java.nio.file.Path;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.LabelNode;
+import org.objectweb.asm.tree.MethodNode;
+
+/** Adds a label after the return of a class's static initialiser, the way javac does. */
+public class AppendLabel {
+    public static void main(String[] args) throws Exception {
+        Path path = Path.of(args[0]);
+        ClassNode node = new ClassNode();
+        new ClassReader(Files.readAllBytes(path)).accept(node, 0);
+        for (MethodNode method : node.methods) {
+            if (method.name.equals("<clinit>")) {
+                method.instructions.add(new LabelNode());
+                System.out.println("added a trailing label to <clinit>");
+            }
+        }
+        ClassWriter writer = new ClassWriter(0);
+        node.accept(writer);
+        Files.write(path, writer.toByteArray());
+    }
+}
+""")
+    built_tool = subprocess.run([javac, "-nowarn", "-cp", asm, "-d", str(tmp / "label-tool"), str(label_tool)],
+                                capture_output=True, text=True)
+    check("a helper that adds a trailing label compiles", built_tool.returncode == 0, built_tool.stderr[-200:])
+    client_class = output / "net" / "minecraft" / "client" / "Minecraft.class"
+    labelled = subprocess.run([java, "-cp", os.pathsep.join([str(tmp / "label-tool"), asm]), "AppendLabel",
+                               str(client_class)], capture_output=True, text=True)
+    check("the client class's initialiser ends with a label after its return",
+          "added a trailing label" in labelled.stdout, labelled.stdout + labelled.stderr)
+
+    disassembly = subprocess.run([javap, "-c", "-p", "-cp", str(output), "net.minecraft.client.Minecraft"],
+                                 capture_output=True, text=True).stdout
+    check("the client's static initialiser calls the baked mods",
+          "Method com/example/HelloFabricMod.\"<init>\":()V" in disassembly
+          and "Method com/example/HelloFabricMod.onInitializeClient:()V" in disassembly,
+          "the injection has to be a real instantiate-and-call, not a bare static call")
+    # inside the static initialiser itself, not merely somewhere in the dump
+    initialiser = disassembly.split("static {}", 1)[-1].split("\n}", 1)[0]
+    check("and it calls it on the way out of the client's own initialisation, before returning",
+          "com/example/HelloFabricMod.onInitializeClient" in initialiser
+          and initialiser.index("com/example/HelloFabricMod.onInitializeClient") < initialiser.rindex("return"),
+          initialiser[-300:])
+
+    print("\nand with no mods it does nothing, loudly")
+    empty = subprocess.run([java, "-cp", f"{patcher_classes}{os.pathsep}{asm}",
+                            f"dev.gaius.tools.{bake_mods.PATCHER_CLASS}", str(client_jar),
+                            str(tmp / "patched-empty")], capture_output=True, text=True,
+                           env={k: v for k, v in environment.items() if k != "WEBMC_MODS"})
+    leftovers = sorted(path.name for path in (tmp / "patched-empty").rglob("*.class")) \
+        if (tmp / "patched-empty").is_dir() else []
+    check("a build with an empty WEBMC_MODS says so and writes no class file",
+          "no mods in WEBMC_MODS" in empty.stdout and not leftovers,
+          f"{empty.stdout[:160]} written: {leftovers}")
+
+
+def main() -> int:
+    with tempfile.TemporaryDirectory() as scratch:
+        tmp = pathlib.Path(scratch)
+        test_read_mod(tmp)
+        test_bake(tmp)
+        test_command_line(tmp)
+        test_patcher_runs(tmp)
+    print(f"\n{FAILURES} bake test(s) FAILED" if FAILURES else "\nbake tests passed")
+    return 1 if FAILURES else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

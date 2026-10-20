@@ -1,0 +1,11 @@
+{
+  "note": "The patches this project declares as not-yet-ported for a version, so the engine's own bring-up mode can build while they are ported. The engine refuses to skip a failing patch unless it is listed in port/tools/bringup/<version>.txt, which is exactly the right behaviour - so this file is where our list lives, with the reason and the run that produced it, instead of a line somebody added to a clone. Every entry is a candidate for the engine upstream: a patch whose anchor moved is engine work, not ours.",
+  "entries": [
+    {
+      "patch": "MinecraftClientPatcher.patchBuiltInRegistriesBrowserStartupYield",
+      "owner": "P8",
+      "since": "26.4",
+      "why": "26.4-snapshot-4 rewrote BuiltInRegistries.createContents so the entry lambda this patch hooks is gone (build run 38545663119: 'BuiltInRegistries createContents entry lambda was not found'). The patch yields during registry construction for the browser's sake, so a version without it may block longer at startup until the patcher is ported - which is what the skip records. Owner is our best guess; the engine's maintainers own the real work package."
+    }
+  ]
+}

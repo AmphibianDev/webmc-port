@@ -1,0 +1,213 @@
+# The LWJGL 3 shim: the measurement, the skeleton, and (soon) a boot test.
+#
+# This is the engine work for 1.13 - 1.20.4: those versions need LWJGL 3, which has no JavaScript or
+# WebAssembly implementation anywhere, so one has to be built. The job here keeps the skeleton honest:
+# it rescans real clients, regenerates the classes from that measurement, and compiles them - so the
+# work list can never drift from what the clients actually call.
+name: LWJGL 3 shim
+
+on:
+  workflow_dispatch:
+    inputs:
+      measure:
+        description: "Re-measure the client surface (downloads three client jars from Mojang)"
+        type: boolean
+        default: false
+  push:
+    # A branch filter, not just paths: path filters do not apply to tag pushes, so without this every
+    # `build-*` tag would also start the shim workflow and spend a runner for nothing.
+    branches: ["**"]
+    paths:
+      - "lwjgl3-webgl/**"
+      - "tools/lwjgl3_surface.py"
+      - "tools/lwjgl3_scaffold.py"
+      - ".github/workflows/lwjgl3.yml"
+
+permissions:
+  # write, for one reason: the test's result is pushed to a `shim-log` branch, so "where did the shim
+  # stop" is a question git can answer instead of one that needs CI log access.
+  contents: write
+
+concurrency:
+  group: webmc-port-lwjgl3
+  cancel-in-progress: true
+
+jobs:
+  surface:
+    name: Measure the surface and compile the shim
+    runs-on: ubuntu-latest
+    # A cold JVM in a headless browser plus the retry loops took more than thirty minutes, and a job that
+    # is killed by its own timeout never runs its `if: always()` steps - which is why three runs in a row
+    # failed without leaving a report anywhere.
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: What 1.13, 1.16 and 1.20 ask of LWJGL 3
+        # The measurement is committed (lwjgl3-webgl/surface/*.json): it is our own data, it changes only
+        # when a client changes, and re-measuring it means downloading three client jars from Mojang on
+        # every run. Dispatch with measure=true to refresh it.
+        run: |
+          set -euo pipefail
+          if [ "${{ inputs.measure }}" = "true" ]; then
+            for version in 1.13.2 1.16.5 1.20.4; do
+              python3 tools/lwjgl3_surface.py --version "$version" --out "lwjgl3-webgl/surface/surface-$version.json"
+            done
+          fi
+          python3 - <<'PYTHON'
+          import json, pathlib
+          for path in sorted(pathlib.Path("lwjgl3-webgl/surface").glob("surface-*.json")):
+              for scan in json.loads(path.read_text()):
+                  print(f"  {scan['jar']}: {scan['class_count']} classes, {scan['reference_count']} members")
+          PYTHON
+
+      - name: Regenerate the skeleton from that measurement
+        run: |
+          set -euo pipefail
+          python3 tools/lwjgl3_scaffold.py \
+            --surface lwjgl3-webgl/surface/surface-1.13.2.json \
+            --surface lwjgl3-webgl/surface/surface-1.16.5.json \
+            --surface lwjgl3-webgl/surface/surface-1.20.4.json \
+            --merge --out lwjgl3-webgl | tee -a "$GITHUB_STEP_SUMMARY"
+          # the generator emits what the clients call; this turns the members the JavaScript
+          # implements into native declarations, and adds the few the measurement never saw. It has to
+          # run here, after the regeneration, or the regeneration erases it - which is exactly what
+          # happened the first time these were added by hand.
+          python3 tools/lwjgl3_natives.py | tee -a "$GITHUB_STEP_SUMMARY"
+          if ! git diff --quiet lwjgl3-webgl; then
+            echo "::warning::the committed skeleton is out of date with the measured surface"
+            git diff --stat lwjgl3-webgl | tail -3
+          fi
+
+      - name: Compile the shim
+        # No LWJGL jars needed: the shim provides those packages itself, which is the whole point -
+        # it shadows the real LWJGL on the classpath.
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/shim-classes
+          find lwjgl3-webgl/src/main/java -name "*.java" > /tmp/sources.txt
+          wc -l < /tmp/sources.txt
+          javac --release 17 -nowarn -d /tmp/shim-classes @/tmp/sources.txt && echo "the skeleton compiles (java 17 bytecode, which is what CheerpJ runs)"
+
+      - name: Boot a Java program against the shim, in a real browser
+        # This is the test that says the approach works: CheerpJ runs a Java program that opens a window
+        # through our GLFW, draws through our GL, and reads a pixel back through our memory. Headless
+        # Chrome with SwiftShader, because a runner has no GPU and software WebGL is enough.
+        #
+        # The page reports by POSTing to this collector rather than being scraped from the DOM: a DOM
+        # dump happens before an async module has finished, and the Java program's own output is the
+        # thing worth reading when it fails.
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/shimweb/classes
+          find lwjgl3-webgl/src/main/java -name "*.java" > /tmp/sources.txt
+          echo "lwjgl3-webgl/test/BootTest.java" >> /tmp/sources.txt
+          # bytecode version matters: CheerpJ runs Java 8, 11 and 17, and a class file from a newer
+          # javac fails with the JVM's least helpful message
+          javac --release 17 -nowarn -d /tmp/shimweb/classes @/tmp/sources.txt
+          javap -v -p -cp /tmp/shimweb/classes webmc.BootTest | grep -m1 "major version" || true
+          # a jar rather than a directory of class files: that is the form CheerpJ is documented to
+          # load, and the directory form answered "Could not find or load main class" with the class
+          # file sitting right there and fetchable
+          (cd /tmp/shimweb/classes && jar --create --file /tmp/shimweb/app.jar .)
+          ls -l /tmp/shimweb/app.jar
+          cp lwjgl3-webgl/test/boot.html /tmp/shimweb/index.html
+          cp -r lwjgl3-webgl/natives /tmp/shimweb/natives
+
+          cat > /tmp/collector.py <<'PYTHON'
+          import http.server, json, pathlib, socketserver
+          class Handler(http.server.SimpleHTTPRequestHandler):
+              def log_message(self, *args): pass
+              def do_POST(self):
+                  length = int(self.headers.get("content-length") or 0)
+                  body = self.rfile.read(length)
+                  pathlib.Path("/tmp/result.json").write_bytes(body)
+                  self.send_response(204); self.send_header("content-length", "0"); self.end_headers()
+          socketserver.TCPServer.allow_reuse_address = True
+          with socketserver.TCPServer(("127.0.0.1", 8777), Handler) as server:
+              server.serve_forever()
+          PYTHON
+          rm -f /tmp/result.json
+          (cd /tmp/shimweb && python3 /tmp/collector.py) &
+          sleep 2
+          curl -sf http://127.0.0.1:8777/index.html >/dev/null && echo "the test page is being served"
+
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium)"
+          echo "chrome: $CHROME"
+          "$CHROME" --headless=new --no-sandbox --disable-gpu-sandbox --use-gl=angle \
+            --use-angle=swiftshader --enable-unsafe-swiftshader --disable-dev-shm-usage \
+            --window-size=400,400 --no-first-run --disable-features=DBus \
+            http://127.0.0.1:8777/index.html >/tmp/chrome.log 2>&1 &
+
+          # a cold JVM in a browser is slow on a shared runner: the page posts its stage every fifteen
+          # seconds, so waiting longer costs nothing and cuts off only a genuine hang
+          for _ in $(seq 1 300); do
+            [ -f /tmp/result.json ] && break
+            sleep 2
+          done
+          for _ in $(seq 1 200); do
+            if python3 -c "import json,sys;d=json.load(open('/tmp/result.json'));sys.exit(0 if d.get('code') in (0,1,99) else 1)" 2>/dev/null; then break; fi
+            sleep 2
+          done
+          if [ ! -f /tmp/result.json ]; then
+            echo "::error::the page never reported back; last lines of the browser log:"
+            tail -20 /tmp/chrome.log || true
+            exit 1
+          fi
+          echo "--- what the java program said ---"
+          python3 -c "import json;d=json.load(open('/tmp/result.json'));print('\n'.join(d.get('log') or []))"
+          echo "--- what the page reported ---"
+          python3 -c "import json;print(json.dumps(json.load(open('/tmp/result.json')), indent=1)[:1200])"
+          # The report goes into git here, inside the step that has the answer, rather than in a later
+          # step that a timeout can skip. A shim failure is only useful if it is readable.
+          mkdir -p build-log
+          {
+            echo "# what the boot test reported"
+            echo '```'
+            python3 -c "import json,pathlib;print(json.dumps(json.loads(pathlib.Path('/tmp/result.json').read_text()), indent=1)[:20000])" 2>/dev/null || echo "(no result was posted)"
+            echo '```'
+            echo
+            echo "## the browser's own log, last 200 lines"
+            echo '```'
+            tail -200 /tmp/chrome.log 2>/dev/null || echo "(no browser log)"
+            echo '```'
+          } > build-log/shim-report.md 2>&1
+          echo "shim report: $(wc -c < build-log/shim-report.md) bytes"
+          git checkout -q --orphan shim-log-report 2>/dev/null || true
+          git rm -r -q --cached . >/dev/null 2>&1 || true
+          git add -f build-log/shim-report.md
+          git -c user.name="webmc-port-bot" -c user.email="webmc-port-bot@users.noreply.github.com" \
+            commit -q -m "shim log: $(date -u +%Y-%m-%dT%H:%M:%SZ)" || echo "nothing to record"
+          git push -q -f origin HEAD:refs/heads/shim-log || echo "::warning::could not push the shim log"
+
+          if python3 -c "import json,sys;d=json.load(open('/tmp/result.json'));sys.exit(0 if d.get('code')==0 and d.get('frames',0)>0 else 1)"; then
+            echo "::notice::the loader booted a JVM, opened a window and drew a frame in a real browser"
+          else
+            echo "::error::the loader did not boot; the log above says where"
+            exit 1
+          fi
+
+      - name: Count what is still unimplemented
+        run: |
+          set -euo pipefail
+          total=$(grep -rho "UnsupportedOperationException" lwjgl3-webgl/src/main/java | wc -l | tr -d " ")
+          {
+            echo "### LWJGL 3 shim"
+            echo "- generated classes: $(find lwjgl3-webgl/src/main/java -name '*.java' | wc -l | tr -d ' ')"
+            echo "- members still to implement: $total"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: lwjgl3-skeleton
+          path: lwjgl3-webgl/src/main/java
+          retention-days: 7
