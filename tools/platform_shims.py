@@ -345,6 +345,10 @@ def main(argv=None) -> int:
     parser.add_argument("--classlib", required=True, help="the compiler's class library jar")
     parser.add_argument("--client", default=None, help="the client jar to rewrite in place")
     parser.add_argument("--mods-dir", default=None, help="where the mod jars are, and where the stubs land")
+    parser.add_argument("--scan-dir", action="append", default=[],
+                        help="jars to read usage from, without rewriting or shipping anything - the bake has "
+                             "already rewritten the mod set, and a second pass with a different rule set is "
+                             "what lost the optional-dependency stubs")
     parser.add_argument("--asm", required=True, help="classpath of ASM jars")
     parser.add_argument("--out", required=True, help="directory for the generated stub jar")
     parser.add_argument("--known", action="store_true",
@@ -381,6 +385,8 @@ def main(argv=None) -> int:
     scan = []
     if args.client:
         scan.append(pathlib.Path(args.client))
+    for directory in args.scan_dir:
+        scan.extend(sorted(pathlib.Path(directory).glob("*.jar")))
     if args.mods_dir:
         scan.extend(sorted(pathlib.Path(args.mods_dir).glob("*.jar")))
     if not scan:
@@ -453,8 +459,9 @@ def main(argv=None) -> int:
             rewrites = write_rewrite_tables(work, names, methods, fields)
             os.environ["WEBMC_CALL_REWRITES"] = str(rewrites)
             renamed = 0
+            rewriting_mods = args.rewrite_mods or bool(args.mods_dir)
             targets = [jar for jar in scan
-                       if args.rewrite_mods or (args.client and str(jar) == args.client)] or scan
+                       if args.client and str(jar) == args.client] if not rewriting_mods else scan
             for jar in targets:
                 if rename(java, tools, args.asm, table, jar, work, log):
                     renamed += 1

@@ -273,6 +273,11 @@ def main(argv=None) -> int:
     if not args.prefix and not args.classes:
         print("no --prefix or --class given: nothing to stub")
         return 0
+    # "baritone" is a package, and the scanner matches a package by its trailing slash (a bare name matches
+    # only a class of that name). Without this, --prefix baritone matched nothing at all and the tool
+    # reported "nothing referenced from baritone: no stubs needed" while the compiler named 35 references.
+    args.prefix = [prefix if (prefix.endswith("/") or "/" in prefix) else prefix + "/"
+                   for prefix in args.prefix]
 
     # The scan runs in Java, because that is where class files can be read: tools/ScanRefs.java prints one
     # line per reference and this collects them. It is compiled here, against the ASM jars the build already

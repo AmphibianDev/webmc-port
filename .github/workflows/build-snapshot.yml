@@ -704,7 +704,7 @@ jobs:
           python3 tools/platform_shims.py \
             --classlib ../engine/port/work/maven \
             --client "$PATCHED" \
-            --mods-dir "../engine/port/work/$VERSION/webmc-mods" \
+            --scan-dir "../engine/port/work/$VERSION/webmc-mods" \
             --asm "$ASM_JARS" --known --out /tmp/webmc-platform 2>&1 | tail -20 | tee -a /tmp/build.log
 
       - name: Compile, link and package the release
