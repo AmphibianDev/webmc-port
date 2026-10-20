@@ -82,9 +82,10 @@ METHOD_POLICY = {
     ("java/lang/invoke/MethodHandles$Lookup", "findVirtual",
      "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/MethodHandle;"):
         ("noFindVirtual", "throw"),
+    # static: there is no receiver on the stack, so the helper takes only the arguments
     ("java/lang/invoke/MethodType", "methodType",
      "(Ljava/lang/Class;Ljava/lang/Class;)Ljava/lang/invoke/MethodType;"):
-        ("noMethodType", "throw"),
+        ("noMethodType", "throw", "static"),
     ("java/lang/invoke/MethodHandle", "invoke", "()Ljava/util/function/Consumer;"):
         ("noInvoke", "throw"),
     ("java/lang/invoke/MethodHandle", "invoke", "(Ljava/lang/Object;)Ljava/util/function/Consumer;"):
@@ -125,6 +126,10 @@ def java_source_type(descriptor: str, names: dict) -> str:
     return base + "[]" * arrays
 
 
+def kind_of(key) -> tuple:
+    return METHOD_POLICY[key]
+
+
 def rename_descriptor(descriptor: str, names: dict) -> str:
     """Apply the class renames to a descriptor, so a helper's signature matches the rewritten call site."""
     for was, now in names.items():
@@ -135,13 +140,15 @@ def rename_descriptor(descriptor: str, names: dict) -> str:
 def helper_source(names: dict, methods: list, fields: list) -> str:
     """The Java for every helper the policy asked for, in the package the stubs live in."""
     body = []
-    for key, (helper, kind) in sorted(METHOD_POLICY.items()):
+    for key, entry in sorted(METHOD_POLICY.items()):
+        helper, kind = entry[0], entry[1]
         owner, name, descriptor = key
         if (owner, name, descriptor) not in {(m[0], m[1], m[2]) for m in methods}:
             continue
+        is_static = len(kind_of(key)) > 2 and kind_of(key)[2] == "static"
         returns = descriptor[descriptor.index(")") + 1:]
         arguments = descriptor[descriptor.index("(") + 1:descriptor.index(")")]
-        parameters = [f"{java_source_type('L' + owner + ';', names)} receiver"]
+        parameters = [] if is_static else [f"{java_source_type('L' + owner + ';', names)} receiver"]
         for index, piece in enumerate(_argument_descriptors(arguments)):
             parameters.append(f"{java_source_type(piece, names)} argument{index}")
         result_type = java_source_type(returns, names)
@@ -199,16 +206,19 @@ def _argument_descriptors(arguments: str) -> list:
 
 def write_rewrite_tables(work: pathlib.Path, names: dict, methods: list, fields: list) -> pathlib.Path:
     calls, statics = [], []
-    for key, (helper, kind) in sorted(METHOD_POLICY.items()):
+    for key, entry in sorted(METHOD_POLICY.items()):
+        helper, kind = entry[0], entry[1]
         owner, name, descriptor = key
         if (owner, name, descriptor) not in {(m[0], m[1], m[2]) for m in methods}:
             continue
         new_owner = names.get(owner, owner)
         new_descriptor = rename_descriptor(descriptor, names)
-        receiver = "L" + new_owner + ";"
+        entry = METHOD_POLICY[key]
+        is_static = len(entry) > 2 and entry[2] == "static"
+        receiver = "" if is_static else "L" + new_owner + ";"
         helper_descriptor = "(" + receiver + new_descriptor[1:]
         calls.append("\t".join([new_owner, name, new_descriptor, f"{TARGET_PACKAGE}/Support", helper,
-                                 helper_descriptor]))
+                                 helper_descriptor, "static" if is_static else "virtual"]))
     for key, (helper, kind) in sorted(FIELD_POLICY.items()):
         owner, name, descriptor = key
         if (owner, name, descriptor) not in {(f[0], f[1], f[2]) for f in fields}:

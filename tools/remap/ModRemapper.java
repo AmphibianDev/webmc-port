@@ -93,9 +93,12 @@ public class ModRemapper {
                 continue;
             }
             String[] parts = line.split("\t");
-            if (parts.length == 6) {
+            if (parts.length >= 6) {
+                // the seventh column says whether the original is static: a static target has no receiver
+                // on the stack, so its helper must not take one - rewriting it as if it did is what made the
+                // verifier reject a class with "Illegal stack state"
                 into.put(parts[0] + "#" + parts[1] + "#" + parts[2],
-                        new String[]{parts[3], parts[4], parts[5]});
+                        new String[]{parts[3], parts[4], parts[5], parts.length > 6 ? parts[6] : "virtual"});
             }
         }
     }
@@ -332,7 +335,9 @@ public class ModRemapper {
                                 return;
                             }
                             String[] replacement = CALL_REWRITES.get(owner + "#" + target + "#" + targetDesc);
-                            if (replacement != null) {
+                            boolean isStaticCall = opcode == Opcodes.INVOKESTATIC;
+                            if (replacement != null
+                                    && "static".equals(replacement[3]) == isStaticCall) {
                                 rewrittenCalls++;
                                 super.visitMethodInsn(Opcodes.INVOKESTATIC, replacement[0], replacement[1],
                                         replacement[2], false);

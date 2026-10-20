@@ -1514,6 +1514,11 @@
   ],
   [
    "java/lang/Thread",
+   "onSpinWait",
+   "()V"
+  ],
+  [
+   "java/lang/Thread",
    "setUncaughtExceptionHandler",
    "(Ljava/lang/Thread$UncaughtExceptionHandler;)V"
   ],
@@ -1600,7 +1605,7 @@
   [
    "java/lang/invoke/MethodHandle",
    "invokeExact",
-   "()Ljava/net/Authenticator;"
+   "()Lwebmc/platform/Authenticator;"
   ],
   [
    "java/lang/invoke/MethodHandle",
@@ -2070,7 +2075,7 @@
   [
    "java/net/URL",
    "openConnection",
-   "(Ljava/net/Proxy;)Ljava/net/URLConnection;"
+   "(Lwebmc/platform/Proxy;)Ljava/net/URLConnection;"
   ],
   [
    "java/net/URL",
@@ -5345,6 +5350,44 @@
   "java/lang/management/ThreadMXBean": "webmc/platform/ThreadMXBean",
   "java/lang/reflect/AccessFlag": "webmc/platform/AccessFlag",
   "java/lang/reflect/Parameter": "webmc/platform/Parameter",
+  "java/net/Authenticator": "webmc/platform/Authenticator",
+  "java/net/ConnectException": "webmc/platform/ConnectException",
+  "java/net/CookieHandler": "webmc/platform/CookieHandler",
+  "java/net/CookieManager": "webmc/platform/CookieManager",
+  "java/net/CookieStore": "webmc/platform/CookieStore",
+  "java/net/DatagramPacket": "webmc/platform/DatagramPacket",
+  "java/net/DatagramSocket": "webmc/platform/DatagramSocket",
+  "java/net/HttpCookie": "webmc/platform/HttpCookie",
+  "java/net/IDN": "webmc/platform/IDN",
+  "java/net/InetAddress": "webmc/platform/InetAddress",
+  "java/net/InetSocketAddress": "webmc/platform/InetSocketAddress",
+  "java/net/JarURLConnection": "webmc/platform/JarURLConnection",
+  "java/net/MulticastSocket": "webmc/platform/MulticastSocket",
+  "java/net/PasswordAuthentication": "webmc/platform/PasswordAuthentication",
+  "java/net/Proxy": "webmc/platform/Proxy",
+  "java/net/Proxy$Type": "webmc/platform/Proxy$Type",
+  "java/net/ProxySelector": "webmc/platform/ProxySelector",
+  "java/net/ServerSocket": "webmc/platform/ServerSocket",
+  "java/net/Socket": "webmc/platform/Socket",
+  "java/net/SocketAddress": "webmc/platform/SocketAddress",
+  "java/net/URLClassLoader": "webmc/platform/URLClassLoader",
+  "java/net/UnixDomainSocketAddress": "webmc/platform/UnixDomainSocketAddress",
+  "java/net/UnknownHostException": "webmc/platform/UnknownHostException",
+  "java/net/http/HttpClient": "webmc/platform/HttpClient",
+  "java/net/http/HttpClient$Builder": "webmc/platform/HttpClient$Builder",
+  "java/net/http/HttpClient$Redirect": "webmc/platform/HttpClient$Redirect",
+  "java/net/http/HttpClient$Version": "webmc/platform/HttpClient$Version",
+  "java/net/http/HttpHeaders": "webmc/platform/HttpHeaders",
+  "java/net/http/HttpRequest": "webmc/platform/HttpRequest",
+  "java/net/http/HttpRequest$BodyPublisher": "webmc/platform/HttpRequest$BodyPublisher",
+  "java/net/http/HttpRequest$BodyPublishers": "webmc/platform/HttpRequest$BodyPublishers",
+  "java/net/http/HttpRequest$Builder": "webmc/platform/HttpRequest$Builder",
+  "java/net/http/HttpResponse": "webmc/platform/HttpResponse",
+  "java/net/http/HttpResponse$BodyHandler": "webmc/platform/HttpResponse$BodyHandler",
+  "java/net/http/HttpResponse$BodyHandlers": "webmc/platform/HttpResponse$BodyHandlers",
+  "java/net/http/HttpResponse$BodySubscriber": "webmc/platform/HttpResponse$BodySubscriber",
+  "java/net/http/HttpResponse$BodySubscribers": "webmc/platform/HttpResponse$BodySubscribers",
+  "java/net/http/HttpResponse$ResponseInfo": "webmc/platform/HttpResponse$ResponseInfo",
   "java/nio/channels/Channels": "webmc/platform/Channels",
   "java/nio/channels/ConnectionPendingException": "webmc/platform/ConnectionPendingException",
   "java/nio/channels/FileChannel": "webmc/platform/FileChannel",
@@ -5354,6 +5397,29 @@
   "java/nio/channels/SelectableChannel": "webmc/platform/SelectableChannel",
   "java/nio/channels/SelectionKey": "webmc/platform/SelectionKey",
   "java/nio/channels/Selector": "webmc/platform/Selector",
-  "java/nio/channels/SocketChannel": "webmc/platform/SocketChannel"
+  "java/nio/channels/SocketChannel": "webmc/platform/SocketChannel",
+  "java/sql/Date": "webmc/platform/Date",
+  "java/sql/Time": "webmc/platform/Time",
+  "java/sql/Timestamp": "webmc/platform/Timestamp",
+  "javax/management/Attribute": "webmc/platform/Attribute",
+  "javax/management/AttributeList": "webmc/platform/AttributeList",
+  "javax/management/DynamicMBean": "webmc/platform/DynamicMBean",
+  "javax/management/MBeanAttributeInfo": "webmc/platform/MBeanAttributeInfo",
+  "javax/management/MBeanConstructorInfo": "webmc/platform/MBeanConstructorInfo",
+  "javax/management/MBeanInfo": "webmc/platform/MBeanInfo",
+  "javax/management/MBeanNotificationInfo": "webmc/platform/MBeanNotificationInfo",
+  "javax/management/MBeanOperationInfo": "webmc/platform/MBeanOperationInfo",
+  "javax/management/MBeanServer": "webmc/platform/MBeanServer",
+  "javax/management/ObjectInstance": "webmc/platform/ObjectInstance",
+  "javax/management/ObjectName": "webmc/platform/ObjectName",
+  "javax/net/ssl/HttpsURLConnection": "webmc/platform/HttpsURLConnection",
+  "javax/net/ssl/KeyManager": "webmc/platform/KeyManager",
+  "javax/net/ssl/KeyManagerFactory": "webmc/platform/KeyManagerFactory",
+  "javax/net/ssl/SSLContext": "webmc/platform/SSLContext",
+  "javax/net/ssl/SSLEngine": "webmc/platform/SSLEngine",
+  "javax/net/ssl/SSLSocketFactory": "webmc/platform/SSLSocketFactory",
+  "javax/net/ssl/TrustManager": "webmc/platform/TrustManager",
+  "javax/net/ssl/TrustManagerFactory": "webmc/platform/TrustManagerFactory",
+  "javax/net/ssl/X509ExtendedTrustManager": "webmc/platform/X509ExtendedTrustManager"
  }
 }
