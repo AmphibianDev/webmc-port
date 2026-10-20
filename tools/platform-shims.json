@@ -538,11 +538,6 @@
    "(Ljava/io/InputStream;I)V"
   ],
   [
-   "java/io/RandomAccessFile",
-   "getChannel",
-   "()Lwebmc/platform/FileChannel;"
-  ],
-  [
    "java/io/Reader",
    "close",
    "()V"
@@ -1514,11 +1509,6 @@
   ],
   [
    "java/lang/Thread",
-   "onSpinWait",
-   "()V"
-  ],
-  [
-   "java/lang/Thread",
    "setUncaughtExceptionHandler",
    "(Ljava/lang/Thread$UncaughtExceptionHandler;)V"
   ],
@@ -1581,11 +1571,6 @@
    "java/lang/annotation/Annotation",
    "annotationType",
    "()Ljava/lang/Class;"
-  ],
-  [
-   "java/lang/invoke/CallSite",
-   "getTarget",
-   "()Ljava/lang/invoke/MethodHandle;"
   ],
   [
    "java/lang/invoke/LambdaMetafactory",
@@ -1691,11 +1676,6 @@
    "java/lang/invoke/MethodType",
    "insertParameterTypes",
    "(I[Ljava/lang/Class;)Ljava/lang/invoke/MethodType;"
-  ],
-  [
-   "java/lang/invoke/MethodType",
-   "methodType",
-   "(Ljava/lang/Class;)Ljava/lang/invoke/MethodType;"
   ],
   [
    "java/lang/invoke/MethodType",
@@ -1871,11 +1851,6 @@
    "java/lang/reflect/Method",
    "getParameterTypes",
    "()[Ljava/lang/Class;"
-  ],
-  [
-   "java/lang/reflect/Method",
-   "getParameters",
-   "()[Lwebmc/platform/Parameter;"
   ],
   [
    "java/lang/reflect/Method",

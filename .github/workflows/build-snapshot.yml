@@ -705,6 +705,7 @@ jobs:
             --classlib ../engine/port/work/maven \
             --client "$PATCHED" \
             --scan-dir "../engine/port/work/$VERSION/webmc-mods" \
+            --also "../engine/port/work/$VERSION/libraries" \
             --asm "$ASM_JARS" --known --out /tmp/webmc-platform 2>&1 | tail -20 | tee -a /tmp/build.log
 
       - name: Compile, link and package the release

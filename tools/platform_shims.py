@@ -44,7 +44,7 @@ PLATFORM_PACKAGES = ("java/lang/management/", "java/nio/channels/", "java/net/",
 # patcher looks for instructions it can no longer find: "Server offline authentication-service patch point
 # was not found").
 KNOWN = ("java/lang/management/", "java/nio/channels/", "java/net/", "java/sql/", "java/io/",
-         "java/lang/reflect/", "javax/management/", "javax/net/", "org/jboss/",
+         "java/lang/reflect/", "java/lang/invoke/", "javax/management/", "javax/net/", "org/jboss/",
          "org/spongepowered/asm/mixin/", "net/fabricmc/")
 
 TARGET_PACKAGE = "webmc/platform"
@@ -61,8 +61,9 @@ PRIMITIVES = {"V": "void", "Z": "boolean", "B": "byte", "C": "char", "S": "short
 #   emptyArray / emptySet   nothing to report, so nothing is reported
 #   constant   a field that only needs a value
 METHOD_POLICY = {
+    # static: no receiver on the stack
     ("java/lang/Thread", "onSpinWait", "()V"):
-        ("onSpinWait", "noop"),
+        ("onSpinWait", "noop", "static"),
     ("java/io/RandomAccessFile", "getChannel", "()Ljava/nio/channels/FileChannel;"):
         ("getChannel", "throw"),
     ("java/net/URLConnection", "getContent", "()Ljava/lang/Object;"):
@@ -90,6 +91,10 @@ METHOD_POLICY = {
         ("noInvoke", "throw"),
     ("java/lang/invoke/MethodHandle", "invoke", "(Ljava/lang/Object;)Ljava/util/function/Consumer;"):
         ("noInvokeWith", "throw"),
+    ("java/lang/invoke/MethodType", "methodType", "(Ljava/lang/Class;)Ljava/lang/invoke/MethodType;"):
+        ("noMethodTypeOne", "throw", "static"),
+    ("java/lang/invoke/CallSite", "getTarget", "()Ljava/lang/invoke/MethodHandle;"):
+        ("noCallSiteTarget", "throw"),
 }
 
 FIELD_POLICY = {
@@ -217,14 +222,18 @@ def write_rewrite_tables(work: pathlib.Path, names: dict, methods: list, fields:
         is_static = len(entry) > 2 and entry[2] == "static"
         receiver = "" if is_static else "L" + new_owner + ";"
         helper_descriptor = "(" + receiver + new_descriptor[1:]
-        calls.append("\t".join([new_owner, name, new_descriptor, f"{TARGET_PACKAGE}/Support", helper,
+        # the key is the name the call site has *while the remapper looks it up*, which is before the class
+        # renames are applied in the same pass. Keying it with the renamed owner and descriptor meant every
+        # call whose signature mentions a stubbed class silently missed: getChannel() returns FileChannel,
+        # FileChannel is stubbed, so its key no longer matched and the call was never redirected.
+        calls.append("\t".join([owner, name, descriptor, f"{TARGET_PACKAGE}/Support", helper,
                                  helper_descriptor, "static" if is_static else "virtual"]))
     for key, (helper, kind) in sorted(FIELD_POLICY.items()):
         owner, name, descriptor = key
         if (owner, name, descriptor) not in {(f[0], f[1], f[2]) for f in fields}:
             continue
         new_descriptor = rename_descriptor(descriptor, names)
-        statics.append("\t".join([names.get(owner, owner), name, new_descriptor,
+        statics.append("\t".join([owner, name, descriptor,
                                    f"{TARGET_PACKAGE}/Support", helper, new_descriptor]))
     path = work / "calls.tsv"
     path.write_text("".join(line + "\n" for line in calls))
@@ -345,6 +354,11 @@ def main(argv=None) -> int:
     parser.add_argument("--classlib", required=True, help="the compiler's class library jar")
     parser.add_argument("--client", default=None, help="the client jar to rewrite in place")
     parser.add_argument("--mods-dir", default=None, help="where the mod jars are, and where the stubs land")
+    parser.add_argument("--also", action="append", default=[],
+                        help="a directory tree of jars that are both read and rewritten, searched "
+                             "recursively: the client's libraries. A reference to a platform class can live "
+                             "in any jar the compiler reaches, and the ones it reaches through a library are "
+                             "the ones this pass used to miss.")
     parser.add_argument("--scan-dir", action="append", default=[],
                         help="jars to read usage from, without rewriting or shipping anything - the bake has "
                              "already rewritten the mod set, and a second pass with a different rule set is "
@@ -385,6 +399,10 @@ def main(argv=None) -> int:
     scan = []
     if args.client:
         scan.append(pathlib.Path(args.client))
+    extra = []
+    for directory in args.also:
+        extra.extend(sorted(pathlib.Path(directory).rglob("*.jar")))
+    scan.extend(extra)
     for directory in args.scan_dir:
         scan.extend(sorted(pathlib.Path(directory).glob("*.jar")))
     if args.mods_dir:
@@ -460,8 +478,12 @@ def main(argv=None) -> int:
             os.environ["WEBMC_CALL_REWRITES"] = str(rewrites)
             renamed = 0
             rewriting_mods = args.rewrite_mods or bool(args.mods_dir)
-            targets = [jar for jar in scan
-                       if args.client and str(jar) == args.client] if not rewriting_mods else scan
+            if rewriting_mods:
+                targets = scan
+            else:
+                # the client, plus everything explicitly asked for with --also (the libraries)
+                targets = [jar for jar in scan
+                           if (args.client and str(jar) == args.client) or jar in extra]
             for jar in targets:
                 if rename(java, tools, args.asm, table, jar, work, log):
                     renamed += 1
