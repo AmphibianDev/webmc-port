@@ -356,6 +356,11 @@ def main(argv=None) -> int:
                              "provided by a substitution looks missing). Renaming one of those inside the "
                              "client changes its API surface - the engine's own patch sources are compiled "
                              "against it - so what gets renamed is the set the compiler actually reported.")
+    parser.add_argument("--rewrite-mods", action="store_true",
+                        help="also rename references inside the mod jars. The bake has already done that "
+                             "for the mod set it ships; doing it a second time from here means rewriting "
+                             "jars the bake produced (the optional-dependency stubs among them) and, with a "
+                             "different rule set, is how those stubs disappeared from the classpath.")
     parser.add_argument("--report", default=None, help="write a JSON report of what was stubbed")
     parser.add_argument("--print", action="store_true")
     args = parser.parse_args(argv)
@@ -448,7 +453,9 @@ def main(argv=None) -> int:
             rewrites = write_rewrite_tables(work, names, methods, fields)
             os.environ["WEBMC_CALL_REWRITES"] = str(rewrites)
             renamed = 0
-            for jar in scan:
+            targets = [jar for jar in scan
+                       if args.rewrite_mods or (args.client and str(jar) == args.client)] or scan
+            for jar in targets:
                 if rename(java, tools, args.asm, table, jar, work, log):
                     renamed += 1
             log(f"  renamed references in {renamed} jar(s)")
