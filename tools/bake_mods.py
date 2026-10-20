@@ -909,6 +909,14 @@ def platform_shims(mod_jars: list[pathlib.Path], engine: pathlib.Path, version: 
         command += ["--client", str(client)]
     if mods_dir:
         command += ["--mods-dir", str(mods_dir)]
+    # What the compiler has actually reported, and nothing more. The detector's full list includes classes
+    # the compiler can resolve anyway (its class library provides some by substitution), and renaming those
+    # inside the client changes what the engine's own patch sources compile against - "class file for
+    # webmc.platform.CompletableFuture not found" was that mistake.
+    for wanted in ("java/lang/management/", "java/nio/channels/", "java/net/", "java/sql/", "java/io/",
+                   "java/lang/reflect/", "javax/management/", "javax/net/", "org/jboss/",
+                   "org/spongepowered/asm/mixin/", "net/fabricmc/"):
+        command += ["--only", wanted]
     result = subprocess.run(command, capture_output=True, text=True)
     for line in (result.stdout or "").strip().splitlines():
         log("  " + line)

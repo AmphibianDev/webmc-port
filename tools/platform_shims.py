@@ -304,6 +304,13 @@ def main(argv=None) -> int:
     parser.add_argument("--mods-dir", default=None, help="where the mod jars are, and where the stubs land")
     parser.add_argument("--asm", required=True, help="classpath of ASM jars")
     parser.add_argument("--out", required=True, help="directory for the generated stub jar")
+    parser.add_argument("--only", action="append", default=[],
+                        help="restrict stubbing to this class or package (a trailing / means package). The "
+                             "detector is deliberately wider than the compiler: it reads the class library "
+                             "jar, which does not include everything the compiler can resolve (a class "
+                             "provided by a substitution looks missing). Renaming one of those inside the "
+                             "client changes its API surface - the engine's own patch sources are compiled "
+                             "against it - so what gets renamed is the set the compiler actually reported.")
     parser.add_argument("--report", default=None, help="write a JSON report of what was stubbed")
     parser.add_argument("--print", action="store_true")
     args = parser.parse_args(argv)
@@ -342,6 +349,16 @@ def main(argv=None) -> int:
                 break
             if pass_number > 1:
                 log(f"  pass {pass_number}: {len(missing)} more class(es): {', '.join(missing[:4])}")
+            if args.only:
+                before = len(missing)
+                missing = [name for name in missing
+                           if any(name == wanted or (wanted.endswith("/") and name.startswith(wanted))
+                                  or name.startswith(wanted + "$") for wanted in args.only)]
+                log(f"  {len(missing)} of {before} missing class(es) are in the requested set")
+                if not missing:
+                    # the detector is wider than the compiler on purpose: what is left is out of scope for
+                    # this run, and the loop has to stop here rather than chase it forever
+                    break
             by_package = {}
             for name in missing:
                 by_package.setdefault(name.rpartition("/")[0], []).append(name)
