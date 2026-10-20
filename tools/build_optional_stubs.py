@@ -60,7 +60,7 @@ def moved(name: str, moves: list) -> str:
     return name
 
 
-def java_type(descriptor: str, moves=()) -> str:
+def java_type(descriptor: str, moves=(), generated=None) -> str:
     """A descriptor, as a Java source type. Generics are dropped and nested classes use a dot."""
     arrays = 0
     while descriptor.startswith("["):
@@ -69,8 +69,18 @@ def java_type(descriptor: str, moves=()) -> str:
     if descriptor in PRIMITIVES:
         name = PRIMITIVES[descriptor]
     elif descriptor.startswith("L") and descriptor.endswith(";"):
-        internal = moved(descriptor[1:-1], list(moves))
-        name = internal.replace("$", ".").replace("/", ".")
+        original = descriptor[1:-1]
+        internal = moved(original, list(moves))
+        # A stub we generate is one flat class whose binary name keeps the '$' (webmc.platform.Outer$Inner),
+        # so it is referenced that way. A type that lives somewhere else - the compiler's own library, the
+        # JDK - is referenced the source way (java.nio.file.WatchEvent.Kind): javac will not resolve a '$'
+        # in a qualified name against a real module, and there nesting is real.
+        if generated is not None and original not in generated:
+            internal = internal.replace("$", ".")
+        # the '$' stays: inner stubs are flat classes whose binary name is Outer$Inner, so the source
+        # spelling is webmc.platform.Outer$Inner - turning it into Outer.Inner points at a class that does
+        # not exist ("cannot find symbol: class Kind, location: class WatchEvent")
+        name = internal.replace("/", ".")
     else:
         name = "java.lang.Object"
     return name + "[]" * arrays
@@ -134,6 +144,7 @@ class Shapes:
 
 def sources_for(shapes: Shapes, seed_methods: dict, moves=()) -> dict:
     moves = list(moves)
+    generated = set(shapes.types)
     """One Java file per *outer* type, with inner types nested inside it.
 
     Nesting matters: `baritone.api.Settings$Setting` has to be a class inside `Settings`, because the mods
@@ -158,27 +169,38 @@ def sources_for(shapes: Shapes, seed_methods: dict, moves=()) -> dict:
                 continue
             returns = descriptor[descriptor.index(")") + 1:]
             arguments = descriptor[descriptor.index("(") + 1:descriptor.index(")")]
-            parameters = [f"{java_type(piece, moves)} argument{index}"
+            parameters = [f"{java_type(piece, moves, generated)} argument{index}"
                           for index, piece in enumerate(_arguments(arguments))]
             call = f"{method_name}({', '.join(parameters)})"
             if kinds[name] == "interface":
-                lines.append(f"    {java_type(returns, moves)} {call};")
+                lines.append(f"    {java_type(returns, moves, generated)} {call};")
             elif returns == "V":
                 lines.append(f"    public void {call} {{}}")
             else:
-                lines.append(f"    public {java_type(returns, moves)} {call}"
+                lines.append(f"    public {java_type(returns, moves, generated)} {call}"
                              f" {{ return {default_value(returns)}; }}")
         if kinds[name] == "class":
-            simple = name.rsplit("/", 1)[-1].split("$")[-1]
+            # the flat name, '$' and all: a constructor named State inside a class named Thread$State is a
+            # method declaration to javac ("invalid method declaration; return type required")
+            simple = moved(name, moves).rsplit("/", 1)[-1]
             for descriptor in sorted(shape["constructors"]) or ["()V"]:
                 arguments = descriptor[descriptor.index("(") + 1:descriptor.index(")")]
-                parameters = [f"{java_type(piece, moves)} argument{index}"
+                parameters = [f"{java_type(piece, moves, generated)} argument{index}"
                               for index, piece in enumerate(_arguments(arguments))]
                 lines.append(f"    public {simple}({', '.join(parameters)}) {{}}")
         return lines
 
+    def declaration_flat(name: str) -> str:
+        simple = moved(name, moves).rsplit("/", 1)[-1]
+        kind = kinds.get(name, "class")
+        body = members(name)
+        return f"public {kind} {simple} {{\n" + "\n".join(body) + "\n}"
+
     def declaration(name: str) -> str:
-        simple = name.rsplit("/", 1)[-1].split("$")[-1]
+        # the *emitted* name, not the original one: a moved stub whose file is javax_naming_directory_Attribute
+        # but whose class is still called Attribute does not compile (and javac's "cannot find symbol" then
+        # points at a file that is right there, which cost a while to see)
+        simple = moved(name, moves).rsplit("/", 1)[-1].split("$")[-1]
         children = sorted(other for other in shapes.types
                           if other.startswith(name + "$") and "$" not in other[len(name) + 1:])
         body = members(name) + [""] * (1 if children else 0) + [declaration(child) for child in children]
@@ -186,10 +208,16 @@ def sources_for(shapes: Shapes, seed_methods: dict, moves=()) -> dict:
         text = f"public {kind} {simple} {{\n" + "\n".join(body) + "\n}"
         return text if not children else text[:-1] + "}\n"
 
+    # One file per stub, flat - including inner classes, whose binary name keeps the '$'
+    # (webmc/platform/Thread$State is a legal top-level class name). Nesting them would mean emitting a
+    # moved *outer* for every missing inner class, and when the outer is a class the class library already
+    # provides (java.lang.Thread) that shell shadows the real thing; leaving it un-moved emits sources in
+    # java.* which javac refuses outright ("package exists in another module: java.base").
     files = {}
-    for outer in sorted({name.split("$")[0] for name in shapes.types}):
-        package, _, _simple = moved(outer, list(moves)).rpartition("/")
-        files[moved(outer, list(moves))] = f"package {package.replace('/', '.')};\n\n" + declaration(outer) + "\n"
+    for name in sorted(shapes.types):
+        moved_name = moved(name, moves)
+        package, _, _simple = moved_name.rpartition("/")
+        files[moved_name] = f"package {package.replace('/', '.')};\n\n" + declaration_flat(name) + "\n"
     return files
 
 
