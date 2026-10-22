@@ -9564,10 +9564,10 @@
       "type": "release",
       "released": "2017-09-18T08:39:46+00:00",
       "verdict": "launch",
-      "engine": null,
-      "engine_name": null,
-      "minutes": null,
-      "mods": null,
+      "engine": "cheerpj-unmodified",
+      "engine_name": "CheerpJ + cheerpj-natives: the official client, unmodified",
+      "minutes": 0,
+      "mods": "runtime - real .jar mods for these versions load with no rebuild, because this is a real JVM",
       "jvm_route": "cheerpj",
       "jvm_why": "LWJGL 2.9.4-nightly-20150209 with Java 8: the browser JVM can run this",
       "kind": "launch",
@@ -9577,7 +9577,7 @@
       "jar_bytes": 10180113,
       "asset_index": "1.12",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -9598,7 +9598,7 @@
       "jar_bytes": 10180190,
       "asset_index": "1.12",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -9619,7 +9619,7 @@
       "jar_bytes": 10180422,
       "asset_index": "1.12",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -9640,7 +9640,7 @@
       "jar_bytes": 10178558,
       "asset_index": "1.12",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -9661,7 +9661,7 @@
       "jar_bytes": 10178612,
       "asset_index": "1.12",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -9682,7 +9682,7 @@
       "jar_bytes": 10178129,
       "asset_index": "1.12",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -9703,7 +9703,7 @@
       "jar_bytes": 10177098,
       "asset_index": "1.12",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -9724,7 +9724,7 @@
       "jar_bytes": 10177172,
       "asset_index": "1.12",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -9745,7 +9745,7 @@
       "jar_bytes": 10176047,
       "asset_index": "1.12",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -9766,7 +9766,7 @@
       "jar_bytes": 10158482,
       "asset_index": "1.12",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -9787,7 +9787,7 @@
       "jar_bytes": 10151079,
       "asset_index": "1.12",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -9808,7 +9808,7 @@
       "jar_bytes": 10150521,
       "asset_index": "1.12",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -9829,7 +9829,7 @@
       "jar_bytes": 10151176,
       "asset_index": "1.12",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -9850,7 +9850,7 @@
       "jar_bytes": 10148714,
       "asset_index": "1.12",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -10089,10 +10089,10 @@
       "type": "release",
       "released": "2016-12-21T09:29:12+00:00",
       "verdict": "launch",
-      "engine": null,
-      "engine_name": null,
-      "minutes": null,
-      "mods": null,
+      "engine": "cheerpj-unmodified",
+      "engine_name": "CheerpJ + cheerpj-natives: the official client, unmodified",
+      "minutes": 0,
+      "mods": "runtime - real .jar mods for these versions load with no rebuild, because this is a real JVM",
       "jvm_route": "cheerpj",
       "jvm_why": "LWJGL 2.9.4-nightly-20150209 with Java 8: the browser JVM can run this",
       "kind": "launch",
@@ -10102,7 +10102,7 @@
       "jar_bytes": 9198097,
       "asset_index": "1.11",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10123,7 +10123,7 @@
       "jar_bytes": 9198018,
       "asset_index": "1.11",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -10165,7 +10165,7 @@
       "jar_bytes": 9183701,
       "asset_index": "1.11",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10488,10 +10488,10 @@
       "type": "release",
       "released": "2016-06-23T09:17:32+00:00",
       "verdict": "launch",
-      "engine": null,
-      "engine_name": null,
-      "minutes": null,
-      "mods": null,
+      "engine": "cheerpj-unmodified",
+      "engine_name": "CheerpJ + cheerpj-natives: the official client, unmodified",
+      "minutes": 0,
+      "mods": "runtime - real .jar mods for these versions load with no rebuild, because this is a real JVM",
       "jvm_route": "cheerpj",
       "jvm_why": "LWJGL 2.9.4-nightly-20150209 with Java 8: the browser JVM can run this",
       "kind": "launch",
@@ -10501,7 +10501,7 @@
       "jar_bytes": 8857653,
       "asset_index": "1.10",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10522,7 +10522,7 @@
       "jar_bytes": 8857880,
       "asset_index": "1.10",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10543,7 +10543,7 @@
       "jar_bytes": 8856992,
       "asset_index": "1.10",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10669,7 +10669,7 @@
       "jar_bytes": 8736083,
       "asset_index": "1.9",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10690,7 +10690,7 @@
       "jar_bytes": 8736082,
       "asset_index": "1.9",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10858,7 +10858,7 @@
       "jar_bytes": 8699297,
       "asset_index": "1.9",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10879,7 +10879,7 @@
       "jar_bytes": 8699282,
       "asset_index": "1.9",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10963,7 +10963,7 @@
       "jar_bytes": 8697592,
       "asset_index": "1.9",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -11307,10 +11307,10 @@
       "type": "release",
       "released": "2015-12-03T09:24:39+00:00",
       "verdict": "launch",
-      "engine": null,
-      "engine_name": null,
-      "minutes": null,
-      "mods": null,
+      "engine": "cheerpj-unmodified",
+      "engine_name": "CheerpJ + cheerpj-natives: the official client, unmodified",
+      "minutes": 0,
+      "mods": "runtime - real .jar mods for these versions load with no rebuild, because this is a real JVM",
       "jvm_route": "cheerpj",
       "jvm_why": "LWJGL 2.9.4-nightly-20150209 with Java 8: the browser JVM can run this",
       "kind": "launch",
@@ -11320,7 +11320,7 @@
       "jar_bytes": 8461484,
       "asset_index": "1.8",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12252,10 +12252,10 @@
       "type": "release",
       "released": "2015-07-27T10:31:28+00:00",
       "verdict": "launch",
-      "engine": null,
-      "engine_name": null,
+      "engine": "eaglercraftx-1.8-workspace",
+      "engine_name": "EaglercraftX 1.8 workspace (borrowed, unlicensed)",
       "minutes": null,
-      "mods": null,
+      "mods": "JavaScript mod API (EaglerForge-style), not Fabric jars",
       "jvm_route": "cheerpj",
       "jvm_why": "LWJGL 2.9.4-nightly-20150209 with Java 8: the browser JVM can run this",
       "kind": "launch",
@@ -12265,7 +12265,7 @@
       "jar_bytes": 8465313,
       "asset_index": "1.8",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12286,7 +12286,7 @@
       "jar_bytes": 8461925,
       "asset_index": "1.8",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12307,7 +12307,7 @@
       "jar_bytes": 8461536,
       "asset_index": "1.8",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12328,7 +12328,7 @@
       "jar_bytes": 8462879,
       "asset_index": "1.8",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12349,7 +12349,7 @@
       "jar_bytes": 8461965,
       "asset_index": "1.8",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12391,7 +12391,7 @@
       "jar_bytes": 8460790,
       "asset_index": "1.8",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12412,7 +12412,7 @@
       "jar_bytes": 8460686,
       "asset_index": "1.8",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12580,7 +12580,7 @@
       "jar_bytes": 7762712,
       "asset_index": "1.8",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -12693,10 +12693,10 @@
       "type": "release",
       "released": "2014-09-02T08:24:35+00:00",
       "verdict": "launch",
-      "engine": null,
-      "engine_name": null,
+      "engine": "eaglercraftx-1.8-workspace",
+      "engine_name": "EaglercraftX 1.8 workspace (borrowed, unlicensed)",
       "minutes": null,
-      "mods": null,
+      "mods": "JavaScript mod API (EaglerForge-style), not Fabric jars",
       "jvm_route": "cheerpj",
       "jvm_why": "LWJGL 2.9.1 with Java 8: the browser JVM can run this",
       "kind": "launch",
@@ -12706,7 +12706,7 @@
       "jar_bytes": 7746841,
       "asset_index": "1.8",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13407,10 +13407,10 @@
       "type": "release",
       "released": "2014-05-14T17:29:23+00:00",
       "verdict": "launch",
-      "engine": null,
-      "engine_name": null,
-      "minutes": null,
-      "mods": null,
+      "engine": "cheerpj-unmodified",
+      "engine_name": "CheerpJ + cheerpj-natives: the official client, unmodified",
+      "minutes": 0,
+      "mods": "runtime - real .jar mods for these versions load with no rebuild, because this is a real JVM",
       "jvm_route": "cheerpj",
       "jvm_why": "LWJGL 2.9.1 with Java 8: the browser JVM can run this",
       "kind": "launch",
@@ -13420,7 +13420,7 @@
       "jar_bytes": 5256245,
       "asset_index": "1.7.10",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13630,7 +13630,7 @@
       "jar_bytes": 5268481,
       "asset_index": "1.7.4",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13651,7 +13651,7 @@
       "jar_bytes": 5269934,
       "asset_index": "1.7.4",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13672,7 +13672,7 @@
       "jar_bytes": 5267555,
       "asset_index": "1.7.4",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13693,7 +13693,7 @@
       "jar_bytes": 5341288,
       "asset_index": "1.7.4",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -13861,7 +13861,7 @@
       "jar_bytes": 5225771,
       "asset_index": "1.7.4",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -14134,7 +14134,7 @@
       "jar_bytes": 5206443,
       "asset_index": "1.7.4",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -14155,7 +14155,7 @@
       "jar_bytes": 5206064,
       "asset_index": "1.7.3",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -14344,7 +14344,7 @@
       "jar_bytes": 5117607,
       "asset_index": "legacy",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -14604,10 +14604,10 @@
       "type": "release",
       "released": "2013-09-19T15:52:37+00:00",
       "verdict": "launch",
-      "engine": null,
-      "engine_name": null,
-      "minutes": null,
-      "mods": null,
+      "engine": "cheerpj-unmodified",
+      "engine_name": "CheerpJ + cheerpj-natives: the official client, unmodified",
+      "minutes": 0,
+      "mods": "runtime - real .jar mods for these versions load with no rebuild, because this is a real JVM",
       "jvm_route": "cheerpj",
       "jvm_why": "LWJGL 2.9.0 with Java 8: the browser JVM can run this",
       "kind": "launch",
@@ -14617,7 +14617,7 @@
       "jar_bytes": 4745096,
       "asset_index": "legacy",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -14743,7 +14743,7 @@
       "jar_bytes": 4731988,
       "asset_index": "legacy",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -14764,7 +14764,7 @@
       "jar_bytes": 4726671,
       "asset_index": "legacy",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -22687,7 +22687,7 @@
       "queued": "2026-10-21T12:03:21Z"
     }
   ],
-  "updated": "2026-10-21T12:03:21Z",
+  "updated": "2026-10-22T12:06:48Z",
   "jvm": {
     "17w48a": {
       "route": "needs-lwjgl3",
@@ -27647,70 +27647,70 @@
       "content_type": "text/html",
       "bytes": 4352,
       "ok": true,
-      "checked": "2026-10-21T12:03:20Z"
+      "checked": "2026-10-22T12:06:47Z"
     },
     "https://eaglerports.github.io/a1.0.16_02/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 4495,
       "ok": true,
-      "checked": "2026-10-21T12:03:18Z"
+      "checked": "2026-10-22T12:06:46Z"
     },
     "https://eaglerports.github.io/a1.2.6/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 4495,
       "ok": true,
-      "checked": "2026-10-21T12:03:13Z"
+      "checked": "2026-10-22T12:06:44Z"
     },
     "https://eaglerports.github.io/b1.3_01/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 4495,
       "ok": true,
-      "checked": "2026-10-21T12:03:13Z"
+      "checked": "2026-10-22T12:06:44Z"
     },
     "https://eaglerports.github.io/b1.6-tb3/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 4495,
       "ok": true,
-      "checked": "2026-10-21T12:03:18Z"
+      "checked": "2026-10-22T12:06:46Z"
     },
     "https://eaglerports.github.io/b1.8.1/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 4495,
       "ok": true,
-      "checked": "2026-10-21T12:03:13Z"
+      "checked": "2026-10-22T12:06:44Z"
     },
     "https://eaglerports.github.io/1.2.5/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 4495,
       "ok": true,
-      "checked": "2026-10-21T12:03:13Z"
+      "checked": "2026-10-22T12:06:44Z"
     },
     "https://github.com/3kh0/eaglercraft-builds/raw/HEAD/Eaglercraft_b1.3_Offline_Download.html": {
       "status": 200,
       "content_type": "text/plain",
       "bytes": 4534321,
       "ok": true,
-      "checked": "2026-10-21T12:03:20Z"
+      "checked": "2026-10-22T12:06:47Z"
     },
     "https://userarham.github.io/1.13.1-Eaglercraft-UNFORKED/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 2234,
       "ok": true,
-      "checked": "2026-10-21T12:03:13Z"
+      "checked": "2026-10-22T12:06:44Z"
     },
     "https://github.com/3lit3-Pl4y3r/eaglercraft-26.2/raw/HEAD/index.html": {
       "status": 200,
       "content_type": "text/plain",
       "bytes": 75576620,
       "ok": true,
-      "checked": "2026-10-21T12:03:18Z"
+      "checked": "2026-10-22T12:06:46Z"
     },
     "https://dhyeybg.github.io/Eaglercraft-26.3/": {
       "status": 404,
@@ -27718,84 +27718,84 @@
       "bytes": 0,
       "ok": false,
       "error": "HTTP Error 404: Not Found",
-      "checked": "2026-10-21T12:03:08Z"
+      "checked": "2026-10-22T12:06:40Z"
     },
     "https://xxfluffyasherxx.github.io/Eaglercraft-1.20.4-Updated-/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 4267,
       "ok": true,
-      "checked": "2026-10-21T12:03:11Z"
+      "checked": "2026-10-22T12:06:42Z"
     },
     "https://jqi123456.github.io/Eaglercraft-Java-1.14/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 1621,
       "ok": true,
-      "checked": "2026-10-21T12:03:13Z"
+      "checked": "2026-10-22T12:06:43Z"
     },
     "https://github.com/t1229414f/craft67/raw/HEAD/index.html": {
       "status": 200,
       "content_type": "text/plain",
       "bytes": 1558,
       "ok": true,
-      "checked": "2026-10-21T12:03:13Z"
+      "checked": "2026-10-22T12:06:43Z"
     },
     "https://github.com/kiwinatra/beta-eagl/raw/HEAD/index.html": {
       "status": 200,
       "content_type": "text/plain",
       "bytes": 8134,
       "ok": true,
-      "checked": "2026-10-21T12:03:12Z"
+      "checked": "2026-10-22T12:06:43Z"
     },
     "https://kritikal-hit.github.io/Eagler-Craft/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 35227991,
       "ok": true,
-      "checked": "2026-10-21T12:03:12Z"
+      "checked": "2026-10-22T12:06:42Z"
     },
     "https://github.com/unspeakfan/Eaglercraft-1.20.4/raw/HEAD/index.html": {
       "status": 200,
       "content_type": "text/plain",
       "bytes": 25185298,
       "ok": true,
-      "checked": "2026-10-21T12:03:15Z"
+      "checked": "2026-10-22T12:06:44Z"
     },
     "https://exgg1453.github.io/NX-Eaglercraft-Mobile/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 48902432,
       "ok": true,
-      "checked": "2026-10-21T12:03:10Z"
+      "checked": "2026-10-22T12:06:41Z"
     },
     "https://github.com/Nate2018/Eaglercraft-1.21.1-TeaVM/raw/HEAD/index.html": {
       "status": 200,
       "content_type": "text/plain",
       "bytes": 1832,
       "ok": true,
-      "checked": "2026-10-21T12:03:15Z"
+      "checked": "2026-10-22T12:06:45Z"
     },
     "https://github.com/crisppy1/Eaglercraft-1.21.1/raw/HEAD/index.html": {
       "status": 200,
       "content_type": "text/plain",
       "bytes": 211156,
       "ok": true,
-      "checked": "2026-10-21T12:03:11Z"
+      "checked": "2026-10-22T12:06:41Z"
     },
     "https://github.com/thebananamanjcgaming/EaglercraftZ-26.1.1/raw/HEAD/index.html": {
       "status": 200,
       "content_type": "text/plain",
       "bytes": 2385,
       "ok": true,
-      "checked": "2026-10-21T12:03:08Z"
+      "checked": "2026-10-22T12:06:40Z"
     },
     "https://diddy62626.github.io/eaglercraft-26.1.2/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 11672,
       "ok": true,
-      "checked": "2026-10-21T12:03:08Z"
+      "checked": "2026-10-22T12:06:40Z"
     }
   },
   "built": {
