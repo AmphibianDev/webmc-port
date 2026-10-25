@@ -9577,7 +9577,7 @@
       "jar_bytes": 10180113,
       "asset_index": "1.12",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -9598,7 +9598,7 @@
       "jar_bytes": 10180190,
       "asset_index": "1.12",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -9619,7 +9619,7 @@
       "jar_bytes": 10180422,
       "asset_index": "1.12",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -9640,7 +9640,7 @@
       "jar_bytes": 10178558,
       "asset_index": "1.12",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -9661,7 +9661,7 @@
       "jar_bytes": 10178612,
       "asset_index": "1.12",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -9682,7 +9682,7 @@
       "jar_bytes": 10178129,
       "asset_index": "1.12",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -9703,7 +9703,7 @@
       "jar_bytes": 10177098,
       "asset_index": "1.12",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -9724,7 +9724,7 @@
       "jar_bytes": 10177172,
       "asset_index": "1.12",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -9745,7 +9745,7 @@
       "jar_bytes": 10176047,
       "asset_index": "1.12",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -9766,7 +9766,7 @@
       "jar_bytes": 10158482,
       "asset_index": "1.12",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -9787,7 +9787,7 @@
       "jar_bytes": 10151079,
       "asset_index": "1.12",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -9808,7 +9808,7 @@
       "jar_bytes": 10150521,
       "asset_index": "1.12",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -9829,7 +9829,7 @@
       "jar_bytes": 10151176,
       "asset_index": "1.12",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -9850,7 +9850,7 @@
       "jar_bytes": 10148714,
       "asset_index": "1.12",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10102,7 +10102,7 @@
       "jar_bytes": 9198097,
       "asset_index": "1.11",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -10123,7 +10123,7 @@
       "jar_bytes": 9198018,
       "asset_index": "1.11",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -10165,7 +10165,7 @@
       "jar_bytes": 9183701,
       "asset_index": "1.11",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -10501,7 +10501,7 @@
       "jar_bytes": 8857653,
       "asset_index": "1.10",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -10522,7 +10522,7 @@
       "jar_bytes": 8857880,
       "asset_index": "1.10",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -10543,7 +10543,7 @@
       "jar_bytes": 8856992,
       "asset_index": "1.10",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -10669,7 +10669,7 @@
       "jar_bytes": 8736083,
       "asset_index": "1.9",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -10690,7 +10690,7 @@
       "jar_bytes": 8736082,
       "asset_index": "1.9",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -10858,7 +10858,7 @@
       "jar_bytes": 8699297,
       "asset_index": "1.9",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -10879,7 +10879,7 @@
       "jar_bytes": 8699282,
       "asset_index": "1.9",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -10963,7 +10963,7 @@
       "jar_bytes": 8697592,
       "asset_index": "1.9",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -11320,7 +11320,7 @@
       "jar_bytes": 8461484,
       "asset_index": "1.8",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -12265,7 +12265,7 @@
       "jar_bytes": 8465313,
       "asset_index": "1.8",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -12286,7 +12286,7 @@
       "jar_bytes": 8461925,
       "asset_index": "1.8",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -12307,7 +12307,7 @@
       "jar_bytes": 8461536,
       "asset_index": "1.8",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -12328,7 +12328,7 @@
       "jar_bytes": 8462879,
       "asset_index": "1.8",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -12349,7 +12349,7 @@
       "jar_bytes": 8461965,
       "asset_index": "1.8",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -12391,7 +12391,7 @@
       "jar_bytes": 8460790,
       "asset_index": "1.8",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -12412,7 +12412,7 @@
       "jar_bytes": 8460686,
       "asset_index": "1.8",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -12580,7 +12580,7 @@
       "jar_bytes": 7762712,
       "asset_index": "1.8",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -12706,7 +12706,7 @@
       "jar_bytes": 7746841,
       "asset_index": "1.8",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -13420,7 +13420,7 @@
       "jar_bytes": 5256245,
       "asset_index": "1.7.10",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -13630,7 +13630,7 @@
       "jar_bytes": 5268481,
       "asset_index": "1.7.4",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -13651,7 +13651,7 @@
       "jar_bytes": 5269934,
       "asset_index": "1.7.4",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -13672,7 +13672,7 @@
       "jar_bytes": 5267555,
       "asset_index": "1.7.4",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -13693,7 +13693,7 @@
       "jar_bytes": 5341288,
       "asset_index": "1.7.4",
       "meta_url": null,
-      "libs_ready": false,
+      "libs_ready": true,
       "url": null
     },
     {
@@ -13861,7 +13861,7 @@
       "jar_bytes": 5225771,
       "asset_index": "1.7.4",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -14134,7 +14134,7 @@
       "jar_bytes": 5206443,
       "asset_index": "1.7.4",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -14155,7 +14155,7 @@
       "jar_bytes": 5206064,
       "asset_index": "1.7.3",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -14344,7 +14344,7 @@
       "jar_bytes": 5117607,
       "asset_index": "legacy",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -14617,7 +14617,7 @@
       "jar_bytes": 4745096,
       "asset_index": "legacy",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -14743,7 +14743,7 @@
       "jar_bytes": 4731988,
       "asset_index": "legacy",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -14764,7 +14764,7 @@
       "jar_bytes": 4726671,
       "asset_index": "legacy",
       "meta_url": null,
-      "libs_ready": true,
+      "libs_ready": false,
       "url": null
     },
     {
@@ -22687,7 +22687,7 @@
       "queued": "2026-10-21T12:03:21Z"
     }
   ],
-  "updated": "2026-10-24T11:15:02Z",
+  "updated": "2026-10-25T11:47:06Z",
   "jvm": {
     "17w48a": {
       "route": "needs-lwjgl3",
@@ -27647,70 +27647,70 @@
       "content_type": "text/html",
       "bytes": 4352,
       "ok": true,
-      "checked": "2026-10-24T11:15:01Z"
+      "checked": "2026-10-25T11:47:05Z"
     },
     "https://eaglerports.github.io/a1.0.16_02/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 4495,
       "ok": true,
-      "checked": "2026-10-24T11:14:59Z"
+      "checked": "2026-10-25T11:47:04Z"
     },
     "https://eaglerports.github.io/a1.2.6/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 4495,
       "ok": true,
-      "checked": "2026-10-24T11:14:56Z"
+      "checked": "2026-10-25T11:47:00Z"
     },
     "https://eaglerports.github.io/b1.3_01/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 4495,
       "ok": true,
-      "checked": "2026-10-24T11:14:56Z"
+      "checked": "2026-10-25T11:47:00Z"
     },
     "https://eaglerports.github.io/b1.6-tb3/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 4495,
       "ok": true,
-      "checked": "2026-10-24T11:14:59Z"
+      "checked": "2026-10-25T11:47:04Z"
     },
     "https://eaglerports.github.io/b1.8.1/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 4495,
       "ok": true,
-      "checked": "2026-10-24T11:14:56Z"
+      "checked": "2026-10-25T11:47:00Z"
     },
     "https://eaglerports.github.io/1.2.5/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 4495,
       "ok": true,
-      "checked": "2026-10-24T11:14:55Z"
+      "checked": "2026-10-25T11:47:00Z"
     },
     "https://github.com/3kh0/eaglercraft-builds/raw/HEAD/Eaglercraft_b1.3_Offline_Download.html": {
       "status": 200,
       "content_type": "text/plain",
       "bytes": 4534321,
       "ok": true,
-      "checked": "2026-10-24T11:15:00Z"
+      "checked": "2026-10-25T11:47:05Z"
     },
     "https://userarham.github.io/1.13.1-Eaglercraft-UNFORKED/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 2234,
       "ok": true,
-      "checked": "2026-10-24T11:14:55Z"
+      "checked": "2026-10-25T11:47:00Z"
     },
     "https://github.com/3lit3-Pl4y3r/eaglercraft-26.2/raw/HEAD/index.html": {
       "status": 200,
       "content_type": "text/plain",
       "bytes": 75576620,
       "ok": true,
-      "checked": "2026-10-24T11:14:59Z"
+      "checked": "2026-10-25T11:47:04Z"
     },
     "https://dhyeybg.github.io/Eaglercraft-26.3/": {
       "status": 404,
@@ -27718,77 +27718,77 @@
       "bytes": 0,
       "ok": false,
       "error": "HTTP Error 404: Not Found",
-      "checked": "2026-10-24T11:14:52Z"
+      "checked": "2026-10-25T11:46:56Z"
     },
     "https://xxfluffyasherxx.github.io/Eaglercraft-1.20.4-Updated-/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 4267,
       "ok": true,
-      "checked": "2026-10-24T11:14:54Z"
+      "checked": "2026-10-25T11:46:58Z"
     },
     "https://jqi123456.github.io/Eaglercraft-Java-1.14/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 1621,
       "ok": true,
-      "checked": "2026-10-24T11:14:55Z"
+      "checked": "2026-10-25T11:47:00Z"
     },
     "https://github.com/t1229414f/craft67/raw/HEAD/index.html": {
       "status": 200,
       "content_type": "text/plain",
       "bytes": 1558,
       "ok": true,
-      "checked": "2026-10-24T11:14:55Z"
+      "checked": "2026-10-25T11:46:59Z"
     },
     "https://github.com/kiwinatra/beta-eagl/raw/HEAD/index.html": {
       "status": 200,
       "content_type": "text/plain",
       "bytes": 8134,
       "ok": true,
-      "checked": "2026-10-24T11:14:55Z"
+      "checked": "2026-10-25T11:46:59Z"
     },
     "https://kritikal-hit.github.io/Eagler-Craft/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 35227991,
       "ok": true,
-      "checked": "2026-10-24T11:14:54Z"
+      "checked": "2026-10-25T11:46:59Z"
     },
     "https://github.com/unspeakfan/Eaglercraft-1.20.4/raw/HEAD/index.html": {
       "status": 200,
       "content_type": "text/plain",
       "bytes": 25185298,
       "ok": true,
-      "checked": "2026-10-24T11:14:57Z"
+      "checked": "2026-10-25T11:47:01Z"
     },
     "https://exgg1453.github.io/NX-Eaglercraft-Mobile/": {
       "status": 200,
       "content_type": "text/html",
       "bytes": 48902432,
       "ok": true,
-      "checked": "2026-10-24T11:14:53Z"
+      "checked": "2026-10-25T11:46:57Z"
     },
     "https://github.com/Nate2018/Eaglercraft-1.21.1-TeaVM/raw/HEAD/index.html": {
       "status": 200,
       "content_type": "text/plain",
       "bytes": 1832,
       "ok": true,
-      "checked": "2026-10-24T11:14:57Z"
+      "checked": "2026-10-25T11:47:02Z"
     },
     "https://github.com/crisppy1/Eaglercraft-1.21.1/raw/HEAD/index.html": {
       "status": 200,
       "content_type": "text/plain",
       "bytes": 211156,
       "ok": true,
-      "checked": "2026-10-24T11:14:53Z"
+      "checked": "2026-10-25T11:46:58Z"
     },
     "https://github.com/thebananamanjcgaming/EaglercraftZ-26.1.1/raw/HEAD/index.html": {
       "status": 200,
       "content_type": "text/plain",
       "bytes": 2385,
       "ok": true,
-      "checked": "2026-10-24T11:14:52Z"
+      "checked": "2026-10-25T11:46:56Z"
     },
     "https://diddy62626.github.io/eaglercraft-26.1.2/": {
       "status": 404,
@@ -27796,7 +27796,7 @@
       "bytes": 0,
       "ok": false,
       "error": "HTTP Error 404: Not Found",
-      "checked": "2026-10-24T11:14:52Z"
+      "checked": "2026-10-25T11:46:56Z"
     }
   },
   "built": {
